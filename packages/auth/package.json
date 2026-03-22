@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/auth",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'auth build placeholder'",
+    "lint": "echo 'auth lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

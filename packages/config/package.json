@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/config",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'config build placeholder'",
+    "lint": "echo 'config lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

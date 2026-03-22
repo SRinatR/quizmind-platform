@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/extension",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'extension build placeholder'",
+    "lint": "echo 'extension lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
