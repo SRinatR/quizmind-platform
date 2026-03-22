@@ -1,0 +1,10 @@
+.git
+.next
+.turbo
+coverage
+dist
+build
+node_modules
+.pnpm-store
+.dev.log
+*.tsbuildinfo

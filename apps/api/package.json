@@ -2,10 +2,27 @@
   "name": "@quizmind/api",
   "private": true,
   "version": "0.1.0",
+  "dependencies": {
+    "@nestjs/common": "^11.0.6",
+    "@nestjs/core": "^11.0.6",
+    "@nestjs/platform-express": "^11.0.6",
+    "@quizmind/auth": "workspace:*",
+    "@quizmind/billing": "workspace:*",
+    "@quizmind/config": "workspace:*",
+    "@quizmind/contracts": "workspace:*",
+    "@quizmind/database": "workspace:*",
+    "@quizmind/extension": "workspace:*",
+    "@quizmind/logger": "workspace:*",
+    "@quizmind/permissions": "workspace:*",
+    "dotenv": "^16.4.7",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
   "scripts": {
-    "build": "echo 'api build placeholder'",
-    "dev": "echo 'api dev placeholder'",
-    "lint": "echo 'api lint placeholder'",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "start": "tsx src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "dependencies": {
+    "@quizmind/contracts": "workspace:*"
+  },
   "scripts": {
     "build": "echo 'permissions build placeholder'",
     "lint": "echo 'permissions lint placeholder'",

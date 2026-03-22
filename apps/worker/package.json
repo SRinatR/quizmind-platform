@@ -2,10 +2,20 @@
   "name": "@quizmind/worker",
   "private": true,
   "version": "0.1.0",
+  "dependencies": {
+    "@quizmind/billing": "workspace:*",
+    "@quizmind/config": "workspace:*",
+    "@quizmind/contracts": "workspace:*",
+    "@quizmind/logger": "workspace:*",
+    "bullmq": "^5.43.2",
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.4.2"
+  },
   "scripts": {
-    "build": "echo 'worker build placeholder'",
-    "dev": "echo 'worker dev placeholder'",
-    "lint": "echo 'worker lint placeholder'",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "start": "tsx src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

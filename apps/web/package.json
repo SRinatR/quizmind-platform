@@ -2,10 +2,26 @@
   "name": "@quizmind/web",
   "private": true,
   "version": "0.1.0",
+  "dependencies": {
+    "@quizmind/auth": "workspace:*",
+    "@quizmind/billing": "workspace:*",
+    "@quizmind/config": "workspace:*",
+    "@quizmind/contracts": "workspace:*",
+    "@quizmind/permissions": "workspace:*",
+    "@quizmind/ui": "workspace:*",
+    "next": "^15.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3"
+  },
   "scripts": {
-    "build": "echo 'web build placeholder'",
-    "dev": "echo 'web dev placeholder'",
-    "lint": "echo 'web lint placeholder'",
+    "build": "next build",
+    "dev": "node ./scripts/dev.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "start": "next start --port 3000",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

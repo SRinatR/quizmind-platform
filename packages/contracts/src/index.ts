@@ -47,6 +47,15 @@ export const remoteConfigScopes = [
   'extension_version',
   'flag',
 ] as const;
+export const platformQueues = [
+  'billing-webhooks',
+  'usage-events',
+  'emails',
+  'quota-resets',
+  'entitlement-refresh',
+  'config-publish',
+  'audit-exports',
+] as const;
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
@@ -54,6 +63,7 @@ export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 export type FeatureFlagStatus = (typeof featureFlagStatuses)[number];
 export type CompatibilityStatus = (typeof compatibilityStatuses)[number];
 export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
+export type PlatformQueue = (typeof platformQueues)[number];
 
 export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;

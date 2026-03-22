@@ -39,10 +39,37 @@ Monorepo foundation for the QuizMind control-plane platform.
 
 ```bash
 pnpm install
+pnpm dev
 pnpm lint
 pnpm typecheck
 pnpm build
 ```
+
+## Local runtime
+
+- `pnpm dev` starts all three apps together.
+- API runs on `http://localhost:4000`.
+- Web prefers `http://localhost:3000` and automatically shifts to the next free port if `3000` is already occupied.
+- Worker starts in `mock` mode by default so the monorepo boots even when PostgreSQL and Redis are not running yet.
+
+## Docker runtime
+
+- `docker compose up --build` starts `postgres`, `redis`, `api`, `web`, and `worker`.
+- Docker defaults:
+  API on `http://localhost:4000`
+  Web on `http://localhost:3000`
+  PostgreSQL on `localhost:5432`
+  Redis on `localhost:6379`
+- Custom host ports can be provided through `.env.docker` based on `.env.docker.example`.
+- Full Docker runbook: `docs/docker-guide.md`
+
+## Demo personas
+
+- `platform-admin` â€” full dashboard + admin visibility.
+- `support-admin` â€” support workflows plus limited admin visibility.
+- `workspace-viewer` â€” dashboard-only experience with admin denial state.
+
+Use these via query params such as `/app?persona=platform-admin` and `/admin?persona=workspace-viewer`.
 
 ## Structure
 

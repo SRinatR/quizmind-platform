@@ -2,6 +2,16 @@ import { type ApiRouteDefinition } from '@quizmind/contracts';
 
 export const apiRoutes: ApiRouteDefinition[] = [
   {
+    method: 'GET',
+    path: '/health',
+    summary: 'Return runtime status, configured infrastructure, and queue readiness.',
+  },
+  {
+    method: 'GET',
+    path: '/foundation',
+    summary: 'Return monorepo foundation metadata, route inventory, and platform capabilities.',
+  },
+  {
     method: 'POST',
     path: '/auth/login',
     summary: 'Authenticate a user and issue access + refresh tokens.',
@@ -44,5 +54,11 @@ export const apiRoutes: ApiRouteDefinition[] = [
     path: '/admin/remote-config/publish',
     summary: 'Publish a remote config version.',
     permission: 'remote_config:publish',
+  },
+  {
+    method: 'POST',
+    path: '/support/impersonation',
+    summary: 'Start a support impersonation session and emit audit + security logs.',
+    permission: 'support:impersonate',
   },
 ] as const;
