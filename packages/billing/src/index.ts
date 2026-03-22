@@ -17,6 +17,11 @@ export interface EntitlementResolution {
   limits: Record<string, number>;
 }
 
+export interface UsageSnapshot {
+  consumed: number;
+  limit?: number;
+}
+
 export function isActiveSubscription(status: SubscriptionStatus): boolean {
   return ['trialing', 'active', 'grace_period'].includes(status);
 }
@@ -46,6 +51,21 @@ export function resolveEntitlements(plan: PlanDefinition, overrides: PlanEntitle
   }
 
   return { enabled: enabled.sort(), limits };
+}
+
+export function canConsumeQuota(usage: UsageSnapshot): boolean {
+  if (typeof usage.limit !== 'number') {
+    return true;
+  }
+
+  return usage.consumed < usage.limit;
+}
+
+export function incrementUsage(usage: UsageSnapshot, amount = 1): UsageSnapshot {
+  return {
+    ...usage,
+    consumed: usage.consumed + amount,
+  };
 }
 
 export function assertSubscriptionStatus(status: string): SubscriptionStatus {

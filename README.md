@@ -58,4 +58,5 @@ packages/
 docs/
   architecture.md
   foundation-roadmap.md
+  control-plane-primitives.md
 ```

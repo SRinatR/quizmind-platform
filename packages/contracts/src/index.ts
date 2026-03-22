@@ -38,15 +38,26 @@ export const compatibilityStatuses = [
   'deprecated',
   'unsupported',
 ] as const;
+export const remoteConfigScopes = [
+  'global',
+  'environment',
+  'plan',
+  'workspace',
+  'user',
+  'extension_version',
+  'flag',
+] as const;
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
 export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 export type FeatureFlagStatus = (typeof featureFlagStatuses)[number];
 export type CompatibilityStatus = (typeof compatibilityStatuses)[number];
+export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 
 export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
+export type PrimitiveValue = string | number | boolean | null;
 
 export interface WorkspaceMembership {
   workspaceId: string;
@@ -59,14 +70,27 @@ export interface AccessContext {
   workspaceMemberships: WorkspaceMembership[];
   entitlements: string[];
   featureFlags: string[];
-  attributes?: Record<string, string | number | boolean | null>;
+  attributes?: Record<string, PrimitiveValue>;
 }
 
 export interface FeatureFlagRule {
   key: string;
   status: FeatureFlagStatus;
   description: string;
-  conditions: Record<string, string | number | boolean | string[]>;
+  conditions: Record<string, PrimitiveValue | string[]>;
+}
+
+export interface FeatureFlagDefinition {
+  key: string;
+  status: FeatureFlagStatus;
+  description: string;
+  enabled: boolean;
+  rolloutPercentage?: number;
+  allowRoles?: Array<SystemRole | WorkspaceRole>;
+  allowPlans?: string[];
+  allowUsers?: string[];
+  allowWorkspaces?: string[];
+  minimumExtensionVersion?: string;
 }
 
 export interface PlanEntitlement {
@@ -110,4 +134,41 @@ export interface AuditEvent {
   requestId?: string;
   traceId?: string;
   metadata?: Record<string, unknown>;
+}
+
+export interface AccessRequirement {
+  permission: ResourceAction;
+  workspaceId?: string;
+  requiredEntitlements?: string[];
+  requiredFlags?: string[];
+  requireSystemRole?: SystemRole;
+  requireWorkspaceRole?: WorkspaceRole;
+  requireOwnership?: boolean;
+}
+
+export interface AccessDecision {
+  allowed: boolean;
+  reasons: string[];
+}
+
+export interface RemoteConfigContext {
+  environment?: string;
+  planCode?: string;
+  workspaceId?: string;
+  userId?: string;
+  extensionVersion?: string;
+  activeFlags?: string[];
+}
+
+export interface RemoteConfigLayer {
+  id: string;
+  scope: RemoteConfigScope;
+  priority: number;
+  conditions?: Record<string, PrimitiveValue | string[]>;
+  values: Record<string, PrimitiveValue | PrimitiveValue[] | Record<string, PrimitiveValue>>;
+}
+
+export interface ResolvedRemoteConfig {
+  values: Record<string, PrimitiveValue | PrimitiveValue[] | Record<string, PrimitiveValue>>;
+  appliedLayerIds: string[];
 }

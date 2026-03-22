@@ -1,4 +1,11 @@
-import { type CompatibilityHandshake, type CompatibilityResult } from '@quizmind/contracts';
+import {
+  type CompatibilityHandshake,
+  type CompatibilityResult,
+  type FeatureFlagDefinition,
+  type RemoteConfigContext,
+  type RemoteConfigLayer,
+  type ResolvedRemoteConfig,
+} from '@quizmind/contracts';
 
 export interface CompatibilityPolicy {
   minimumVersion: string;
@@ -67,5 +74,94 @@ export function evaluateCompatibility(
     minimumVersion: policy.minimumVersion,
     recommendedVersion: policy.recommendedVersion,
     supportedSchemaVersions: policy.supportedSchemaVersions,
+  };
+}
+
+export function resolveFeatureFlags(
+  definitions: FeatureFlagDefinition[],
+  context: {
+    userId?: string;
+    workspaceId?: string;
+    roles?: string[];
+    planCode?: string;
+    extensionVersion?: string;
+  },
+): string[] {
+  return definitions
+    .filter((definition) => definition.status === 'active' && definition.enabled)
+    .filter((definition) => {
+      if (definition.allowUsers) {
+        if (!context.userId || !definition.allowUsers.includes(context.userId)) {
+          return false;
+        }
+      }
+
+      if (definition.allowWorkspaces) {
+        if (!context.workspaceId || !definition.allowWorkspaces.includes(context.workspaceId)) {
+          return false;
+        }
+      }
+
+      if (definition.allowRoles) {
+        if (!context.roles || !definition.allowRoles.some((role) => context.roles?.includes(role))) {
+          return false;
+        }
+      }
+
+      if (definition.allowPlans) {
+        if (!context.planCode || !definition.allowPlans.includes(context.planCode)) {
+          return false;
+        }
+      }
+
+      if (definition.minimumExtensionVersion && context.extensionVersion) {
+        return compareSemver(context.extensionVersion, definition.minimumExtensionVersion) >= 0;
+      }
+
+      return !definition.minimumExtensionVersion;
+    })
+    .map((definition) => definition.key)
+    .sort();
+}
+
+function matchesLayerConditions(layer: RemoteConfigLayer, context: RemoteConfigContext): boolean {
+  if (!layer.conditions) {
+    return true;
+  }
+
+  return Object.entries(layer.conditions).every(([key, expected]) => {
+    const actual = context[key as keyof RemoteConfigContext];
+
+    if (Array.isArray(expected)) {
+      if (Array.isArray(actual)) {
+        return expected.some((value) => actual.includes(String(value)));
+      }
+
+      return expected.includes(String(actual));
+    }
+
+    return actual === expected;
+  });
+}
+
+export function resolveRemoteConfig(
+  layers: RemoteConfigLayer[],
+  context: RemoteConfigContext,
+): ResolvedRemoteConfig {
+  const applied = layers
+    .filter((layer) => matchesLayerConditions(layer, context))
+    .sort((left, right) => left.priority - right.priority);
+
+  const values: ResolvedRemoteConfig['values'] = {};
+
+  for (const layer of applied) {
+    for (const [key, value] of Object.entries(layer.values)) {
+      values[key] = value;
+    }
+  }
+
+  return {
+    values,
+    appliedLayerIds: applied.map((layer) => layer.id),
   };
 }

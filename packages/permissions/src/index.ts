@@ -1,4 +1,13 @@
-import { systemRoles, workspaceRoles, type ResourceAction, type SystemRole, type WorkspaceRole } from '@quizmind/contracts';
+import {
+  systemRoles,
+  workspaceRoles,
+  type AccessContext,
+  type AccessDecision,
+  type AccessRequirement,
+  type ResourceAction,
+  type SystemRole,
+  type WorkspaceRole,
+} from '@quizmind/contracts';
 
 export const permissionRegistry = [
   'users:read',
@@ -77,4 +86,53 @@ export function resolvePermissions(input: {
 
 export function hasPermission(permissions: Permission[], permission: Permission): boolean {
   return permissions.includes(permission);
+}
+
+export function evaluateAccess(context: AccessContext, requirement: AccessRequirement): AccessDecision {
+  const reasons: string[] = [];
+  const workspaceRoles = requirement.workspaceId
+    ? context.workspaceMemberships
+        .filter((membership) => membership.workspaceId === requirement.workspaceId)
+        .map((membership) => membership.role)
+    : [];
+  const permissions = resolvePermissions({
+    systemRoles: context.systemRoles,
+    workspaceRoles,
+  });
+
+  if (!hasPermission(permissions, requirement.permission as Permission)) {
+    reasons.push(`Missing permission: ${requirement.permission}`);
+  }
+
+  if (requirement.requireSystemRole && !context.systemRoles.includes(requirement.requireSystemRole)) {
+    reasons.push(`Missing system role: ${requirement.requireSystemRole}`);
+  }
+
+  if (requirement.requireWorkspaceRole && !workspaceRoles.includes(requirement.requireWorkspaceRole)) {
+    reasons.push(`Missing workspace role: ${requirement.requireWorkspaceRole}`);
+  }
+
+  for (const entitlement of requirement.requiredEntitlements ?? []) {
+    if (!context.entitlements.includes(entitlement)) {
+      reasons.push(`Missing entitlement: ${entitlement}`);
+    }
+  }
+
+  for (const flag of requirement.requiredFlags ?? []) {
+    if (!context.featureFlags.includes(flag)) {
+      reasons.push(`Missing feature flag: ${flag}`);
+    }
+  }
+
+  if (requirement.requireOwnership && requirement.workspaceId) {
+    const ownsWorkspace = context.attributes?.workspaceOwnerId === context.userId;
+    if (!ownsWorkspace) {
+      reasons.push('Ownership check failed.');
+    }
+  }
+
+  return {
+    allowed: reasons.length === 0,
+    reasons,
+  };
 }
