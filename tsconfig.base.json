@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@quizmind/contracts": ["packages/contracts/src"],
+      "@quizmind/config": ["packages/config/src"],
+      "@quizmind/auth": ["packages/auth/src"],
+      "@quizmind/billing": ["packages/billing/src"],
+      "@quizmind/extension": ["packages/extension/src"],
+      "@quizmind/logger": ["packages/logger/src"],
+      "@quizmind/permissions": ["packages/permissions/src"],
+      "@quizmind/ui": ["packages/ui/src"],
+      "@quizmind/database": ["packages/database/src"]
+    }
+  }
+}
