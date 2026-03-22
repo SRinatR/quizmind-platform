@@ -1,4 +1,4 @@
-import { subscriptionStatuses, type PlanDefinition, type PlanEntitlement, type SubscriptionStatus } from '@quizmind/contracts';
+import { subscriptionStatuses, type PlanDefinition, type PlanEntitlement, type SubscriptionStatus, type SubscriptionSummary } from '@quizmind/contracts';
 
 export const billableIntervals = ['monthly', 'yearly'] as const;
 export type BillableInterval = (typeof billableIntervals)[number];
@@ -74,4 +74,28 @@ export function assertSubscriptionStatus(status: string): SubscriptionStatus {
   }
 
   throw new Error(`Unsupported subscription status: ${status}`);
+}
+
+export function buildSubscriptionSummary(input: {
+  workspaceId: string;
+  plan: PlanDefinition;
+  subscription: SubscriptionSnapshot;
+  overrides?: PlanEntitlement[];
+}): SubscriptionSummary {
+  const resolved = resolveEntitlements(input.plan, input.overrides ?? []);
+
+  return {
+    workspaceId: input.workspaceId,
+    planCode: input.plan.code,
+    status: input.subscription.status,
+    seatCount: input.subscription.seats,
+    currentPeriodEnd: input.subscription.trialEndsAt,
+    entitlements: input.plan.entitlements
+      .map((entitlement) => ({
+        ...entitlement,
+        enabled: resolved.enabled.includes(entitlement.key),
+        limit: resolved.limits[entitlement.key] ?? entitlement.limit,
+      }))
+      .sort((left, right) => left.key.localeCompare(right.key)),
+  };
 }

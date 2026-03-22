@@ -69,4 +69,5 @@ docs/
   api-surface.md
   service-composition.md
   remote-config-flow.md
+  billing-flow.md
 ```
