@@ -1,0 +1,11 @@
+{
+  "name": "@quizmind/worker",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "echo 'worker build placeholder'",
+    "dev": "echo 'worker dev placeholder'",
+    "lint": "echo 'worker lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

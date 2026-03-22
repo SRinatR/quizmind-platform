@@ -1,0 +1,11 @@
+{
+  "name": "@quizmind/web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "echo 'web build placeholder'",
+    "dev": "echo 'web dev placeholder'",
+    "lint": "echo 'web lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
