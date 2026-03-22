@@ -70,4 +70,5 @@ docs/
   service-composition.md
   remote-config-flow.md
   billing-flow.md
+  web-app-flow.md
 ```
