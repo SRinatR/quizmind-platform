@@ -29,6 +29,12 @@ Monorepo foundation for the QuizMind control-plane platform.
 - `ui` — shared navigation and future design-system primitives.
 - `database` — schema group ownership and Prisma home.
 
+## Environment examples
+
+- `apps/api/.env.example`
+- `apps/web/.env.example`
+- `apps/worker/.env.example`
+
 ## Workspace commands
 
 ```bash
@@ -59,4 +65,5 @@ docs/
   architecture.md
   foundation-roadmap.md
   control-plane-primitives.md
+  data-model.md
 ```

@@ -1,0 +1,429 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SystemRole {
+  super_admin
+  platform_admin
+  billing_admin
+  support_admin
+  security_admin
+  ops_admin
+  content_admin
+}
+
+enum WorkspaceRole {
+  workspace_owner
+  workspace_admin
+  workspace_billing_manager
+  workspace_security_manager
+  workspace_manager
+  workspace_analyst
+  workspace_member
+  workspace_viewer
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  paused
+  canceled
+  expired
+  incomplete
+  incomplete_expired
+  grace_period
+}
+
+enum FeatureFlagStatus {
+  draft
+  active
+  paused
+  archived
+}
+
+enum RemoteConfigScope {
+  global
+  environment
+  plan
+  workspace
+  user
+  extension_version
+  flag
+}
+
+enum CompatibilityStatus {
+  supported
+  supported_with_warnings
+  deprecated
+  unsupported
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum EventSeverity {
+  debug
+  info
+  warn
+  error
+}
+
+model User {
+  id                   String                @id @default(cuid())
+  email                String                @unique
+  passwordHash         String?
+  emailVerifiedAt      DateTime?
+  displayName          String?
+  avatarUrl            String?
+  timezone             String?
+  locale               String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  accounts             Account[]
+  sessions             Session[]
+  systemRoleAssignments UserSystemRole[]
+  memberships          WorkspaceMembership[]
+  featureFlagOverrides FeatureFlagOverride[]
+  remoteConfigVersions RemoteConfigVersion[] @relation("RemoteConfigPublishedBy")
+  extensionInstallations ExtensionInstallation[]
+  supportTickets       SupportTicket[]       @relation("SupportTicketRequester")
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  revokedAt    DateTime?
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id                   String                  @id @default(cuid())
+  slug                 String                  @unique
+  name                 String
+  billingEmail         String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  memberships          WorkspaceMembership[]
+  invitations          WorkspaceInvite[]
+  subscriptions        Subscription[]
+  entitlementOverrides EntitlementOverride[]
+  featureFlagOverrides FeatureFlagOverride[]
+  remoteConfigVersions RemoteConfigVersion[]
+  extensionInstallations ExtensionInstallation[]
+  auditLogs            AuditLog[]
+  activityLogs         ActivityLog[]
+  securityEvents       SecurityEvent[]
+  domainEvents         DomainEvent[]
+  supportTickets       SupportTicket[]
+}
+
+model WorkspaceMembership {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model WorkspaceInvite {
+  id          String   @id @default(cuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model UserSystemRole {
+  id        String     @id @default(cuid())
+  userId    String
+  role      SystemRole
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+}
+
+model Plan {
+  id              String              @id @default(cuid())
+  code            String              @unique
+  name            String
+  description     String
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  prices          PlanPrice[]
+  entitlements    PlanEntitlement[]
+  subscriptions   Subscription[]
+}
+
+model PlanPrice {
+  id          String   @id @default(cuid())
+  planId       String
+  intervalCode String
+  currency     String
+  amount       Int
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  plan         Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+}
+
+model PlanEntitlement {
+  id        String   @id @default(cuid())
+  planId     String
+  key        String
+  enabled    Boolean
+  limitValue Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  plan       Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, key])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  workspaceId          String
+  planId               String
+  externalId           String?            @unique
+  status               SubscriptionStatus
+  billingInterval      String
+  seatCount            Int                @default(1)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  workspace            Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan                 Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoices             Invoice[]
+  payments             Payment[]
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  subscriptionId  String
+  externalId      String?  @unique
+  amountDue       Int
+  amountPaid      Int      @default(0)
+  currency        String
+  issuedAt        DateTime
+  dueAt           DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  subscriptionId  String
+  externalId      String?  @unique
+  amount          Int
+  currency        String
+  status          String
+  processedAt     DateTime?
+  createdAt       DateTime @default(now())
+  subscription    Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}
+
+model EntitlementOverride {
+  id          String   @id @default(cuid())
+  workspaceId String
+  key         String
+  enabled     Boolean
+  limitValue  Int?
+  reason      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+}
+
+model QuotaCounter {
+  id          String   @id @default(cuid())
+  workspaceId String
+  key         String
+  consumed    Int      @default(0)
+  periodStart DateTime
+  periodEnd   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, key, periodStart, periodEnd])
+}
+
+model FeatureFlag {
+  id                      String                @id @default(cuid())
+  key                     String                @unique
+  description             String
+  status                  FeatureFlagStatus
+  enabled                 Boolean               @default(false)
+  rolloutPercentage       Int?
+  minimumExtensionVersion String?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  overrides               FeatureFlagOverride[]
+}
+
+model FeatureFlagOverride {
+  id            String      @id @default(cuid())
+  featureFlagId String
+  userId        String?
+  workspaceId   String?
+  enabled       Boolean
+  createdAt     DateTime    @default(now())
+  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+  user          User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model RemoteConfigVersion {
+  id             String              @id @default(cuid())
+  workspaceId     String?
+  publishedById   String?
+  versionLabel    String
+  isActive        Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  workspace       Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  publishedBy     User?               @relation("RemoteConfigPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  layers          RemoteConfigLayer[]
+}
+
+model RemoteConfigLayer {
+  id                     String             @id @default(cuid())
+  remoteConfigVersionId  String
+  scope                  RemoteConfigScope
+  priority               Int
+  conditionsJson         Json?
+  valuesJson             Json
+  createdAt              DateTime           @default(now())
+  remoteConfigVersion    RemoteConfigVersion @relation(fields: [remoteConfigVersionId], references: [id], onDelete: Cascade)
+}
+
+model ExtensionCompatibilityRule {
+  id                      String              @id @default(cuid())
+  minimumVersion          String
+  recommendedVersion      String
+  supportedSchemaVersions Json
+  requiredCapabilities    Json?
+  resultStatus            CompatibilityStatus
+  reason                  String?
+  createdAt               DateTime            @default(now())
+}
+
+model ExtensionInstallation {
+  id                 String    @id @default(cuid())
+  userId             String
+  workspaceId        String?
+  installationId     String    @unique
+  browser            String
+  extensionVersion   String
+  schemaVersion      String
+  capabilitiesJson   Json
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  lastSeenAt         DateTime?
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace          Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  telemetry          ExtensionTelemetry[]
+}
+
+model ExtensionTelemetry {
+  id                       String   @id @default(cuid())
+  extensionInstallationId  String
+  eventType                String
+  severity                 EventSeverity
+  payloadJson              Json?
+  createdAt                DateTime @default(now())
+  installation             ExtensionInstallation @relation(fields: [extensionInstallationId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  actorId     String?
+  action      String
+  targetType  String
+  targetId    String
+  metadataJson Json?
+  createdAt   DateTime @default(now())
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  actorId     String?
+  eventType   String
+  metadataJson Json?
+  createdAt   DateTime @default(now())
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+}
+
+model SecurityEvent {
+  id           String   @id @default(cuid())
+  workspaceId  String?
+  actorId      String?
+  eventType    String
+  severity     EventSeverity
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+}
+
+model DomainEvent {
+  id           String   @id @default(cuid())
+  workspaceId  String?
+  eventType    String
+  payloadJson  Json?
+  createdAt    DateTime @default(now())
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+}
+
+model SupportTicket {
+  id           String      @id @default(cuid())
+  workspaceId  String?
+  requesterId  String
+  subject      String
+  body         String
+  status       TicketStatus @default(open)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  workspace    Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  requester    User         @relation("SupportTicketRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+}
