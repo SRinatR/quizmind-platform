@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/database",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'database build placeholder'",
+    "lint": "echo 'database lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
