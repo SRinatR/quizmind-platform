@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/ui",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'ui build placeholder'",
+    "lint": "echo 'ui lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

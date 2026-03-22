@@ -1,0 +1,11 @@
+{
+  "name": "@quizmind/api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "echo 'api build placeholder'",
+    "dev": "echo 'api dev placeholder'",
+    "lint": "echo 'api lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
