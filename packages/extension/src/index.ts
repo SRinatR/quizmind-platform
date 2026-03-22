@@ -1,6 +1,7 @@
 import {
   type CompatibilityHandshake,
   type CompatibilityResult,
+  type ExtensionBootstrapPayload,
   type FeatureFlagDefinition,
   type RemoteConfigContext,
   type RemoteConfigLayer,
@@ -163,5 +164,37 @@ export function resolveRemoteConfig(
   return {
     values,
     appliedLayerIds: applied.map((layer) => layer.id),
+  };
+}
+
+export function buildExtensionBootstrap(input: {
+  handshake: CompatibilityHandshake;
+  compatibilityPolicy: CompatibilityPolicy;
+  flagDefinitions: FeatureFlagDefinition[];
+  remoteConfigLayers: RemoteConfigLayer[];
+  context: RemoteConfigContext & {
+    roles?: string[];
+    planCode?: string;
+  };
+}): ExtensionBootstrapPayload {
+  const compatibility = evaluateCompatibility(input.handshake, input.compatibilityPolicy);
+  const featureFlags = resolveFeatureFlags(input.flagDefinitions, {
+    userId: input.context.userId,
+    workspaceId: input.context.workspaceId,
+    roles: input.context.roles,
+    planCode: input.context.planCode,
+    extensionVersion: input.handshake.extensionVersion,
+  });
+
+  const remoteConfig = resolveRemoteConfig(input.remoteConfigLayers, {
+    ...input.context,
+    activeFlags: featureFlags,
+    extensionVersion: input.handshake.extensionVersion,
+  });
+
+  return {
+    compatibility,
+    featureFlags,
+    remoteConfig,
   };
 }

@@ -66,4 +66,5 @@ docs/
   foundation-roadmap.md
   control-plane-primitives.md
   data-model.md
+  api-surface.md
 ```

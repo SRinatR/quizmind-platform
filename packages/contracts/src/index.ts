@@ -172,3 +172,80 @@ export interface ResolvedRemoteConfig {
   values: Record<string, PrimitiveValue | PrimitiveValue[] | Record<string, PrimitiveValue>>;
   appliedLayerIds: string[];
 }
+
+export interface ApiSuccess<T> {
+  ok: true;
+  data: T;
+}
+
+export interface ApiError {
+  ok: false;
+  error: {
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+  };
+}
+
+export interface AuthLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthSessionPayload {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  user: {
+    id: string;
+    email: string;
+    displayName?: string;
+    systemRoles: SystemRole[];
+  };
+}
+
+export interface WorkspaceSummary {
+  id: string;
+  slug: string;
+  name: string;
+  role: WorkspaceRole;
+}
+
+export interface SubscriptionSummary {
+  workspaceId: string;
+  planCode: string;
+  status: SubscriptionStatus;
+  seatCount: number;
+  currentPeriodEnd?: string;
+  entitlements: PlanEntitlement[];
+}
+
+export interface ExtensionBootstrapRequest {
+  installationId: string;
+  userId: string;
+  workspaceId?: string;
+  environment: string;
+  planCode?: string;
+  handshake: CompatibilityHandshake;
+}
+
+export interface ExtensionBootstrapPayload {
+  compatibility: CompatibilityResult;
+  featureFlags: string[];
+  remoteConfig: ResolvedRemoteConfig;
+}
+
+export interface UsageEventPayload {
+  installationId: string;
+  workspaceId?: string;
+  eventType: string;
+  occurredAt: string;
+  payload: Record<string, unknown>;
+}
+
+export interface ApiRouteDefinition {
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
+  summary: string;
+  permission?: ResourceAction;
+}
