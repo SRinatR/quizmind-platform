@@ -243,6 +243,27 @@ export interface UsageEventPayload {
   payload: Record<string, unknown>;
 }
 
+
+export interface RemoteConfigPublishRequest {
+  versionLabel: string;
+  layers: RemoteConfigLayer[];
+  actorId: string;
+  workspaceId?: string;
+}
+
+export interface RemoteConfigPublishResult {
+  versionLabel: string;
+  appliedLayerCount: number;
+  publishedAt: string;
+  actorId: string;
+  workspaceId?: string;
+}
+
+export interface RemoteConfigPreviewRequest {
+  layers: RemoteConfigLayer[];
+  context: RemoteConfigContext;
+}
+
 export interface ApiRouteDefinition {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;

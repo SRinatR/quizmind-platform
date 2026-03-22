@@ -67,4 +67,6 @@ docs/
   control-plane-primitives.md
   data-model.md
   api-surface.md
+  service-composition.md
+  remote-config-flow.md
 ```
