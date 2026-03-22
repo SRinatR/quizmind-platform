@@ -71,4 +71,5 @@ docs/
   remote-config-flow.md
   billing-flow.md
   web-app-flow.md
+  support-flow.md
 ```

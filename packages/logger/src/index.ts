@@ -16,6 +16,20 @@ export function createLogEvent(event: StructuredLogEvent): StructuredLogEvent {
   };
 }
 
+export function createAuditLogEvent(event: Omit<StructuredLogEvent, 'category'>): StructuredLogEvent {
+  return createLogEvent({
+    ...event,
+    category: 'audit',
+  });
+}
+
+export function createSecurityLogEvent(event: Omit<StructuredLogEvent, 'category'>): StructuredLogEvent {
+  return createLogEvent({
+    ...event,
+    category: 'security',
+  });
+}
+
 export function redactSecrets(payload: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(payload).map(([key, value]) => {

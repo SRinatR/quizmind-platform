@@ -264,6 +264,23 @@ export interface RemoteConfigPreviewRequest {
   context: RemoteConfigContext;
 }
 
+
+export interface SupportImpersonationRequest {
+  supportActorId: string;
+  targetUserId: string;
+  workspaceId?: string;
+  reason: string;
+}
+
+export interface SupportImpersonationResult {
+  impersonationSessionId: string;
+  supportActorId: string;
+  targetUserId: string;
+  workspaceId?: string;
+  reason: string;
+  createdAt: string;
+}
+
 export interface ApiRouteDefinition {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   path: string;
