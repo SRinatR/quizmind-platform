@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'contracts build placeholder'",
+    "lint": "echo 'contracts lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}
