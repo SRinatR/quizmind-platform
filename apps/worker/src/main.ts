@@ -1,7 +1,11 @@
 import 'dotenv/config';
 
 import { Queue } from 'bullmq';
+<<<<<<< codex/add-email-verification-package-h0pece
+import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
+=======
 import { loadWorkerEnv } from '@quizmind/config';
+>>>>>>> main
 import { queueNames } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
 import IORedis from 'ioredis';
@@ -12,6 +16,11 @@ import { resetQuotaCounter } from './jobs/reset-quota-counter';
 
 async function bootstrap() {
   const env = loadWorkerEnv();
+  const envIssues = validateWorkerEnv(env);
+
+  if (envIssues.length > 0) {
+    throw new Error(`Invalid worker environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
+  }
   const startedAt = new Date().toISOString();
   const redisUrl = new URL(env.redisUrl);
   const redisConnectionOptions = {

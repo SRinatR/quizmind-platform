@@ -3,13 +3,18 @@ import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
 import { createLogEvent } from '@quizmind/logger';
-import { loadApiEnv } from '@quizmind/config';
+import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 
 import { AppModule } from './app.module';
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
 
 async function bootstrap() {
   const env = loadApiEnv();
+  const envIssues = validateApiEnv(env);
+
+  if (envIssues.length > 0) {
+    throw new Error(`Invalid API environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
+  }
   const app = await NestFactory.create(AppModule, {
     cors: true,
   });

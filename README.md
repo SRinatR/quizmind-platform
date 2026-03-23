@@ -64,7 +64,7 @@ pnpm build
   Web on `http://localhost:3000`
   PostgreSQL on `localhost:5432`
   Redis on `localhost:6379`
-- Custom host ports can be provided through `.env.docker` based on `.env.docker.example`.
+- Custom host ports can be provided through `.env.docker` based on `.env.docker.example` / `.env.docker` templates.
 - Full Docker runbook: `docs/docker-guide.md`
 
 ## Demo personas
