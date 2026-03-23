@@ -1,7 +1,7 @@
 import { type SessionPrincipal } from '@quizmind/auth';
 import { databaseSchemas } from '@quizmind/database';
+import { listQueueDefinitions } from '@quizmind/queue';
 import {
-  platformQueues,
   type AuthLoginRequest,
   type AuthSessionPayload,
   type WorkspaceSummary,
@@ -247,7 +247,7 @@ export function getFoundationOverview() {
     },
     modules: apiModules,
     routes: apiRoutes,
-    queues: platformQueues,
+    queues: listQueueDefinitions(),
     schemas: databaseSchemas,
     roles: {
       system: allSystemRoles,

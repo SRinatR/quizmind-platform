@@ -6,8 +6,9 @@ import { previewRemoteConfig, publishRemoteConfigVersion } from './services/remo
 import { startSupportImpersonation } from './services/support-service';
 import { loadApiEnv } from '@quizmind/config';
 import { createLogEvent } from '@quizmind/logger';
+import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
+import { buildQueueJob, listQueueDefinitions } from '@quizmind/queue';
 import {
-  platformQueues,
   type AuthLoginRequest,
   type ExtensionBootstrapRequest,
   type RemoteConfigPublishRequest,
@@ -60,7 +61,7 @@ export class PlatformService {
         {
           service: 'queues',
           status: this.env.runtimeMode === 'connected' ? 'ready_for_workers' : 'dry_run',
-          queues: platformQueues,
+          queues: listQueueDefinitions(),
         },
       ],
     };
@@ -69,6 +70,10 @@ export class PlatformService {
   getFoundation() {
     return {
       ...getFoundationOverview(),
+      notifications: {
+        emailProvider: 'noop',
+        templates: ['auth.verify-email', 'auth.password-reset', 'workspace.invitation'],
+      },
       runtime: {
         apiUrl: this.env.apiUrl,
         appUrl: this.env.appUrl,
@@ -77,14 +82,29 @@ export class PlatformService {
     };
   }
 
-  login(request: AuthLoginRequest) {
+  async login(request: AuthLoginRequest) {
     const persona = getPersona(matchPersonaFromLogin(request));
+    const emailReceipt = await sendTemplatedEmail(
+      createNoopEmailAdapter(),
+      verifyEmailTemplate,
+      persona.user.email,
+      {
+        productName: 'QuizMind',
+        displayName: persona.user.displayName,
+        verifyUrl: `${this.env.appUrl}/auth/verify?persona=${persona.key}`,
+        supportEmail: 'support@quizmind.dev',
+      },
+    );
 
     return {
       personaKey: persona.key,
       personaLabel: persona.label,
       notes: persona.notes,
       session: buildAuthSession(persona),
+      emailVerification: {
+        required: true,
+        delivery: emailReceipt,
+      },
     };
   }
 
@@ -203,9 +223,16 @@ export class PlatformService {
       },
     };
 
+    const queueJob = buildQueueJob({
+      queue: 'usage-events',
+      payload: usageEvent,
+      dedupeKey: `${usageEvent.installationId}:${usageEvent.occurredAt}`,
+    });
+
     return {
       queued: true,
-      queue: 'usage-events',
+      queue: queueJob.queue,
+      job: queueJob,
       handler: 'worker.process-usage-event',
       logEvent: createLogEvent({
         eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
