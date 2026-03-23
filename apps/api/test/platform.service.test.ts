@@ -561,6 +561,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession ends an active su
     ({
       id: 'support-session-1',
       reason: 'Debugging workspace access drift.',
+      closeReason: null,
       createdAt: new Date('2026-03-23T12:30:00.000Z'),
       endedAt: null,
       supportActor: {
@@ -586,6 +587,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession ends an active su
     return {
       id: 'support-session-1',
       reason: 'Debugging workspace access drift.',
+      closeReason: input.closeReason ?? null,
       createdAt: new Date('2026-03-23T12:30:00.000Z'),
       endedAt: input.endedAt,
       supportActor: {
@@ -625,6 +627,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession ends an active su
     },
     {
       impersonationSessionId: 'support-session-1',
+      closeReason: 'Resolved after confirming the viewer role and removing stale denial cache.',
     },
   );
 
@@ -634,12 +637,16 @@ test('PlatformService.endSupportImpersonationForCurrentSession ends an active su
   assert.equal(result.reason, 'Debugging workspace access drift.');
   assert.equal(result.createdAt, '2026-03-23T12:30:00.000Z');
   assert.ok(result.endedAt);
+  assert.equal(result.closeReason, 'Resolved after confirming the viewer role and removing stale denial cache.');
   assert.equal(capturedInput.impersonationSessionId, 'support-session-1');
   assert.equal(capturedInput.auditLog.eventType, 'support.impersonation_ended');
   assert.equal(capturedInput.securityLog.eventType, 'security.impersonation_ended');
   assert.equal(capturedInput.auditLog.actorId, 'support_1');
   assert.equal(capturedInput.securityLog.actorId, 'support_1');
+  assert.equal(capturedInput.closeReason, 'Resolved after confirming the viewer role and removing stale denial cache.');
   assert.equal(capturedInput.endedAt.toISOString(), result.endedAt);
+  assert.equal(capturedInput.auditLog.metadata?.closeReason, 'Resolved after confirming the viewer role and removing stale denial cache.');
+  assert.equal(capturedInput.securityLog.metadata?.closeReason, 'Resolved after confirming the viewer role and removing stale denial cache.');
 });
 
 test('PlatformService.endSupportImpersonationForCurrentSession is idempotent for already-ended sessions', async () => {
@@ -650,6 +657,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession is idempotent for
     ({
       id: 'support-session-1',
       reason: 'Already closed support session.',
+      closeReason: 'Operator wrapped up the follow-up earlier.',
       createdAt: new Date('2026-03-23T12:30:00.000Z'),
       endedAt: new Date('2026-03-23T12:45:00.000Z'),
       supportActor: {
@@ -698,6 +706,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession is idempotent for
 
   assert.equal(result.impersonationSessionId, 'support-session-1');
   assert.equal(result.endedAt, '2026-03-23T12:45:00.000Z');
+  assert.equal(result.closeReason, 'Operator wrapped up the follow-up earlier.');
   assert.equal(endCalls, 0);
 });
 
@@ -718,11 +727,17 @@ test('PlatformService.listSupportTicketsForCurrentSession maps persisted support
           email: 'viewer@quizmind.dev',
           displayName: 'Noah Viewer',
         },
+        assignedTo: {
+          id: 'support_1',
+          email: 'support@quizmind.dev',
+          displayName: 'Mila Support',
+        },
         workspace: {
           id: 'ws_1',
           slug: 'demo-workspace',
           name: 'Demo Workspace',
         },
+        handoffNote: 'Support is already verifying the billing access path.',
       },
     ] as any;
 
@@ -758,13 +773,109 @@ test('PlatformService.listSupportTicketsForCurrentSession maps persisted support
         email: 'viewer@quizmind.dev',
         displayName: 'Noah Viewer',
       },
+      assignedTo: {
+        id: 'support_1',
+        email: 'support@quizmind.dev',
+        displayName: 'Mila Support',
+      },
       workspace: {
         id: 'ws_1',
         slug: 'demo-workspace',
         name: 'Demo Workspace',
       },
+      handoffNote: 'Support is already verifying the billing access path.',
     },
   ]);
+});
+
+test('PlatformService.updateSupportTicketForCurrentSession persists ticket ownership, status, and handoff note', async () => {
+  const { service, supportTicketRepository } = createPlatformService();
+  let capturedInput: any = null;
+
+  supportTicketRepository.findById = async () =>
+    ({
+      id: 'ticket-1',
+      subject: 'Viewer cannot access billing settings',
+      body: 'The viewer is blocked from the billing settings page.',
+      status: 'open',
+      createdAt: new Date('2026-03-23T11:30:00.000Z'),
+      updatedAt: new Date('2026-03-23T11:45:00.000Z'),
+      requester: {
+        id: 'user_2',
+        email: 'viewer@quizmind.dev',
+        displayName: 'Noah Viewer',
+      },
+      assignedTo: null,
+      workspace: {
+        id: 'ws_1',
+        slug: 'demo-workspace',
+        name: 'Demo Workspace',
+      },
+      handoffNote: null,
+    }) as any;
+
+  supportTicketRepository.updateWorkflow = async (input) => {
+    capturedInput = input;
+
+    return {
+      id: 'ticket-1',
+      subject: 'Viewer cannot access billing settings',
+      body: 'The viewer is blocked from the billing settings page.',
+      status: input.status,
+      createdAt: new Date('2026-03-23T11:30:00.000Z'),
+      updatedAt: new Date('2026-03-23T12:05:00.000Z'),
+      requester: {
+        id: 'user_2',
+        email: 'viewer@quizmind.dev',
+        displayName: 'Noah Viewer',
+      },
+      assignedTo: {
+        id: input.assignedToUserId,
+        email: 'support@quizmind.dev',
+        displayName: 'Mila Support',
+      },
+      workspace: {
+        id: 'ws_1',
+        slug: 'demo-workspace',
+        name: 'Demo Workspace',
+      },
+      handoffNote: input.handoffNote,
+    } as any;
+  };
+
+  const result = await service.updateSupportTicketForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      user: {
+        id: 'support_1',
+        email: 'support@quizmind.dev',
+        displayName: 'Mila Support',
+        emailVerifiedAt: '2026-03-23T08:00:00.000Z',
+      },
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        userId: 'support_1',
+        email: 'support@quizmind.dev',
+        systemRoles: ['support_admin'],
+      },
+      permissions: ['support:impersonate', 'workspaces:read'],
+    },
+    {
+      supportTicketId: 'ticket-1',
+      status: 'in_progress',
+      assignedToUserId: 'support_1',
+      handoffNote: 'Claimed during unit coverage while validating the billing access complaint.',
+    },
+  );
+
+  assert.equal(result.id, 'ticket-1');
+  assert.equal(result.status, 'in_progress');
+  assert.equal(result.assignedTo?.id, 'support_1');
+  assert.equal(result.handoffNote, 'Claimed during unit coverage while validating the billing access complaint.');
+  assert.equal(capturedInput.supportTicketId, 'ticket-1');
+  assert.equal(capturedInput.status, 'in_progress');
+  assert.equal(capturedInput.assignedToUserId, 'support_1');
+  assert.equal(capturedInput.handoffNote, 'Claimed during unit coverage while validating the billing access complaint.');
 });
 
 test('PlatformService.listSupportImpersonationSessionsForCurrentSession maps persisted support sessions for support admins', async () => {
@@ -775,6 +886,7 @@ test('PlatformService.listSupportImpersonationSessionsForCurrentSession maps per
       {
         id: 'support-session-1',
         reason: 'Investigating billing access drift.',
+        closeReason: null,
         createdAt: new Date('2026-03-23T12:30:00.000Z'),
         endedAt: null,
         supportActor: {
@@ -866,6 +978,23 @@ test('PlatformService.listSupportTicketsForCurrentSession denies principals with
   );
 });
 
+test('PlatformService.updateSupportTicketForCurrentSession denies principals without support impersonation permission', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.updateSupportTicketForCurrentSession(createConnectedSessionSnapshot(), {
+        supportTicketId: 'ticket-1',
+        status: 'in_progress',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: support:impersonate/);
+      return true;
+    },
+  );
+});
+
 test('PlatformService.startSupportImpersonationForCurrentSession denies principals without support impersonation permission', async () => {
   const { service } = createPlatformService();
 
@@ -945,6 +1074,32 @@ test('PlatformService.endSupportImpersonationForCurrentSession requires an imper
     (error: unknown) => {
       assert.ok(error instanceof BadRequestException);
       assert.match((error as Error).message, /Impersonation session is required/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.updateSupportTicketForCurrentSession requires a support ticket id', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.updateSupportTicketForCurrentSession(
+        {
+          ...createConnectedSessionSnapshot(),
+          principal: {
+            ...createConnectedSessionSnapshot().principal,
+            systemRoles: ['support_admin'],
+          },
+          permissions: ['support:impersonate'],
+        },
+        {
+          status: 'in_progress',
+        },
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof BadRequestException);
+      assert.match((error as Error).message, /Support ticket is required/);
       return true;
     },
   );

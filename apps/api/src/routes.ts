@@ -106,8 +106,14 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
+    path: '/support/tickets/update',
+    summary: 'Assign a support ticket, update workflow status, and save handoff metadata.',
+    permission: 'support:impersonate',
+  },
+  {
+    method: 'POST',
     path: '/support/impersonation/end',
-    summary: 'End an active support impersonation session and emit audit + security logs.',
+    summary: 'End an active support impersonation session, persist an optional close reason, and emit audit + security logs.',
     permission: 'support:impersonate',
   },
 ] as const;

@@ -91,6 +91,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               {supportTickets ? (
                 <SupportTicketsClient
                   canStartSupportSessions={canManageSupportSessions}
+                  currentUserId={session.user.id}
                   isConnectedSession={isConnectedSession}
                   items={supportTickets.items}
                 />

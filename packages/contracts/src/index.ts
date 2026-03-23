@@ -357,6 +357,13 @@ export interface SupportTicketReference {
   status: TicketStatus;
 }
 
+export interface SupportTicketWorkflowUpdateRequest {
+  supportTicketId: string;
+  status?: TicketStatus;
+  assignedToUserId?: string | null;
+  handoffNote?: string | null;
+}
+
 export interface SupportImpersonationResult {
   impersonationSessionId: string;
   supportActorId: string;
@@ -370,6 +377,7 @@ export interface SupportImpersonationResult {
 
 export interface SupportImpersonationEndRequest {
   impersonationSessionId: string;
+  closeReason?: string;
 }
 
 export interface SupportImpersonationEndResult {
@@ -381,6 +389,7 @@ export interface SupportImpersonationEndResult {
   endedAt: string;
   supportTicket?: SupportTicketReference;
   operatorNote?: string;
+  closeReason?: string;
 }
 
 export interface SupportImpersonationActor {
@@ -405,6 +414,7 @@ export interface SupportImpersonationSessionSnapshot {
   endedAt?: string | null;
   supportTicket?: SupportTicketReference;
   operatorNote?: string;
+  closeReason?: string;
 }
 
 export interface SupportImpersonationHistorySnapshot {
@@ -422,7 +432,9 @@ export interface SupportTicketQueueEntry {
   createdAt: string;
   updatedAt: string;
   requester: SupportImpersonationActor;
+  assignedTo?: SupportImpersonationActor;
   workspace?: SupportImpersonationWorkspace;
+  handoffNote?: string;
 }
 
 export interface SupportTicketQueueSnapshot {
@@ -431,6 +443,8 @@ export interface SupportTicketQueueSnapshot {
   items: SupportTicketQueueEntry[];
   permissions: string[];
 }
+
+export interface SupportTicketWorkflowUpdateResult extends SupportTicketQueueEntry {}
 
 export interface ApiRouteDefinition {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';

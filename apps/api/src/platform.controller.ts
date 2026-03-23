@@ -6,6 +6,7 @@ import {
   type RemoteConfigPublishRequest,
   type SupportImpersonationEndRequest,
   type SupportImpersonationRequest,
+  type SupportTicketWorkflowUpdateRequest,
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
@@ -175,6 +176,22 @@ export class PlatformController {
     const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.startSupportImpersonationForCurrentSession(session, request));
+  }
+
+  @Post('support/tickets/update')
+  async updateSupportTicket(
+    @Body() request?: Partial<SupportTicketWorkflowUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const accessToken = parseBearerToken(authorization);
+
+    if (!accessToken) {
+      return ok(this.platformService.updateSupportTicket(request));
+    }
+
+    const session = await this.authService.getCurrentSession(accessToken);
+
+    return ok(await this.platformService.updateSupportTicketForCurrentSession(session, request));
   }
 
   @Post('support/impersonation/end')

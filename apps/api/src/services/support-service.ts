@@ -87,6 +87,7 @@ export function endSupportImpersonation(input: {
   targetUserId: string;
   workspaceId?: string;
   reason: string;
+  closeReason?: string;
 }): {
   endedAt: string;
   auditLog: ReturnType<typeof createAuditLogEvent>;
@@ -110,6 +111,7 @@ export function endSupportImpersonation(input: {
       metadata: {
         impersonationSessionId: input.impersonationSessionId,
         reason: input.reason,
+        ...(input.closeReason ? { closeReason: input.closeReason } : {}),
       },
     }),
     securityLog: createSecurityLogEvent({
@@ -126,6 +128,7 @@ export function endSupportImpersonation(input: {
       metadata: {
         impersonationSessionId: input.impersonationSessionId,
         reason: input.reason,
+        ...(input.closeReason ? { closeReason: input.closeReason } : {}),
       },
     }),
   };
@@ -168,6 +171,7 @@ export function mapSupportImpersonationRecordToSnapshot(
     createdAt: record.createdAt.toISOString(),
     endedAt: record.endedAt?.toISOString() ?? null,
     ...(record.operatorNote ? { operatorNote: record.operatorNote } : {}),
+    ...(record.closeReason ? { closeReason: record.closeReason } : {}),
   };
 }
 
@@ -191,6 +195,7 @@ export function mapSupportImpersonationRecordToEndResult(
         }
       : {}),
     ...(record.operatorNote ? { operatorNote: record.operatorNote } : {}),
+    ...(record.closeReason ? { closeReason: record.closeReason } : {}),
   };
 }
 
@@ -207,6 +212,15 @@ export function mapSupportTicketRecordToSnapshot(record: RecentSupportTicketReco
       email: record.requester.email,
       ...(record.requester.displayName ? { displayName: record.requester.displayName } : {}),
     },
+    ...(record.assignedTo
+      ? {
+          assignedTo: {
+            id: record.assignedTo.id,
+            email: record.assignedTo.email,
+            ...(record.assignedTo.displayName ? { displayName: record.assignedTo.displayName } : {}),
+          },
+        }
+      : {}),
     ...(record.workspace
       ? {
           workspace: {
@@ -216,6 +230,7 @@ export function mapSupportTicketRecordToSnapshot(record: RecentSupportTicketReco
           },
         }
       : {}),
+    ...(record.handoffNote ? { handoffNote: record.handoffNote } : {}),
   };
 }
 

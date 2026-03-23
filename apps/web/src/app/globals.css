@@ -1160,6 +1160,50 @@ a {
   gap: 12px;
 }
 
+.admin-ticket-editor {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(31, 41, 51, 0.08);
+}
+
+.admin-ticket-field {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-ticket-field select,
+.admin-ticket-field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.admin-ticket-field textarea {
+  resize: vertical;
+  min-height: 92px;
+}
+
+.admin-ticket-field select:focus,
+.admin-ticket-field textarea:focus {
+  outline: none;
+  border-color: rgba(184, 92, 56, 0.42);
+  box-shadow: 0 0 0 4px rgba(184, 92, 56, 0.12);
+  transform: translateY(-1px);
+}
+
+.admin-ticket-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .admin-directory-result {
   display: grid;
   gap: 8px;

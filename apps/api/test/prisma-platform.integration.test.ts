@@ -1301,6 +1301,161 @@ test('Prisma-backed support ticket queue returns recent open tickets for support
   assert.equal(createdTicket?.status, 'open');
 });
 
+test('Prisma-backed support ticket workflow update persists ownership, handoff notes, and queue transitions', async (t) => {
+  const harness = await createIntegrationHarness(t);
+
+  if (!harness) {
+    return;
+  }
+
+  const requesterEmail = `ticket-workflow-requester-${harness.uniqueId}@quizmind.dev`;
+  const supportEmail = `ticket-workflow-support-${harness.uniqueId}@quizmind.dev`;
+  let requesterId: string | null = null;
+  let supportUserId: string | null = null;
+  let workspaceId: string | null = null;
+  let supportTicketId: string | null = null;
+
+  t.after(async () => {
+    if (supportTicketId) {
+      await harness.prisma.supportTicket.delete({ where: { id: supportTicketId } }).catch(() => undefined);
+    }
+
+    if (supportUserId) {
+      await harness.prisma.user.delete({ where: { id: supportUserId } }).catch(() => undefined);
+    }
+
+    if (requesterId) {
+      await harness.prisma.user.delete({ where: { id: requesterId } }).catch(() => undefined);
+    }
+
+    if (workspaceId) {
+      await harness.prisma.workspace.delete({ where: { id: workspaceId } }).catch(() => undefined);
+    }
+
+    await harness.disconnect();
+  });
+
+  const workspace = await harness.prisma.workspace.create({
+    data: {
+      slug: `support-ticket-workflow-${harness.uniqueId}`,
+      name: 'Support Ticket Workflow Workspace',
+    },
+  });
+
+  workspaceId = workspace.id;
+
+  const requester = await harness.prisma.user.create({
+    data: {
+      email: requesterEmail,
+      displayName: 'Workflow Requester',
+      passwordHash: 'integration-password-hash',
+      emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
+    },
+  });
+
+  requesterId = requester.id;
+
+  const supportUser = await harness.prisma.user.create({
+    data: {
+      email: supportEmail,
+      displayName: 'Workflow Support Admin',
+      passwordHash: 'integration-password-hash',
+      emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
+      systemRoleAssignments: {
+        create: {
+          role: 'support_admin',
+        },
+      },
+    },
+  });
+
+  supportUserId = supportUser.id;
+
+  const supportTicket = await harness.prisma.supportTicket.create({
+    data: {
+      workspaceId,
+      requesterId,
+      subject: `Ticket ${harness.uniqueId}: workflow ownership validation`,
+      body: 'Requester needs a support operator to claim and resolve the ticket.',
+      status: 'open',
+    },
+  });
+
+  supportTicketId = supportTicket.id;
+
+  const snapshot = await createSessionSnapshotForUser(harness, {
+    email: supportEmail,
+    userId: supportUserId,
+    roles: ['support_admin'],
+  });
+
+  const claimed = await harness.platformService.updateSupportTicketForCurrentSession(snapshot, {
+    supportTicketId,
+    status: 'in_progress',
+    assignedToUserId: supportUserId,
+    handoffNote: 'Claimed during integration coverage and waiting on billing-screen screenshots.',
+  });
+
+  assert.equal(claimed.id, supportTicketId);
+  assert.equal(claimed.status, 'in_progress');
+  assert.equal(claimed.assignedTo?.id, supportUserId);
+  assert.equal(
+    claimed.handoffNote,
+    'Claimed during integration coverage and waiting on billing-screen screenshots.',
+  );
+
+  const persistedClaimedTicket = await harness.prisma.supportTicket.findUnique({
+    where: {
+      id: supportTicketId,
+    },
+  });
+
+  assert.equal(persistedClaimedTicket?.status, 'in_progress');
+  assert.equal(persistedClaimedTicket?.assignedToId, supportUserId);
+  assert.equal(
+    persistedClaimedTicket?.handoffNote,
+    'Claimed during integration coverage and waiting on billing-screen screenshots.',
+  );
+
+  const queueAfterClaim = await harness.platformService.listSupportTicketsForCurrentSession(snapshot);
+  const claimedTicketInQueue = queueAfterClaim.items.find((item) => item.id === supportTicketId);
+
+  assert.ok(claimedTicketInQueue);
+  assert.equal(claimedTicketInQueue?.assignedTo?.id, supportUserId);
+  assert.equal(
+    claimedTicketInQueue?.handoffNote,
+    'Claimed during integration coverage and waiting on billing-screen screenshots.',
+  );
+
+  const resolved = await harness.platformService.updateSupportTicketForCurrentSession(snapshot, {
+    supportTicketId,
+    status: 'resolved',
+    handoffNote: 'Resolved after confirming the requester had the correct workspace role.',
+  });
+
+  assert.equal(resolved.status, 'resolved');
+  assert.equal(
+    resolved.handoffNote,
+    'Resolved after confirming the requester had the correct workspace role.',
+  );
+
+  const persistedResolvedTicket = await harness.prisma.supportTicket.findUnique({
+    where: {
+      id: supportTicketId,
+    },
+  });
+
+  assert.equal(persistedResolvedTicket?.status, 'resolved');
+  assert.equal(
+    persistedResolvedTicket?.handoffNote,
+    'Resolved after confirming the requester had the correct workspace role.',
+  );
+
+  const queueAfterResolve = await harness.platformService.listSupportTicketsForCurrentSession(snapshot);
+
+  assert.equal(queueAfterResolve.items.some((item) => item.id === supportTicketId), false);
+});
+
 test('Prisma-backed support impersonation can end an active session and persist termination logs', async (t) => {
   const harness = await createIntegrationHarness(t);
 
@@ -1447,6 +1602,7 @@ test('Prisma-backed support impersonation can end an active session and persist 
 
   const ended = await harness.platformService.endSupportImpersonationForCurrentSession(snapshot, {
     impersonationSessionId,
+    closeReason: 'Closed after reproducing the issue, validating the fix, and replying to the requester.',
   });
 
   const persistedSession = await harness.prisma.supportImpersonationSession.findUnique({
@@ -1486,15 +1642,31 @@ test('Prisma-backed support impersonation can end an active session and persist 
   assert.equal(ended.endedAt, persistedSession?.endedAt?.toISOString());
   assert.equal(ended.supportTicket?.id, supportTicketId);
   assert.equal(ended.operatorNote, 'Operator confirmed ticket context before starting the session.');
+  assert.equal(
+    ended.closeReason,
+    'Closed after reproducing the issue, validating the fix, and replying to the requester.',
+  );
+  assert.equal(
+    persistedSession?.closeReason,
+    'Closed after reproducing the issue, validating the fix, and replying to the requester.',
+  );
   assert.ok(persistedAuditLog);
   assert.equal(
     (persistedAuditLog?.metadataJson as Record<string, unknown> | null)?.impersonationSessionId,
     impersonationSessionId,
   );
+  assert.equal(
+    (persistedAuditLog?.metadataJson as Record<string, unknown> | null)?.closeReason,
+    'Closed after reproducing the issue, validating the fix, and replying to the requester.',
+  );
   assert.ok(persistedSecurityEvent);
   assert.equal(
     (persistedSecurityEvent?.metadataJson as Record<string, unknown> | null)?.impersonationSessionId,
     impersonationSessionId,
+  );
+  assert.equal(
+    (persistedSecurityEvent?.metadataJson as Record<string, unknown> | null)?.closeReason,
+    'Closed after reproducing the issue, validating the fix, and replying to the requester.',
   );
 
   const history = await harness.platformService.listSupportImpersonationSessionsForCurrentSession(snapshot);
@@ -1504,6 +1676,10 @@ test('Prisma-backed support impersonation can end an active session and persist 
   assert.equal(endedHistoryItem?.endedAt, ended.endedAt);
   assert.equal(endedHistoryItem?.supportTicket?.id, supportTicketId);
   assert.equal(endedHistoryItem?.operatorNote, 'Operator confirmed ticket context before starting the session.');
+  assert.equal(
+    endedHistoryItem?.closeReason,
+    'Closed after reproducing the issue, validating the fix, and replying to the requester.',
+  );
 });
 
 test('Prisma-backed support impersonation denies users without support permission', async (t) => {

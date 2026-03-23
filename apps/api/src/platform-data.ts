@@ -245,6 +245,7 @@ export function listFoundationUsers(): AdminUserDirectoryEntry[] {
 export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
   const viewerPersona = getPersona('workspace-viewer');
   const platformPersona = getPersona('platform-admin');
+  const supportPersona = getPersona('support-admin');
   const workspace = getWorkspaceSummary('ws_alpha');
 
   return [
@@ -283,6 +284,12 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
         slug: workspace.slug,
         name: workspace.name,
       },
+      assignedTo: {
+        id: supportPersona.user.id,
+        email: supportPersona.user.email,
+        displayName: supportPersona.user.displayName,
+      },
+      handoffNote: 'Already picked up by support. Waiting on final plan-comparison notes before resolving.',
     },
   ];
 }

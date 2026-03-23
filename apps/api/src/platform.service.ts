@@ -17,6 +17,8 @@ import {
   type SupportImpersonationRequest,
   type SupportImpersonationSessionSnapshot,
   type SupportTicketQueueSnapshot,
+  type SupportTicketWorkflowUpdateRequest,
+  type SupportTicketWorkflowUpdateResult,
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
@@ -594,6 +596,108 @@ export class PlatformService {
     });
   }
 
+  updateSupportTicket(request?: Partial<SupportTicketWorkflowUpdateRequest>): SupportTicketWorkflowUpdateResult {
+    const fallbackTicket =
+      listFoundationSupportTickets().find((ticket) => ticket.id === request?.supportTicketId?.trim()) ??
+      listFoundationSupportTickets()[0];
+
+    if (!fallbackTicket) {
+      throw new NotFoundException('Support ticket not found.');
+    }
+
+    const supportPersona = getPersona('support-admin');
+    const normalizedAssignedToUserId =
+      request?.assignedToUserId === undefined
+        ? fallbackTicket.assignedTo?.id
+        : request.assignedToUserId?.trim() || null;
+    const normalizedHandoffNote =
+      request?.handoffNote === undefined
+        ? fallbackTicket.handoffNote
+        : request.handoffNote?.trim() || undefined;
+
+    return {
+      ...fallbackTicket,
+      status: request?.status ?? fallbackTicket.status,
+      updatedAt: new Date().toISOString(),
+      ...(normalizedAssignedToUserId
+        ? {
+            assignedTo: {
+              id: normalizedAssignedToUserId,
+              email: supportPersona.user.email,
+              displayName: supportPersona.user.displayName,
+            },
+          }
+        : {}),
+      ...(normalizedHandoffNote ? { handoffNote: normalizedHandoffNote } : {}),
+    };
+  }
+
+  async updateSupportTicketForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<SupportTicketWorkflowUpdateRequest>,
+  ): Promise<SupportTicketWorkflowUpdateResult> {
+    const accessDecision = canReadSupportTickets(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const supportTicketId = request?.supportTicketId?.trim();
+
+    if (!supportTicketId) {
+      throw new BadRequestException('Support ticket is required.');
+    }
+
+    const existingTicket = await this.supportTicketRepository.findById(supportTicketId);
+
+    if (!existingTicket) {
+      throw new NotFoundException('Support ticket not found.');
+    }
+
+    const normalizedStatus = request?.status;
+    const normalizedAssignedToUserId =
+      request && 'assignedToUserId' in request
+        ? request.assignedToUserId?.trim() || null
+        : undefined;
+    const normalizedHandoffNote =
+      request && 'handoffNote' in request
+        ? request.handoffNote?.trim() || null
+        : undefined;
+    const effectiveAssignedToUserId =
+      normalizedAssignedToUserId === undefined && normalizedStatus === 'in_progress' && !existingTicket.assignedTo
+        ? session.user.id
+        : normalizedAssignedToUserId;
+
+    if (
+      normalizedStatus === undefined &&
+      effectiveAssignedToUserId === undefined &&
+      normalizedHandoffNote === undefined
+    ) {
+      return mapSupportTicketRecordToSnapshot(existingTicket);
+    }
+
+    try {
+      const updatedTicket = await this.supportTicketRepository.updateWorkflow({
+        supportTicketId,
+        ...(normalizedStatus ? { status: normalizedStatus } : {}),
+        ...(effectiveAssignedToUserId !== undefined ? { assignedToUserId: effectiveAssignedToUserId } : {}),
+        ...(normalizedHandoffNote !== undefined ? { handoffNote: normalizedHandoffNote } : {}),
+      });
+
+      return mapSupportTicketRecordToSnapshot(updatedTicket);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new NotFoundException('Assigned support operator not found for support ticket ownership.');
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Support ticket not found.');
+      }
+
+      throw error;
+    }
+  }
+
   startSupportImpersonation(request?: Partial<SupportImpersonationRequest>) {
     return startSupportImpersonation({
       supportActorId: request?.supportActorId ?? getPersona('support-admin').user.id,
@@ -658,6 +762,7 @@ export class PlatformService {
     const supportPersona = getPersona('support-admin');
     const targetPersona = getPersona('workspace-viewer');
     const impersonationSessionId = request?.impersonationSessionId?.trim() || 'support-demo-session-1';
+    const closeReason = request?.closeReason?.trim() || undefined;
     const createdAt = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const completion = buildSupportImpersonationEnd({
       impersonationSessionId,
@@ -665,6 +770,7 @@ export class PlatformService {
       targetUserId: targetPersona.user.id,
       workspaceId: supportPersona.preferredWorkspaceId,
       reason: 'Investigating why a viewer lost access to workspace billing pages.',
+      closeReason,
     });
 
     return {
@@ -674,6 +780,7 @@ export class PlatformService {
       reason: 'Investigating why a viewer lost access to workspace billing pages.',
       createdAt,
       endedAt: completion.endedAt,
+      ...(closeReason ? { closeReason } : {}),
     };
   }
 
@@ -703,17 +810,21 @@ export class PlatformService {
       return mapSupportImpersonationRecordToEndResult(existingSession);
     }
 
+    const closeReason = request?.closeReason?.trim() || undefined;
+
     const completion = buildSupportImpersonationEnd({
       impersonationSessionId: existingSession.id,
       endedById: session.user.id,
       targetUserId: existingSession.targetUser.id,
       workspaceId: existingSession.workspace?.id,
       reason: existingSession.reason,
+      closeReason,
     });
 
     const endedSession = await this.supportImpersonationRepository.endSessionWithLogs({
       impersonationSessionId: existingSession.id,
       endedAt: new Date(completion.endedAt),
+      closeReason,
       auditLog: completion.auditLog,
       securityLog: completion.securityLog,
     });

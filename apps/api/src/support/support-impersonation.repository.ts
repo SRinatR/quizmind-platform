@@ -55,6 +55,7 @@ interface CreateSupportImpersonationSessionInput {
 interface EndSupportImpersonationSessionInput {
   impersonationSessionId: string;
   endedAt: Date;
+  closeReason?: string;
   auditLog: StructuredLogEvent;
   securityLog: StructuredLogEvent;
 }
@@ -156,6 +157,7 @@ export class SupportImpersonationRepository {
         },
         data: {
           endedAt: input.endedAt,
+          closeReason: input.closeReason ?? null,
         },
         include: recentSupportImpersonationSessionInclude,
       });

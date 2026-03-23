@@ -102,6 +102,7 @@ model User {
   remoteConfigVersions   RemoteConfigVersion[]   @relation("RemoteConfigPublishedBy")
   extensionInstallations ExtensionInstallation[]
   supportTickets         SupportTicket[]         @relation("SupportTicketRequester")
+  assignedSupportTickets SupportTicket[]         @relation("SupportTicketAssignee")
   supportImpersonationSessionsStarted SupportImpersonationSession[] @relation("SupportImpersonationActor")
   supportImpersonationSessionsTargeted SupportImpersonationSession[] @relation("SupportImpersonationTarget")
 }
@@ -449,14 +450,20 @@ model SupportTicket {
   id          String       @id @default(cuid())
   workspaceId String?
   requesterId String
+  assignedToId String?
   subject     String
   body        String
   status      TicketStatus @default(open)
+  handoffNote String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   workspace   Workspace?   @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   requester   User         @relation("SupportTicketRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  assignedTo  User?        @relation("SupportTicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   impersonationSessions SupportImpersonationSession[]
+
+  @@index([status, updatedAt])
+  @@index([assignedToId, updatedAt])
 }
 
 model SupportImpersonationSession {
@@ -467,6 +474,7 @@ model SupportImpersonationSession {
   supportTicketId String?
   reason         String
   operatorNote   String?
+  closeReason    String?
   createdAt      DateTime   @default(now())
   endedAt        DateTime?
   supportTicket  SupportTicket? @relation(fields: [supportTicketId], references: [id], onDelete: SetNull)

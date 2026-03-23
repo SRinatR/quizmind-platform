@@ -42,11 +42,13 @@ export function UsersDirectoryClient({
 }: UsersDirectoryClientProps) {
   const router = useRouter();
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
+  const [draftReasons, setDraftReasons] = useState<Record<string, string>>({});
+  const [draftOperatorNotes, setDraftOperatorNotes] = useState<Record<string, string>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(
     isConnectedSession
       ? canStartSupportSessions
-        ? 'Start a support session from any user row to open a persisted impersonation record.'
+        ? 'Start a support session from any user row and tailor the launch reason plus operator context before it is persisted.'
         : 'This connected session can read the directory but cannot start support sessions.'
       : 'Persona preview is read-only. Sign in with a connected support-capable account to start support sessions.',
   );
@@ -54,11 +56,35 @@ export function UsersDirectoryClient({
   const [lastStartedUser, setLastStartedUser] = useState<DirectoryUser | null>(null);
   const [, startRefresh] = useTransition();
 
-  async function handleStartSupportSession(user: DirectoryUser) {
+  function buildDefaultReason(user: DirectoryUser) {
     const primaryWorkspace = user.workspaces[0];
-    const reason = primaryWorkspace
+
+    return primaryWorkspace
       ? `Support follow-up from /admin/users for ${user.email} in ${primaryWorkspace.workspaceName}.`
       : `Support follow-up from /admin/users for ${user.email}.`;
+  }
+
+  function getDraftReason(user: DirectoryUser) {
+    return draftReasons[user.id] ?? buildDefaultReason(user);
+  }
+
+  function getDraftOperatorNote(user: DirectoryUser) {
+    return (
+      draftOperatorNotes[user.id] ??
+      'Started from the admin user directory without a linked support ticket.'
+    );
+  }
+
+  async function handleStartSupportSession(user: DirectoryUser) {
+    const primaryWorkspace = user.workspaces[0];
+    const reason = getDraftReason(user).trim();
+    const operatorNote = getDraftOperatorNote(user).trim() || undefined;
+
+    if (!reason) {
+      setErrorMessage('Support session reason is required before launch.');
+      setStatusMessage(null);
+      return;
+    }
 
     setActiveUserId(user.id);
     setErrorMessage(null);
@@ -75,7 +101,7 @@ export function UsersDirectoryClient({
         body: JSON.stringify({
           targetUserId: user.id,
           reason,
-          operatorNote: 'Started from the admin user directory without a linked support ticket.',
+          ...(operatorNote ? { operatorNote } : {}),
           ...(primaryWorkspace ? { workspaceId: primaryWorkspace.workspaceId } : {}),
         }),
       });
@@ -161,18 +187,50 @@ export function UsersDirectoryClient({
                   <span className="list-muted">default support scope: user-level session without workspace.</span>
                 )}
                 {canStartForUser ? (
-                  <div className="admin-user-actions">
-                    <button
-                      className="btn-primary"
-                      disabled={activeUserId === user.id}
-                      onClick={() => void handleStartSupportSession(user)}
-                      type="button"
-                    >
-                      {activeUserId === user.id ? 'Starting support session...' : 'Start support session'}
-                    </button>
-                    <Link className="btn-ghost" href="/admin/support">
-                      View support history
-                    </Link>
+                  <div className="admin-ticket-editor">
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Session reason</span>
+                      <textarea
+                        disabled={activeUserId === user.id}
+                        onChange={(event) => {
+                          setDraftReasons((current) => ({
+                            ...current,
+                            [user.id]: event.target.value,
+                          }));
+                        }}
+                        placeholder="Explain why this support session is being opened."
+                        rows={3}
+                        value={getDraftReason(user)}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Operator note</span>
+                      <textarea
+                        disabled={activeUserId === user.id}
+                        onChange={(event) => {
+                          setDraftOperatorNotes((current) => ({
+                            ...current,
+                            [user.id]: event.target.value,
+                          }));
+                        }}
+                        placeholder="Capture support context that should stay with the session history."
+                        rows={3}
+                        value={getDraftOperatorNote(user)}
+                      />
+                    </label>
+                    <div className="admin-user-actions">
+                      <button
+                        className="btn-primary"
+                        disabled={activeUserId === user.id}
+                        onClick={() => void handleStartSupportSession(user)}
+                        type="button"
+                      >
+                        {activeUserId === user.id ? 'Starting support session...' : 'Start support session'}
+                      </button>
+                      <Link className="btn-ghost" href="/admin/support">
+                        View support history
+                      </Link>
+                    </div>
                   </div>
                 ) : null}
               </div>

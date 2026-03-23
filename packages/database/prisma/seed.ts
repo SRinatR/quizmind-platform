@@ -233,6 +233,8 @@ async function seed() {
       data: {
         body: 'The viewer can open the workspace but hits a denial state on the billing settings route.',
         status: 'open',
+        assignedToId: null,
+        handoffNote: null,
       },
     });
   } else {
@@ -263,6 +265,8 @@ async function seed() {
       data: {
         body: 'The admin wants support to verify which users will be affected before upgrading the workspace plan.',
         status: 'in_progress',
+        assignedToId: supportUser.id,
+        handoffNote: 'Support is comparing free and pro entitlements before replying to the workspace owner.',
       },
     });
   } else {
@@ -273,6 +277,8 @@ async function seed() {
         subject: 'Need help planning a workspace upgrade',
         body: 'The admin wants support to verify which users will be affected before upgrading the workspace plan.',
         status: 'in_progress',
+        assignedToId: supportUser.id,
+        handoffNote: 'Support is comparing free and pro entitlements before replying to the workspace owner.',
       },
     });
   }
