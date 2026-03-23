@@ -17,7 +17,10 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      request.currentUser = await verifyAccessToken(token, this.env.jwtSecret);
+      request.currentUser = await verifyAccessToken(token, this.env.jwtSecret, {
+        issuer: this.env.jwtIssuer,
+        audience: this.env.jwtAudience,
+      });
       return true;
     } catch {
       throw new UnauthorizedException('Invalid access token.');

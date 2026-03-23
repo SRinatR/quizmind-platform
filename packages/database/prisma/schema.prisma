@@ -159,6 +159,7 @@ model Workspace {
   slug                   String                  @unique
   name                   String
   billingEmail           String?
+  stripeCustomerId       String?                 @unique
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   memberships            WorkspaceMembership[]
@@ -252,6 +253,7 @@ model Subscription {
   workspaceId        String
   planId             String
   externalId         String?            @unique
+  stripeSubscriptionId String?          @unique
   status             SubscriptionStatus
   billingInterval    String
   seatCount          Int                @default(1)
@@ -290,6 +292,42 @@ model Payment {
   processedAt    DateTime?
   createdAt      DateTime     @default(now())
   subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+}
+
+model Coupon {
+  id               String   @id @default(cuid())
+  code             String   @unique
+  stripeCouponId   String?  @unique
+  name             String?
+  percentOff       Int?
+  amountOff        Int?
+  currency         String?
+  duration         String
+  durationInMonths Int?
+  maxRedemptions   Int?
+  redeemBy         DateTime?
+  isActive         Boolean  @default(true)
+  metadataJson     Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model WebhookEvent {
+  id                String   @id @default(cuid())
+  provider          String
+  externalEventId   String
+  eventType         String
+  status            String
+  payloadJson       Json
+  providerCreatedAt DateTime?
+  processedAt       DateTime?
+  lastError         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  receivedAt        DateTime @default(now())
+
+  @@unique([provider, externalEventId])
+  @@index([provider, status, receivedAt])
 }
 
 model EntitlementOverride {

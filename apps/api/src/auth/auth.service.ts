@@ -31,12 +31,13 @@ import {
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { createSecurityLogEvent } from '@quizmind/logger';
-import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
+import { sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 
 import { type AuthSessionRecord, SessionRepository } from './repositories/session.repository';
 import { type AuthUserRecord, UserRepository } from './repositories/user.repository';
 import { EmailVerificationRepository } from './repositories/email-verification.repository';
 import { type CurrentSessionSnapshot, type RequestSessionMetadata, type VerifyEmailResult } from './auth.types';
+import { createApiEmailAdapter } from '../email/email-adapter';
 
 interface SessionIssueResult {
   payload: AuthSessionPayload;
@@ -46,6 +47,7 @@ interface SessionIssueResult {
 @Injectable()
 export class AuthService {
   private readonly env = loadApiEnv();
+  private readonly emailAdapter = createApiEmailAdapter(this.env);
 
   constructor(
     @Inject(UserRepository)
@@ -302,6 +304,8 @@ export class AuthService {
       email: user.email,
       roles: this.userRepository.getSystemRoles(user),
       expiresInMinutes: ACCESS_TOKEN_LIFETIME_MINUTES,
+      issuer: this.env.jwtIssuer,
+      audience: this.env.jwtAudience,
     });
 
     return {
@@ -333,7 +337,7 @@ export class AuthService {
     });
 
     const delivery = await sendTemplatedEmail(
-      createNoopEmailAdapter(),
+      this.emailAdapter,
       verifyEmailTemplate,
       user.email,
       {
@@ -353,7 +357,10 @@ export class AuthService {
 
   private async verifyBearerToken(accessToken: string) {
     try {
-      return await verifyAccessToken(accessToken, this.env.jwtSecret);
+      return await verifyAccessToken(accessToken, this.env.jwtSecret, {
+        issuer: this.env.jwtIssuer,
+        audience: this.env.jwtAudience,
+      });
     } catch {
       throw new UnauthorizedException('Invalid access token.');
     }

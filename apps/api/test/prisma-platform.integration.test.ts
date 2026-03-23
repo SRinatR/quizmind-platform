@@ -27,6 +27,8 @@ async function createSessionSnapshotForUser(harness: NonNullable<Awaited<ReturnT
     roles: (input.roles ?? []) as Array<
       'super_admin' | 'platform_admin' | 'billing_admin' | 'support_admin' | 'security_admin' | 'ops_admin' | 'content_admin'
     >,
+    issuer: harness.env.jwtIssuer,
+    audience: harness.env.jwtAudience,
   });
 
   return harness.authService.getCurrentSession(accessToken.token);

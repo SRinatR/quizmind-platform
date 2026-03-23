@@ -54,12 +54,21 @@ export function loadPlatformEnv(source: EnvSource = process.env): PlatformEnv {
 
 export interface ApiEnv extends PlatformEnv {
   port: number;
+  corsAllowedOrigins: string[];
   jwtSecret: string;
   jwtRefreshSecret: string;
+  jwtIssuer: string;
+  jwtAudience: string;
+  emailProvider: 'noop' | 'resend';
   emailFrom: string;
+  billingProvider: 'mock' | 'stripe';
   resendApiKey?: string;
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
+  rateLimitWindowMs: number;
+  rateLimitMaxRequests: number;
+  authRateLimitWindowMs: number;
+  authRateLimitMaxRequests: number;
   s3Bucket?: string;
   s3Endpoint?: string;
 }
@@ -90,18 +99,67 @@ function isValidUrl(value: string): boolean {
   }
 }
 
+function parseListEnv(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function normalizeOrigin(value: string): string | null {
+  try {
+    const url = new URL(value);
+
+    if (!url.protocol || !url.host) {
+      return null;
+    }
+
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+
+function loadCorsAllowedOrigins(source: EnvSource, appUrl: string): string[] {
+  const rawOrigins = parseListEnv(source.CORS_ALLOWED_ORIGINS);
+  const resolvedOrigins = rawOrigins.length > 0 ? rawOrigins : [appUrl];
+
+  return resolvedOrigins.map((origin) => normalizeOrigin(origin) ?? origin);
+}
+
+function resolveEmailProvider(source: EnvSource): ApiEnv['emailProvider'] {
+  return source.EMAIL_PROVIDER === 'resend' ? 'resend' : 'noop';
+}
+
+function resolveBillingProvider(source: EnvSource): ApiEnv['billingProvider'] {
+  return source.BILLING_PROVIDER === 'stripe' ? 'stripe' : 'mock';
+}
+
 export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
   const platformEnv = loadPlatformEnv(source);
 
   return {
     ...platformEnv,
     port: readNumberEnv(source, 'API_PORT', 4000),
+    corsAllowedOrigins: loadCorsAllowedOrigins(source, platformEnv.appUrl),
     jwtSecret: source.JWT_SECRET ?? 'replace-me',
     jwtRefreshSecret: source.JWT_REFRESH_SECRET ?? 'replace-me-refresh',
+    jwtIssuer: source.JWT_ISSUER ?? platformEnv.apiUrl,
+    jwtAudience: source.JWT_AUDIENCE ?? platformEnv.appUrl,
+    emailProvider: resolveEmailProvider(source),
     emailFrom: source.EMAIL_FROM ?? 'noreply@quizmind.local',
+    billingProvider: resolveBillingProvider(source),
     resendApiKey: source.RESEND_API_KEY,
     stripeSecretKey: source.STRIPE_SECRET_KEY,
     stripeWebhookSecret: source.STRIPE_WEBHOOK_SECRET,
+    rateLimitWindowMs: readNumberEnv(source, 'RATE_LIMIT_WINDOW_MS', 60_000),
+    rateLimitMaxRequests: readNumberEnv(source, 'RATE_LIMIT_MAX_REQUESTS', 120),
+    authRateLimitWindowMs: readNumberEnv(source, 'AUTH_RATE_LIMIT_WINDOW_MS', 900_000),
+    authRateLimitMaxRequests: readNumberEnv(source, 'AUTH_RATE_LIMIT_MAX_REQUESTS', 10),
     s3Bucket: source.S3_BUCKET,
     s3Endpoint: source.S3_ENDPOINT,
   };
@@ -162,6 +220,58 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
     issues.push({ key: 'JWT_REFRESH_SECRET', message: 'JWT_REFRESH_SECRET must be set to a non-placeholder value.' });
   }
 
+  if (isBlank(env.jwtIssuer)) {
+    issues.push({ key: 'JWT_ISSUER', message: 'JWT_ISSUER must be defined.' });
+  } else if (!isValidUrl(env.jwtIssuer)) {
+    issues.push({ key: 'JWT_ISSUER', message: 'JWT_ISSUER must be a valid absolute URL.' });
+  }
+
+  if (isBlank(env.jwtAudience)) {
+    issues.push({ key: 'JWT_AUDIENCE', message: 'JWT_AUDIENCE must be defined.' });
+  } else if (!isValidUrl(env.jwtAudience)) {
+    issues.push({ key: 'JWT_AUDIENCE', message: 'JWT_AUDIENCE must be a valid absolute URL.' });
+  }
+
+  if (env.corsAllowedOrigins.length === 0) {
+    issues.push({ key: 'CORS_ALLOWED_ORIGINS', message: 'At least one CORS origin must be configured.' });
+  }
+
+  for (const origin of env.corsAllowedOrigins) {
+    if (origin === '*') {
+      issues.push({ key: 'CORS_ALLOWED_ORIGINS', message: 'Wildcard CORS origins are not allowed.' });
+      continue;
+    }
+
+    if (!normalizeOrigin(origin)) {
+      issues.push({
+        key: 'CORS_ALLOWED_ORIGINS',
+        message: `CORS origin "${origin}" must be a valid absolute origin.`,
+      });
+    }
+  }
+
+  if (!Number.isInteger(env.rateLimitWindowMs) || env.rateLimitWindowMs < 1) {
+    issues.push({ key: 'RATE_LIMIT_WINDOW_MS', message: 'RATE_LIMIT_WINDOW_MS must be a positive integer.' });
+  }
+
+  if (!Number.isInteger(env.rateLimitMaxRequests) || env.rateLimitMaxRequests < 1) {
+    issues.push({ key: 'RATE_LIMIT_MAX_REQUESTS', message: 'RATE_LIMIT_MAX_REQUESTS must be a positive integer.' });
+  }
+
+  if (!Number.isInteger(env.authRateLimitWindowMs) || env.authRateLimitWindowMs < 1) {
+    issues.push({
+      key: 'AUTH_RATE_LIMIT_WINDOW_MS',
+      message: 'AUTH_RATE_LIMIT_WINDOW_MS must be a positive integer.',
+    });
+  }
+
+  if (!Number.isInteger(env.authRateLimitMaxRequests) || env.authRateLimitMaxRequests < 1) {
+    issues.push({
+      key: 'AUTH_RATE_LIMIT_MAX_REQUESTS',
+      message: 'AUTH_RATE_LIMIT_MAX_REQUESTS must be a positive integer.',
+    });
+  }
+
   if (env.runtimeMode === 'connected') {
     if (!env.databaseUrl) {
       issues.push({ key: 'DATABASE_URL', message: 'DATABASE_URL is required in connected mode.' });
@@ -173,8 +283,22 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
   }
 
   if (env.nodeEnv === 'production') {
+    if (env.emailProvider !== 'resend') {
+      issues.push({
+        key: 'EMAIL_PROVIDER',
+        message: 'EMAIL_PROVIDER must be set to "resend" in production so auth emails are not dropped.',
+      });
+    }
+
     if (isBlank(env.resendApiKey)) {
       issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required in production.' });
+    }
+
+    if (env.billingProvider !== 'stripe') {
+      issues.push({
+        key: 'BILLING_PROVIDER',
+        message: 'BILLING_PROVIDER must be set to "stripe" in production.',
+      });
     }
 
     if (isBlank(env.stripeSecretKey)) {

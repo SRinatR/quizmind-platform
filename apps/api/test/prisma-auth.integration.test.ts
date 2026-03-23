@@ -137,6 +137,8 @@ test('Prisma-backed current session resolves persisted roles and workspace membe
     userId,
     email,
     roles: ['platform_admin'],
+    issuer: harness.env.jwtIssuer,
+    audience: harness.env.jwtAudience,
   });
 
   const snapshot = await harness.authService.getCurrentSession(accessToken.token);

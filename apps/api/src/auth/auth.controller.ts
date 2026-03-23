@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   ServiceUnavailableException,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
@@ -122,10 +123,14 @@ export class AuthController {
     @Headers('authorization') authorization?: string,
     @Query('persona') persona?: string,
   ) {
+    if (this.env.runtimeMode !== 'connected') {
+      return ok(this.platformService.getCurrentSession(persona));
+    }
+
     const accessToken = parseBearerToken(authorization);
 
-    if (this.env.runtimeMode !== 'connected' || !accessToken) {
-      return ok(this.platformService.getCurrentSession(persona));
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing bearer token.');
     }
 
     return ok(await this.authService.getCurrentSession(accessToken));

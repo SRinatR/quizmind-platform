@@ -28,12 +28,21 @@ export interface IntegrationHarness {
   env: {
     appUrl: string;
     apiUrl: string;
+    authRateLimitMaxRequests: number;
+    authRateLimitWindowMs: number;
+    billingProvider: 'mock' | 'stripe';
+    corsAllowedOrigins: string[];
     databaseUrl: string;
+    emailProvider: 'noop' | 'resend';
     emailFrom: string;
+    jwtAudience: string;
+    jwtIssuer: string;
     jwtRefreshSecret: string;
     jwtSecret: string;
     nodeEnv: 'test';
     port: number;
+    rateLimitMaxRequests: number;
+    rateLimitWindowMs: number;
     redisUrl: string;
     runtimeMode: 'connected';
   };
@@ -111,9 +120,18 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     redisUrl: 'redis://localhost:6379',
     runtimeMode: 'connected' as const,
     port: 4000,
+    corsAllowedOrigins: ['http://localhost:3000'],
     jwtSecret: 'integration-jwt-secret',
     jwtRefreshSecret: 'integration-refresh-secret',
+    jwtIssuer: 'http://localhost:4000',
+    jwtAudience: 'http://localhost:3000',
+    emailProvider: 'noop' as const,
     emailFrom: 'noreply@quizmind.local',
+    billingProvider: 'mock' as const,
+    rateLimitWindowMs: 60000,
+    rateLimitMaxRequests: 120,
+    authRateLimitWindowMs: 900000,
+    authRateLimitMaxRequests: 10,
   };
 
   (authService as any).env = env;

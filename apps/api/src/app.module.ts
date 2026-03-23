@@ -14,6 +14,8 @@ import { PlatformController } from './platform.controller';
 import { PlatformService } from './platform.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
+import { RateLimitGuard } from './security/rate-limit.guard';
+import { InMemoryRateLimitService } from './security/rate-limit.service';
 import { InfrastructureHealthService } from './services/infrastructure-health-service';
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
 import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-preset-favorite.repository';
@@ -31,6 +33,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     JwtAuthGuard,
     PlatformService,
     PrismaService,
+    RateLimitGuard,
     RemoteConfigRepository,
     RequestLoggingInterceptor,
     SessionRepository,
@@ -39,6 +42,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     SupportTicketPresetFavoriteRepository,
     SupportTicketRepository,
     UserRepository,
+    InMemoryRateLimitService,
     WorkspaceRepository,
   ],
 })

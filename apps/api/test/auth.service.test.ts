@@ -33,9 +33,18 @@ function createAuthService() {
     redisUrl: 'redis://localhost:6379',
     runtimeMode: 'connected',
     port: 4000,
+    corsAllowedOrigins: ['http://localhost:3000'],
     jwtSecret: 'test-jwt-secret',
     jwtRefreshSecret: 'test-refresh-secret',
+    jwtIssuer: 'http://localhost:4000',
+    jwtAudience: 'http://localhost:3000',
+    emailProvider: 'noop',
     emailFrom: 'noreply@quizmind.local',
+    billingProvider: 'mock',
+    rateLimitWindowMs: 60000,
+    rateLimitMaxRequests: 120,
+    authRateLimitWindowMs: 900000,
+    authRateLimitMaxRequests: 10,
   };
 
   return { service, sessionRepository };

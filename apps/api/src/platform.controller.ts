@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Headers, Inject, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Post, Query, UnauthorizedException } from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
+import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
 import {
   type ExtensionBootstrapRequest,
@@ -12,6 +13,7 @@ import {
 } from '@quizmind/contracts';
 
 import { AuthService } from './auth/auth.service';
+import { type CurrentSessionSnapshot } from './auth/auth.types';
 import { PlatformService } from './platform.service';
 
 function ok<T>(data: T): ApiSuccess<T> {
@@ -23,6 +25,8 @@ function ok<T>(data: T): ApiSuccess<T> {
 
 @Controller()
 export class PlatformController {
+  private readonly env = loadApiEnv();
+
   constructor(
     @Inject(AuthService)
     private readonly authService: AuthService,
@@ -45,13 +49,11 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.listWorkspaces(persona));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.listWorkspacesForCurrentSession(session));
   }
@@ -62,13 +64,11 @@ export class PlatformController {
     @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.getSubscription(persona, workspaceId));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.getSubscriptionForCurrentSession(session, workspaceId));
   }
@@ -78,13 +78,11 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.listUsers(persona));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.listUsersForCurrentSession(session));
   }
@@ -94,13 +92,11 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.listFeatureFlags(persona));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.listFeatureFlagsForCurrentSession(session));
   }
@@ -110,13 +106,11 @@ export class PlatformController {
     @Body() request?: Partial<RemoteConfigPublishRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.publishRemoteConfig(request));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.publishRemoteConfigForCurrentSession(session, request));
   }
@@ -136,13 +130,11 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.listSupportImpersonationSessions(persona));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.listSupportImpersonationSessionsForCurrentSession(session));
   }
@@ -158,7 +150,6 @@ export class PlatformController {
     @Query('timelineLimit') timelineLimit?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
     const filters = {
       preset,
       status,
@@ -167,12 +158,11 @@ export class PlatformController {
       ...(limit ? { limit: Number(limit) } : {}),
       ...(timelineLimit ? { timelineLimit: Number(timelineLimit) } : {}),
     };
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.listSupportTickets(persona, filters));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.listSupportTicketsForCurrentSession(session, filters));
   }
@@ -182,13 +172,11 @@ export class PlatformController {
     @Body() request?: Partial<SupportImpersonationRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.startSupportImpersonation(request));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.startSupportImpersonationForCurrentSession(session, request));
   }
@@ -198,13 +186,11 @@ export class PlatformController {
     @Body() request?: Partial<SupportTicketWorkflowUpdateRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.updateSupportTicket(request));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.updateSupportTicketForCurrentSession(session, request));
   }
@@ -215,13 +201,11 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.updateSupportTicketPresetFavorite(persona, request));
     }
-
-    const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.updateSupportTicketPresetFavoriteForCurrentSession(session, request));
   }
@@ -231,14 +215,26 @@ export class PlatformController {
     @Body() request?: Partial<SupportImpersonationEndRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const accessToken = parseBearerToken(authorization);
+    const session = await this.requireConnectedSession(authorization);
 
-    if (!accessToken) {
+    if (!session) {
       return ok(this.platformService.endSupportImpersonation(request));
     }
 
-    const session = await this.authService.getCurrentSession(accessToken);
-
     return ok(await this.platformService.endSupportImpersonationForCurrentSession(session, request));
+  }
+
+  private async requireConnectedSession(authorization?: string): Promise<CurrentSessionSnapshot | null> {
+    if (this.env.runtimeMode !== 'connected') {
+      return null;
+    }
+
+    const accessToken = parseBearerToken(authorization);
+
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing bearer token.');
+    }
+
+    return this.authService.getCurrentSession(accessToken);
   }
 }

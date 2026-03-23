@@ -7,6 +7,8 @@ import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 
 import { AppModule } from './app.module';
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
+import { RateLimitGuard } from './security/rate-limit.guard';
+import { buildCorsOptions } from './security/cors';
 
 async function bootstrap() {
   const env = loadApiEnv();
@@ -15,9 +17,10 @@ async function bootstrap() {
   if (envIssues.length > 0) {
     throw new Error(`Invalid API environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
   }
-  const app = await NestFactory.create(AppModule, {
-    cors: true,
-  });
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors(buildCorsOptions(env));
+  app.useGlobalGuards(app.get(RateLimitGuard));
 
   app.useGlobalInterceptors(app.get(RequestLoggingInterceptor));
 

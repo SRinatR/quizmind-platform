@@ -187,7 +187,7 @@ function normalizeTimelineActor(input: Partial<TimelineActorLike> | null | undef
 }
 
 function readTimelineMetadata(record: SupportTicketTimelineRecord): SupportTicketTimelineMetadata {
-  return ((record.metadataJson ?? {}) as SupportTicketTimelineMetadata) ?? {};
+  return record.metadataJson ? (record.metadataJson as SupportTicketTimelineMetadata) : {};
 }
 
 function normalizeTimelineStatus(input: string | undefined): SupportTicketTimelineEntry['nextStatus'] | undefined {

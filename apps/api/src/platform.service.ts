@@ -140,6 +140,13 @@ export class PlatformService {
       },
       configuration: {
         runtimeMode: this.env.runtimeMode,
+        corsAllowedOrigins: this.env.corsAllowedOrigins,
+        jwt: {
+          issuer: this.env.jwtIssuer,
+          audience: this.env.jwtAudience,
+        },
+        emailProvider: this.env.emailProvider,
+        billingProvider: this.env.billingProvider,
         validationIssues: validateApiEnv(this.env),
       },
       observability: {
@@ -175,8 +182,11 @@ export class PlatformService {
     return {
       ...getFoundationOverview(),
       notifications: {
-        emailProvider: 'noop',
+        emailProvider: this.env.emailProvider,
         templates: ['auth.verify-email', 'auth.password-reset', 'workspace.invitation'],
+      },
+      billing: {
+        provider: this.env.billingProvider,
       },
       runtime: {
         apiUrl: this.env.apiUrl,
