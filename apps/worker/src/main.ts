@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 import { Queue } from 'bullmq';
 import { loadWorkerEnv } from '@quizmind/config';
-import { platformQueues } from '@quizmind/contracts';
+import { queueNames } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
 import IORedis from 'ioredis';
 
@@ -37,7 +37,7 @@ async function bootstrap() {
         status: 'success',
         metadata: {
           heartbeatIntervalMs: env.heartbeatIntervalMs,
-          queueCount: platformQueues.length,
+          queueCount: queueNames.length,
           redisUrl: env.redisUrl,
           runtimeMode: env.runtimeMode,
         },
@@ -56,7 +56,7 @@ async function bootstrap() {
       });
       await redisConnection.connect();
 
-      const queueBindings = platformQueues.map(
+      const queueBindings = queueNames.map(
         (queueName) =>
           new Queue(queueName, {
             connection: redisConnectionOptions,
@@ -77,7 +77,7 @@ async function bootstrap() {
             severity: 'info',
             status: 'success',
             metadata: {
-              queues: platformQueues,
+              queues: queueNames,
               boundQueueCount: queueBindings.length,
             },
           }),
@@ -126,7 +126,7 @@ async function bootstrap() {
           status: 'success',
           metadata: {
             mode: redisConnection ? 'connected' : 'dry-run',
-            queues: platformQueues,
+            queues: queueNames,
           },
         }),
       ),

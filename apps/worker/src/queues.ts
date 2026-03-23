@@ -1,3 +1,3 @@
-import { platformQueues } from '@quizmind/contracts';
+import { queueNames } from '@quizmind/queue';
 
-export const workerQueues = platformQueues;
+export const workerQueues = queueNames;

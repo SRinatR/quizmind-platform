@@ -92,6 +92,8 @@ packages/
   logger/
   database/
   permissions/
+  email/
+  queue/
 docs/
   architecture.md
   foundation-roadmap.md
