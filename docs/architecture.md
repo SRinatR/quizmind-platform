@@ -16,10 +16,13 @@ This structure balances fast delivery with clean boundaries. It avoids the overh
 Shared DTOs, schema contracts, event payloads, config shapes, and compatibility contracts.
 
 ### `packages/auth`
-Session helpers, permission decorators, guard helpers, token utilities, and security-oriented policies.
+Session helpers, guard helpers, token utilities, password/auth policies, and eventually MFA primitives once MFA is in active scope.
 
 ### `packages/billing`
 Subscription states, entitlement resolution, quota helpers, plan metadata, and billing policy helpers.
+
+### `packages/email`
+Provider-neutral email contracts, template definitions, rendering helpers, and adapters for providers such as Resend, Postmark, or SES.
 
 ### `packages/extension`
 Extension handshake contracts, capability negotiation helpers, remote-config payload types, and sync clients.
@@ -33,11 +36,32 @@ Unified event names, log builders, redaction helpers, and transport-safe logging
 ### `packages/database`
 Prisma schema, migrations, seed data, and database access helpers.
 
+### `packages/queue`
+Queue names, payload helpers, enqueue/dequeue utilities, retry defaults, and app/worker integration primitives around BullMQ.
+
 ### `packages/ui`
 Shared React components, design tokens, and admin/dashboard UI primitives.
 
 ### `packages/config`
 Environment schema validation, shared constants, and config-loading helpers.
+
+## Implementation constraints we should design around
+
+- The current API service layer is still mock-backed through `apps/api/src/platform-data.ts`; moving to real persistence should happen through repositories rather than direct service rewrites.
+- `packages/ui` is not yet a real design system, so frontend delivery should sequence UI foundation before many app screens are built.
+- The Prisma schema already models MFA-related tables, but runtime auth code does not yet expose MFA flows.
+- Queue boundaries should be package-level contracts so the API can enqueue work without coupling to worker internals.
+
+## Repository-first backend shape
+
+The API should move toward a clear layering model:
+
+1. **Controllers** translate transport contracts to application calls.
+2. **Services** coordinate business workflows and policies.
+3. **Repositories** isolate persistence concerns (`UserRepository`, `WorkspaceRepository`, `SubscriptionRepository`, `FeatureFlagRepository`, and similar).
+4. **Packages** provide reusable domain logic shared across API, worker, and web.
+
+That lets us replace mock data with Prisma-backed implementations without rewriting every business-facing service method.
 
 ## Access model
 
@@ -112,9 +136,10 @@ Compatibility decisions must consider extension version, supported capabilities,
 
 ## Recommended implementation order
 
-1. Foundation: monorepo, CI, config, shared contracts.
-2. Identity: auth, sessions, workspaces, RBAC base.
-3. Billing: subscriptions, entitlements, quota counters, webhooks.
-4. Control plane: flags, remote config, compatibility engine.
-5. Admin tools: audit explorer, support tools, jobs, and webhook management.
-6. Growth modules: analytics, partner flows, advanced experimentation.
+1. Preserve the existing monorepo/package foundation.
+2. Ship real auth with email verification and session persistence.
+3. Introduce repositories and migrate mock-backed services to Prisma-backed data.
+4. Integrate billing providers and webhook processing.
+5. Connect entitlements, quotas, flags, and remote config to real data.
+6. Build the shared UI foundation before broad dashboard/admin expansion.
+7. Add admin operations, support tooling, and production hardening.
