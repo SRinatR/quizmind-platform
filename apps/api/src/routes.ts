@@ -13,13 +13,38 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
+    path: '/auth/register',
+    summary: 'Register a new user, create a session, and send an email verification link.',
+  },
+  {
+    method: 'POST',
     path: '/auth/login',
     summary: 'Authenticate a user and issue access + refresh tokens.',
+  },
+  {
+    method: 'POST',
+    path: '/auth/refresh',
+    summary: 'Rotate a refresh token and issue a new access + refresh token pair.',
+  },
+  {
+    method: 'POST',
+    path: '/auth/logout',
+    summary: 'Revoke the current session by refresh token or bearer access token.',
+  },
+  {
+    method: 'POST',
+    path: '/auth/logout-all',
+    summary: 'Revoke all active sessions for the current user.',
   },
   {
     method: 'GET',
     path: '/auth/me',
     summary: 'Return the current session principal and workspace memberships.',
+  },
+  {
+    method: 'GET',
+    path: '/auth/verify-email',
+    summary: 'Verify a pending email verification token and mark the email as confirmed.',
   },
   {
     method: 'GET',
@@ -45,6 +70,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/admin/users',
+    summary: 'List users, their system roles, and workspace memberships.',
+    permission: 'users:read',
+  },
+  {
+    method: 'GET',
     path: '/admin/feature-flags',
     summary: 'List feature flags and rollout state.',
     permission: 'feature_flags:read',
@@ -56,9 +87,27 @@ export const apiRoutes: ApiRouteDefinition[] = [
     permission: 'remote_config:publish',
   },
   {
+    method: 'GET',
+    path: '/support/impersonation-sessions',
+    summary: 'List recent support impersonation sessions with actor, target, and workspace context.',
+    permission: 'support:impersonate',
+  },
+  {
+    method: 'GET',
+    path: '/support/tickets',
+    summary: 'List recent open support tickets with requester and workspace context.',
+    permission: 'support:impersonate',
+  },
+  {
     method: 'POST',
     path: '/support/impersonation',
     summary: 'Start a support impersonation session and emit audit + security logs.',
+    permission: 'support:impersonate',
+  },
+  {
+    method: 'POST',
+    path: '/support/impersonation/end',
+    summary: 'End an active support impersonation session and emit audit + security logs.',
     permission: 'support:impersonate',
   },
 ] as const;

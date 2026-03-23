@@ -1,11 +1,7 @@
 import 'dotenv/config';
 
 import { Queue } from 'bullmq';
-<<<<<<< codex/add-email-verification-package-h0pece
 import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
-=======
-import { loadWorkerEnv } from '@quizmind/config';
->>>>>>> main
 import { queueNames } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
 import IORedis from 'ioredis';

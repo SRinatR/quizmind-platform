@@ -55,6 +55,13 @@ export function loadPlatformEnv(source: EnvSource = process.env): PlatformEnv {
 export interface ApiEnv extends PlatformEnv {
   port: number;
   jwtSecret: string;
+  jwtRefreshSecret: string;
+  emailFrom: string;
+  resendApiKey?: string;
+  stripeSecretKey?: string;
+  stripeWebhookSecret?: string;
+  s3Bucket?: string;
+  s3Endpoint?: string;
 }
 
 export interface WebEnv {
@@ -66,6 +73,21 @@ export interface WebEnv {
 
 export interface WorkerEnv extends PlatformEnv {
   heartbeatIntervalMs: number;
+  s3Bucket?: string;
+  s3Endpoint?: string;
+}
+
+function isBlank(value: string | undefined): boolean {
+  return typeof value === 'undefined' || value.trim().length === 0;
+}
+
+function isValidUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return Boolean(url.protocol && url.host);
+  } catch {
+    return false;
+  }
 }
 
 export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
@@ -75,6 +97,13 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     ...platformEnv,
     port: readNumberEnv(source, 'API_PORT', 4000),
     jwtSecret: source.JWT_SECRET ?? 'replace-me',
+    jwtRefreshSecret: source.JWT_REFRESH_SECRET ?? 'replace-me-refresh',
+    emailFrom: source.EMAIL_FROM ?? 'noreply@quizmind.local',
+    resendApiKey: source.RESEND_API_KEY,
+    stripeSecretKey: source.STRIPE_SECRET_KEY,
+    stripeWebhookSecret: source.STRIPE_WEBHOOK_SECRET,
+    s3Bucket: source.S3_BUCKET,
+    s3Endpoint: source.S3_ENDPOINT,
   };
 }
 
@@ -95,6 +124,8 @@ export function loadWorkerEnv(source: EnvSource = process.env): WorkerEnv {
   return {
     ...platformEnv,
     heartbeatIntervalMs: readNumberEnv(source, 'WORKER_HEARTBEAT_MS', 30000),
+    s3Bucket: source.S3_BUCKET,
+    s3Endpoint: source.S3_ENDPOINT,
   };
 }
 
@@ -107,16 +138,28 @@ export interface EnvValidationIssue {
 export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
   const issues: EnvValidationIssue[] = [];
 
-  if (!env.apiUrl) {
+  if (isBlank(env.apiUrl)) {
     issues.push({ key: 'API_URL', message: 'API_URL must be defined.' });
+  } else if (!isValidUrl(env.apiUrl)) {
+    issues.push({ key: 'API_URL', message: 'API_URL must be a valid absolute URL.' });
   }
 
-  if (!env.appUrl) {
+  if (isBlank(env.appUrl)) {
     issues.push({ key: 'APP_URL', message: 'APP_URL must be defined.' });
+  } else if (!isValidUrl(env.appUrl)) {
+    issues.push({ key: 'APP_URL', message: 'APP_URL must be a valid absolute URL.' });
+  }
+
+  if (!Number.isInteger(env.port) || env.port < 1 || env.port > 65535) {
+    issues.push({ key: 'API_PORT', message: 'API_PORT must be an integer between 1 and 65535.' });
   }
 
   if (!env.jwtSecret || env.jwtSecret === 'replace-me') {
     issues.push({ key: 'JWT_SECRET', message: 'JWT_SECRET must be set to a non-placeholder value.' });
+  }
+
+  if (!env.jwtRefreshSecret || env.jwtRefreshSecret === 'replace-me-refresh') {
+    issues.push({ key: 'JWT_REFRESH_SECRET', message: 'JWT_REFRESH_SECRET must be set to a non-placeholder value.' });
   }
 
   if (env.runtimeMode === 'connected') {
@@ -127,6 +170,32 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
     if (!env.redisUrl) {
       issues.push({ key: 'REDIS_URL', message: 'REDIS_URL is required in connected mode.' });
     }
+  }
+
+  if (env.nodeEnv === 'production') {
+    if (isBlank(env.resendApiKey)) {
+      issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required in production.' });
+    }
+
+    if (isBlank(env.stripeSecretKey)) {
+      issues.push({ key: 'STRIPE_SECRET_KEY', message: 'STRIPE_SECRET_KEY is required in production.' });
+    }
+
+    if (isBlank(env.stripeWebhookSecret)) {
+      issues.push({ key: 'STRIPE_WEBHOOK_SECRET', message: 'STRIPE_WEBHOOK_SECRET is required in production.' });
+    }
+
+    if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
+      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production.' });
+    }
+  }
+
+  if (!isBlank(env.s3Bucket) && isBlank(env.s3Endpoint)) {
+    issues.push({ key: 'S3_ENDPOINT', message: 'S3_ENDPOINT is required when S3_BUCKET is set.' });
+  }
+
+  if (!isBlank(env.s3Endpoint) && isBlank(env.s3Bucket)) {
+    issues.push({ key: 'S3_BUCKET', message: 'S3_BUCKET is required when S3_ENDPOINT is set.' });
   }
 
   return issues;
@@ -135,8 +204,10 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
 export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
   const issues: EnvValidationIssue[] = [];
 
-  if (!env.apiUrl) {
+  if (isBlank(env.apiUrl)) {
     issues.push({ key: 'API_URL', message: 'API_URL must be defined.' });
+  } else if (!isValidUrl(env.apiUrl)) {
+    issues.push({ key: 'API_URL', message: 'API_URL must be a valid absolute URL.' });
   }
 
   if (env.runtimeMode === 'connected') {
@@ -147,6 +218,14 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
     if (!env.redisUrl) {
       issues.push({ key: 'REDIS_URL', message: 'REDIS_URL is required in connected mode.' });
     }
+  }
+
+  if (!isBlank(env.s3Bucket) && isBlank(env.s3Endpoint)) {
+    issues.push({ key: 'S3_ENDPOINT', message: 'S3_ENDPOINT is required when S3_BUCKET is set.' });
+  }
+
+  if (!isBlank(env.s3Endpoint) && isBlank(env.s3Bucket)) {
+    issues.push({ key: 'S3_BUCKET', message: 'S3_BUCKET is required when S3_ENDPOINT is set.' });
   }
 
   return issues;

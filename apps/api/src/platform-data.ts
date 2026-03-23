@@ -2,8 +2,10 @@ import { type SessionPrincipal } from '@quizmind/auth';
 import { databaseSchemas } from '@quizmind/database';
 import { listQueueDefinitions } from '@quizmind/queue';
 import {
+  type AdminUserDirectoryEntry,
   type AuthLoginRequest,
   type AuthSessionPayload,
+  type SupportTicketQueueEntry,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { allSystemRoles, allWorkspaceRoles, permissionRegistry } from '@quizmind/permissions';
@@ -220,6 +222,69 @@ export function buildAuthSession(persona: DemoPersona): AuthSessionPayload {
       systemRoles: persona.principal.systemRoles,
     },
   };
+}
+
+export function listFoundationUsers(): AdminUserDirectoryEntry[] {
+  return Object.values(personaCatalog).map((persona, index) => ({
+    id: persona.user.id,
+    email: persona.user.email,
+    displayName: persona.user.displayName,
+    emailVerifiedAt: '2026-03-23T08:00:00.000Z',
+    suspendedAt: null,
+    lastLoginAt: new Date(Date.UTC(2026, 2, 23, 10 + index, 0, 0)).toISOString(),
+    systemRoles: persona.principal.systemRoles,
+    workspaces: getAccessibleWorkspaces(persona).map((workspace) => ({
+      workspaceId: workspace.id,
+      workspaceSlug: workspace.slug,
+      workspaceName: workspace.name,
+      role: workspace.role,
+    })),
+  }));
+}
+
+export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
+  const viewerPersona = getPersona('workspace-viewer');
+  const platformPersona = getPersona('platform-admin');
+  const workspace = getWorkspaceSummary('ws_alpha');
+
+  return [
+    {
+      id: 'support-ticket-demo-1',
+      subject: 'Viewer cannot access billing settings',
+      body: 'The workspace viewer can open the product but lands on a denial state in billing settings.',
+      status: 'open',
+      createdAt: '2026-03-23T10:15:00.000Z',
+      updatedAt: '2026-03-23T10:20:00.000Z',
+      requester: {
+        id: viewerPersona.user.id,
+        email: viewerPersona.user.email,
+        displayName: viewerPersona.user.displayName,
+      },
+      workspace: {
+        id: workspace.id,
+        slug: workspace.slug,
+        name: workspace.name,
+      },
+    },
+    {
+      id: 'support-ticket-demo-2',
+      subject: 'Need help planning a workspace upgrade',
+      body: 'The admin wants support to verify workspace impact before upgrading the subscription plan.',
+      status: 'in_progress',
+      createdAt: '2026-03-23T09:30:00.000Z',
+      updatedAt: '2026-03-23T09:55:00.000Z',
+      requester: {
+        id: platformPersona.user.id,
+        email: platformPersona.user.email,
+        displayName: platformPersona.user.displayName,
+      },
+      workspace: {
+        id: workspace.id,
+        slug: workspace.slug,
+        name: workspace.name,
+      },
+    },
+  ];
 }
 
 export function matchPersonaFromLogin(request: AuthLoginRequest): PersonaKey {

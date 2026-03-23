@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import net from 'node:net';
+
+import { PrismaService } from '../database/prisma.service';
 
 export interface ConnectionCheckResult {
   status: 'configured' | 'mock' | 'reachable' | 'unreachable';
@@ -20,6 +22,30 @@ function parseConnectionTarget(rawUrl: string): { host: string; port: number } {
 
 @Injectable()
 export class InfrastructureHealthService {
+  constructor(@Inject(PrismaService) private readonly prismaService: PrismaService) {}
+
+  async checkDatabaseConnection(mode: 'mock' | 'connected'): Promise<ConnectionCheckResult> {
+    if (mode !== 'connected') {
+      return { status: 'mock' };
+    }
+
+    const startedAt = Date.now();
+
+    try {
+      await this.prismaService.$queryRaw`SELECT 1`;
+
+      return {
+        status: 'reachable',
+        latencyMs: Date.now() - startedAt,
+      };
+    } catch (error) {
+      return {
+        status: 'unreachable',
+        error: error instanceof Error ? error.message : 'Unknown Prisma connection failure',
+      };
+    }
+  }
+
   async checkTcpConnection(rawUrl: string, mode: 'mock' | 'connected'): Promise<ConnectionCheckResult> {
     if (mode !== 'connected') {
       return { status: 'mock' };

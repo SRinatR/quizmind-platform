@@ -1,0 +1,139 @@
+import { randomUUID } from 'node:crypto';
+import { type TestContext } from 'node:test';
+
+import { PrismaClient } from '@quizmind/database';
+
+import { AuthService } from '../src/auth/auth.service';
+import { EmailVerificationRepository } from '../src/auth/repositories/email-verification.repository';
+import { SessionRepository } from '../src/auth/repositories/session.repository';
+import { UserRepository } from '../src/auth/repositories/user.repository';
+import { SubscriptionRepository } from '../src/billing/subscription.repository';
+import { PrismaService } from '../src/database/prisma.service';
+import { ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
+import { FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
+import { PlatformService } from '../src/platform.service';
+import { RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
+import { InfrastructureHealthService } from '../src/services/infrastructure-health-service';
+import { SupportImpersonationRepository } from '../src/support/support-impersonation.repository';
+import { SupportTicketRepository } from '../src/support/support-ticket.repository';
+import { WorkspaceRepository } from '../src/workspaces/workspace.repository';
+
+const DEFAULT_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/quizmind';
+
+export interface IntegrationHarness {
+  authService: AuthService;
+  disconnect: () => Promise<void>;
+  emailVerificationRepository: EmailVerificationRepository;
+  env: {
+    appUrl: string;
+    apiUrl: string;
+    databaseUrl: string;
+    emailFrom: string;
+    jwtRefreshSecret: string;
+    jwtSecret: string;
+    nodeEnv: 'test';
+    port: number;
+    redisUrl: string;
+    runtimeMode: 'connected';
+  };
+  extensionCompatibilityRepository: ExtensionCompatibilityRepository;
+  prisma: PrismaClient;
+  featureFlagRepository: FeatureFlagRepository;
+  platformService: PlatformService;
+  remoteConfigRepository: RemoteConfigRepository;
+  sessionRepository: SessionRepository;
+  subscriptionRepository: SubscriptionRepository;
+  supportImpersonationRepository: SupportImpersonationRepository;
+  supportTicketRepository: SupportTicketRepository;
+  uniqueId: string;
+  userRepository: UserRepository;
+  workspaceRepository: WorkspaceRepository;
+}
+
+export async function createIntegrationHarness(t: TestContext): Promise<IntegrationHarness | null> {
+  const databaseUrl = process.env.QUIZMIND_TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
+    log: ['error'],
+  });
+
+  try {
+    await prisma.$connect();
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.user.count();
+  } catch (error) {
+    await prisma.$disconnect().catch(() => undefined);
+    const message = error instanceof Error ? error.message : String(error);
+    t.diagnostic(`Integration database is not ready at ${databaseUrl}: ${message}`);
+    t.skip('Skipping Prisma integration test because PostgreSQL is unavailable or migrations were not applied.');
+    return null;
+  }
+
+  const prismaService = prisma as unknown as PrismaService;
+  const userRepository = new UserRepository(prismaService);
+  const sessionRepository = new SessionRepository(prismaService);
+  const emailVerificationRepository = new EmailVerificationRepository(prismaService);
+  const workspaceRepository = new WorkspaceRepository(prismaService);
+  const subscriptionRepository = new SubscriptionRepository(prismaService);
+  const extensionCompatibilityRepository = new ExtensionCompatibilityRepository(prismaService);
+  const featureFlagRepository = new FeatureFlagRepository(prismaService);
+  const remoteConfigRepository = new RemoteConfigRepository(prismaService);
+  const supportTicketRepository = new SupportTicketRepository(prismaService);
+  const supportImpersonationRepository = new SupportImpersonationRepository(prismaService);
+  const authService = new AuthService(userRepository, sessionRepository, emailVerificationRepository);
+  const platformService = new PlatformService(
+    {
+      checkDatabaseConnection: async () => ({ status: 'up', latencyMs: 0 }),
+      checkTcpConnection: async () => ({ status: 'up', latencyMs: 0 }),
+    } as InfrastructureHealthService,
+    subscriptionRepository,
+    extensionCompatibilityRepository,
+    featureFlagRepository,
+    remoteConfigRepository,
+    workspaceRepository,
+    userRepository,
+    supportTicketRepository,
+    supportImpersonationRepository,
+  );
+  const env = {
+    nodeEnv: 'test' as const,
+    appUrl: 'http://localhost:3000',
+    apiUrl: 'http://localhost:4000',
+    databaseUrl,
+    redisUrl: 'redis://localhost:6379',
+    runtimeMode: 'connected' as const,
+    port: 4000,
+    jwtSecret: 'integration-jwt-secret',
+    jwtRefreshSecret: 'integration-refresh-secret',
+    emailFrom: 'noreply@quizmind.local',
+  };
+
+  (authService as any).env = env;
+  (authService as any).logSecurityEvent = () => {};
+  (platformService as any).env = env;
+
+  return {
+    authService,
+    disconnect: async () => {
+      await prisma.$disconnect();
+    },
+    emailVerificationRepository,
+    env,
+    extensionCompatibilityRepository,
+    featureFlagRepository,
+    prisma,
+    platformService,
+    remoteConfigRepository,
+    sessionRepository,
+    subscriptionRepository,
+    supportImpersonationRepository,
+    supportTicketRepository,
+    uniqueId: randomUUID().replace(/-/g, '').slice(0, 12),
+    userRepository,
+    workspaceRepository,
+  };
+}

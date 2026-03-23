@@ -1,6 +1,7 @@
 import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../../components/site-shell';
+import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { getSession, getSubscription, resolvePersona } from '../../../lib/api';
 import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
 
@@ -13,20 +14,26 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
-  const session = await getSession(persona);
+  const accessToken = await getAccessTokenFromCookies();
+  const session = await getSession(persona, accessToken);
+  const isConnectedSession = session?.personaKey === 'connected-user';
+  const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
-  const subscription = workspaceId ? await getSubscription(persona, workspaceId) : null;
+  const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
 
   return (
     <SiteShell
-      apiState={session ? `Persona ${session.personaLabel}` : 'API offline fallback'}
+      apiState={
+        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+      }
       currentPersona={persona}
       description="Each dashboard route can be opened directly, but its availability still follows the permission and entitlement model."
       eyebrow="App Route"
       pathname={`/app/${resolvedParams.section}`}
+      showPersonaSwitcher={!isConnectedSession}
       title={section?.title ?? 'Section unavailable'}
     >
       {section && session ? (

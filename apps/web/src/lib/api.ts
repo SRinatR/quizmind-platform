@@ -1,10 +1,13 @@
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
   type AccessDecision,
+  type AdminUserDirectorySnapshot,
   type ApiRouteDefinition,
   type FeatureFlagDefinition,
   type PlanDefinition,
   type RemoteConfigLayer,
+  type SupportImpersonationHistorySnapshot,
+  type SupportTicketQueueSnapshot,
   type SubscriptionSummary,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
@@ -102,7 +105,11 @@ export interface FeatureFlagsSnapshot {
   permissions: string[];
 }
 
-const API_URL =
+export type SupportImpersonationSnapshot = SupportImpersonationHistorySnapshot;
+export type SupportTicketsSnapshot = SupportTicketQueueSnapshot;
+export type AdminUsersSnapshot = AdminUserDirectorySnapshot;
+
+export const API_URL =
   process.env.API_INTERNAL_URL ??
   process.env.NEXT_PUBLIC_API_URL ??
   'http://localhost:4000';
@@ -152,23 +159,68 @@ export async function getFoundation() {
   return readApiData<FoundationSnapshot>('/foundation');
 }
 
-export async function getSession(persona: string) {
-  return readApiData<SessionSnapshot>(withPersona('/auth/me', persona));
+function withAccessToken(init: RequestInit | undefined, accessToken?: string | null): RequestInit | undefined {
+  if (!accessToken) {
+    return init;
+  }
+
+  return {
+    ...init,
+    headers: {
+      ...(init?.headers ?? {}),
+      authorization: `Bearer ${accessToken}`,
+    },
+  };
 }
 
-export async function getWorkspaces(persona: string) {
-  return readApiData<WorkspaceListSnapshot>(withPersona('/workspaces', persona));
+export async function getSession(persona: string, accessToken?: string | null) {
+  const path = accessToken ? '/auth/me' : withPersona('/auth/me', persona);
+
+  return readApiData<SessionSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getSubscription(persona: string, workspaceId?: string) {
-  const basePath = withPersona('/billing/subscription', persona);
-  const path = workspaceId ? `${basePath}&workspaceId=${workspaceId}` : basePath;
+export async function getWorkspaces(persona: string, accessToken?: string | null) {
+  const path = accessToken ? '/workspaces' : withPersona('/workspaces', persona);
 
-  return readApiData<WorkspaceSubscriptionSnapshot>(path);
+  return readApiData<WorkspaceListSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getFeatureFlags(persona: string) {
-  return readApiData<FeatureFlagsSnapshot>(withPersona('/admin/feature-flags', persona));
+export async function getSubscription(persona: string, workspaceId?: string, accessToken?: string | null) {
+  const basePath = accessToken ? '/billing/subscription' : withPersona('/billing/subscription', persona);
+  const path = workspaceId
+    ? `${basePath}${basePath.includes('?') ? '&' : '?'}workspaceId=${workspaceId}`
+    : basePath;
+
+  return readApiData<WorkspaceSubscriptionSnapshot>(
+    path,
+    withAccessToken(undefined, accessToken),
+  );
+}
+
+export async function getFeatureFlags(persona: string, accessToken?: string | null) {
+  const path = accessToken ? '/admin/feature-flags' : withPersona('/admin/feature-flags', persona);
+
+  return readApiData<FeatureFlagsSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getAdminUsers(persona: string, accessToken?: string | null) {
+  const path = accessToken ? '/admin/users' : withPersona('/admin/users', persona);
+
+  return readApiData<AdminUsersSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getSupportImpersonationSessions(persona: string, accessToken?: string | null) {
+  const path = accessToken
+    ? '/support/impersonation-sessions'
+    : withPersona('/support/impersonation-sessions', persona);
+
+  return readApiData<SupportImpersonationSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getSupportTickets(persona: string, accessToken?: string | null) {
+  const path = accessToken ? '/support/tickets' : withPersona('/support/tickets', persona);
+
+  return readApiData<SupportTicketsSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export function personaHref(pathname: string, persona: string) {

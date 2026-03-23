@@ -10,6 +10,22 @@ export function canPublishRemoteConfig(principal: SessionPrincipal): AccessDecis
   });
 }
 
+export function canReadFeatureFlags(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'feature_flags:read',
+  });
+}
+
+export function canReadUsers(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'users:read',
+  });
+}
+
 export function canReadWorkspaceSubscription(
   principal: SessionPrincipal,
   workspaceId: string,
@@ -19,7 +35,38 @@ export function canReadWorkspaceSubscription(
   return evaluateAccess(context, {
     permission: 'subscriptions:read',
     workspaceId,
-    requiredEntitlements: ['feature.remote_sync'],
+  });
+}
+
+export function canStartSupportImpersonation(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'support:impersonate',
+  });
+}
+
+export function canReadSupportImpersonationSessions(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'support:impersonate',
+  });
+}
+
+export function canReadSupportTickets(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'support:impersonate',
+  });
+}
+
+export function canEndSupportImpersonation(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'support:impersonate',
   });
 }
 

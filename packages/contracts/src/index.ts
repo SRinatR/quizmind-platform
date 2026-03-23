@@ -38,6 +38,7 @@ export const compatibilityStatuses = [
   'deprecated',
   'unsupported',
 ] as const;
+export const ticketStatuses = ['open', 'in_progress', 'resolved', 'closed'] as const;
 export const remoteConfigScopes = [
   'global',
   'environment',
@@ -62,6 +63,7 @@ export type WorkspaceRole = (typeof workspaceRoles)[number];
 export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 export type FeatureFlagStatus = (typeof featureFlagStatuses)[number];
 export type CompatibilityStatus = (typeof compatibilityStatuses)[number];
+export type TicketStatus = (typeof ticketStatuses)[number];
 export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 export type PlatformQueue = (typeof platformQueues)[number];
 
@@ -202,6 +204,20 @@ export interface AuthLoginRequest {
   password: string;
 }
 
+export interface AuthRegisterRequest {
+  email: string;
+  password: string;
+  displayName?: string;
+}
+
+export interface AuthRefreshRequest {
+  refreshToken: string;
+}
+
+export interface AuthLogoutRequest {
+  refreshToken?: string;
+}
+
 export interface AuthSessionPayload {
   accessToken: string;
   refreshToken: string;
@@ -211,7 +227,33 @@ export interface AuthSessionPayload {
     email: string;
     displayName?: string;
     systemRoles: SystemRole[];
+    emailVerifiedAt?: string | null;
   };
+}
+
+export interface AuthEmailVerificationStatus {
+  required: boolean;
+  delivery?: {
+    provider: string;
+    messageId: string;
+    acceptedAt: string;
+  };
+  emailVerifiedAt?: string | null;
+}
+
+export interface AuthExchangePayload {
+  session: AuthSessionPayload;
+  emailVerification: AuthEmailVerificationStatus;
+}
+
+export interface AuthLogoutResult {
+  revoked: boolean;
+  revokedSessionId?: string;
+}
+
+export interface AuthLogoutAllResult {
+  revoked: boolean;
+  revokedCount: number;
 }
 
 export interface WorkspaceSummary {
@@ -219,6 +261,31 @@ export interface WorkspaceSummary {
   slug: string;
   name: string;
   role: WorkspaceRole;
+}
+
+export interface AdminUserWorkspaceMembership {
+  workspaceId: string;
+  workspaceSlug: string;
+  workspaceName: string;
+  role: WorkspaceRole;
+}
+
+export interface AdminUserDirectoryEntry {
+  id: string;
+  email: string;
+  displayName?: string;
+  emailVerifiedAt?: string | null;
+  suspendedAt?: string | null;
+  lastLoginAt?: string | null;
+  systemRoles: SystemRole[];
+  workspaces: AdminUserWorkspaceMembership[];
+}
+
+export interface AdminUserDirectorySnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  items: AdminUserDirectoryEntry[];
+  permissions: string[];
 }
 
 export interface SubscriptionSummary {
@@ -280,6 +347,14 @@ export interface SupportImpersonationRequest {
   targetUserId: string;
   workspaceId?: string;
   reason: string;
+  supportTicketId?: string;
+  operatorNote?: string;
+}
+
+export interface SupportTicketReference {
+  id: string;
+  subject: string;
+  status: TicketStatus;
 }
 
 export interface SupportImpersonationResult {
@@ -289,6 +364,72 @@ export interface SupportImpersonationResult {
   workspaceId?: string;
   reason: string;
   createdAt: string;
+  supportTicket?: SupportTicketReference;
+  operatorNote?: string;
+}
+
+export interface SupportImpersonationEndRequest {
+  impersonationSessionId: string;
+}
+
+export interface SupportImpersonationEndResult {
+  impersonationSessionId: string;
+  targetUserId: string;
+  workspaceId?: string;
+  reason: string;
+  createdAt: string;
+  endedAt: string;
+  supportTicket?: SupportTicketReference;
+  operatorNote?: string;
+}
+
+export interface SupportImpersonationActor {
+  id: string;
+  email: string;
+  displayName?: string;
+}
+
+export interface SupportImpersonationWorkspace {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export interface SupportImpersonationSessionSnapshot {
+  impersonationSessionId: string;
+  supportActor: SupportImpersonationActor;
+  targetUser: SupportImpersonationActor;
+  workspace?: SupportImpersonationWorkspace;
+  reason: string;
+  createdAt: string;
+  endedAt?: string | null;
+  supportTicket?: SupportTicketReference;
+  operatorNote?: string;
+}
+
+export interface SupportImpersonationHistorySnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  items: SupportImpersonationSessionSnapshot[];
+  permissions: string[];
+}
+
+export interface SupportTicketQueueEntry {
+  id: string;
+  subject: string;
+  body: string;
+  status: TicketStatus;
+  createdAt: string;
+  updatedAt: string;
+  requester: SupportImpersonationActor;
+  workspace?: SupportImpersonationWorkspace;
+}
+
+export interface SupportTicketQueueSnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  items: SupportTicketQueueEntry[];
+  permissions: string[];
 }
 
 export interface ApiRouteDefinition {

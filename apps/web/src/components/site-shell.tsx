@@ -12,6 +12,7 @@ interface SiteShellProps {
   description: string;
   eyebrow: string;
   pathname: string;
+  showPersonaSwitcher?: boolean;
   title: string;
 }
 
@@ -41,6 +42,7 @@ export function SiteShell({
   description,
   eyebrow,
   pathname,
+  showPersonaSwitcher = true,
   title,
 }: SiteShellProps) {
   return (
@@ -53,7 +55,7 @@ export function SiteShell({
         </div>
         <div className="hero-actions">
           <div className="status-pill">{apiState}</div>
-          <PersonaSwitcher currentPersona={currentPersona} pathname={pathname} />
+          {showPersonaSwitcher ? <PersonaSwitcher currentPersona={currentPersona} pathname={pathname} /> : null}
         </div>
         <div className="nav-cluster">
           {renderNavGroup({

@@ -10,6 +10,7 @@ import {
   starterFlags,
   starterRemoteConfig,
 } from '../bootstrap/platform-blueprint';
+import { type ExtensionCompatibilityRuleRecord } from '../extension/extension-compatibility.repository';
 
 export const defaultCompatibilityPolicy: CompatibilityPolicy = {
   minimumVersion: '1.0.0',
@@ -22,6 +23,31 @@ export interface ExtensionBootstrapDependencies {
   compatibilityPolicy?: CompatibilityPolicy;
   flagDefinitions?: FeatureFlagDefinition[];
   remoteConfigLayers?: RemoteConfigLayer[];
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+export function mapExtensionCompatibilityRuleToPolicy(
+  rule: ExtensionCompatibilityRuleRecord,
+  fallback: CompatibilityPolicy = defaultCompatibilityPolicy,
+): CompatibilityPolicy {
+  return {
+    minimumVersion: rule.minimumVersion,
+    recommendedVersion: rule.recommendedVersion,
+    supportedSchemaVersions:
+      isStringArray(rule.supportedSchemaVersions) && rule.supportedSchemaVersions.length > 0
+        ? rule.supportedSchemaVersions
+        : fallback.supportedSchemaVersions,
+    ...(rule.requiredCapabilities === null
+      ? {}
+      : isStringArray(rule.requiredCapabilities)
+        ? { requiredCapabilities: rule.requiredCapabilities }
+        : fallback.requiredCapabilities
+          ? { requiredCapabilities: fallback.requiredCapabilities }
+          : {}),
+  };
 }
 
 export function resolveExtensionBootstrap(

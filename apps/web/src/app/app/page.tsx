@@ -1,6 +1,7 @@
 import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../components/site-shell';
+import { getAccessTokenFromCookies } from '../../lib/auth-session';
 import { getSession, getSubscription, resolvePersona } from '../../lib/api';
 import { getVisibleDashboardSections } from '../../features/navigation/visibility';
 
@@ -11,19 +12,25 @@ interface AppPageProps {
 export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
-  const session = await getSession(persona);
+  const accessToken = await getAccessTokenFromCookies();
+  const session = await getSession(persona, accessToken);
+  const isConnectedSession = session?.personaKey === 'connected-user';
+  const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
-  const subscription = workspaceId ? await getSubscription(persona, workspaceId) : null;
+  const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
 
   return (
     <SiteShell
-      apiState={session ? `Persona ${session.personaLabel}` : 'API offline fallback'}
+      apiState={
+        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+      }
       currentPersona={persona}
       description="Role-aware dashboard sections are computed from the same permissions, roles, and entitlements used by the backend."
       eyebrow="Dashboard"
       pathname="/app"
+      showPersonaSwitcher={!isConnectedSession}
       title="Workspace control surface"
     >
       {session ? (

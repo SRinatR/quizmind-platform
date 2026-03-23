@@ -19,6 +19,15 @@ export const adminSections: AdminSection[] = [
     },
   },
   {
+    id: 'support',
+    title: 'Support Access',
+    href: '/admin/support',
+    description: 'Recent impersonation sessions, support actions, and operator context.',
+    requirement: {
+      permission: 'support:impersonate',
+    },
+  },
+  {
     id: 'plans',
     title: 'Plans',
     href: '/admin/plans',

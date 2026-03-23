@@ -1,0 +1,147 @@
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Inject,
+  Ip,
+  Post,
+  Query,
+  ServiceUnavailableException,
+  UseGuards,
+} from '@nestjs/common';
+import { parseBearerToken } from '@quizmind/auth';
+import {
+  type ApiSuccess,
+  type AuthLoginRequest,
+  type AuthLogoutRequest,
+  type AuthRefreshRequest,
+  type AuthRegisterRequest,
+} from '@quizmind/contracts';
+import { loadApiEnv } from '@quizmind/config';
+
+import { PlatformService } from '../platform.service';
+import { AuthService } from './auth.service';
+import { CurrentUser } from './current-user.decorator';
+import { JwtAuthGuard } from './jwt-auth.guard';
+import { type AuthenticatedRequestUser } from './auth.types';
+
+function ok<T>(data: T): ApiSuccess<T> {
+  return {
+    ok: true,
+    data,
+  };
+}
+
+@Controller('auth')
+export class AuthController {
+  private readonly env = loadApiEnv();
+
+  constructor(
+    @Inject(AuthService)
+    private readonly authService: AuthService,
+    @Inject(PlatformService)
+    private readonly platformService: PlatformService,
+  ) {}
+
+  @Post('register')
+  async register(
+    @Body() request?: AuthRegisterRequest,
+    @Ip() ipAddress?: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    this.assertConnectedMode();
+    return ok(await this.authService.register(this.requireBody(request, 'register'), { ipAddress, userAgent }));
+  }
+
+  @Post('login')
+  async login(
+    @Body() request?: AuthLoginRequest,
+    @Ip() ipAddress?: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const payload = this.requireBody(request, 'login');
+
+    if (this.env.runtimeMode !== 'connected') {
+      return ok(await this.platformService.login(payload));
+    }
+
+    return ok(await this.authService.login(payload, { ipAddress, userAgent }));
+  }
+
+  @Post('refresh')
+  async refresh(
+    @Body() request?: AuthRefreshRequest,
+    @Ip() ipAddress?: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    this.assertConnectedMode();
+    return ok(await this.authService.refresh(this.requireBody(request, 'refresh'), { ipAddress, userAgent }));
+  }
+
+  @Post('logout')
+  async logout(
+    @Body() request?: AuthLogoutRequest,
+    @Headers('authorization') authorization?: string,
+  ) {
+    this.assertConnectedMode();
+    return ok(
+      await this.authService.logout({
+        refreshToken: request?.refreshToken,
+        accessToken: parseBearerToken(authorization),
+      }),
+    );
+  }
+
+  @Post('logout-all')
+  @UseGuards(JwtAuthGuard)
+  async logoutAll(@CurrentUser() currentUser?: AuthenticatedRequestUser) {
+    this.assertConnectedMode();
+
+    if (!currentUser) {
+      throw new BadRequestException('Authenticated user context is missing.');
+    }
+
+    return ok(await this.authService.logoutAll(currentUser.userId));
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token?: string) {
+    this.assertConnectedMode();
+
+    if (!token) {
+      throw new BadRequestException('Email verification token is required.');
+    }
+
+    return ok(await this.authService.verifyEmail(token));
+  }
+
+  @Get('me')
+  async getCurrentSession(
+    @Headers('authorization') authorization?: string,
+    @Query('persona') persona?: string,
+  ) {
+    const accessToken = parseBearerToken(authorization);
+
+    if (this.env.runtimeMode !== 'connected' || !accessToken) {
+      return ok(this.platformService.getCurrentSession(persona));
+    }
+
+    return ok(await this.authService.getCurrentSession(accessToken));
+  }
+
+  private requireBody<T>(request: T | undefined, action: string): T {
+    if (!request) {
+      throw new BadRequestException(`Missing request body for /auth/${action}.`);
+    }
+
+    return request;
+  }
+
+  private assertConnectedMode(): void {
+    if (this.env.runtimeMode !== 'connected') {
+      throw new ServiceUnavailableException('Real auth requires QUIZMIND_RUNTIME_MODE=connected.');
+    }
+  }
+}

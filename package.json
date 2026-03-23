@@ -10,9 +10,9 @@
     "typescript": "^5.8.2"
   },
   "scripts": {
-    "build": "turbo run build",
-    "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
-    "test": "node --import tsx --test packages/*/test/**/*.test.ts"
+    "build": "corepack pnpm -r --if-present run build",
+    "lint": "corepack pnpm -r --workspace-concurrency=1 --if-present run lint",
+    "typecheck": "corepack pnpm -r --if-present run typecheck",
+    "test": "node --import tsx --test packages/*/test/**/*.test.ts apps/*/test/**/*.test.ts"
   }
 }

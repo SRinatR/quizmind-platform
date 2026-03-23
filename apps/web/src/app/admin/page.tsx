@@ -1,7 +1,15 @@
 import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../components/site-shell';
-import { getFeatureFlags, getFoundation, getSession, resolvePersona } from '../../lib/api';
+import { getAccessTokenFromCookies } from '../../lib/auth-session';
+import {
+  getAdminUsers,
+  getFeatureFlags,
+  getFoundation,
+  getSession,
+  getSupportImpersonationSessions,
+  resolvePersona,
+} from '../../lib/api';
 import { getVisibleAdminSections } from '../../features/navigation/visibility';
 
 interface AdminPageProps {
@@ -11,22 +19,30 @@ interface AdminPageProps {
 export default async function AdminPage({ searchParams }: AdminPageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
-  const [session, foundation, featureFlags] = await Promise.all([
-    getSession(persona),
+  const accessToken = await getAccessTokenFromCookies();
+  const [session, foundation, featureFlags, adminUsers, supportImpersonationSessions] = await Promise.all([
+    getSession(persona, accessToken),
     getFoundation(),
-    getFeatureFlags(persona),
+    getFeatureFlags(persona, accessToken),
+    getAdminUsers(persona, accessToken),
+    getSupportImpersonationSessions(persona, accessToken),
   ]);
+  const isConnectedSession = session?.personaKey === 'connected-user';
+  const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleAdminSections(context, workspaceId) : [];
 
   return (
     <SiteShell
-      apiState={session ? `Persona ${session.personaLabel}` : 'API offline fallback'}
+      apiState={
+        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+      }
       currentPersona={persona}
       description="Admin routes are intentionally stricter: some personas can inspect users, others can publish control-plane changes, and viewers are blocked entirely."
       eyebrow="Admin"
       pathname="/admin"
+      showPersonaSwitcher={!isConnectedSession}
       title="Platform administration"
     >
       {session && visibleSections.length > 0 ? (
@@ -47,18 +63,18 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             </article>
 
             <article className="panel">
-              <span className="micro-label">Feature Flags</span>
-              <h2>Publish eligibility</h2>
+              <span className="micro-label">Users</span>
+              <h2>Directory visibility</h2>
               <div className="tag-row">
-                <span className={featureFlags?.publishDecision.allowed ? 'tag' : 'tag warn'}>
-                  {featureFlags?.publishDecision.allowed ? 'can publish' : 'cannot publish'}
+                <span className={adminUsers?.accessDecision.allowed ? 'tag' : 'tag warn'}>
+                  {adminUsers?.accessDecision.allowed ? 'directory visible' : 'directory restricted'}
                 </span>
               </div>
               <div className="list-stack">
-                {(featureFlags?.flags ?? []).map((flag) => (
-                  <div className="list-item" key={flag.key}>
-                    <strong>{flag.key}</strong>
-                    <p>{flag.description}</p>
+                {(adminUsers?.items ?? []).slice(0, 4).map((user) => (
+                  <div className="list-item" key={user.id}>
+                    <strong>{user.displayName || user.email}</strong>
+                    <p>{user.email}</p>
                   </div>
                 ))}
               </div>
@@ -95,6 +111,38 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </div>
             </article>
           </section>
+
+          {supportImpersonationSessions?.accessDecision.allowed ? (
+            <section className="panel">
+              <span className="micro-label">Support</span>
+              <h2>Recent impersonation sessions</h2>
+              <div className="tag-row">
+                <span className="tag">
+                  {supportImpersonationSessions.items.length} recent
+                  {supportImpersonationSessions.items.length === 1 ? ' session' : ' sessions'}
+                </span>
+              </div>
+              {supportImpersonationSessions.items.length > 0 ? (
+                <div className="list-stack">
+                  {supportImpersonationSessions.items.map((item) => (
+                    <div className="list-item" key={item.impersonationSessionId}>
+                      <strong>
+                        {item.supportActor.displayName || item.supportActor.email} {'->'}{' '}
+                        {item.targetUser.displayName || item.targetUser.email}
+                      </strong>
+                      <p>{item.reason}</p>
+                      <span className="list-muted">
+                        {item.workspace ? `${item.workspace.name} | ` : ''}
+                        {new Date(item.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p>No impersonation sessions have been started yet in this environment.</p>
+              )}
+            </section>
+          ) : null}
         </>
       ) : (
         <section className="empty-state">

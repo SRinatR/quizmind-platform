@@ -38,7 +38,12 @@ services:
       dockerfile: Dockerfile
     container_name: quizmind-api
     restart: unless-stopped
-    command: ["corepack", "pnpm", "--filter", "@quizmind/api", "start"]
+    command:
+      [
+        "sh",
+        "-lc",
+        "corepack pnpm --filter @quizmind/database db:migrate:deploy && corepack pnpm --filter @quizmind/database db:seed && corepack pnpm --filter @quizmind/api start"
+      ]
     environment:
       NODE_ENV: development
       QUIZMIND_RUNTIME_MODE: connected
@@ -47,7 +52,9 @@ services:
       APP_URL: "http://localhost:${WEB_HOST_PORT:-3001}"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/quizmind"
       REDIS_URL: "redis://redis:6379"
-      JWT_SECRET: replace-me
+      JWT_SECRET: "${JWT_SECRET:-quizmind-local-jwt-secret}"
+      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:-quizmind-local-refresh-secret}"
+      EMAIL_FROM: noreply@quizmind.local
     depends_on:
       postgres:
         condition: service_healthy
@@ -112,7 +119,12 @@ services:
       dockerfile: Dockerfile
     container_name: quizmind-worker
     restart: unless-stopped
-    command: ["corepack", "pnpm", "--filter", "@quizmind/worker", "start"]
+    command:
+      [
+        "sh",
+        "-lc",
+        "corepack pnpm --filter @quizmind/database db:migrate:deploy && corepack pnpm --filter @quizmind/worker start"
+      ]
     environment:
       NODE_ENV: development
       QUIZMIND_RUNTIME_MODE: connected
@@ -121,6 +133,8 @@ services:
       REDIS_URL: "redis://redis:6379"
       WORKER_HEARTBEAT_MS: 30000
     depends_on:
+      api:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       redis:
