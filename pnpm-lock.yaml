@@ -50,6 +50,9 @@ importers:
       '@quizmind/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@quizmind/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@quizmind/extension':
         specifier: workspace:*
         version: link:../../packages/extension
@@ -59,6 +62,9 @@ importers:
       '@quizmind/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
+      '@quizmind/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
@@ -129,6 +135,9 @@ importers:
       '@quizmind/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@quizmind/queue':
+        specifier: workspace:*
+        version: link:../../packages/queue
       bullmq:
         specifier: ^5.43.2
         version: 5.71.0
@@ -156,6 +165,9 @@ importers:
       '@quizmind/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@quizmind/testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/config: {}
 
@@ -163,11 +175,16 @@ importers:
 
   packages/database: {}
 
+  packages/email: {}
+
   packages/extension:
     dependencies:
       '@quizmind/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@quizmind/testing':
+        specifier: workspace:*
+        version: link:../testing
 
   packages/logger:
     dependencies:
@@ -176,6 +193,21 @@ importers:
         version: link:../contracts
 
   packages/permissions:
+    dependencies:
+      '@quizmind/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@quizmind/testing':
+        specifier: workspace:*
+        version: link:../testing
+
+  packages/queue:
+    dependencies:
+      '@quizmind/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/testing:
     dependencies:
       '@quizmind/contracts':
         specifier: workspace:*

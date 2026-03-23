@@ -1,16 +1,15 @@
 {
-  "name": "@quizmind/permissions",
+  "name": "@quizmind/testing",
   "private": true,
   "version": "0.1.0",
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@quizmind/contracts": "workspace:*",
-    "@quizmind/testing": "workspace:*"
+    "@quizmind/contracts": "workspace:*"
   },
   "scripts": {
-    "build": "echo 'permissions build placeholder'",
-    "lint": "echo 'permissions lint placeholder'",
+    "build": "echo 'testing build placeholder'",
+    "lint": "echo 'testing lint placeholder'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test test/**/*.test.ts"
   }
