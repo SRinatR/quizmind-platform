@@ -10,8 +10,6 @@ import {
 
 import { PlatformService } from './platform.service';
 
-const platformService = new PlatformService();
-
 function ok<T>(data: T): ApiSuccess<T> {
   return {
     ok: true,
@@ -21,20 +19,22 @@ function ok<T>(data: T): ApiSuccess<T> {
 
 @Controller()
 export class PlatformController {
+  constructor(private readonly platformService: PlatformService) {}
+
   @Get('health')
-  getHealth() {
-    return ok(platformService.getHealth());
+  async getHealth() {
+    return ok(await this.platformService.getHealth());
   }
 
   @Get('foundation')
   getFoundation() {
-    return ok(platformService.getFoundation());
+    return ok(this.platformService.getFoundation());
   }
 
   @Post('auth/login')
   login(@Body() request?: AuthLoginRequest) {
     return ok(
-      platformService.login(
+      this.platformService.login(
         request ?? {
           email: 'admin@quizmind.dev',
           password: 'demo-password',
@@ -45,12 +45,12 @@ export class PlatformController {
 
   @Get('auth/me')
   getCurrentSession(@Query('persona') persona?: string) {
-    return ok(platformService.getCurrentSession(persona));
+    return ok(this.platformService.getCurrentSession(persona));
   }
 
   @Get('workspaces')
   listWorkspaces(@Query('persona') persona?: string) {
-    return ok(platformService.listWorkspaces(persona));
+    return ok(this.platformService.listWorkspaces(persona));
   }
 
   @Get('billing/subscription')
@@ -58,31 +58,31 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Query('workspaceId') workspaceId?: string,
   ) {
-    return ok(platformService.getSubscription(persona, workspaceId));
+    return ok(this.platformService.getSubscription(persona, workspaceId));
   }
 
   @Get('admin/feature-flags')
   listFeatureFlags(@Query('persona') persona?: string) {
-    return ok(platformService.listFeatureFlags(persona));
+    return ok(this.platformService.listFeatureFlags(persona));
   }
 
   @Post('admin/remote-config/publish')
   publishRemoteConfig(@Body() request?: Partial<RemoteConfigPublishRequest>) {
-    return ok(platformService.publishRemoteConfig(request));
+    return ok(this.platformService.publishRemoteConfig(request));
   }
 
   @Post('extension/bootstrap')
   bootstrapExtension(@Body() request?: Partial<ExtensionBootstrapRequest>) {
-    return ok(platformService.bootstrapExtension(request));
+    return ok(this.platformService.bootstrapExtension(request));
   }
 
   @Post('extension/usage-events')
   ingestUsageEvent(@Body() event?: Partial<UsageEventPayload>) {
-    return ok(platformService.ingestUsageEvent(event));
+    return ok(this.platformService.ingestUsageEvent(event));
   }
 
   @Post('support/impersonation')
   startSupportImpersonation(@Body() request?: Partial<SupportImpersonationRequest>) {
-    return ok(platformService.startSupportImpersonation(request));
+    return ok(this.platformService.startSupportImpersonation(request));
   }
 }

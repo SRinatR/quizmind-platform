@@ -97,3 +97,57 @@ export function loadWorkerEnv(source: EnvSource = process.env): WorkerEnv {
     heartbeatIntervalMs: readNumberEnv(source, 'WORKER_HEARTBEAT_MS', 30000),
   };
 }
+
+
+export interface EnvValidationIssue {
+  key: string;
+  message: string;
+}
+
+export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
+  const issues: EnvValidationIssue[] = [];
+
+  if (!env.apiUrl) {
+    issues.push({ key: 'API_URL', message: 'API_URL must be defined.' });
+  }
+
+  if (!env.appUrl) {
+    issues.push({ key: 'APP_URL', message: 'APP_URL must be defined.' });
+  }
+
+  if (!env.jwtSecret || env.jwtSecret === 'replace-me') {
+    issues.push({ key: 'JWT_SECRET', message: 'JWT_SECRET must be set to a non-placeholder value.' });
+  }
+
+  if (env.runtimeMode === 'connected') {
+    if (!env.databaseUrl) {
+      issues.push({ key: 'DATABASE_URL', message: 'DATABASE_URL is required in connected mode.' });
+    }
+
+    if (!env.redisUrl) {
+      issues.push({ key: 'REDIS_URL', message: 'REDIS_URL is required in connected mode.' });
+    }
+  }
+
+  return issues;
+}
+
+export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
+  const issues: EnvValidationIssue[] = [];
+
+  if (!env.apiUrl) {
+    issues.push({ key: 'API_URL', message: 'API_URL must be defined.' });
+  }
+
+  if (env.runtimeMode === 'connected') {
+    if (!env.databaseUrl) {
+      issues.push({ key: 'DATABASE_URL', message: 'DATABASE_URL is required in connected mode.' });
+    }
+
+    if (!env.redisUrl) {
+      issues.push({ key: 'REDIS_URL', message: 'REDIS_URL is required in connected mode.' });
+    }
+  }
+
+  return issues;
+}

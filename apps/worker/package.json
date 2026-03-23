@@ -7,6 +7,7 @@
     "@quizmind/config": "workspace:*",
     "@quizmind/contracts": "workspace:*",
     "@quizmind/logger": "workspace:*",
+    "@quizmind/queue": "workspace:*",
     "bullmq": "^5.43.2",
     "dotenv": "^16.4.7",
     "ioredis": "^5.4.2",

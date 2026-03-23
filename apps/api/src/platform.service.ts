@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { listPrincipalPermissions, canPublishRemoteConfig, canReadWorkspaceSubscription } from './services/access-service';
-import { resolveWorkspaceSubscriptionSummary } from './services/billing-service';
-import { resolveExtensionBootstrap } from './services/extension-bootstrap-service';
-import { previewRemoteConfig, publishRemoteConfigVersion } from './services/remote-config-service';
-import { startSupportImpersonation } from './services/support-service';
-import { loadApiEnv } from '@quizmind/config';
+import { loadApiEnv, validateApiEnv } from '@quizmind/config';
+import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 import { createLogEvent } from '@quizmind/logger';
+import { buildQueueJob, listQueueDefinitions } from '@quizmind/queue';
 import {
-  platformQueues,
   type AuthLoginRequest,
   type ExtensionBootstrapRequest,
   type RemoteConfigPublishRequest,
@@ -16,6 +12,16 @@ import {
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
+import {
+  canPublishRemoteConfig,
+  canReadWorkspaceSubscription,
+  listPrincipalPermissions,
+} from './services/access-service';
+import { resolveWorkspaceSubscriptionSummary } from './services/billing-service';
+import { resolveExtensionBootstrap } from './services/extension-bootstrap-service';
+import { InfrastructureHealthService } from './services/infrastructure-health-service';
+import { previewRemoteConfig, publishRemoteConfigVersion } from './services/remote-config-service';
+import { startSupportImpersonation } from './services/support-service';
 import {
   buildAuthSession,
   getAccessibleWorkspaces,
@@ -30,7 +36,14 @@ import {
 export class PlatformService {
   private readonly env = loadApiEnv();
 
-  getHealth() {
+  constructor(private readonly infrastructureHealthService: InfrastructureHealthService) {}
+
+  async getHealth() {
+    const [postgresHealth, redisHealth] = await Promise.all([
+      this.infrastructureHealthService.checkTcpConnection(this.env.databaseUrl, this.env.runtimeMode),
+      this.infrastructureHealthService.checkTcpConnection(this.env.redisUrl, this.env.runtimeMode),
+    ]);
+
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -41,6 +54,10 @@ export class PlatformService {
         appUrl: this.env.appUrl,
         port: this.env.port,
       },
+      configuration: {
+        runtimeMode: this.env.runtimeMode,
+        validationIssues: validateApiEnv(this.env),
+      },
       observability: {
         requestLogging: 'enabled',
         auditLogging: 'enabled',
@@ -49,18 +66,22 @@ export class PlatformService {
       infrastructure: [
         {
           service: 'postgres',
-          status: this.env.runtimeMode === 'connected' ? 'configured' : 'mock',
+          status: postgresHealth.status,
           url: this.env.databaseUrl,
+          latencyMs: postgresHealth.latencyMs,
+          error: postgresHealth.error,
         },
         {
           service: 'redis',
-          status: this.env.runtimeMode === 'connected' ? 'configured' : 'mock',
+          status: redisHealth.status,
           url: this.env.redisUrl,
+          latencyMs: redisHealth.latencyMs,
+          error: redisHealth.error,
         },
         {
           service: 'queues',
           status: this.env.runtimeMode === 'connected' ? 'ready_for_workers' : 'dry_run',
-          queues: platformQueues,
+          queues: listQueueDefinitions(),
         },
       ],
     };
@@ -69,6 +90,10 @@ export class PlatformService {
   getFoundation() {
     return {
       ...getFoundationOverview(),
+      notifications: {
+        emailProvider: 'noop',
+        templates: ['auth.verify-email', 'auth.password-reset', 'workspace.invitation'],
+      },
       runtime: {
         apiUrl: this.env.apiUrl,
         appUrl: this.env.appUrl,
@@ -77,14 +102,29 @@ export class PlatformService {
     };
   }
 
-  login(request: AuthLoginRequest) {
+  async login(request: AuthLoginRequest) {
     const persona = getPersona(matchPersonaFromLogin(request));
+    const emailReceipt = await sendTemplatedEmail(
+      createNoopEmailAdapter(),
+      verifyEmailTemplate,
+      persona.user.email,
+      {
+        productName: 'QuizMind',
+        displayName: persona.user.displayName,
+        verifyUrl: `${this.env.appUrl}/auth/verify?persona=${persona.key}`,
+        supportEmail: 'support@quizmind.dev',
+      },
+    );
 
     return {
       personaKey: persona.key,
       personaLabel: persona.label,
       notes: persona.notes,
       session: buildAuthSession(persona),
+      emailVerification: {
+        required: true,
+        delivery: emailReceipt,
+      },
     };
   }
 
@@ -203,9 +243,16 @@ export class PlatformService {
       },
     };
 
+    const queueJob = buildQueueJob({
+      queue: 'usage-events',
+      payload: usageEvent,
+      dedupeKey: `${usageEvent.installationId}:${usageEvent.occurredAt}`,
+    });
+
     return {
       queued: true,
-      queue: 'usage-events',
+      queue: queueJob.queue,
+      job: queueJob,
       handler: 'worker.process-usage-event',
       logEvent: createLogEvent({
         eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
