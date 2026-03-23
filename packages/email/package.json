@@ -1,0 +1,12 @@
+{
+  "name": "@quizmind/email",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "echo 'email build placeholder'",
+    "lint": "echo 'email lint placeholder'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  }
+}

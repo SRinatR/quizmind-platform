@@ -19,7 +19,9 @@
       "@quizmind/logger": ["packages/logger/src"],
       "@quizmind/permissions": ["packages/permissions/src"],
       "@quizmind/ui": ["packages/ui/src"],
-      "@quizmind/database": ["packages/database/src"]
+      "@quizmind/database": ["packages/database/src"],
+      "@quizmind/email": ["packages/email/src"],
+      "@quizmind/queue": ["packages/queue/src"]
     }
   }
 }
