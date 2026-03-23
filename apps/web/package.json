@@ -19,9 +19,9 @@
   },
   "scripts": {
     "build": "next build",
-    "dev": "node ./scripts/dev.mjs",
+    "dev": "next dev --turbopack --hostname 0.0.0.0 --port 3000",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "start": "next start --port 3000",
+    "start": "next start --hostname 0.0.0.0 --port 3000",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }

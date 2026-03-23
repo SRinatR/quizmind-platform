@@ -1,20 +1,27 @@
 {
-  "name": "quizmind-platform",
+  "name": "@quizmind/web",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@10.6.1",
-  "scripts": {
-    "build": "corepack pnpm -r --stream run build",
-    "dev": "corepack pnpm -r --parallel --stream --filter ./apps/* run dev",
-    "lint": "corepack pnpm -r --stream run lint",
-    "typecheck": "corepack pnpm -r --stream run typecheck",
-    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yml,css}\""
+  "dependencies": {
+    "@quizmind/auth": "workspace:*",
+    "@quizmind/billing": "workspace:*",
+    "@quizmind/config": "workspace:*",
+    "@quizmind/contracts": "workspace:*",
+    "@quizmind/permissions": "workspace:*",
+    "@quizmind/ui": "workspace:*",
+    "next": "^15.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "prettier": "^3.5.3",
-    "tsx": "^4.19.3",
-    "turbo": "^2.5.0",
-    "typescript": "^5.8.2"
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3"
+  },
+  "scripts": {
+    "build": "next build",
+    "dev": "next dev --turbopack --hostname ${WEB_HOSTNAME:-0.0.0.0} --port ${WEB_PORT:-3000}",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "start": "next start --hostname 0.0.0.0 --port 3000",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   }
 }
