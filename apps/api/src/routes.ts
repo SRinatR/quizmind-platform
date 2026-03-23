@@ -95,7 +95,7 @@ export const apiRoutes: ApiRouteDefinition[] = [
   {
     method: 'GET',
     path: '/support/tickets',
-    summary: 'List recent open support tickets with requester and workspace context.',
+    summary: 'List support tickets with queue filters, named presets, requester context, and recent workflow history.',
     permission: 'support:impersonate',
   },
   {
@@ -108,6 +108,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'POST',
     path: '/support/tickets/update',
     summary: 'Assign a support ticket, update workflow status, and save handoff metadata.',
+    permission: 'support:impersonate',
+  },
+  {
+    method: 'POST',
+    path: '/support/tickets/preset-favorite',
+    summary: 'Persist or remove personal support queue preset favorites for the current operator.',
     permission: 'support:impersonate',
   },
   {

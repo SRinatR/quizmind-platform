@@ -39,6 +39,6 @@ The contracts package now defines:
 - subscription summaries;
 - extension bootstrap request/response shapes;
 - usage event payloads;
-- support ticket queue and workflow update shapes;
+- support ticket queue filters, named preset views, personal preset favorite request/response shapes, workflow update, and recent timeline/history shapes;
 - support impersonation request/response/history shapes, including persisted close reasons for ended sessions;
 - route metadata definitions.

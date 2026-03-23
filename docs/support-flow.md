@@ -32,9 +32,9 @@ This reflects the requirement that sensitive support actions must be logged in m
 3. set `endedAt` on the persisted session;
 4. persist both a termination `AuditLog` and a termination `SecurityEvent`.
 
-`GET /support/tickets` now resolves recent open or in-progress support tickets, including persisted ownership and handoff metadata, and connected support sessions can start impersonation with persisted `supportTicketId` and `operatorNote` context.
+`GET /support/tickets` now resolves Prisma-backed support tickets with queue filters and named presets for status, ownership, search, and timeline depth, including persisted ownership, handoff metadata, and recent workflow timeline entries, and connected support sessions can start impersonation with persisted `supportTicketId` and `operatorNote` context.
 
-`POST /support/tickets/update` now lets connected support-capable callers claim tickets, change workflow status, and save operator handoff notes in Prisma-backed rows.
+`POST /support/tickets/update` now lets connected support-capable callers claim tickets, change workflow status, save operator handoff notes in Prisma-backed rows, and persist an `AuditLog` event that feeds the recent ticket workflow timeline.
 
 `POST /support/impersonation/end` now also accepts an optional persisted `closeReason`, stores it on the Prisma-backed session row, and includes it in termination audit/security metadata.
 
@@ -42,11 +42,11 @@ This reflects the requirement that sensitive support actions must be logged in m
 
 `/admin/users` now lets operators launch a support session with editable session reason and operator note instead of relying on a fixed template.
 
-`/admin/support` now lets operators claim ticket ownership, return tickets to the shared queue, move them through `open -> in_progress -> resolved/closed`, keep editable handoff notes beside the ticket-linked impersonation flow, launch ticket-linked sessions with editable session reason/operator note, and finish active impersonation sessions with an operator close reason.
+`/admin/support` now lets operators claim ticket ownership, return tickets to the shared queue, move them through `open -> in_progress -> resolved/closed`, review recent workflow history beside each ticket, apply URL-backed filters for queue scope, ownership, search, and history depth, jump between one-click named queue presets, save personal favorite presets that float to the front of the operator console, keep editable handoff notes beside the ticket-linked impersonation flow, launch ticket-linked sessions with editable session reason/operator note, and finish active impersonation sessions with an operator close reason.
 
 ## Intended next path
 
 1. add retention policies and automatic stale-session cleanup;
 2. add actor/target search and guardrails around workspace-scoped impersonation;
-3. surface richer operator context around ticket ownership history and multi-step handoffs in the web admin tools;
-4. add multi-operator assignment and explicit ownership history for support tickets.
+3. add multi-operator assignment and explicit longer-range ownership history for support tickets.
+4. add longer operator timelines, saved filter bundles, and richer ticket handoff summaries in the web admin tools.

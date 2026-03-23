@@ -266,6 +266,27 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
         slug: workspace.slug,
         name: workspace.name,
       },
+      timeline: [
+        {
+          id: 'support-ticket-demo-1:event-1',
+          eventType: 'support.ticket_workflow_updated',
+          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          occurredAt: '2026-03-23T10:22:00.000Z',
+          actor: {
+            id: 'user_support_admin',
+            email: 'support@quizmind.dev',
+            displayName: 'Mila Support',
+          },
+          previousStatus: 'open',
+          nextStatus: 'in_progress',
+          nextAssignee: {
+            id: 'user_support_admin',
+            email: 'support@quizmind.dev',
+            displayName: 'Mila Support',
+          },
+          handoffNote: 'Support is reproducing the billing denial before replying to the requester.',
+        },
+      ],
     },
     {
       id: 'support-ticket-demo-2',
@@ -290,6 +311,27 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
         displayName: supportPersona.user.displayName,
       },
       handoffNote: 'Already picked up by support. Waiting on final plan-comparison notes before resolving.',
+      timeline: [
+        {
+          id: 'support-ticket-demo-2:event-1',
+          eventType: 'support.ticket_workflow_updated',
+          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          occurredAt: '2026-03-23T09:36:00.000Z',
+          actor: {
+            id: supportPersona.user.id,
+            email: supportPersona.user.email,
+            displayName: supportPersona.user.displayName,
+          },
+          previousStatus: 'open',
+          nextStatus: 'in_progress',
+          nextAssignee: {
+            id: supportPersona.user.id,
+            email: supportPersona.user.email,
+            displayName: supportPersona.user.displayName,
+          },
+          handoffNote: 'Already picked up by support. Waiting on final plan-comparison notes before resolving.',
+        },
+      ],
     },
   ];
 }

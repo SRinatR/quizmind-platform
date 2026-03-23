@@ -16,6 +16,7 @@ import { RemoteConfigRepository } from './remote-config/remote-config.repository
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
 import { InfrastructureHealthService } from './services/infrastructure-health-service';
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
+import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-preset-favorite.repository';
 import { SupportTicketRepository } from './support/support-ticket.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
@@ -35,6 +36,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     SessionRepository,
     SubscriptionRepository,
     SupportImpersonationRepository,
+    SupportTicketPresetFavoriteRepository,
     SupportTicketRepository,
     UserRepository,
     WorkspaceRepository,

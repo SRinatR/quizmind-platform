@@ -9,19 +9,19 @@
     "@quizmind/contracts": "workspace:*",
     "@quizmind/permissions": "workspace:*",
     "@quizmind/ui": "workspace:*",
-    "next": "^15.2.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "^16.2.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.0.8",
-    "@types/react-dom": "^19.0.3",
-    "typescript": "^5.8.2"
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^6.0.2"
   },
   "scripts": {
     "build": "next build",
-    "dev": "next dev --turbopack --hostname 0.0.0.0 --port 3000",
+    "dev": "next dev --hostname 0.0.0.0 --port 3000",
     "lint": "next typegen && tsc -p tsconfig.json --noEmit",
     "start": "next start --hostname 0.0.0.0 --port 3000",
     "typecheck": "next typegen && tsc -p tsconfig.json --noEmit"

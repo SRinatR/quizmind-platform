@@ -1,4 +1,5 @@
 import { buildAccessContext } from '@quizmind/auth';
+import { type SupportTicketQueueFilters } from '@quizmind/contracts';
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
@@ -20,17 +21,55 @@ interface AdminSectionPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
+function readSearchParam(
+  searchParams: Record<string, string | string[] | undefined> | undefined,
+  key: string,
+): string | undefined {
+  const value = searchParams?.[key];
+
+  if (Array.isArray(value)) {
+    return value[0] ?? undefined;
+  }
+
+  return value ?? undefined;
+}
+
+function readIntegerSearchParam(
+  searchParams: Record<string, string | string[] | undefined> | undefined,
+  key: string,
+): number | undefined {
+  const rawValue = readSearchParam(searchParams, key);
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  const parsed = Number(rawValue);
+
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export default async function AdminSectionPage({ params, searchParams }: AdminSectionPageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
+  const supportTicketFilters: Partial<SupportTicketQueueFilters> = {
+    preset: readSearchParam(resolvedSearchParams, 'ticketPreset') as SupportTicketQueueFilters['preset'] | undefined,
+    status: readSearchParam(resolvedSearchParams, 'ticketStatus') as SupportTicketQueueFilters['status'] | undefined,
+    ownership: readSearchParam(resolvedSearchParams, 'ticketOwnership') as
+      | SupportTicketQueueFilters['ownership']
+      | undefined,
+    search: readSearchParam(resolvedSearchParams, 'ticketSearch'),
+    limit: readIntegerSearchParam(resolvedSearchParams, 'ticketLimit'),
+    timelineLimit: readIntegerSearchParam(resolvedSearchParams, 'ticketTimeline'),
+  };
   const [session, featureFlags, adminUsers, supportImpersonationSessions, supportTickets] = await Promise.all([
     getSession(persona, accessToken),
     getFeatureFlags(persona, accessToken),
     getAdminUsers(persona, accessToken),
     getSupportImpersonationSessions(persona, accessToken),
-    getSupportTickets(persona, accessToken),
+    getSupportTickets(persona, accessToken, supportTicketFilters),
   ]);
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
@@ -66,7 +105,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                     {(supportImpersonationSessions?.items.length ?? 0) === 1 ? ' session' : ' sessions'}
                   </span>
                   <span className="tag">
-                    {supportTickets?.items.length ?? 0} open
+                    {supportTickets?.items.length ?? 0} visible
                     {(supportTickets?.items.length ?? 0) === 1 ? ' ticket' : ' tickets'}
                   </span>
                 </div>
@@ -87,11 +126,13 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             </section>
             <section className="panel">
               <span className="micro-label">Support Queue</span>
-              <h2>Ticket-linked support starts</h2>
+              <h2>Filtered support queue</h2>
               {supportTickets ? (
                 <SupportTicketsClient
                   canStartSupportSessions={canManageSupportSessions}
                   currentUserId={session.user.id}
+                  favoritePresets={supportTickets.favoritePresets}
+                  filters={supportTickets.filters}
                   isConnectedSession={isConnectedSession}
                   items={supportTickets.items}
                 />

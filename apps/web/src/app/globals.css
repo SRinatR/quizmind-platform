@@ -1160,6 +1160,62 @@ a {
   gap: 12px;
 }
 
+.admin-support-presets {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.admin-support-preset-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-support-preset-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.admin-support-preset-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-support-preset-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.admin-support-preset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-support-filters {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.admin-support-filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
 .admin-ticket-editor {
   display: grid;
   gap: 12px;
@@ -1173,6 +1229,7 @@ a {
   gap: 8px;
 }
 
+.admin-ticket-field input,
 .admin-ticket-field select,
 .admin-ticket-field textarea {
   width: 100%;
@@ -1190,6 +1247,7 @@ a {
   min-height: 92px;
 }
 
+.admin-ticket-field input:focus,
 .admin-ticket-field select:focus,
 .admin-ticket-field textarea:focus {
   outline: none;
@@ -1202,6 +1260,21 @@ a {
   margin: 0;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.admin-ticket-timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-ticket-timeline-entry {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(31, 41, 51, 0.08);
 }
 
 .admin-directory-result {

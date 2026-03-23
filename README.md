@@ -61,13 +61,13 @@ pnpm build
 - `POST /admin/remote-config/publish` now persists Prisma-backed versions and layers when a bearer session is present.
 - `POST /extension/bootstrap` now resolves persisted compatibility policy, feature flags, active remote config layers, and workspace subscription plan in connected mode.
 - `GET /support/impersonation-sessions` now returns recent Prisma-backed impersonation history for support-capable sessions.
-- `GET /support/tickets` now returns recent Prisma-backed support tickets, including ownership and handoff metadata, for support-capable sessions.
-- `POST /support/tickets/update` now persists support ticket ownership changes, workflow state transitions, and handoff notes.
+- `GET /support/tickets` now returns Prisma-backed support tickets with server-side queue filters and named presets for status, ownership, search, and history depth, including ownership, handoff metadata, and recent workflow timeline entries, for support-capable sessions.
+- `POST /support/tickets/update` now persists support ticket ownership changes, workflow state transitions, handoff notes, and audit-backed ticket timeline history.
 - `POST /support/impersonation` now persists Prisma-backed impersonation sessions plus audit and security events when a bearer session is present.
 - `POST /support/impersonation/end` now closes active Prisma-backed impersonation sessions, persists an optional close reason, and writes termination audit and security events.
 - `/admin/users` now renders a connected user directory for admin/support-capable sessions.
 - `/admin/users` can now start persisted support impersonation sessions directly from the web UI for connected support-capable sessions, with editable launch reason and operator note.
-- `/admin/support` now renders a live support queue, lets operators claim tickets, move them through workflow states, edit handoff notes, start ticket-linked impersonation sessions with editable session reason and operator note, and end active sessions with an editable close reason in the web admin surface for connected support-capable sessions.
+- `/admin/support` now renders a live support queue, shows recent ticket workflow history, supports URL-backed queue filters plus one-click named queue presets for status, ownership, search, and history depth, lets each connected operator save personal favorite presets that float to the front of the console, lets operators claim tickets, move them through workflow states, edit handoff notes, start ticket-linked impersonation sessions with editable session reason and operator note, and end active sessions with an editable close reason in the web admin surface for connected support-capable sessions.
 
 ## Database Setup
 

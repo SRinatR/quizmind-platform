@@ -12,6 +12,7 @@ import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.re
 import { type RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { type InfrastructureHealthService } from '../src/services/infrastructure-health-service';
 import { type SupportImpersonationRepository } from '../src/support/support-impersonation.repository';
+import { type SupportTicketPresetFavoriteRepository } from '../src/support/support-ticket-preset-favorite.repository';
 import { type SupportTicketRepository } from '../src/support/support-ticket.repository';
 import { type WorkspaceRepository } from '../src/workspaces/workspace.repository';
 
@@ -24,6 +25,7 @@ function createPlatformService() {
   const workspaceRepository = {} as WorkspaceRepository;
   const userRepository = {} as UserRepository;
   const supportTicketRepository = {} as SupportTicketRepository;
+  const supportTicketPresetFavoriteRepository = {} as SupportTicketPresetFavoriteRepository;
   const supportImpersonationRepository = {} as SupportImpersonationRepository;
   const service = new PlatformService(
     infrastructureHealthService,
@@ -34,6 +36,7 @@ function createPlatformService() {
     workspaceRepository,
     userRepository,
     supportTicketRepository,
+    supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
   );
 
@@ -46,6 +49,7 @@ function createPlatformService() {
     workspaceRepository,
     userRepository,
     supportTicketRepository,
+    supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
   };
 }
@@ -711,7 +715,8 @@ test('PlatformService.endSupportImpersonationForCurrentSession is idempotent for
 });
 
 test('PlatformService.listSupportTicketsForCurrentSession maps persisted support tickets for support admins', async () => {
-  const { service, supportTicketRepository } = createPlatformService();
+  const { service, supportTicketRepository, supportTicketPresetFavoriteRepository } = createPlatformService();
+  let capturedTimelineLimit: number | undefined;
 
   supportTicketRepository.listRecent = async () =>
     [
@@ -740,6 +745,34 @@ test('PlatformService.listSupportTicketsForCurrentSession maps persisted support
         handoffNote: 'Support is already verifying the billing access path.',
       },
     ] as any;
+  supportTicketRepository.listTimelineEntries = async (_ticketIds, limitPerTicket) => {
+    capturedTimelineLimit = limitPerTicket;
+
+    return [
+      {
+        id: 'audit-ticket-1',
+        actorId: 'support_1',
+        action: 'support.ticket_workflow_updated',
+        targetType: 'support_ticket',
+        targetId: 'ticket-1',
+        metadataJson: {
+          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          actorEmail: 'support@quizmind.dev',
+          actorDisplayName: 'Mila Support',
+          previousStatus: 'open',
+          nextStatus: 'in_progress',
+          nextAssignee: {
+            id: 'support_1',
+            email: 'support@quizmind.dev',
+            displayName: 'Mila Support',
+          },
+          handoffNote: 'Support is already verifying the billing access path.',
+        },
+        createdAt: new Date('2026-03-23T11:46:00.000Z'),
+      },
+    ] as any;
+  };
+  supportTicketPresetFavoriteRepository.listByUserId = async () => ['shared_queue'];
 
   const result = await service.listSupportTicketsForCurrentSession({
     ...createConnectedSessionSnapshot(),
@@ -760,6 +793,14 @@ test('PlatformService.listSupportTicketsForCurrentSession maps persisted support
 
   assert.equal(result.personaKey, 'connected-user');
   assert.equal(result.accessDecision.allowed, true);
+  assert.deepEqual(result.filters, {
+    status: 'active',
+    ownership: 'all',
+    limit: 8,
+    timelineLimit: 4,
+  });
+  assert.deepEqual(result.favoritePresets, ['shared_queue']);
+  assert.equal(capturedTimelineLimit, 4);
   assert.deepEqual(result.items, [
     {
       id: 'ticket-1',
@@ -784,8 +825,216 @@ test('PlatformService.listSupportTicketsForCurrentSession maps persisted support
         name: 'Demo Workspace',
       },
       handoffNote: 'Support is already verifying the billing access path.',
+      timeline: [
+        {
+          id: 'audit-ticket-1',
+          eventType: 'support.ticket_workflow_updated',
+          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          occurredAt: '2026-03-23T11:46:00.000Z',
+          actor: {
+            id: 'support_1',
+            email: 'support@quizmind.dev',
+            displayName: 'Mila Support',
+          },
+          previousStatus: 'open',
+          nextStatus: 'in_progress',
+          nextAssignee: {
+            id: 'support_1',
+            email: 'support@quizmind.dev',
+            displayName: 'Mila Support',
+          },
+          handoffNote: 'Support is already verifying the billing access path.',
+        },
+      ],
     },
   ]);
+});
+
+test('PlatformService.listSupportTicketsForCurrentSession applies queue filters before reading timeline history', async () => {
+  const { service, supportTicketRepository, supportTicketPresetFavoriteRepository } = createPlatformService();
+  let capturedListRecentInput: any = null;
+  let capturedTimelineLimit: number | undefined;
+
+  supportTicketRepository.listRecent = async (input) => {
+    capturedListRecentInput = input;
+
+    return [
+      {
+        id: 'ticket-filtered-1',
+        subject: 'Billing follow-up for workspace owner',
+        body: 'Need to review a billing workflow handoff.',
+        status: 'in_progress',
+        createdAt: new Date('2026-03-23T11:30:00.000Z'),
+        updatedAt: new Date('2026-03-23T12:10:00.000Z'),
+        requester: {
+          id: 'user_3',
+          email: 'owner@quizmind.dev',
+          displayName: 'Owner User',
+        },
+        assignedTo: {
+          id: 'support_1',
+          email: 'support@quizmind.dev',
+          displayName: 'Mila Support',
+        },
+        workspace: {
+          id: 'ws_1',
+          slug: 'demo-workspace',
+          name: 'Demo Workspace',
+        },
+        handoffNote: 'Billing investigation is active.',
+      },
+    ] as any;
+  };
+  supportTicketRepository.listTimelineEntries = async (_ticketIds, limitPerTicket) => {
+    capturedTimelineLimit = limitPerTicket;
+
+    return [];
+  };
+  supportTicketPresetFavoriteRepository.listByUserId = async () => ['my_active'];
+
+  const result = await service.listSupportTicketsForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      user: {
+        id: 'support_1',
+        email: 'support@quizmind.dev',
+        displayName: 'Mila Support',
+        emailVerifiedAt: '2026-03-23T08:00:00.000Z',
+      },
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        userId: 'support_1',
+        email: 'support@quizmind.dev',
+        systemRoles: ['support_admin'],
+      },
+      permissions: ['support:impersonate', 'workspaces:read'],
+    },
+    {
+      status: 'in_progress',
+      ownership: 'mine',
+      search: ' billing ',
+      limit: 12,
+      timelineLimit: 2,
+    },
+  );
+
+  assert.deepEqual(capturedListRecentInput, {
+    statuses: ['in_progress'],
+    assignedToUserId: 'support_1',
+    search: 'billing',
+    limit: 12,
+  });
+  assert.equal(capturedTimelineLimit, 2);
+  assert.deepEqual(result.filters, {
+    status: 'in_progress',
+    ownership: 'mine',
+    search: 'billing',
+    limit: 12,
+    timelineLimit: 2,
+  });
+  assert.deepEqual(result.favoritePresets, ['my_active']);
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.id, 'ticket-filtered-1');
+});
+
+test('PlatformService.listSupportTicketsForCurrentSession expands named queue presets into repository filters', async () => {
+  const { service, supportTicketRepository, supportTicketPresetFavoriteRepository } = createPlatformService();
+  let capturedListRecentInput: any = null;
+  let capturedTimelineLimit: number | undefined;
+
+  supportTicketRepository.listRecent = async (input) => {
+    capturedListRecentInput = input;
+
+    return [];
+  };
+  supportTicketRepository.listTimelineEntries = async (_ticketIds, limitPerTicket) => {
+    capturedTimelineLimit = limitPerTicket;
+
+    return [];
+  };
+  supportTicketPresetFavoriteRepository.listByUserId = async () => ['shared_queue', 'my_active'];
+
+  const result = await service.listSupportTicketsForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      user: {
+        id: 'support_1',
+        email: 'support@quizmind.dev',
+        displayName: 'Mila Support',
+        emailVerifiedAt: '2026-03-23T08:00:00.000Z',
+      },
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        userId: 'support_1',
+        email: 'support@quizmind.dev',
+        systemRoles: ['support_admin'],
+      },
+      permissions: ['support:impersonate', 'workspaces:read'],
+    },
+    {
+      preset: 'shared_queue',
+    },
+  );
+
+  assert.deepEqual(capturedListRecentInput, {
+    statuses: ['open'],
+    unassignedOnly: true,
+    limit: 8,
+  });
+  assert.equal(capturedTimelineLimit, 4);
+  assert.deepEqual(result.filters, {
+    preset: 'shared_queue',
+    status: 'open',
+    ownership: 'unassigned',
+    limit: 8,
+    timelineLimit: 4,
+  });
+  assert.deepEqual(result.favoritePresets, ['shared_queue', 'my_active']);
+});
+
+test('PlatformService.updateSupportTicketPresetFavoriteForCurrentSession persists a personal queue preset favorite', async () => {
+  const { service, supportTicketPresetFavoriteRepository } = createPlatformService();
+  let capturedInput: any = null;
+
+  supportTicketPresetFavoriteRepository.setFavorite = async (input) => {
+    capturedInput = input;
+
+    return ['shared_queue', 'resolved_review'];
+  };
+
+  const result = await service.updateSupportTicketPresetFavoriteForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      user: {
+        id: 'support_1',
+        email: 'support@quizmind.dev',
+        displayName: 'Mila Support',
+        emailVerifiedAt: '2026-03-23T08:00:00.000Z',
+      },
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        userId: 'support_1',
+        email: 'support@quizmind.dev',
+        systemRoles: ['support_admin'],
+      },
+      permissions: ['support:impersonate', 'workspaces:read'],
+    },
+    {
+      preset: 'resolved_review',
+      favorite: true,
+    },
+  );
+
+  assert.deepEqual(capturedInput, {
+    userId: 'support_1',
+    preset: 'resolved_review',
+    favorite: true,
+  });
+  assert.deepEqual(result, {
+    preset: 'resolved_review',
+    favorite: true,
+    favorites: ['shared_queue', 'resolved_review'],
+  });
 });
 
 test('PlatformService.updateSupportTicketForCurrentSession persists ticket ownership, status, and handoff note', async () => {
@@ -842,6 +1091,30 @@ test('PlatformService.updateSupportTicketForCurrentSession persists ticket owner
       handoffNote: input.handoffNote,
     } as any;
   };
+  supportTicketRepository.listTimelineEntries = async () =>
+    [
+      {
+        id: 'audit-ticket-1',
+        actorId: 'support_1',
+        action: 'support.ticket_workflow_updated',
+        targetType: 'support_ticket',
+        targetId: 'ticket-1',
+        metadataJson: {
+          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          actorEmail: 'support@quizmind.dev',
+          actorDisplayName: 'Mila Support',
+          previousStatus: 'open',
+          nextStatus: 'in_progress',
+          nextAssignee: {
+            id: 'support_1',
+            email: 'support@quizmind.dev',
+            displayName: 'Mila Support',
+          },
+          handoffNote: 'Claimed during unit coverage while validating the billing access complaint.',
+        },
+        createdAt: new Date('2026-03-23T12:05:00.000Z'),
+      },
+    ] as any;
 
   const result = await service.updateSupportTicketForCurrentSession(
     {
@@ -872,10 +1145,17 @@ test('PlatformService.updateSupportTicketForCurrentSession persists ticket owner
   assert.equal(result.status, 'in_progress');
   assert.equal(result.assignedTo?.id, 'support_1');
   assert.equal(result.handoffNote, 'Claimed during unit coverage while validating the billing access complaint.');
+  assert.equal(result.timeline?.[0]?.summary, 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note');
   assert.equal(capturedInput.supportTicketId, 'ticket-1');
   assert.equal(capturedInput.status, 'in_progress');
   assert.equal(capturedInput.assignedToUserId, 'support_1');
   assert.equal(capturedInput.handoffNote, 'Claimed during unit coverage while validating the billing access complaint.');
+  assert.equal(capturedInput.auditLog.eventType, 'support.ticket_workflow_updated');
+  assert.equal(capturedInput.auditLog.targetId, 'ticket-1');
+  assert.equal(
+    capturedInput.auditLog.metadata?.summary,
+    'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+  );
 });
 
 test('PlatformService.listSupportImpersonationSessionsForCurrentSession maps persisted support sessions for support admins', async () => {

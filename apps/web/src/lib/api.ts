@@ -7,6 +7,7 @@ import {
   type PlanDefinition,
   type RemoteConfigLayer,
   type SupportImpersonationHistorySnapshot,
+  type SupportTicketQueueFilters,
   type SupportTicketQueueSnapshot,
   type SubscriptionSummary,
   type WorkspaceSummary,
@@ -128,6 +129,28 @@ function withPersona(path: string, persona?: string) {
   return `${path}${path.includes('?') ? '&' : '?'}persona=${persona}`;
 }
 
+function withQuery(path: string, query?: Record<string, string | number | undefined | null>) {
+  if (!query) {
+    return path;
+  }
+
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
+
+    params.set(key, String(value));
+  }
+
+  if (params.size === 0) {
+    return path;
+  }
+
+  return `${path}${path.includes('?') ? '&' : '?'}${params.toString()}`;
+}
+
 async function readApiData<T>(path: string, init?: RequestInit): Promise<T | null> {
   try {
     const response = await fetch(`${API_URL}${path}`, {
@@ -217,8 +240,20 @@ export async function getSupportImpersonationSessions(persona: string, accessTok
   return readApiData<SupportImpersonationSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getSupportTickets(persona: string, accessToken?: string | null) {
-  const path = accessToken ? '/support/tickets' : withPersona('/support/tickets', persona);
+export async function getSupportTickets(
+  persona: string,
+  accessToken?: string | null,
+  filters?: Partial<SupportTicketQueueFilters>,
+) {
+  const basePath = accessToken ? '/support/tickets' : withPersona('/support/tickets', persona);
+  const path = withQuery(basePath, {
+    preset: filters?.preset,
+    status: filters?.status,
+    ownership: filters?.ownership,
+    search: filters?.search,
+    limit: filters?.limit,
+    timelineLimit: filters?.timelineLimit,
+  });
 
   return readApiData<SupportTicketsSnapshot>(path, withAccessToken(undefined, accessToken));
 }

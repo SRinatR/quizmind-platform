@@ -1299,6 +1299,318 @@ test('Prisma-backed support ticket queue returns recent open tickets for support
   assert.equal(createdTicket?.requester.email, requesterEmail);
   assert.equal(createdTicket?.workspace?.id, workspaceId);
   assert.equal(createdTicket?.status, 'open');
+  assert.deepEqual(result.filters, {
+    status: 'active',
+    ownership: 'all',
+    limit: 8,
+    timelineLimit: 4,
+  });
+});
+
+test('Prisma-backed support ticket preset favorites persist per support operator and flow into queue snapshots', async (t) => {
+  const harness = await createIntegrationHarness(t);
+
+  if (!harness) {
+    return;
+  }
+
+  const supportEmail = `ticket-preset-support-${harness.uniqueId}@quizmind.dev`;
+  let supportUserId: string | null = null;
+
+  t.after(async () => {
+    if (supportUserId) {
+      await harness.prisma.supportTicketPresetFavorite
+        .deleteMany({
+          where: {
+            userId: supportUserId,
+          },
+        })
+        .catch(() => undefined);
+      await harness.prisma.user.delete({ where: { id: supportUserId } }).catch(() => undefined);
+    }
+
+    await harness.disconnect();
+  });
+
+  const supportUser = await harness.prisma.user.create({
+    data: {
+      email: supportEmail,
+      displayName: 'Preset Support Admin',
+      passwordHash: 'integration-password-hash',
+      emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
+      systemRoleAssignments: {
+        create: {
+          role: 'support_admin',
+        },
+      },
+    },
+  });
+
+  supportUserId = supportUser.id;
+
+  const snapshot = await createSessionSnapshotForUser(harness, {
+    email: supportEmail,
+    userId: supportUserId,
+    roles: ['support_admin'],
+  });
+
+  const favoriteResult = await harness.platformService.updateSupportTicketPresetFavoriteForCurrentSession(snapshot, {
+    preset: 'resolved_review',
+    favorite: true,
+  });
+
+  assert.deepEqual(favoriteResult, {
+    preset: 'resolved_review',
+    favorite: true,
+    favorites: ['resolved_review'],
+  });
+
+  const persistedFavorites = await harness.prisma.supportTicketPresetFavorite.findMany({
+    where: {
+      userId: supportUserId,
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  });
+
+  assert.deepEqual(
+    persistedFavorites.map((item) => item.presetKey),
+    ['resolved_review'],
+  );
+
+  const queueSnapshot = await harness.platformService.listSupportTicketsForCurrentSession(snapshot);
+
+  assert.deepEqual(queueSnapshot.favoritePresets, ['resolved_review']);
+
+  const removeResult = await harness.platformService.updateSupportTicketPresetFavoriteForCurrentSession(snapshot, {
+    preset: 'resolved_review',
+    favorite: false,
+  });
+
+  assert.deepEqual(removeResult, {
+    preset: 'resolved_review',
+    favorite: false,
+    favorites: [],
+  });
+});
+
+test('Prisma-backed support ticket listing applies queue filters and timeline depth', async (t) => {
+  const harness = await createIntegrationHarness(t);
+
+  if (!harness) {
+    return;
+  }
+
+  const requesterEmail = `ticket-filter-requester-${harness.uniqueId}@quizmind.dev`;
+  const supportEmail = `ticket-filter-support-${harness.uniqueId}@quizmind.dev`;
+  const searchToken = `support-filter-${harness.uniqueId}`;
+  let requesterId: string | null = null;
+  let supportUserId: string | null = null;
+  let workspaceId: string | null = null;
+  let openTicketId: string | null = null;
+  let assignedTicketId: string | null = null;
+  let resolvedTicketId: string | null = null;
+
+  t.after(async () => {
+    if (openTicketId || assignedTicketId || resolvedTicketId) {
+      await harness.prisma.auditLog
+        .deleteMany({
+          where: {
+            targetType: 'support_ticket',
+            targetId: {
+              in: [openTicketId, assignedTicketId, resolvedTicketId].filter(Boolean) as string[],
+            },
+          },
+        })
+        .catch(() => undefined);
+    }
+
+    if (openTicketId) {
+      await harness.prisma.supportTicket.delete({ where: { id: openTicketId } }).catch(() => undefined);
+    }
+
+    if (assignedTicketId) {
+      await harness.prisma.supportTicket.delete({ where: { id: assignedTicketId } }).catch(() => undefined);
+    }
+
+    if (resolvedTicketId) {
+      await harness.prisma.supportTicket.delete({ where: { id: resolvedTicketId } }).catch(() => undefined);
+    }
+
+    if (supportUserId) {
+      await harness.prisma.user.delete({ where: { id: supportUserId } }).catch(() => undefined);
+    }
+
+    if (requesterId) {
+      await harness.prisma.user.delete({ where: { id: requesterId } }).catch(() => undefined);
+    }
+
+    if (workspaceId) {
+      await harness.prisma.workspace.delete({ where: { id: workspaceId } }).catch(() => undefined);
+    }
+
+    await harness.disconnect();
+  });
+
+  const workspace = await harness.prisma.workspace.create({
+    data: {
+      slug: `support-ticket-filters-${harness.uniqueId}`,
+      name: 'Support Ticket Filters Workspace',
+    },
+  });
+
+  workspaceId = workspace.id;
+
+  const requester = await harness.prisma.user.create({
+    data: {
+      email: requesterEmail,
+      displayName: 'Filter Requester',
+      passwordHash: 'integration-password-hash',
+      emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
+    },
+  });
+
+  requesterId = requester.id;
+
+  const supportUser = await harness.prisma.user.create({
+    data: {
+      email: supportEmail,
+      displayName: 'Filter Support Admin',
+      passwordHash: 'integration-password-hash',
+      emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
+      systemRoleAssignments: {
+        create: {
+          role: 'support_admin',
+        },
+      },
+    },
+  });
+
+  supportUserId = supportUser.id;
+
+  const openTicket = await harness.prisma.supportTicket.create({
+    data: {
+      workspaceId,
+      requesterId,
+      subject: `Ticket ${harness.uniqueId}: ${searchToken} access review`,
+      body: `Need a ${searchToken} follow-up for an unassigned requester issue.`,
+      status: 'open',
+    },
+  });
+
+  openTicketId = openTicket.id;
+
+  const assignedTicket = await harness.prisma.supportTicket.create({
+    data: {
+      workspaceId,
+      requesterId,
+      assignedToId: supportUserId,
+      subject: `Ticket ${harness.uniqueId}: permissions investigation`,
+      body: 'Already claimed by support and unrelated to billing filters.',
+      status: 'in_progress',
+      handoffNote: 'Currently owned by support.',
+    },
+  });
+
+  assignedTicketId = assignedTicket.id;
+
+  const resolvedTicket = await harness.prisma.supportTicket.create({
+    data: {
+      workspaceId,
+      requesterId,
+      subject: `Ticket ${harness.uniqueId}: ${searchToken} completed`,
+      body: `Resolved ${searchToken} guidance for the requester.`,
+      status: 'resolved',
+      handoffNote: 'Final billing reply was sent to the requester.',
+    },
+  });
+
+  resolvedTicketId = resolvedTicket.id;
+
+  await harness.prisma.auditLog.createMany({
+    data: [
+      {
+        workspaceId,
+        actorId: supportUserId,
+        action: 'support.ticket_workflow_updated',
+        targetType: 'support_ticket',
+        targetId: resolvedTicketId,
+        metadataJson: {
+          summary: 'assigned the ticket to Filter Support Admin; changed status from open to in progress',
+          actorEmail: supportEmail,
+          actorDisplayName: 'Filter Support Admin',
+          previousStatus: 'open',
+          nextStatus: 'in_progress',
+        },
+        createdAt: new Date('2026-03-23T11:40:00.000Z'),
+      },
+      {
+        workspaceId,
+        actorId: supportUserId,
+        action: 'support.ticket_workflow_updated',
+        targetType: 'support_ticket',
+        targetId: resolvedTicketId,
+        metadataJson: {
+          summary: 'updated the handoff note',
+          actorEmail: supportEmail,
+          actorDisplayName: 'Filter Support Admin',
+          previousStatus: 'in_progress',
+          nextStatus: 'in_progress',
+          handoffNote: 'Billing screenshots were reviewed.',
+        },
+        createdAt: new Date('2026-03-23T11:50:00.000Z'),
+      },
+      {
+        workspaceId,
+        actorId: supportUserId,
+        action: 'support.ticket_workflow_updated',
+        targetType: 'support_ticket',
+        targetId: resolvedTicketId,
+        metadataJson: {
+          summary: 'changed status from in progress to resolved; updated the handoff note',
+          actorEmail: supportEmail,
+          actorDisplayName: 'Filter Support Admin',
+          previousStatus: 'in_progress',
+          nextStatus: 'resolved',
+          handoffNote: 'Billing guidance was confirmed with the requester.',
+        },
+        createdAt: new Date('2026-03-23T12:05:00.000Z'),
+      },
+    ],
+  });
+
+  const snapshot = await createSessionSnapshotForUser(harness, {
+    email: supportEmail,
+    userId: supportUserId,
+    roles: ['support_admin'],
+  });
+
+  const filtered = await harness.platformService.listSupportTicketsForCurrentSession(snapshot, {
+    status: 'all',
+    ownership: 'unassigned',
+    search: searchToken,
+    limit: 12,
+    timelineLimit: 2,
+  });
+
+  assert.deepEqual(filtered.filters, {
+    status: 'all',
+    ownership: 'unassigned',
+    search: searchToken,
+    limit: 12,
+    timelineLimit: 2,
+  });
+  assert.equal(filtered.items.length, 2);
+  assert.equal(filtered.items.some((item) => item.id === openTicketId), true);
+  assert.equal(filtered.items.some((item) => item.id === resolvedTicketId), true);
+  assert.equal(filtered.items.some((item) => item.id === assignedTicketId), false);
+  const resolvedTicketInQueue = filtered.items.find((item) => item.id === resolvedTicketId);
+  assert.equal(resolvedTicketInQueue?.timeline?.length, 2);
+  assert.equal(
+    resolvedTicketInQueue?.timeline?.[0]?.summary,
+    'changed status from in progress to resolved; updated the handoff note',
+  );
 });
 
 test('Prisma-backed support ticket workflow update persists ownership, handoff notes, and queue transitions', async (t) => {
@@ -1409,12 +1721,29 @@ test('Prisma-backed support ticket workflow update persists ownership, handoff n
       id: supportTicketId,
     },
   });
+  const persistedTicketAuditLog = await harness.prisma.auditLog.findFirst({
+    where: {
+      actorId: supportUserId,
+      workspaceId,
+      action: 'support.ticket_workflow_updated',
+      targetType: 'support_ticket',
+      targetId: supportTicketId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
   assert.equal(persistedClaimedTicket?.status, 'in_progress');
   assert.equal(persistedClaimedTicket?.assignedToId, supportUserId);
   assert.equal(
     persistedClaimedTicket?.handoffNote,
     'Claimed during integration coverage and waiting on billing-screen screenshots.',
+  );
+  assert.ok(persistedTicketAuditLog);
+  assert.equal(
+    (persistedTicketAuditLog?.metadataJson as Record<string, unknown> | null)?.summary,
+    'assigned the ticket to Workflow Support Admin; changed status from open to in progress; updated the handoff note',
   );
 
   const queueAfterClaim = await harness.platformService.listSupportTicketsForCurrentSession(snapshot);
@@ -1424,6 +1753,16 @@ test('Prisma-backed support ticket workflow update persists ownership, handoff n
   assert.equal(claimedTicketInQueue?.assignedTo?.id, supportUserId);
   assert.equal(
     claimedTicketInQueue?.handoffNote,
+    'Claimed during integration coverage and waiting on billing-screen screenshots.',
+  );
+  assert.equal(claimedTicketInQueue?.timeline?.[0]?.eventType, 'support.ticket_workflow_updated');
+  assert.equal(
+    claimedTicketInQueue?.timeline?.[0]?.summary,
+    'assigned the ticket to Workflow Support Admin; changed status from open to in progress; updated the handoff note',
+  );
+  assert.equal(claimedTicketInQueue?.timeline?.[0]?.actor.email, supportEmail);
+  assert.equal(
+    claimedTicketInQueue?.timeline?.[0]?.handoffNote,
     'Claimed during integration coverage and waiting on billing-screen screenshots.',
   );
 

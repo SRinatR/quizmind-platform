@@ -103,6 +103,7 @@ model User {
   extensionInstallations ExtensionInstallation[]
   supportTickets         SupportTicket[]         @relation("SupportTicketRequester")
   assignedSupportTickets SupportTicket[]         @relation("SupportTicketAssignee")
+  supportTicketPresetFavorites SupportTicketPresetFavorite[]
   supportImpersonationSessionsStarted SupportImpersonationSession[] @relation("SupportImpersonationActor")
   supportImpersonationSessionsTargeted SupportImpersonationSession[] @relation("SupportImpersonationTarget")
 }
@@ -464,6 +465,17 @@ model SupportTicket {
 
   @@index([status, updatedAt])
   @@index([assignedToId, updatedAt])
+}
+
+model SupportTicketPresetFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  presetKey String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, presetKey])
+  @@index([userId, createdAt])
 }
 
 model SupportImpersonationSession {

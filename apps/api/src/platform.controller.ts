@@ -6,6 +6,7 @@ import {
   type RemoteConfigPublishRequest,
   type SupportImpersonationEndRequest,
   type SupportImpersonationRequest,
+  type SupportTicketQueuePresetFavoriteRequest,
   type SupportTicketWorkflowUpdateRequest,
   type UsageEventPayload,
 } from '@quizmind/contracts';
@@ -149,17 +150,31 @@ export class PlatformController {
   @Get('support/tickets')
   async listSupportTickets(
     @Query('persona') persona?: string,
+    @Query('preset') preset?: string,
+    @Query('status') status?: string,
+    @Query('ownership') ownership?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Query('timelineLimit') timelineLimit?: string,
     @Headers('authorization') authorization?: string,
   ) {
     const accessToken = parseBearerToken(authorization);
+    const filters = {
+      preset,
+      status,
+      ownership,
+      search,
+      ...(limit ? { limit: Number(limit) } : {}),
+      ...(timelineLimit ? { timelineLimit: Number(timelineLimit) } : {}),
+    };
 
     if (!accessToken) {
-      return ok(this.platformService.listSupportTickets(persona));
+      return ok(this.platformService.listSupportTickets(persona, filters));
     }
 
     const session = await this.authService.getCurrentSession(accessToken);
 
-    return ok(await this.platformService.listSupportTicketsForCurrentSession(session));
+    return ok(await this.platformService.listSupportTicketsForCurrentSession(session, filters));
   }
 
   @Post('support/impersonation')
@@ -192,6 +207,23 @@ export class PlatformController {
     const session = await this.authService.getCurrentSession(accessToken);
 
     return ok(await this.platformService.updateSupportTicketForCurrentSession(session, request));
+  }
+
+  @Post('support/tickets/preset-favorite')
+  async updateSupportTicketPresetFavorite(
+    @Body() request?: Partial<SupportTicketQueuePresetFavoriteRequest>,
+    @Query('persona') persona?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const accessToken = parseBearerToken(authorization);
+
+    if (!accessToken) {
+      return ok(this.platformService.updateSupportTicketPresetFavorite(persona, request));
+    }
+
+    const session = await this.authService.getCurrentSession(accessToken);
+
+    return ok(await this.platformService.updateSupportTicketPresetFavoriteForCurrentSession(session, request));
   }
 
   @Post('support/impersonation/end')

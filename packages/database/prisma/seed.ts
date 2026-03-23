@@ -217,6 +217,34 @@ async function seed() {
     },
   });
 
+  await prisma.supportTicketPresetFavorite.upsert({
+    where: {
+      userId_presetKey: {
+        userId: supportUser.id,
+        presetKey: 'active_queue',
+      },
+    },
+    update: {},
+    create: {
+      userId: supportUser.id,
+      presetKey: 'active_queue',
+    },
+  });
+
+  await prisma.supportTicketPresetFavorite.upsert({
+    where: {
+      userId_presetKey: {
+        userId: supportUser.id,
+        presetKey: 'shared_queue',
+      },
+    },
+    update: {},
+    create: {
+      userId: supportUser.id,
+      presetKey: 'shared_queue',
+    },
+  });
+
   const existingViewerBillingTicket = await prisma.supportTicket.findFirst({
     where: {
       requesterId: viewerUser.id,

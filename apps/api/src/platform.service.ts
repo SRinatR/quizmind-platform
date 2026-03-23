@@ -11,11 +11,16 @@ import {
   type ExtensionBootstrapRequest,
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
+  supportTicketQueuePresets,
   type SupportImpersonationEndRequest,
   type SupportImpersonationEndResult,
   type SupportImpersonationHistorySnapshot,
   type SupportImpersonationRequest,
   type SupportImpersonationSessionSnapshot,
+  type SupportTicketQueueFilters,
+  type SupportTicketQueuePreset,
+  type SupportTicketQueuePresetFavoriteRequest,
+  type SupportTicketQueuePresetFavoriteResult,
   type SupportTicketQueueSnapshot,
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
@@ -52,11 +57,17 @@ import {
 import {
   buildSupportImpersonationHistorySnapshot,
   buildSupportTicketQueueSnapshot,
+  createSupportTicketWorkflowAuditLog,
   endSupportImpersonation as buildSupportImpersonationEnd,
+  filterSupportTicketQueueEntries,
+  groupSupportTicketTimelineEntries,
   mapSupportImpersonationRecordToEndResult,
   mapSupportImpersonationRecordToSnapshot,
   mapSupportTicketRecordToSnapshot,
+  normalizeSupportTicketQueueFilters,
+  resolveSupportTicketStatuses,
   startSupportImpersonation,
+  type SupportTicketQueueFilterInput,
 } from './services/support-service';
 import { mapFeatureFlagRecordToDefinition } from './services/feature-flags-service';
 import { type CurrentSessionSnapshot } from './auth/auth.types';
@@ -78,8 +89,11 @@ import { ExtensionCompatibilityRepository } from './extension/extension-compatib
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
+import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-preset-favorite.repository';
 import { SupportTicketRepository } from './support/support-ticket.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
+
+const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 
 @Injectable()
 export class PlatformService {
@@ -102,6 +116,8 @@ export class PlatformService {
     private readonly userRepository: UserRepository,
     @Inject(SupportTicketRepository)
     private readonly supportTicketRepository: SupportTicketRepository,
+    @Inject(SupportTicketPresetFavoriteRepository)
+    private readonly supportTicketPresetFavoriteRepository: SupportTicketPresetFavoriteRepository,
     @Inject(SupportImpersonationRepository)
     private readonly supportImpersonationRepository: SupportImpersonationRepository,
   ) {}
@@ -567,33 +583,119 @@ export class PlatformService {
     });
   }
 
-  listSupportTickets(personaKey?: string): SupportTicketQueueSnapshot {
+  listSupportTickets(
+    personaKey?: string,
+    filtersInput?: SupportTicketQueueFilterInput,
+  ): SupportTicketQueueSnapshot {
     const persona = getPersona(personaKey);
     const accessDecision = canReadSupportTickets(persona.principal);
+    const filters = normalizeSupportTicketQueueFilters(filtersInput);
+    const favoritePresets: SupportTicketQueuePreset[] =
+      persona.key === 'support-admin' ? ['active_queue', 'shared_queue'] : [];
 
     return buildSupportTicketQueueSnapshot({
       personaKey: persona.key,
       accessDecision,
-      items: accessDecision.allowed ? listFoundationSupportTickets() : [],
+      items: accessDecision.allowed
+        ? filterSupportTicketQueueEntries(listFoundationSupportTickets(), filters, persona.user.id)
+        : [],
       permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      filters,
+      favoritePresets,
     });
   }
 
-  async listSupportTicketsForCurrentSession(session: CurrentSessionSnapshot): Promise<SupportTicketQueueSnapshot> {
+  async listSupportTicketsForCurrentSession(
+    session: CurrentSessionSnapshot,
+    filtersInput?: SupportTicketQueueFilterInput,
+  ): Promise<SupportTicketQueueSnapshot> {
     const accessDecision = canReadSupportTickets(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const items = await this.supportTicketRepository.listRecent();
+    const filters = normalizeSupportTicketQueueFilters(filtersInput);
+    const [items, favoritePresets] = await Promise.all([
+      this.supportTicketRepository.listRecent({
+        statuses: resolveSupportTicketStatuses(filters.status),
+        ...(filters.ownership === 'mine' ? { assignedToUserId: session.user.id } : {}),
+        ...(filters.ownership === 'unassigned' ? { unassignedOnly: true } : {}),
+        ...(filters.search ? { search: filters.search } : {}),
+        limit: filters.limit,
+      }),
+      this.supportTicketPresetFavoriteRepository.listByUserId(session.user.id),
+    ]);
+    const timelineByTicketId = groupSupportTicketTimelineEntries(
+      await this.supportTicketRepository.listTimelineEntries(
+        items.map((item) => item.id),
+        filters.timelineLimit,
+      ),
+    );
 
     return buildSupportTicketQueueSnapshot({
       personaKey: 'connected-user',
       accessDecision,
-      items: items.map(mapSupportTicketRecordToSnapshot),
+      items: items.map((item) => mapSupportTicketRecordToSnapshot(item, timelineByTicketId.get(item.id))),
       permissions: session.permissions,
+      filters,
+      favoritePresets,
     });
+  }
+
+  updateSupportTicketPresetFavorite(
+    personaKey?: string,
+    request?: Partial<SupportTicketQueuePresetFavoriteRequest>,
+  ): SupportTicketQueuePresetFavoriteResult {
+    const persona = getPersona(personaKey);
+    const preset = request?.preset?.trim();
+
+    if (!preset || !validSupportTicketPresetKeys.has(preset)) {
+      throw new BadRequestException('A valid support ticket queue preset is required.');
+    }
+
+    const favorite = request?.favorite ?? true;
+    const foundationFavorites: SupportTicketQueuePreset[] =
+      persona.key === 'support-admin' ? ['active_queue', 'shared_queue'] : [];
+    const favorites = favorite
+      ? Array.from(new Set([...foundationFavorites, preset as SupportTicketQueuePreset]))
+      : foundationFavorites.filter((item) => item !== preset);
+
+    return {
+      preset: preset as SupportTicketQueuePreset,
+      favorite,
+      favorites,
+    };
+  }
+
+  async updateSupportTicketPresetFavoriteForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<SupportTicketQueuePresetFavoriteRequest>,
+  ): Promise<SupportTicketQueuePresetFavoriteResult> {
+    const accessDecision = canReadSupportTickets(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const preset = request?.preset?.trim();
+
+    if (!preset || !validSupportTicketPresetKeys.has(preset)) {
+      throw new BadRequestException('A valid support ticket queue preset is required.');
+    }
+
+    const favorite = request?.favorite ?? true;
+    const favorites = await this.supportTicketPresetFavoriteRepository.setFavorite({
+      userId: session.user.id,
+      preset: preset as SupportTicketQueuePreset,
+      favorite,
+    });
+
+    return {
+      preset: preset as SupportTicketQueuePreset,
+      favorite,
+      favorites,
+    };
   }
 
   updateSupportTicket(request?: Partial<SupportTicketWorkflowUpdateRequest>): SupportTicketWorkflowUpdateResult {
@@ -606,6 +708,7 @@ export class PlatformService {
     }
 
     const supportPersona = getPersona('support-admin');
+    const normalizedStatus = request?.status ?? fallbackTicket.status;
     const normalizedAssignedToUserId =
       request?.assignedToUserId === undefined
         ? fallbackTicket.assignedTo?.id
@@ -614,21 +717,70 @@ export class PlatformService {
       request?.handoffNote === undefined
         ? fallbackTicket.handoffNote
         : request.handoffNote?.trim() || undefined;
+    const nextAssignee = normalizedAssignedToUserId
+      ? {
+          id: normalizedAssignedToUserId,
+          email: supportPersona.user.email,
+          displayName: supportPersona.user.displayName,
+        }
+      : null;
+    const auditLog = createSupportTicketWorkflowAuditLog({
+      supportTicketId: fallbackTicket.id,
+      ticketSubject: fallbackTicket.subject,
+      actor: {
+        id: supportPersona.user.id,
+        email: supportPersona.user.email,
+        displayName: supportPersona.user.displayName,
+      },
+      workspaceId: fallbackTicket.workspace?.id,
+      previousStatus: fallbackTicket.status,
+      nextStatus: normalizedStatus,
+      previousAssignee: fallbackTicket.assignedTo
+        ? {
+            id: fallbackTicket.assignedTo.id,
+            email: fallbackTicket.assignedTo.email,
+            displayName: fallbackTicket.assignedTo.displayName,
+          }
+        : null,
+      nextAssignee,
+      previousHandoffNote: fallbackTicket.handoffNote ?? null,
+      nextHandoffNote: normalizedHandoffNote ?? null,
+    });
 
     return {
       ...fallbackTicket,
-      status: request?.status ?? fallbackTicket.status,
+      status: normalizedStatus,
       updatedAt: new Date().toISOString(),
-      ...(normalizedAssignedToUserId
-        ? {
-            assignedTo: {
-              id: normalizedAssignedToUserId,
-              email: supportPersona.user.email,
-              displayName: supportPersona.user.displayName,
-            },
-          }
-        : {}),
+      ...(nextAssignee ? { assignedTo: nextAssignee } : {}),
       ...(normalizedHandoffNote ? { handoffNote: normalizedHandoffNote } : {}),
+      timeline: [
+        {
+          id: auditLog.eventId,
+          eventType: auditLog.eventType,
+          summary: String(auditLog.metadata?.summary ?? 'reviewed the ticket workflow'),
+          occurredAt: auditLog.occurredAt,
+          actor: {
+            id: supportPersona.user.id,
+            email: supportPersona.user.email,
+            displayName: supportPersona.user.displayName,
+          },
+          ...(fallbackTicket.status !== normalizedStatus
+            ? { previousStatus: fallbackTicket.status, nextStatus: normalizedStatus }
+            : {}),
+          ...(fallbackTicket.assignedTo
+            ? {
+                previousAssignee: {
+                  id: fallbackTicket.assignedTo.id,
+                  email: fallbackTicket.assignedTo.email,
+                  displayName: fallbackTicket.assignedTo.displayName,
+                },
+              }
+            : {}),
+          ...(nextAssignee ? { nextAssignee } : {}),
+          ...(normalizedHandoffNote ? { handoffNote: normalizedHandoffNote } : {}),
+        },
+        ...(fallbackTicket.timeline ?? []),
+      ],
     };
   }
 
@@ -677,14 +829,68 @@ export class PlatformService {
     }
 
     try {
+      const nextAssignee =
+        effectiveAssignedToUserId === undefined
+          ? existingTicket.assignedTo
+            ? {
+                id: existingTicket.assignedTo.id,
+                email: existingTicket.assignedTo.email,
+                displayName: existingTicket.assignedTo.displayName,
+              }
+            : null
+          : effectiveAssignedToUserId === null
+            ? null
+            : effectiveAssignedToUserId === existingTicket.assignedTo?.id
+              ? {
+                  id: existingTicket.assignedTo.id,
+                  email: existingTicket.assignedTo.email,
+                  displayName: existingTicket.assignedTo.displayName,
+                }
+              : effectiveAssignedToUserId === session.user.id
+                ? {
+                    id: session.user.id,
+                    email: session.user.email,
+                    displayName: session.user.displayName,
+                  }
+                : {
+                    id: effectiveAssignedToUserId,
+                    email: 'unknown@quizmind.dev',
+                  };
+      const auditLog = createSupportTicketWorkflowAuditLog({
+        supportTicketId,
+        ticketSubject: existingTicket.subject,
+        actor: {
+          id: session.user.id,
+          email: session.user.email,
+          displayName: session.user.displayName,
+        },
+        workspaceId: existingTicket.workspace?.id,
+        previousStatus: existingTicket.status,
+        nextStatus: normalizedStatus ?? existingTicket.status,
+        previousAssignee: existingTicket.assignedTo
+          ? {
+              id: existingTicket.assignedTo.id,
+              email: existingTicket.assignedTo.email,
+              displayName: existingTicket.assignedTo.displayName,
+            }
+          : null,
+        nextAssignee,
+        previousHandoffNote: existingTicket.handoffNote ?? null,
+        nextHandoffNote:
+          normalizedHandoffNote === undefined ? (existingTicket.handoffNote ?? null) : normalizedHandoffNote,
+      });
       const updatedTicket = await this.supportTicketRepository.updateWorkflow({
         supportTicketId,
         ...(normalizedStatus ? { status: normalizedStatus } : {}),
         ...(effectiveAssignedToUserId !== undefined ? { assignedToUserId: effectiveAssignedToUserId } : {}),
         ...(normalizedHandoffNote !== undefined ? { handoffNote: normalizedHandoffNote } : {}),
+        auditLog,
       });
+      const timelineByTicketId = groupSupportTicketTimelineEntries(
+        await this.supportTicketRepository.listTimelineEntries([updatedTicket.id]),
+      );
 
-      return mapSupportTicketRecordToSnapshot(updatedTicket);
+      return mapSupportTicketRecordToSnapshot(updatedTicket, timelineByTicketId.get(updatedTicket.id));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
         throw new NotFoundException('Assigned support operator not found for support ticket ownership.');

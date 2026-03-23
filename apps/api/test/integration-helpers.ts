@@ -15,6 +15,7 @@ import { PlatformService } from '../src/platform.service';
 import { RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { InfrastructureHealthService } from '../src/services/infrastructure-health-service';
 import { SupportImpersonationRepository } from '../src/support/support-impersonation.repository';
+import { SupportTicketPresetFavoriteRepository } from '../src/support/support-ticket-preset-favorite.repository';
 import { SupportTicketRepository } from '../src/support/support-ticket.repository';
 import { WorkspaceRepository } from '../src/workspaces/workspace.repository';
 
@@ -44,6 +45,7 @@ export interface IntegrationHarness {
   sessionRepository: SessionRepository;
   subscriptionRepository: SubscriptionRepository;
   supportImpersonationRepository: SupportImpersonationRepository;
+  supportTicketPresetFavoriteRepository: SupportTicketPresetFavoriteRepository;
   supportTicketRepository: SupportTicketRepository;
   uniqueId: string;
   userRepository: UserRepository;
@@ -83,6 +85,7 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
   const featureFlagRepository = new FeatureFlagRepository(prismaService);
   const remoteConfigRepository = new RemoteConfigRepository(prismaService);
   const supportTicketRepository = new SupportTicketRepository(prismaService);
+  const supportTicketPresetFavoriteRepository = new SupportTicketPresetFavoriteRepository(prismaService);
   const supportImpersonationRepository = new SupportImpersonationRepository(prismaService);
   const authService = new AuthService(userRepository, sessionRepository, emailVerificationRepository);
   const platformService = new PlatformService(
@@ -97,6 +100,7 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     workspaceRepository,
     userRepository,
     supportTicketRepository,
+    supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
   );
   const env = {
@@ -131,6 +135,7 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     sessionRepository,
     subscriptionRepository,
     supportImpersonationRepository,
+    supportTicketPresetFavoriteRepository,
     supportTicketRepository,
     uniqueId: randomUUID().replace(/-/g, '').slice(0, 12),
     userRepository,

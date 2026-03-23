@@ -39,6 +39,15 @@ export const compatibilityStatuses = [
   'unsupported',
 ] as const;
 export const ticketStatuses = ['open', 'in_progress', 'resolved', 'closed'] as const;
+export const supportTicketStatusFilters = ['active', 'open', 'in_progress', 'resolved', 'closed', 'all'] as const;
+export const supportTicketOwnershipFilters = ['all', 'mine', 'unassigned'] as const;
+export const supportTicketQueuePresets = [
+  'active_queue',
+  'my_active',
+  'shared_queue',
+  'resolved_review',
+  'all_recent',
+] as const;
 export const remoteConfigScopes = [
   'global',
   'environment',
@@ -64,6 +73,9 @@ export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 export type FeatureFlagStatus = (typeof featureFlagStatuses)[number];
 export type CompatibilityStatus = (typeof compatibilityStatuses)[number];
 export type TicketStatus = (typeof ticketStatuses)[number];
+export type SupportTicketStatusFilter = (typeof supportTicketStatusFilters)[number];
+export type SupportTicketOwnershipFilter = (typeof supportTicketOwnershipFilters)[number];
+export type SupportTicketQueuePreset = (typeof supportTicketQueuePresets)[number];
 export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 export type PlatformQueue = (typeof platformQueues)[number];
 
@@ -357,6 +369,104 @@ export interface SupportTicketReference {
   status: TicketStatus;
 }
 
+export interface SupportTicketTimelineEntry {
+  id: string;
+  eventType: string;
+  summary: string;
+  occurredAt: string;
+  actor: SupportImpersonationActor;
+  previousStatus?: TicketStatus;
+  nextStatus?: TicketStatus;
+  previousAssignee?: SupportImpersonationActor;
+  nextAssignee?: SupportImpersonationActor;
+  handoffNote?: string;
+}
+
+export interface SupportTicketQueueFilters {
+  status: SupportTicketStatusFilter;
+  ownership: SupportTicketOwnershipFilter;
+  preset?: SupportTicketQueuePreset;
+  search?: string;
+  limit: number;
+  timelineLimit: number;
+}
+
+export interface SupportTicketQueuePresetDefinition {
+  key: SupportTicketQueuePreset;
+  label: string;
+  description: string;
+  filters: Omit<SupportTicketQueueFilters, 'preset'>;
+}
+
+export const supportTicketQueuePresetDefinitions: SupportTicketQueuePresetDefinition[] = [
+  {
+    key: 'active_queue',
+    label: 'Active queue',
+    description: 'The default support inbox across open and in-progress tickets.',
+    filters: {
+      status: 'active',
+      ownership: 'all',
+      limit: 8,
+      timelineLimit: 4,
+    },
+  },
+  {
+    key: 'my_active',
+    label: 'My active',
+    description: 'Only tickets currently owned by the signed-in support operator.',
+    filters: {
+      status: 'active',
+      ownership: 'mine',
+      limit: 8,
+      timelineLimit: 4,
+    },
+  },
+  {
+    key: 'shared_queue',
+    label: 'Shared queue',
+    description: 'Unassigned open tickets waiting for an operator to claim them.',
+    filters: {
+      status: 'open',
+      ownership: 'unassigned',
+      limit: 8,
+      timelineLimit: 4,
+    },
+  },
+  {
+    key: 'resolved_review',
+    label: 'Resolved review',
+    description: 'Recently resolved tickets with deeper workflow history for QA follow-up.',
+    filters: {
+      status: 'resolved',
+      ownership: 'all',
+      limit: 12,
+      timelineLimit: 8,
+    },
+  },
+  {
+    key: 'all_recent',
+    label: 'All recent',
+    description: 'A broader view across every workflow state for recent ticket traffic.',
+    filters: {
+      status: 'all',
+      ownership: 'all',
+      limit: 12,
+      timelineLimit: 4,
+    },
+  },
+];
+
+export interface SupportTicketQueuePresetFavoriteRequest {
+  preset: SupportTicketQueuePreset;
+  favorite: boolean;
+}
+
+export interface SupportTicketQueuePresetFavoriteResult {
+  preset: SupportTicketQueuePreset;
+  favorite: boolean;
+  favorites: SupportTicketQueuePreset[];
+}
+
 export interface SupportTicketWorkflowUpdateRequest {
   supportTicketId: string;
   status?: TicketStatus;
@@ -435,6 +545,7 @@ export interface SupportTicketQueueEntry {
   assignedTo?: SupportImpersonationActor;
   workspace?: SupportImpersonationWorkspace;
   handoffNote?: string;
+  timeline?: SupportTicketTimelineEntry[];
 }
 
 export interface SupportTicketQueueSnapshot {
@@ -442,6 +553,8 @@ export interface SupportTicketQueueSnapshot {
   accessDecision: AccessDecision;
   items: SupportTicketQueueEntry[];
   permissions: string[];
+  filters: SupportTicketQueueFilters;
+  favoritePresets: SupportTicketQueuePreset[];
 }
 
 export interface SupportTicketWorkflowUpdateResult extends SupportTicketQueueEntry {}
