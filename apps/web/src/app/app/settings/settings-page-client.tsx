@@ -10,6 +10,7 @@ import {
   type WorkspaceSubscriptionSnapshot,
 } from '../../../lib/api';
 import { type DashboardSection } from '../../../features/dashboard/sections';
+import { formatUtcDateTime } from '../../../lib/datetime';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
@@ -28,20 +29,6 @@ interface LogoutAllRouteResponse {
   error?: {
     message?: string;
   };
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) {
-    return 'Unavailable';
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
 }
 
 export function SettingsPageClient({
@@ -104,7 +91,7 @@ export function SettingsPageClient({
           <span className="micro-label">Email status</span>
           <p className="stat-value">{isVerified ? 'Verified' : 'Pending'}</p>
           <p className="metric-copy">
-            {isVerified ? formatDateTime(session.user.emailVerifiedAt) : 'Verification completes inbox ownership.'}
+            {isVerified ? formatUtcDateTime(session.user.emailVerifiedAt) : 'Verification completes inbox ownership.'}
           </p>
         </article>
         <article className="stat-card">
@@ -182,7 +169,7 @@ export function SettingsPageClient({
               <strong>Current browser</strong>
               <p>
                 {currentSession
-                  ? `${currentSession.deviceName || currentSession.browser || 'Unnamed session'} · expires ${formatDateTime(currentSession.expiresAt)}`
+                  ? `${currentSession.deviceName || currentSession.browser || 'Unnamed session'} | expires ${formatUtcDateTime(currentSession.expiresAt)}`
                   : 'Current session details are only available in connected mode.'}
               </p>
             </div>
@@ -212,7 +199,7 @@ export function SettingsPageClient({
                       {item.browser || 'unknown browser'} | {item.ipAddress || 'unknown ip'}
                     </p>
                     <p className="list-muted">
-                      Created {formatDateTime(item.createdAt)} | Expires {formatDateTime(item.expiresAt)}
+                      Created {formatUtcDateTime(item.createdAt)} | Expires {formatUtcDateTime(item.expiresAt)}
                     </p>
                   </div>
                   <div className="billing-history-meta">
@@ -243,7 +230,7 @@ export function SettingsPageClient({
               <strong>Plan state</strong>
               <p>
                 {currentSubscription
-                  ? `${currentSubscription.planCode} · ${currentSubscription.status} · ${currentSubscription.billingInterval}`
+                  ? `${currentSubscription.planCode} | ${currentSubscription.status} | ${currentSubscription.billingInterval}`
                   : 'Subscription snapshot not available.'}
               </p>
             </div>

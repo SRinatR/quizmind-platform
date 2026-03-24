@@ -60,6 +60,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const workspaceId = readSearchParam(resolvedSearchParams, 'workspaceId') ?? session?.workspaces[0]?.id;
+  const sessionWorkspaceId = workspaceId;
   const supportTicketFilters: Partial<SupportTicketQueueFilters> = {
     preset: readSearchParam(resolvedSearchParams, 'ticketPreset') as SupportTicketQueueFilters['preset'] | undefined,
     status: readSearchParam(resolvedSearchParams, 'ticketStatus') as SupportTicketQueueFilters['status'] | undefined,
@@ -72,25 +73,25 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   };
   const [featureFlags, billingPlans, adminUsers, remoteConfigState, supportImpersonationSessions, supportTickets] =
     await Promise.all([
-    getFeatureFlags(persona, accessToken),
-    getBillingPlans(),
-    getAdminUsers(persona, accessToken),
-    getRemoteConfigState(persona, workspaceId, accessToken),
-    getSupportImpersonationSessions(persona, accessToken),
-    getSupportTickets(persona, accessToken, supportTicketFilters),
-  ]);
+      getFeatureFlags(persona, accessToken),
+      getBillingPlans(),
+      getAdminUsers(persona, accessToken),
+      getRemoteConfigState(persona, sessionWorkspaceId, accessToken),
+      getSupportImpersonationSessions(persona, accessToken),
+      getSupportTickets(persona, accessToken, supportTicketFilters),
+    ]);
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const canManageSupportSessions = Boolean(isConnectedSession && session?.permissions.includes('support:impersonate'));
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleAdminSections(context, workspaceId) : [];
+  const visibleSections = context ? getVisibleAdminSections(context, sessionWorkspaceId) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
   const previewRoles = session
     ? [
         ...session.principal.systemRoles,
-        ...(workspaceId
+        ...(sessionWorkspaceId
           ? session.principal.workspaceMemberships
-              .filter((membership) => membership.workspaceId === workspaceId)
+              .filter((membership) => membership.workspaceId === sessionWorkspaceId)
               .map((membership) => membership.role)
           : []),
       ]
@@ -213,7 +214,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   </div>
                   <div className="list-item">
                     <strong>Workspace</strong>
-                    <p>{workspaceId ?? 'No workspace selected for preview context.'}</p>
+                    <p>{sessionWorkspaceId ?? 'No workspace selected for preview context.'}</p>
                   </div>
                   <div className="list-item">
                     <strong>Roles</strong>
@@ -228,7 +229,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 planCode: remoteConfigState?.previewContext.planCode,
                 roles: previewRoles,
                 userId: session.user.id,
-                workspaceId,
+                workspaceId: sessionWorkspaceId,
               }}
             />
           </>
@@ -300,7 +301,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 <div className="list-stack">
                   <div className="list-item">
                     <strong>Workspace</strong>
-                    <p>{workspaceId ?? 'No workspace resolved for this admin route.'}</p>
+                    <p>{sessionWorkspaceId ?? 'No workspace resolved for this admin route.'}</p>
                   </div>
                   <div className="list-item">
                     <strong>Current operator</strong>

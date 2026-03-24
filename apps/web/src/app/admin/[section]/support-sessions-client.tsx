@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react';
 import { type SupportImpersonationEndResult } from '@quizmind/contracts';
 
 import { type SupportImpersonationSnapshot } from '../../../lib/api';
+import { formatUtcDateTime } from '../../../lib/datetime';
 
 type SupportSession = SupportImpersonationSnapshot['items'][number];
 
@@ -105,7 +106,7 @@ export function SupportSessionsClient({
         <div className="admin-support-result">
           <span className="micro-label">Latest closed session</span>
           <strong>{lastEndedSession.impersonationSessionId}</strong>
-          <p>Closed at {new Date(lastEndedSession.endedAt).toLocaleString()}.</p>
+          <p>Closed at {formatUtcDateTime(lastEndedSession.endedAt)}.</p>
           {lastEndedSession.closeReason ? (
             <p>close reason: {lastEndedSession.closeReason}</p>
           ) : null}
@@ -132,9 +133,9 @@ export function SupportSessionsClient({
                   {item.workspace ? <span className="tag">{item.workspace.name}</span> : null}
                   {item.supportTicket ? <span className="tag">ticket linked</span> : null}
                 </div>
-                <span className="list-muted">started: {new Date(item.createdAt).toLocaleString()}</span>
+                <span className="list-muted">started: {formatUtcDateTime(item.createdAt)}</span>
                 <span className="list-muted">
-                  ended: {item.endedAt ? new Date(item.endedAt).toLocaleString() : 'still active'}
+                  ended: {item.endedAt ? formatUtcDateTime(item.endedAt) : 'still active'}
                 </span>
                 {item.supportTicket ? (
                   <span className="list-muted">

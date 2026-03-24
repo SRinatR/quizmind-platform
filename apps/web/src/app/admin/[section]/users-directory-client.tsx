@@ -6,6 +6,7 @@ import { useState, useTransition } from 'react';
 import { type SupportImpersonationResult } from '@quizmind/contracts';
 
 import { type AdminUsersSnapshot } from '../../../lib/api';
+import { formatUtcDateTime } from '../../../lib/datetime';
 
 type DirectoryUser = AdminUsersSnapshot['items'][number];
 
@@ -141,7 +142,7 @@ export function UsersDirectoryClient({
           <strong>{lastStartedUser.displayName || lastStartedUser.email}</strong>
           <p>
             Session <span className="monospace">{lastStartedSession.impersonationSessionId}</span> started at{' '}
-            {new Date(lastStartedSession.createdAt).toLocaleString()}.
+            {formatUtcDateTime(lastStartedSession.createdAt)}.
           </p>
           <div className="admin-user-actions">
             <Link className="btn-ghost" href="/admin/support">

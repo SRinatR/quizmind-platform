@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { type RemoteConfigStateSnapshot } from '../../../lib/api';
+import { formatUtcDateTime } from '../../../lib/datetime';
 
 type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 
@@ -55,9 +56,9 @@ function createEditableLayer(layer: RemoteConfigLayer): EditableLayer {
 
 function createNewEditableLayer(index: number): EditableLayer {
   return {
-    id: `draft-layer-${Date.now()}-${index}`,
+    id: `draft-layer-${index}`,
     scope: 'workspace',
-    priority: String((index + 1) * 10),
+    priority: String(index * 10),
     conditionsText: stringifyJson({
       workspaceId: 'demo-workspace',
     }),
@@ -195,10 +196,17 @@ function parseActiveFlags(value: string): string[] {
     .filter(Boolean);
 }
 
+function createInitialVersionLabel(initialState: RemoteConfigStateSnapshot) {
+  const workspaceId = initialState.previewContext.workspaceId?.trim();
+
+  return workspaceId ? `draft-${workspaceId}` : 'draft-global';
+}
+
 export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteConfigClientProps) {
   const router = useRouter();
-  const [versionLabel, setVersionLabel] = useState(`draft-${Date.now()}`);
+  const [versionLabel, setVersionLabel] = useState(() => createInitialVersionLabel(initialState));
   const [layers, setLayers] = useState<EditableLayer[]>(initialState.activeLayers.map(createEditableLayer));
+  const [nextDraftIndex, setNextDraftIndex] = useState(initialState.activeLayers.length + 1);
   const [previewContext, setPreviewContext] = useState({
     environment: initialState.previewContext.environment ?? '',
     planCode: initialState.previewContext.planCode ?? '',
@@ -235,7 +243,8 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
   }
 
   function handleAddLayer() {
-    setLayers((current) => [...current, createNewEditableLayer(current.length)]);
+    setLayers((current) => [...current, createNewEditableLayer(nextDraftIndex)]);
+    setNextDraftIndex((current) => current + 1);
   }
 
   function handleRemoveLayer(id: string) {
@@ -309,7 +318,7 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
           <span className="micro-label">Latest publish</span>
           <strong>{lastPublished.versionLabel}</strong>
           <p>
-            Published at {new Date(lastPublished.publishedAt).toLocaleString()} with{' '}
+            Published at {formatUtcDateTime(lastPublished.publishedAt)} with{' '}
             {lastPublished.appliedLayerCount} active layer
             {lastPublished.appliedLayerCount === 1 ? '' : 's'}.
           </p>

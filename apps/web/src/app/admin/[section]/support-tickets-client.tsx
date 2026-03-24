@@ -17,6 +17,7 @@ import {
 } from '@quizmind/contracts';
 
 import { type SupportTicketsSnapshot } from '../../../lib/api';
+import { formatUtcDateTime } from '../../../lib/datetime';
 
 type SupportTicket = SupportTicketsSnapshot['items'][number];
 
@@ -521,7 +522,7 @@ export function SupportTicketsClient({
           <strong>{lastStartedTicket.subject}</strong>
           <p>
             Session <span className="monospace">{lastStartedSession.impersonationSessionId}</span> created at{' '}
-            {new Date(lastStartedSession.createdAt).toLocaleString()}.
+            {formatUtcDateTime(lastStartedSession.createdAt)}.
           </p>
           <div className="admin-user-actions">
             <Link className="btn-ghost" href="/admin/support">
@@ -555,7 +556,7 @@ export function SupportTicketsClient({
                 <span className="list-muted">
                   requester: {ticket.requester.displayName || ticket.requester.email} ({ticket.requester.email})
                 </span>
-                <span className="list-muted">updated: {new Date(ticket.updatedAt).toLocaleString()}</span>
+                <span className="list-muted">updated: {formatUtcDateTime(ticket.updatedAt)}</span>
                 {ticket.handoffNote ? <p className="admin-ticket-note">handoff note: {ticket.handoffNote}</p> : null}
                 {ticket.timeline && ticket.timeline.length > 0 ? (
                   <div className="admin-ticket-timeline">
@@ -565,7 +566,7 @@ export function SupportTicketsClient({
                         <div className="admin-ticket-timeline-entry" key={entry.id}>
                           <strong>{entry.summary}</strong>
                           <span className="list-muted">
-                            {entry.actor.displayName || entry.actor.email} - {new Date(entry.occurredAt).toLocaleString()}
+                            {entry.actor.displayName || entry.actor.email} | {formatUtcDateTime(entry.occurredAt)}
                           </span>
                           {entry.handoffNote ? (
                             <span className="list-muted">note: {entry.handoffNote}</span>
