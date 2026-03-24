@@ -62,9 +62,18 @@ importers:
       '@quizmind/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
+      '@quizmind/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@quizmind/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@quizmind/secrets':
+        specifier: workspace:*
+        version: link:../../packages/secrets
+      '@quizmind/usage':
+        specifier: workspace:*
+        version: link:../../packages/usage
       bullmq:
         specifier: ^5.71.0
         version: 5.71.0
@@ -144,6 +153,9 @@ importers:
       '@quizmind/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@quizmind/usage':
+        specifier: workspace:*
+        version: link:../../packages/usage
       bullmq:
         specifier: ^5.71.0
         version: 5.71.0
@@ -227,7 +239,19 @@ importers:
         specifier: workspace:*
         version: link:../testing
 
+  packages/providers:
+    dependencies:
+      '@quizmind/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/queue:
+    dependencies:
+      '@quizmind/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
+  packages/secrets:
     dependencies:
       '@quizmind/contracts':
         specifier: workspace:*
@@ -240,6 +264,12 @@ importers:
         version: link:../contracts
 
   packages/ui: {}
+
+  packages/usage:
+    dependencies:
+      '@quizmind/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
 packages:
 

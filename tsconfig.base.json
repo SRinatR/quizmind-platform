@@ -8,6 +8,9 @@
     ],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "types": [
+      "node"
+    ],
     "ignoreDeprecations": "6.0",
     "strict": true,
     "resolveJsonModule": true,
@@ -27,6 +30,15 @@
       ],
       "@quizmind/billing": [
         "packages/billing/src"
+      ],
+      "@quizmind/providers": [
+        "packages/providers/src"
+      ],
+      "@quizmind/secrets": [
+        "packages/secrets/src"
+      ],
+      "@quizmind/usage": [
+        "packages/usage/src"
       ],
       "@quizmind/extension": [
         "packages/extension/src"

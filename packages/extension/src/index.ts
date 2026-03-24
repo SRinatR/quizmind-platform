@@ -1,11 +1,15 @@
 import {
+  type AiAccessPolicy,
   type CompatibilityHandshake,
   type CompatibilityResult,
   type ExtensionBootstrapPayload,
+  type ExtensionBootstrapPayloadV2,
   type FeatureFlagDefinition,
+  type PlanEntitlement,
   type RemoteConfigContext,
   type RemoteConfigLayer,
   type ResolvedRemoteConfig,
+  type UsageQuotaHint,
 } from '@quizmind/contracts';
 
 export interface CompatibilityPolicy {
@@ -196,5 +200,55 @@ export function buildExtensionBootstrap(input: {
     compatibility,
     featureFlags,
     remoteConfig,
+  };
+}
+
+export function buildExtensionBootstrapV2(input: {
+  installationId: string;
+  workspaceId?: string;
+  handshake: CompatibilityHandshake;
+  compatibilityPolicy: CompatibilityPolicy;
+  flagDefinitions: FeatureFlagDefinition[];
+  remoteConfigLayers: RemoteConfigLayer[];
+  entitlements: PlanEntitlement[];
+  quotaHints: UsageQuotaHint[];
+  aiAccessPolicy: AiAccessPolicy;
+  context: RemoteConfigContext & {
+    roles?: string[];
+    planCode?: string;
+  };
+  issuedAt?: string;
+  refreshAfterSeconds?: number;
+}): ExtensionBootstrapPayloadV2 {
+  const compatibility = evaluateCompatibility(input.handshake, input.compatibilityPolicy);
+  const featureFlags = resolveFeatureFlags(input.flagDefinitions, {
+    userId: input.context.userId,
+    workspaceId: input.context.workspaceId,
+    roles: input.context.roles,
+    planCode: input.context.planCode,
+    extensionVersion: input.handshake.extensionVersion,
+  });
+  const remoteConfig = resolveRemoteConfig(input.remoteConfigLayers, {
+    ...input.context,
+    buildId: input.handshake.buildId,
+    activeFlags: featureFlags,
+    extensionVersion: input.handshake.extensionVersion,
+  });
+  const deprecationMessages = compatibility.reason ? [compatibility.reason] : [];
+  const killSwitches = compatibility.status === 'unsupported' ? ['extension.unsupported'] : [];
+
+  return {
+    installationId: input.installationId,
+    ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
+    compatibility,
+    entitlements: [...input.entitlements].sort((left, right) => left.key.localeCompare(right.key)),
+    featureFlags,
+    remoteConfig,
+    quotaHints: [...input.quotaHints].sort((left, right) => left.key.localeCompare(right.key)),
+    aiAccessPolicy: input.aiAccessPolicy,
+    deprecationMessages,
+    killSwitches,
+    refreshAfterSeconds: input.refreshAfterSeconds ?? 300,
+    issuedAt: input.issuedAt ?? new Date().toISOString(),
   };
 }

@@ -10,6 +10,11 @@ const billingPlanCatalogInclude = {
     },
   },
   prices: {
+    include: {
+      providerMappings: {
+        orderBy: [{ provider: 'asc' }],
+      },
+    },
     orderBy: [{ amount: 'asc' }, { intervalCode: 'asc' }],
   },
 } satisfies Prisma.PlanInclude;
@@ -53,6 +58,15 @@ export interface BillingPlanCatalogRecord {
     amount: number;
     isDefault: boolean;
     stripePriceId: string | null;
+    providerMappings: Array<{
+      id: string;
+      planPriceId: string;
+      provider: string;
+      providerPriceId: string;
+      isActive: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
     createdAt: Date;
   }>;
   subscriptions?: Array<{
@@ -65,13 +79,19 @@ export interface BillingWorkspaceContextRecord {
   slug: string;
   name: string;
   billingEmail: string | null;
+  billingProvider: string | null;
+  providerCustomerId: string | null;
   stripeCustomerId: string | null;
   subscriptions: Array<{
     id: string;
+    provider: string | null;
     seatCount: number;
     status: string;
     cancelAtPeriodEnd: boolean;
     currentPeriodEnd: Date | null;
+    providerCustomerId: string | null;
+    providerPriceId: string | null;
+    providerSubscriptionId: string | null;
     stripeCustomerId: string | null;
     stripePriceId: string | null;
     stripeSubscriptionId: string | null;
@@ -83,6 +103,8 @@ export interface BillingWorkspaceContextRecord {
 export interface BillingInvoiceRecord {
   id: string;
   subscriptionId: string;
+  provider: string | null;
+  providerInvoiceId: string | null;
   externalId: string | null;
   amountDue: number;
   amountPaid: number;
@@ -94,6 +116,8 @@ export interface BillingInvoiceRecord {
 
 export interface BillingInvoiceExportRecord {
   id: string;
+  provider: string | null;
+  providerInvoiceId: string | null;
   externalId: string | null;
   workspaceId: string;
 }
@@ -162,6 +186,11 @@ export class BillingRepository {
       amount: number;
       isDefault: boolean;
       stripePriceId: string | null;
+      providerMappings?: Array<{
+        provider: string;
+        providerPriceId: string;
+        isActive: boolean;
+      }>;
     }>;
   }): Promise<BillingPlanCatalogRecord | null> {
     return this.prisma.$transaction(async (tx) => {
@@ -189,6 +218,14 @@ export class BillingRepository {
         },
       });
 
+      await tx.planPriceProviderMapping.deleteMany({
+        where: {
+          planPrice: {
+            planId: existing.id,
+          },
+        },
+      });
+
       await tx.planPrice.deleteMany({
         where: {
           planId: existing.id,
@@ -196,16 +233,47 @@ export class BillingRepository {
       });
 
       if (input.prices.length > 0) {
-        await tx.planPrice.createMany({
-          data: input.prices.map((price) => ({
-            planId: existing.id,
-            intervalCode: price.intervalCode,
-            currency: price.currency,
-            amount: price.amount,
-            isDefault: price.isDefault,
-            stripePriceId: price.stripePriceId,
-          })),
-        });
+        for (const price of input.prices) {
+          const createdPrice = await tx.planPrice.create({
+            data: {
+              planId: existing.id,
+              intervalCode: price.intervalCode,
+              currency: price.currency,
+              amount: price.amount,
+              isDefault: price.isDefault,
+              stripePriceId: price.stripePriceId,
+            },
+          });
+          const providerMappings = [
+            ...(price.providerMappings ?? []),
+            ...(price.stripePriceId
+              ? [
+                  {
+                    provider: 'stripe',
+                    providerPriceId: price.stripePriceId,
+                    isActive: true,
+                  },
+                ]
+              : []),
+          ].filter(
+            (mapping, index, items) =>
+              items.findIndex(
+                (candidate) =>
+                  candidate.provider === mapping.provider && candidate.providerPriceId === mapping.providerPriceId,
+              ) === index,
+          );
+
+          if (providerMappings.length > 0) {
+            await tx.planPriceProviderMapping.createMany({
+              data: providerMappings.map((mapping) => ({
+                planPriceId: createdPrice.id,
+                provider: mapping.provider,
+                providerPriceId: mapping.providerPriceId,
+                isActive: mapping.isActive,
+              })),
+            });
+          }
+        }
       }
 
       await tx.planEntitlement.deleteMany({
@@ -253,7 +321,27 @@ export class BillingRepository {
         id: workspaceId,
       },
       data: {
+        billingProvider: 'stripe',
+        providerCustomerId: stripeCustomerId,
         stripeCustomerId,
+      },
+    });
+  }
+
+  async updateWorkspaceProviderCustomerId(input: {
+    workspaceId: string;
+    provider: string;
+    providerCustomerId: string;
+    stripeCustomerId?: string;
+  }): Promise<void> {
+    await this.prisma.workspace.update({
+      where: {
+        id: input.workspaceId,
+      },
+      data: {
+        billingProvider: input.provider,
+        providerCustomerId: input.providerCustomerId,
+        ...(input.stripeCustomerId ? { stripeCustomerId: input.stripeCustomerId } : {}),
       },
     });
   }
@@ -262,8 +350,11 @@ export class BillingRepository {
     subscriptionId: string,
     input: {
       cancelAtPeriodEnd: boolean;
+      provider?: string;
       status?: string;
       currentPeriodEnd?: Date | null;
+      providerCustomerId?: string;
+      providerPriceId?: string;
       stripeCustomerId?: string;
       stripePriceId?: string;
     },
@@ -274,8 +365,11 @@ export class BillingRepository {
       },
       data: {
         cancelAtPeriodEnd: input.cancelAtPeriodEnd,
+        ...(input.provider ? { provider: input.provider } : {}),
         ...(input.status ? { status: input.status as never } : {}),
         ...(input.currentPeriodEnd !== undefined ? { currentPeriodEnd: input.currentPeriodEnd } : {}),
+        ...(input.providerCustomerId ? { providerCustomerId: input.providerCustomerId } : {}),
+        ...(input.providerPriceId ? { providerPriceId: input.providerPriceId } : {}),
         ...(input.stripeCustomerId ? { stripeCustomerId: input.stripeCustomerId } : {}),
         ...(input.stripePriceId ? { stripePriceId: input.stripePriceId } : {}),
       },
@@ -293,6 +387,8 @@ export class BillingRepository {
       select: {
         id: true,
         subscriptionId: true,
+        provider: true,
+        providerInvoiceId: true,
         externalId: true,
         amountDue: true,
         amountPaid: true,
@@ -313,6 +409,8 @@ export class BillingRepository {
       },
       select: {
         id: true,
+        provider: true,
+        providerInvoiceId: true,
         externalId: true,
         subscription: {
           select: {
@@ -328,6 +426,8 @@ export class BillingRepository {
 
     return {
       id: record.id,
+      provider: record.provider,
+      providerInvoiceId: record.providerInvoiceId,
       externalId: record.externalId,
       workspaceId: record.subscription.workspaceId,
     };

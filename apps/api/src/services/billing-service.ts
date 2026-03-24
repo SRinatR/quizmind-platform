@@ -57,6 +57,11 @@ export function mapPlanCatalogRecordToEntry(record: BillingPlanCatalogRecord): B
       currency: price.currency,
       amount: price.amount,
       isDefault: price.isDefault,
+      providerMappings: (price.providerMappings ?? []).map((mapping) => ({
+        provider: mapping.provider as 'mock' | 'stripe' | 'manual',
+        providerPriceId: mapping.providerPriceId,
+        isActive: mapping.isActive,
+      })),
       stripePriceId: price.stripePriceId,
     })),
   };

@@ -1,8 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
 import {
+  type BillingInvoiceDocumentFormat,
   billingIntervals,
   subscriptionStatuses,
+  type BillingProvider,
   type BillingInterval,
   type PlanDefinition,
   type PlanEntitlement,
@@ -40,6 +42,101 @@ export interface EntitlementResolution {
 export interface UsageSnapshot {
   consumed: number;
   limit?: number;
+}
+
+export interface BillingProviderReference {
+  provider: BillingProvider;
+  providerCustomerId?: string | null;
+  providerSubscriptionId?: string | null;
+  providerPriceId?: string | null;
+  providerInvoiceId?: string | null;
+  providerPaymentId?: string | null;
+}
+
+export interface BillingProviderCheckoutSession {
+  provider: BillingProvider;
+  sessionId: string;
+  customerId: string;
+  providerPriceId: string;
+  redirectUrl: string;
+}
+
+export interface BillingProviderPortalSession {
+  provider: BillingProvider;
+  customerId: string;
+  redirectUrl: string;
+}
+
+export interface BillingProviderInvoiceDocument {
+  provider: BillingProvider;
+  providerInvoiceId: string;
+  redirectUrl: string;
+  format: BillingInvoiceDocumentFormat;
+}
+
+export interface BillingProviderSubscriptionMutation {
+  provider: BillingProvider;
+  providerSubscriptionId: string;
+  customerId?: string;
+  providerPriceId?: string;
+  cancelAtPeriodEnd: boolean;
+  status?: SubscriptionStatus;
+  currentPeriodEnd?: Date;
+}
+
+export interface BillingProviderWebhookVerificationResult {
+  provider: BillingProvider;
+  verifiedAt: string;
+}
+
+export interface BillingProviderNormalizedWebhookEvent {
+  provider: BillingProvider;
+  externalEventId: string;
+  eventType: string;
+  payloadJson: Record<string, unknown>;
+  providerCreatedAt?: Date;
+}
+
+export interface BillingProviderAdapter {
+  provider: BillingProvider;
+  createCustomer?(input: {
+    email?: string;
+    name: string;
+    metadata?: Record<string, string>;
+  }): Promise<{ customerId: string }>;
+  startCheckout?(input: {
+    customerId: string;
+    providerPriceId: string;
+    quantity: number;
+    successUrl: string;
+    cancelUrl: string;
+    clientReferenceId?: string;
+    metadata?: Record<string, string>;
+    subscriptionMetadata?: Record<string, string>;
+  }): Promise<BillingProviderCheckoutSession>;
+  createPortalLink?(input: {
+    customerId: string;
+    returnUrl: string;
+  }): Promise<BillingProviderPortalSession>;
+  cancelSubscription?(input: {
+    providerSubscriptionId: string;
+  }): Promise<BillingProviderSubscriptionMutation>;
+  resumeSubscription?(input: {
+    providerSubscriptionId: string;
+  }): Promise<BillingProviderSubscriptionMutation>;
+  fetchInvoiceDocument?(input: {
+    providerInvoiceId: string;
+  }): Promise<BillingProviderInvoiceDocument>;
+  verifyWebhook?(input: VerifyStripeWebhookSignatureInput): Promise<BillingProviderWebhookVerificationResult> | BillingProviderWebhookVerificationResult;
+  normalizeWebhookEvent?(input: {
+    rawBody: Buffer | string;
+  }): BillingProviderNormalizedWebhookEvent;
+}
+
+export interface BillingProviderResolverInput {
+  requestedProvider?: BillingProvider;
+  currency?: string;
+  manualInvoicing?: boolean;
 }
 
 export interface VerifyStripeWebhookSignatureInput {
@@ -102,6 +199,27 @@ export function incrementUsage(usage: UsageSnapshot, amount = 1): UsageSnapshot 
     ...usage,
     consumed: usage.consumed + amount,
   };
+}
+
+export function resolveProviderCustomerId(input: {
+  providerCustomerId?: string | null;
+  stripeCustomerId?: string | null;
+}): string | undefined {
+  return input.providerCustomerId ?? input.stripeCustomerId ?? undefined;
+}
+
+export function resolveProviderPriceId(input: {
+  providerPriceId?: string | null;
+  stripePriceId?: string | null;
+}): string | undefined {
+  return input.providerPriceId ?? input.stripePriceId ?? undefined;
+}
+
+export function resolveProviderSubscriptionId(input: {
+  providerSubscriptionId?: string | null;
+  stripeSubscriptionId?: string | null;
+}): string | undefined {
+  return input.providerSubscriptionId ?? input.stripeSubscriptionId ?? undefined;
 }
 
 export function assertSubscriptionStatus(status: string): SubscriptionStatus {

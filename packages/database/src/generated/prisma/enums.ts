@@ -102,3 +102,22 @@ export const EventSeverity = {
 } as const
 
 export type EventSeverity = (typeof EventSeverity)[keyof typeof EventSeverity]
+
+
+export const CredentialOwnerType = {
+  platform: 'platform',
+  workspace: 'workspace',
+  user: 'user'
+} as const
+
+export type CredentialOwnerType = (typeof CredentialOwnerType)[keyof typeof CredentialOwnerType]
+
+
+export const CredentialValidationStatus = {
+  pending: 'pending',
+  valid: 'valid',
+  invalid: 'invalid',
+  revoked: 'revoked'
+} as const
+
+export type CredentialValidationStatus = (typeof CredentialValidationStatus)[keyof typeof CredentialValidationStatus]

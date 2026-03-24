@@ -37,6 +37,8 @@ export type PaymentSumAggregateOutputType = {
 export type PaymentMinAggregateOutputType = {
   id: string | null
   subscriptionId: string | null
+  provider: string | null
+  providerPaymentId: string | null
   externalId: string | null
   amount: number | null
   currency: string | null
@@ -48,6 +50,8 @@ export type PaymentMinAggregateOutputType = {
 export type PaymentMaxAggregateOutputType = {
   id: string | null
   subscriptionId: string | null
+  provider: string | null
+  providerPaymentId: string | null
   externalId: string | null
   amount: number | null
   currency: string | null
@@ -59,6 +63,8 @@ export type PaymentMaxAggregateOutputType = {
 export type PaymentCountAggregateOutputType = {
   id: number
   subscriptionId: number
+  provider: number
+  providerPaymentId: number
   externalId: number
   amount: number
   currency: number
@@ -80,6 +86,8 @@ export type PaymentSumAggregateInputType = {
 export type PaymentMinAggregateInputType = {
   id?: true
   subscriptionId?: true
+  provider?: true
+  providerPaymentId?: true
   externalId?: true
   amount?: true
   currency?: true
@@ -91,6 +99,8 @@ export type PaymentMinAggregateInputType = {
 export type PaymentMaxAggregateInputType = {
   id?: true
   subscriptionId?: true
+  provider?: true
+  providerPaymentId?: true
   externalId?: true
   amount?: true
   currency?: true
@@ -102,6 +112,8 @@ export type PaymentMaxAggregateInputType = {
 export type PaymentCountAggregateInputType = {
   id?: true
   subscriptionId?: true
+  provider?: true
+  providerPaymentId?: true
   externalId?: true
   amount?: true
   currency?: true
@@ -200,6 +212,8 @@ export type PaymentGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type PaymentGroupByOutputType = {
   id: string
   subscriptionId: string
+  provider: string | null
+  providerPaymentId: string | null
   externalId: string | null
   amount: number
   currency: string
@@ -234,6 +248,8 @@ export type PaymentWhereInput = {
   NOT?: Prisma.PaymentWhereInput | Prisma.PaymentWhereInput[]
   id?: Prisma.StringFilter<"Payment"> | string
   subscriptionId?: Prisma.StringFilter<"Payment"> | string
+  provider?: Prisma.StringNullableFilter<"Payment"> | string | null
+  providerPaymentId?: Prisma.StringNullableFilter<"Payment"> | string | null
   externalId?: Prisma.StringNullableFilter<"Payment"> | string | null
   amount?: Prisma.IntFilter<"Payment"> | number
   currency?: Prisma.StringFilter<"Payment"> | string
@@ -246,6 +262,8 @@ export type PaymentWhereInput = {
 export type PaymentOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerPaymentId?: Prisma.SortOrderInput | Prisma.SortOrder
   externalId?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -257,22 +275,26 @@ export type PaymentOrderByWithRelationInput = {
 
 export type PaymentWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  providerPaymentId?: string
   externalId?: string
   AND?: Prisma.PaymentWhereInput | Prisma.PaymentWhereInput[]
   OR?: Prisma.PaymentWhereInput[]
   NOT?: Prisma.PaymentWhereInput | Prisma.PaymentWhereInput[]
   subscriptionId?: Prisma.StringFilter<"Payment"> | string
+  provider?: Prisma.StringNullableFilter<"Payment"> | string | null
   amount?: Prisma.IntFilter<"Payment"> | number
   currency?: Prisma.StringFilter<"Payment"> | string
   status?: Prisma.StringFilter<"Payment"> | string
   processedAt?: Prisma.DateTimeNullableFilter<"Payment"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Payment"> | Date | string
   subscription?: Prisma.XOR<Prisma.SubscriptionScalarRelationFilter, Prisma.SubscriptionWhereInput>
-}, "id" | "externalId">
+}, "id" | "providerPaymentId" | "externalId">
 
 export type PaymentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerPaymentId?: Prisma.SortOrderInput | Prisma.SortOrder
   externalId?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -292,6 +314,8 @@ export type PaymentScalarWhereWithAggregatesInput = {
   NOT?: Prisma.PaymentScalarWhereWithAggregatesInput | Prisma.PaymentScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Payment"> | string
   subscriptionId?: Prisma.StringWithAggregatesFilter<"Payment"> | string
+  provider?: Prisma.StringNullableWithAggregatesFilter<"Payment"> | string | null
+  providerPaymentId?: Prisma.StringNullableWithAggregatesFilter<"Payment"> | string | null
   externalId?: Prisma.StringNullableWithAggregatesFilter<"Payment"> | string | null
   amount?: Prisma.IntWithAggregatesFilter<"Payment"> | number
   currency?: Prisma.StringWithAggregatesFilter<"Payment"> | string
@@ -302,6 +326,8 @@ export type PaymentScalarWhereWithAggregatesInput = {
 
 export type PaymentCreateInput = {
   id?: string
+  provider?: string | null
+  providerPaymentId?: string | null
   externalId?: string | null
   amount: number
   currency: string
@@ -314,6 +340,8 @@ export type PaymentCreateInput = {
 export type PaymentUncheckedCreateInput = {
   id?: string
   subscriptionId: string
+  provider?: string | null
+  providerPaymentId?: string | null
   externalId?: string | null
   amount: number
   currency: string
@@ -324,6 +352,8 @@ export type PaymentUncheckedCreateInput = {
 
 export type PaymentUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -336,6 +366,8 @@ export type PaymentUpdateInput = {
 export type PaymentUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -347,6 +379,8 @@ export type PaymentUncheckedUpdateInput = {
 export type PaymentCreateManyInput = {
   id?: string
   subscriptionId: string
+  provider?: string | null
+  providerPaymentId?: string | null
   externalId?: string | null
   amount: number
   currency: string
@@ -357,6 +391,8 @@ export type PaymentCreateManyInput = {
 
 export type PaymentUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -368,6 +404,8 @@ export type PaymentUpdateManyMutationInput = {
 export type PaymentUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -389,6 +427,8 @@ export type PaymentOrderByRelationAggregateInput = {
 export type PaymentCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerPaymentId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -404,6 +444,8 @@ export type PaymentAvgOrderByAggregateInput = {
 export type PaymentMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerPaymentId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -415,6 +457,8 @@ export type PaymentMaxOrderByAggregateInput = {
 export type PaymentMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerPaymentId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -471,6 +515,8 @@ export type PaymentUncheckedUpdateManyWithoutSubscriptionNestedInput = {
 
 export type PaymentCreateWithoutSubscriptionInput = {
   id?: string
+  provider?: string | null
+  providerPaymentId?: string | null
   externalId?: string | null
   amount: number
   currency: string
@@ -481,6 +527,8 @@ export type PaymentCreateWithoutSubscriptionInput = {
 
 export type PaymentUncheckedCreateWithoutSubscriptionInput = {
   id?: string
+  provider?: string | null
+  providerPaymentId?: string | null
   externalId?: string | null
   amount: number
   currency: string
@@ -521,6 +569,8 @@ export type PaymentScalarWhereInput = {
   NOT?: Prisma.PaymentScalarWhereInput | Prisma.PaymentScalarWhereInput[]
   id?: Prisma.StringFilter<"Payment"> | string
   subscriptionId?: Prisma.StringFilter<"Payment"> | string
+  provider?: Prisma.StringNullableFilter<"Payment"> | string | null
+  providerPaymentId?: Prisma.StringNullableFilter<"Payment"> | string | null
   externalId?: Prisma.StringNullableFilter<"Payment"> | string | null
   amount?: Prisma.IntFilter<"Payment"> | number
   currency?: Prisma.StringFilter<"Payment"> | string
@@ -531,6 +581,8 @@ export type PaymentScalarWhereInput = {
 
 export type PaymentCreateManySubscriptionInput = {
   id?: string
+  provider?: string | null
+  providerPaymentId?: string | null
   externalId?: string | null
   amount: number
   currency: string
@@ -541,6 +593,8 @@ export type PaymentCreateManySubscriptionInput = {
 
 export type PaymentUpdateWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -551,6 +605,8 @@ export type PaymentUpdateWithoutSubscriptionInput = {
 
 export type PaymentUncheckedUpdateWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -561,6 +617,8 @@ export type PaymentUncheckedUpdateWithoutSubscriptionInput = {
 
 export type PaymentUncheckedUpdateManyWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -574,6 +632,8 @@ export type PaymentUncheckedUpdateManyWithoutSubscriptionInput = {
 export type PaymentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerPaymentId?: boolean
   externalId?: boolean
   amount?: boolean
   currency?: boolean
@@ -586,6 +646,8 @@ export type PaymentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type PaymentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerPaymentId?: boolean
   externalId?: boolean
   amount?: boolean
   currency?: boolean
@@ -598,6 +660,8 @@ export type PaymentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type PaymentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerPaymentId?: boolean
   externalId?: boolean
   amount?: boolean
   currency?: boolean
@@ -610,6 +674,8 @@ export type PaymentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type PaymentSelectScalar = {
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerPaymentId?: boolean
   externalId?: boolean
   amount?: boolean
   currency?: boolean
@@ -618,7 +684,7 @@ export type PaymentSelectScalar = {
   createdAt?: boolean
 }
 
-export type PaymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subscriptionId" | "externalId" | "amount" | "currency" | "status" | "processedAt" | "createdAt", ExtArgs["result"]["payment"]>
+export type PaymentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subscriptionId" | "provider" | "providerPaymentId" | "externalId" | "amount" | "currency" | "status" | "processedAt" | "createdAt", ExtArgs["result"]["payment"]>
 export type PaymentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
 }
@@ -637,6 +703,8 @@ export type $PaymentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     subscriptionId: string
+    provider: string | null
+    providerPaymentId: string | null
     externalId: string | null
     amount: number
     currency: string
@@ -1069,6 +1137,8 @@ export interface Prisma__PaymentClient<T, Null = never, ExtArgs extends runtime.
 export interface PaymentFieldRefs {
   readonly id: Prisma.FieldRef<"Payment", 'String'>
   readonly subscriptionId: Prisma.FieldRef<"Payment", 'String'>
+  readonly provider: Prisma.FieldRef<"Payment", 'String'>
+  readonly providerPaymentId: Prisma.FieldRef<"Payment", 'String'>
   readonly externalId: Prisma.FieldRef<"Payment", 'String'>
   readonly amount: Prisma.FieldRef<"Payment", 'Int'>
   readonly currency: Prisma.FieldRef<"Payment", 'String'>

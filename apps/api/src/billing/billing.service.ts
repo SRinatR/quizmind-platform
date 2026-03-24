@@ -10,6 +10,7 @@ import {
 import { verifyStripeWebhookSignature } from '@quizmind/billing';
 import { loadApiEnv } from '@quizmind/config';
 import {
+  type BillingAdminPlanPriceProviderMappingInput,
   type BillingAdminPlanEntitlementInput,
   type BillingAdminPlanPriceInput,
   type BillingAdminPlansPayload,
@@ -21,6 +22,7 @@ import {
   type BillingInvoicePdfResult,
   type BillingInvoicesPayload,
   type BillingPlansPayload,
+  type BillingProvider,
   type BillingPortalRequest,
   type BillingPortalResult,
   type BillingSubscriptionMutationRequest,
@@ -30,6 +32,7 @@ import {
   type SubscriptionStatus,
 } from '@quizmind/contracts';
 import { Prisma } from '@quizmind/database';
+import { resolveBillingProvider as resolveConfiguredBillingProvider } from '@quizmind/providers';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { QueueDispatchService } from '../queue/queue-dispatch.service';
@@ -126,12 +129,49 @@ function normalizePlanPriceInputs(
       defaultCount += 1;
     }
 
+    const providerMappings = (price?.providerMappings ?? [])
+      .map((mapping, mappingIndex): BillingAdminPlanPriceProviderMappingInput => {
+        const providerPriceId = readNonEmptyString(
+          mapping?.providerPriceId,
+          `prices[${index}].providerMappings[${mappingIndex}].providerPriceId`,
+        );
+
+        return {
+          provider: mapping.provider ?? 'stripe',
+          providerPriceId,
+          isActive: mapping.isActive ?? true,
+        };
+      })
+      .filter(
+        (mapping, mappingIndex, items) =>
+          items.findIndex(
+            (candidate) =>
+              candidate.provider === mapping.provider && candidate.providerPriceId === mapping.providerPriceId,
+          ) === mappingIndex,
+      );
+
+    const normalizedStripePriceId = normalizeOptionalString(price?.stripePriceId);
+
+    if (
+      normalizedStripePriceId &&
+      !providerMappings.some(
+        (mapping) => mapping.provider === 'stripe' && mapping.providerPriceId === normalizedStripePriceId,
+      )
+    ) {
+      providerMappings.push({
+        provider: 'stripe',
+        providerPriceId: normalizedStripePriceId,
+        isActive: true,
+      });
+    }
+
     return {
       interval,
       currency,
       amount,
       isDefault: price?.isDefault ?? false,
-      stripePriceId: normalizeOptionalString(price?.stripePriceId) ?? null,
+      providerMappings,
+      stripePriceId: normalizedStripePriceId ?? null,
     };
   });
 
@@ -220,6 +260,27 @@ function deriveInvoiceStatus(record: BillingInvoiceRecord, now = new Date()): st
   return 'open';
 }
 
+function resolveProviderPriceId(input: {
+  provider: BillingProvider;
+  stripePriceId?: string | null;
+  providerMappings?: Array<{ provider: string; providerPriceId: string; isActive: boolean }>;
+  fallbackPriceId: string;
+}): string {
+  const activeMapping = input.providerMappings?.find(
+    (mapping) => mapping.provider === input.provider && mapping.isActive,
+  );
+
+  if (activeMapping?.providerPriceId) {
+    return activeMapping.providerPriceId;
+  }
+
+  if (input.provider === 'stripe' && input.stripePriceId?.trim()) {
+    return input.stripePriceId;
+  }
+
+  return input.fallbackPriceId;
+}
+
 @Injectable()
 export class BillingService {
   private readonly env = loadApiEnv();
@@ -288,6 +349,11 @@ export class BillingService {
         currency: price.currency,
         amount: price.amount,
         isDefault: price.isDefault,
+        providerMappings: (price.providerMappings ?? []).map((mapping) => ({
+          provider: mapping.provider as BillingProvider,
+          providerPriceId: mapping.providerPriceId,
+          isActive: mapping.isActive,
+        })),
         stripePriceId: price.stripePriceId,
       })),
     );
@@ -317,6 +383,11 @@ export class BillingService {
           currency: price.currency,
           amount: price.amount,
           isDefault: price.isDefault,
+          providerMappings: price.providerMappings?.map((mapping) => ({
+            provider: mapping.provider,
+            providerPriceId: mapping.providerPriceId,
+            isActive: mapping.isActive ?? true,
+          })),
           stripePriceId: price.stripePriceId ?? null,
         })),
       });
@@ -349,6 +420,8 @@ export class BillingService {
       workspaceId: workspace.id,
       items: invoices.map((invoice) => ({
         id: invoice.id,
+        provider: (invoice.provider as BillingProvider | null) ?? undefined,
+        providerInvoiceId: invoice.providerInvoiceId,
         externalId: invoice.externalId,
         subscriptionId: invoice.subscriptionId,
         amountDue: invoice.amountDue,
@@ -366,8 +439,6 @@ export class BillingService {
     session: CurrentSessionSnapshot,
     invoiceId?: string,
   ): Promise<BillingInvoicePdfResult> {
-    this.assertStripeInvoiceExportReady();
-
     const resolvedInvoiceId = readRequiredString(invoiceId, 'invoiceId');
     const invoice = await this.billingRepository.findInvoiceExportContext(resolvedInvoiceId);
 
@@ -376,6 +447,27 @@ export class BillingService {
     }
 
     await this.loadWorkspaceForSubscriptionRead(session, invoice.workspaceId);
+
+    const provider = (invoice.provider as BillingProvider | null) ?? 'stripe';
+
+    if (provider === 'manual') {
+      const providerInvoiceId = invoice.providerInvoiceId ?? invoice.externalId ?? invoice.id;
+
+      return {
+        invoiceId: invoice.id,
+        workspaceId: invoice.workspaceId,
+        provider,
+        providerInvoiceId,
+        externalId: invoice.externalId ?? providerInvoiceId,
+        redirectUrl: resolveAppRedirectUrl({
+          appUrl: this.env.appUrl,
+          fallbackPath: `/app/billing?workspaceId=${invoice.workspaceId}&invoiceId=${invoice.id}&provider=manual`,
+        }),
+        format: 'hosted_page',
+      };
+    }
+
+    this.assertStripeInvoiceExportReady();
 
     if (!invoice.externalId?.trim()) {
       throw new ServiceUnavailableException('Invoice is not linked to a Stripe invoice yet.');
@@ -389,6 +481,8 @@ export class BillingService {
     return {
       invoiceId: invoice.id,
       workspaceId: invoice.workspaceId,
+      provider: 'stripe',
+      providerInvoiceId: stripeInvoice.externalId,
       externalId: stripeInvoice.externalId,
       redirectUrl: stripeInvoice.redirectUrl,
       format: stripeInvoice.format,
@@ -399,15 +493,14 @@ export class BillingService {
     session: CurrentSessionSnapshot,
     request?: Partial<BillingCheckoutRequest>,
   ): Promise<BillingCheckoutResult> {
-    this.assertStripeClientReady();
-
     const workspaceId = readRequiredString(request?.workspaceId, 'workspaceId');
     const planCode = readRequiredString(request?.planCode, 'planCode').toLowerCase();
     const interval = parseBillingInterval(request?.interval);
+    const provider = this.resolveRequestedBillingProvider(request?.provider);
     const workspace = await this.loadWorkspaceForSubscriptionMutation(session, workspaceId);
 
     if (planCode === 'free') {
-      throw new BadRequestException('The free plan does not require a Stripe checkout session.');
+      throw new BadRequestException('The free plan does not require a checkout session.');
     }
 
     const plan = await this.billingRepository.findActivePlanByCode(planCode);
@@ -420,18 +513,52 @@ export class BillingService {
       (candidate) => candidate.intervalCode === interval && candidate.currency.toLowerCase() === 'usd',
     );
 
-    if (!price?.stripePriceId?.trim()) {
-      throw new ServiceUnavailableException(
-        `Plan "${planCode}" is missing a Stripe price mapping for the ${interval} interval.`,
-      );
+    if (!price) {
+      throw new ServiceUnavailableException(`Plan "${planCode}" is missing a price row for the ${interval} interval.`);
     }
+
+    const providerPriceId = resolveProviderPriceId({
+      provider,
+      stripePriceId: price.stripePriceId,
+      providerMappings: price.providerMappings,
+      fallbackPriceId: `${plan.code}:${interval}:${price.currency}`,
+    });
+
+    if (provider === 'manual') {
+      const providerCustomerId = workspace.providerCustomerId ?? `manual:${workspace.id}`;
+
+      await this.billingRepository.updateWorkspaceProviderCustomerId({
+        workspaceId: workspace.id,
+        provider,
+        providerCustomerId,
+      });
+
+      return {
+        workspaceId: workspace.id,
+        planCode: plan.code,
+        interval,
+        provider,
+        providerCustomerId,
+        providerPriceId,
+        customerId: providerCustomerId,
+        stripePriceId: price.stripePriceId ?? providerPriceId,
+        sessionId: `manual:${workspace.id}:${Date.now()}`,
+        redirectUrl: resolveAppRedirectUrl({
+          appUrl: this.env.appUrl,
+          requestedPath: request?.successPath,
+          fallbackPath: `/app/billing?workspaceId=${workspace.id}&provider=manual&checkout=contact_sales`,
+        }),
+      };
+    }
+
+    this.assertStripeClientReady();
 
     const customerId = await this.resolveWorkspaceStripeCustomerId(workspace, session.user.email);
     const currentSubscription = workspace.subscriptions[0] ?? null;
     const checkoutSession = await createStripeCheckoutSession({
       secretKey: this.env.stripeSecretKey!,
       customerId,
-      stripePriceId: price.stripePriceId,
+      stripePriceId: providerPriceId,
       quantity: Math.max(1, currentSubscription?.seatCount ?? 1),
       successUrl: resolveAppRedirectUrl({
         appUrl: this.env.appUrl,
@@ -449,14 +576,14 @@ export class BillingService {
         workspaceSlug: workspace.slug,
         planCode: plan.code,
         interval,
-        stripePriceId: price.stripePriceId,
+        stripePriceId: providerPriceId,
       },
       subscriptionMetadata: {
         workspaceId: workspace.id,
         workspaceSlug: workspace.slug,
         planCode: plan.code,
         interval,
-        stripePriceId: price.stripePriceId,
+        stripePriceId: providerPriceId,
       },
     });
 
@@ -468,8 +595,11 @@ export class BillingService {
       workspaceId: workspace.id,
       planCode: plan.code,
       interval,
+      provider,
+      providerCustomerId: checkoutSession.customerId,
+      providerPriceId,
       customerId: checkoutSession.customerId,
-      stripePriceId: price.stripePriceId,
+      stripePriceId: providerPriceId,
       sessionId: checkoutSession.sessionId,
       redirectUrl: checkoutSession.redirectUrl,
     };
@@ -479,10 +609,37 @@ export class BillingService {
     session: CurrentSessionSnapshot,
     request?: Partial<BillingPortalRequest>,
   ): Promise<BillingPortalResult> {
+    const workspaceId = readRequiredString(request?.workspaceId, 'workspaceId');
+    const provider = this.resolveRequestedBillingProvider(request?.provider);
+    const workspace = await this.loadWorkspaceForSubscriptionMutation(session, workspaceId);
+    const providerCustomerId =
+      normalizeOptionalString(workspace.providerCustomerId) ??
+      normalizeOptionalString(workspace.subscriptions[0]?.providerCustomerId);
+
+    if (provider === 'manual') {
+      const manualCustomerId = providerCustomerId ?? `manual:${workspace.id}`;
+
+      await this.billingRepository.updateWorkspaceProviderCustomerId({
+        workspaceId: workspace.id,
+        provider,
+        providerCustomerId: manualCustomerId,
+      });
+
+      return {
+        workspaceId: workspace.id,
+        provider,
+        providerCustomerId: manualCustomerId,
+        customerId: manualCustomerId,
+        redirectUrl: resolveAppRedirectUrl({
+          appUrl: this.env.appUrl,
+          requestedPath: request?.returnPath,
+          fallbackPath: `/app/billing?workspaceId=${workspace.id}&provider=manual`,
+        }),
+      };
+    }
+
     this.assertStripeClientReady();
 
-    const workspaceId = readRequiredString(request?.workspaceId, 'workspaceId');
-    const workspace = await this.loadWorkspaceForSubscriptionMutation(session, workspaceId);
     const customerId =
       normalizeOptionalString(workspace.stripeCustomerId) ??
       normalizeOptionalString(workspace.subscriptions[0]?.stripeCustomerId);
@@ -507,6 +664,8 @@ export class BillingService {
 
     return {
       workspaceId: workspace.id,
+      provider,
+      providerCustomerId: customerId,
       customerId,
       redirectUrl: portalSession.redirectUrl,
     };
@@ -516,21 +675,57 @@ export class BillingService {
     session: CurrentSessionSnapshot,
     request?: Partial<BillingSubscriptionMutationRequest>,
   ): Promise<BillingSubscriptionMutationResult> {
-    this.assertStripeClientReady();
-
     const workspaceId = readRequiredString(request?.workspaceId, 'workspaceId');
     const workspace = await this.loadWorkspaceForSubscriptionMutation(session, workspaceId);
     const currentSubscription = this.getCurrentWorkspaceSubscription(workspace);
+    const provider = (currentSubscription.provider as BillingProvider | undefined) ?? this.resolveRequestedBillingProvider();
 
     if (currentSubscription.cancelAtPeriodEnd) {
       return {
         workspaceId: workspace.id,
         subscriptionId: currentSubscription.id,
-        stripeSubscriptionId: currentSubscription.stripeSubscriptionId,
+        provider,
+        providerSubscriptionId:
+          currentSubscription.providerSubscriptionId ?? currentSubscription.stripeSubscriptionId ?? currentSubscription.id,
+        stripeSubscriptionId:
+          currentSubscription.stripeSubscriptionId ??
+          currentSubscription.providerSubscriptionId ??
+          currentSubscription.id,
         status: currentSubscription.status as SubscriptionStatus,
         cancelAtPeriodEnd: true,
         currentPeriodEnd: currentSubscription.currentPeriodEnd?.toISOString(),
       };
+    }
+
+    if (provider === 'manual') {
+      await this.billingRepository.updateSubscriptionLifecycle(currentSubscription.id, {
+        provider,
+        cancelAtPeriodEnd: true,
+        status: currentSubscription.status,
+        ...(currentSubscription.providerCustomerId ? { providerCustomerId: currentSubscription.providerCustomerId } : {}),
+        ...(currentSubscription.providerPriceId ? { providerPriceId: currentSubscription.providerPriceId } : {}),
+      });
+
+      return {
+        workspaceId: workspace.id,
+        subscriptionId: currentSubscription.id,
+        provider,
+        providerSubscriptionId:
+          currentSubscription.providerSubscriptionId ?? currentSubscription.stripeSubscriptionId ?? currentSubscription.id,
+        stripeSubscriptionId:
+          currentSubscription.stripeSubscriptionId ??
+          currentSubscription.providerSubscriptionId ??
+          currentSubscription.id,
+        status: currentSubscription.status as SubscriptionStatus,
+        cancelAtPeriodEnd: true,
+        currentPeriodEnd: currentSubscription.currentPeriodEnd?.toISOString(),
+      };
+    }
+
+    this.assertStripeClientReady();
+
+    if (!currentSubscription.stripeSubscriptionId?.trim()) {
+      throw new ServiceUnavailableException('Current workspace subscription is not linked to Stripe yet.');
     }
 
     const stripeSubscription = await updateStripeSubscriptionCancellation({
@@ -543,11 +738,14 @@ export class BillingService {
       : (currentSubscription.status as SubscriptionStatus);
 
     await this.billingRepository.updateSubscriptionLifecycle(currentSubscription.id, {
+      provider,
       cancelAtPeriodEnd: true,
       status: nextStatus,
       ...(stripeSubscription.currentPeriodEnd !== undefined
         ? { currentPeriodEnd: stripeSubscription.currentPeriodEnd }
         : {}),
+      ...(stripeSubscription.customerId ? { providerCustomerId: stripeSubscription.customerId } : {}),
+      ...(stripeSubscription.stripePriceId ? { providerPriceId: stripeSubscription.stripePriceId } : {}),
       ...(stripeSubscription.customerId ? { stripeCustomerId: stripeSubscription.customerId } : {}),
       ...(stripeSubscription.stripePriceId ? { stripePriceId: stripeSubscription.stripePriceId } : {}),
     });
@@ -559,6 +757,8 @@ export class BillingService {
     return {
       workspaceId: workspace.id,
       subscriptionId: currentSubscription.id,
+      provider,
+      providerSubscriptionId: stripeSubscription.stripeSubscriptionId,
       stripeSubscriptionId: stripeSubscription.stripeSubscriptionId,
       status: nextStatus,
       cancelAtPeriodEnd: true,
@@ -571,21 +771,57 @@ export class BillingService {
     session: CurrentSessionSnapshot,
     request?: Partial<BillingSubscriptionMutationRequest>,
   ): Promise<BillingSubscriptionMutationResult> {
-    this.assertStripeClientReady();
-
     const workspaceId = readRequiredString(request?.workspaceId, 'workspaceId');
     const workspace = await this.loadWorkspaceForSubscriptionMutation(session, workspaceId);
     const currentSubscription = this.getCurrentWorkspaceSubscription(workspace);
+    const provider = (currentSubscription.provider as BillingProvider | undefined) ?? this.resolveRequestedBillingProvider();
 
     if (!currentSubscription.cancelAtPeriodEnd) {
       return {
         workspaceId: workspace.id,
         subscriptionId: currentSubscription.id,
-        stripeSubscriptionId: currentSubscription.stripeSubscriptionId,
+        provider,
+        providerSubscriptionId:
+          currentSubscription.providerSubscriptionId ?? currentSubscription.stripeSubscriptionId ?? currentSubscription.id,
+        stripeSubscriptionId:
+          currentSubscription.stripeSubscriptionId ??
+          currentSubscription.providerSubscriptionId ??
+          currentSubscription.id,
         status: currentSubscription.status as SubscriptionStatus,
         cancelAtPeriodEnd: false,
         currentPeriodEnd: currentSubscription.currentPeriodEnd?.toISOString(),
       };
+    }
+
+    if (provider === 'manual') {
+      await this.billingRepository.updateSubscriptionLifecycle(currentSubscription.id, {
+        provider,
+        cancelAtPeriodEnd: false,
+        status: currentSubscription.status,
+        ...(currentSubscription.providerCustomerId ? { providerCustomerId: currentSubscription.providerCustomerId } : {}),
+        ...(currentSubscription.providerPriceId ? { providerPriceId: currentSubscription.providerPriceId } : {}),
+      });
+
+      return {
+        workspaceId: workspace.id,
+        subscriptionId: currentSubscription.id,
+        provider,
+        providerSubscriptionId:
+          currentSubscription.providerSubscriptionId ?? currentSubscription.stripeSubscriptionId ?? currentSubscription.id,
+        stripeSubscriptionId:
+          currentSubscription.stripeSubscriptionId ??
+          currentSubscription.providerSubscriptionId ??
+          currentSubscription.id,
+        status: currentSubscription.status as SubscriptionStatus,
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: currentSubscription.currentPeriodEnd?.toISOString(),
+      };
+    }
+
+    this.assertStripeClientReady();
+
+    if (!currentSubscription.stripeSubscriptionId?.trim()) {
+      throw new ServiceUnavailableException('Current workspace subscription is not linked to Stripe yet.');
     }
 
     const stripeSubscription = await updateStripeSubscriptionCancellation({
@@ -598,11 +834,14 @@ export class BillingService {
       : (currentSubscription.status as SubscriptionStatus);
 
     await this.billingRepository.updateSubscriptionLifecycle(currentSubscription.id, {
+      provider,
       cancelAtPeriodEnd: false,
       status: nextStatus,
       ...(stripeSubscription.currentPeriodEnd !== undefined
         ? { currentPeriodEnd: stripeSubscription.currentPeriodEnd }
         : {}),
+      ...(stripeSubscription.customerId ? { providerCustomerId: stripeSubscription.customerId } : {}),
+      ...(stripeSubscription.stripePriceId ? { providerPriceId: stripeSubscription.stripePriceId } : {}),
       ...(stripeSubscription.customerId ? { stripeCustomerId: stripeSubscription.customerId } : {}),
       ...(stripeSubscription.stripePriceId ? { stripePriceId: stripeSubscription.stripePriceId } : {}),
     });
@@ -614,6 +853,8 @@ export class BillingService {
     return {
       workspaceId: workspace.id,
       subscriptionId: currentSubscription.id,
+      provider,
+      providerSubscriptionId: stripeSubscription.stripeSubscriptionId,
       stripeSubscriptionId: stripeSubscription.stripeSubscriptionId,
       status: nextStatus,
       cancelAtPeriodEnd: false,
@@ -752,10 +993,14 @@ export class BillingService {
 
   private getCurrentWorkspaceSubscription(workspace: BillingWorkspaceContextRecord): {
     id: string;
+    provider: string | null;
     status: string;
     cancelAtPeriodEnd: boolean;
     currentPeriodEnd: Date | null;
-    stripeSubscriptionId: string;
+    providerCustomerId: string | null;
+    providerPriceId: string | null;
+    providerSubscriptionId: string | null;
+    stripeSubscriptionId: string | null;
   } {
     const currentSubscription = workspace.subscriptions[0] ?? null;
 
@@ -763,15 +1008,15 @@ export class BillingService {
       throw new NotFoundException('Subscription not found for workspace.');
     }
 
-    if (!currentSubscription.stripeSubscriptionId?.trim()) {
-      throw new ServiceUnavailableException('Current workspace subscription is not linked to Stripe yet.');
-    }
-
     return {
       id: currentSubscription.id,
+      provider: currentSubscription.provider,
       status: currentSubscription.status,
       cancelAtPeriodEnd: currentSubscription.cancelAtPeriodEnd,
       currentPeriodEnd: currentSubscription.currentPeriodEnd,
+      providerCustomerId: currentSubscription.providerCustomerId,
+      providerPriceId: currentSubscription.providerPriceId,
+      providerSubscriptionId: currentSubscription.providerSubscriptionId,
       stripeSubscriptionId: currentSubscription.stripeSubscriptionId,
     };
   }
@@ -781,6 +1026,8 @@ export class BillingService {
     fallbackEmail?: string | null,
   ): Promise<string> {
     const existingCustomerId =
+      normalizeOptionalString(workspace.providerCustomerId) ??
+      normalizeOptionalString(workspace.subscriptions[0]?.providerCustomerId) ??
       normalizeOptionalString(workspace.stripeCustomerId) ??
       normalizeOptionalString(workspace.subscriptions[0]?.stripeCustomerId);
 
@@ -830,6 +1077,12 @@ export class BillingService {
       default:
         return fallbackStatus as SubscriptionStatus;
     }
+  }
+
+  private resolveRequestedBillingProvider(requestedProvider?: BillingProvider): BillingProvider {
+    return resolveConfiguredBillingProvider({
+      requestedProvider: requestedProvider ?? this.env.billingProvider,
+    });
   }
 
   private assertStripeClientReady(): void {

@@ -1,6 +1,13 @@
-import { canConsumeQuota, incrementUsage, type UsageSnapshot } from '@quizmind/billing';
 import { createLogEvent } from '@quizmind/logger';
 import { type UsageEventPayload } from '@quizmind/contracts';
+import {
+  addUtcDays,
+  canConsumeUsage,
+  incrementUsage,
+  resolveQuotaKey,
+  startOfUtcDay,
+  type UsageSnapshot,
+} from '@quizmind/usage';
 
 export interface UsageProcessingResult {
   accepted: boolean;
@@ -88,34 +95,11 @@ function readStringArray(value: unknown): string[] | undefined {
   return entries.length > 0 ? entries : undefined;
 }
 
-function resolveQuotaKey(eventType: string): string | undefined {
-  if (eventType.includes('screenshot')) {
-    return 'limit.screenshots_per_day';
-  }
-
-  if (eventType.includes('answer') || eventType.includes('request')) {
-    return 'limit.requests_per_day';
-  }
-
-  return undefined;
-}
-
-function startOfUtcDay(value: Date): Date {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-}
-
-function addUtcDays(value: Date, amount: number): Date {
-  const next = new Date(value);
-
-  next.setUTCDate(next.getUTCDate() + amount);
-  return next;
-}
-
 export function processUsageEvent(
   event: UsageEventPayload,
   usage: UsageSnapshot,
 ): UsageProcessingResult {
-  const accepted = canConsumeQuota(usage);
+  const accepted = canConsumeUsage(usage);
   const nextUsage = accepted ? incrementUsage(usage) : usage;
 
   return {

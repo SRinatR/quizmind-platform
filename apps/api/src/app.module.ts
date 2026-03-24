@@ -14,6 +14,10 @@ import { UserRepository } from './auth/repositories/user.repository';
 import { SubscriptionRepository } from './billing/subscription.repository';
 import { PrismaService } from './database/prisma.service';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
+import { ExtensionControlController } from './extension/extension-control.controller';
+import { ExtensionControlService } from './extension/extension-control.service';
+import { ExtensionInstallationRepository } from './extension/extension-installation.repository';
+import { ExtensionInstallationSessionRepository } from './extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
 import { PlatformController } from './platform.controller';
 import { PlatformService } from './platform.service';
@@ -30,7 +34,7 @@ import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
-  controllers: [AuthController, BillingController, PlatformController],
+  controllers: [AuthController, BillingController, PlatformController, ExtensionControlController],
   providers: [
     AuthService,
     BillingRepository,
@@ -38,6 +42,9 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     BillingWebhookRepository,
     EmailVerificationRepository,
     ExtensionCompatibilityRepository,
+    ExtensionControlService,
+    ExtensionInstallationRepository,
+    ExtensionInstallationSessionRepository,
     FeatureFlagRepository,
     InfrastructureHealthService,
     JwtAuthGuard,

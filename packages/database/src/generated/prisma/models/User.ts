@@ -255,6 +255,8 @@ export type UserWhereInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideListRelationFilter
   remoteConfigVersions?: Prisma.RemoteConfigVersionListRelationFilter
   extensionInstallations?: Prisma.ExtensionInstallationListRelationFilter
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionListRelationFilter
+  providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
   assignedSupportTickets?: Prisma.SupportTicketListRelationFilter
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteListRelationFilter
@@ -285,6 +287,8 @@ export type UserOrderByWithRelationInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideOrderByRelationAggregateInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionOrderByRelationAggregateInput
   extensionInstallations?: Prisma.ExtensionInstallationOrderByRelationAggregateInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionOrderByRelationAggregateInput
+  providerCredentials?: Prisma.ProviderCredentialOrderByRelationAggregateInput
   supportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
   assignedSupportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteOrderByRelationAggregateInput
@@ -318,6 +322,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   featureFlagOverrides?: Prisma.FeatureFlagOverrideListRelationFilter
   remoteConfigVersions?: Prisma.RemoteConfigVersionListRelationFilter
   extensionInstallations?: Prisma.ExtensionInstallationListRelationFilter
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionListRelationFilter
+  providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
   assignedSupportTickets?: Prisma.SupportTicketListRelationFilter
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteListRelationFilter
@@ -386,6 +392,8 @@ export type UserCreateInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -416,6 +424,8 @@ export type UserUncheckedCreateInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -446,6 +456,8 @@ export type UserUpdateInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -476,6 +488,8 @@ export type UserUncheckedUpdateInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -735,6 +749,36 @@ export type UserUpdateOneRequiredWithoutExtensionInstallationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutExtensionInstallationsInput, Prisma.UserUpdateWithoutExtensionInstallationsInput>, Prisma.UserUncheckedUpdateWithoutExtensionInstallationsInput>
 }
 
+export type UserCreateNestedOneWithoutExtensionInstallationSessionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutExtensionInstallationSessionsInput, Prisma.UserUncheckedCreateWithoutExtensionInstallationSessionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutExtensionInstallationSessionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutExtensionInstallationSessionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutExtensionInstallationSessionsInput, Prisma.UserUncheckedCreateWithoutExtensionInstallationSessionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutExtensionInstallationSessionsInput
+  upsert?: Prisma.UserUpsertWithoutExtensionInstallationSessionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutExtensionInstallationSessionsInput, Prisma.UserUpdateWithoutExtensionInstallationSessionsInput>, Prisma.UserUncheckedUpdateWithoutExtensionInstallationSessionsInput>
+}
+
+export type UserCreateNestedOneWithoutProviderCredentialsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProviderCredentialsInput, Prisma.UserUncheckedCreateWithoutProviderCredentialsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProviderCredentialsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutProviderCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProviderCredentialsInput, Prisma.UserUncheckedCreateWithoutProviderCredentialsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProviderCredentialsInput
+  upsert?: Prisma.UserUpsertWithoutProviderCredentialsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProviderCredentialsInput, Prisma.UserUpdateWithoutProviderCredentialsInput>, Prisma.UserUncheckedUpdateWithoutProviderCredentialsInput>
+}
+
 export type UserCreateNestedOneWithoutSupportTicketsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutSupportTicketsInput, Prisma.UserUncheckedCreateWithoutSupportTicketsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutSupportTicketsInput
@@ -829,6 +873,8 @@ export type UserCreateWithoutAccountsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -858,6 +904,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -903,6 +951,8 @@ export type UserUpdateWithoutAccountsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -932,6 +982,8 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -961,6 +1013,8 @@ export type UserCreateWithoutSessionsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -990,6 +1044,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1035,6 +1091,8 @@ export type UserUpdateWithoutSessionsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1064,6 +1122,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1093,6 +1153,8 @@ export type UserCreateWithoutEmailVerificationsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1122,6 +1184,8 @@ export type UserUncheckedCreateWithoutEmailVerificationsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1167,6 +1231,8 @@ export type UserUpdateWithoutEmailVerificationsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1196,6 +1262,8 @@ export type UserUncheckedUpdateWithoutEmailVerificationsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1225,6 +1293,8 @@ export type UserCreateWithoutPasswordResetsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1254,6 +1324,8 @@ export type UserUncheckedCreateWithoutPasswordResetsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1299,6 +1371,8 @@ export type UserUpdateWithoutPasswordResetsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1328,6 +1402,8 @@ export type UserUncheckedUpdateWithoutPasswordResetsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1357,6 +1433,8 @@ export type UserCreateWithoutMembershipsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1386,6 +1464,8 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1431,6 +1511,8 @@ export type UserUpdateWithoutMembershipsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1460,6 +1542,8 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1489,6 +1573,8 @@ export type UserCreateWithoutSystemRoleAssignmentsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1518,6 +1604,8 @@ export type UserUncheckedCreateWithoutSystemRoleAssignmentsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1563,6 +1651,8 @@ export type UserUpdateWithoutSystemRoleAssignmentsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1592,6 +1682,8 @@ export type UserUncheckedUpdateWithoutSystemRoleAssignmentsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1621,6 +1713,8 @@ export type UserCreateWithoutFeatureFlagOverridesInput = {
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1650,6 +1744,8 @@ export type UserUncheckedCreateWithoutFeatureFlagOverridesInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1695,6 +1791,8 @@ export type UserUpdateWithoutFeatureFlagOverridesInput = {
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1724,6 +1822,8 @@ export type UserUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1753,6 +1853,8 @@ export type UserCreateWithoutRemoteConfigVersionsInput = {
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1782,6 +1884,8 @@ export type UserUncheckedCreateWithoutRemoteConfigVersionsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1827,6 +1931,8 @@ export type UserUpdateWithoutRemoteConfigVersionsInput = {
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1856,6 +1962,8 @@ export type UserUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -1885,6 +1993,8 @@ export type UserCreateWithoutExtensionInstallationsInput = {
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -1914,6 +2024,8 @@ export type UserUncheckedCreateWithoutExtensionInstallationsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -1959,6 +2071,8 @@ export type UserUpdateWithoutExtensionInstallationsInput = {
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -1988,6 +2102,288 @@ export type UserUncheckedUpdateWithoutExtensionInstallationsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
+}
+
+export type UserCreateWithoutExtensionInstallationSessionsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
+}
+
+export type UserUncheckedCreateWithoutExtensionInstallationSessionsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetUncheckedCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
+}
+
+export type UserCreateOrConnectWithoutExtensionInstallationSessionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutExtensionInstallationSessionsInput, Prisma.UserUncheckedCreateWithoutExtensionInstallationSessionsInput>
+}
+
+export type UserUpsertWithoutExtensionInstallationSessionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutExtensionInstallationSessionsInput, Prisma.UserUncheckedUpdateWithoutExtensionInstallationSessionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutExtensionInstallationSessionsInput, Prisma.UserUncheckedCreateWithoutExtensionInstallationSessionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutExtensionInstallationSessionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutExtensionInstallationSessionsInput, Prisma.UserUncheckedUpdateWithoutExtensionInstallationSessionsInput>
+}
+
+export type UserUpdateWithoutExtensionInstallationSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutExtensionInstallationSessionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUncheckedUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
+}
+
+export type UserCreateWithoutProviderCredentialsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
+}
+
+export type UserUncheckedCreateWithoutProviderCredentialsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetUncheckedCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
+}
+
+export type UserCreateOrConnectWithoutProviderCredentialsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutProviderCredentialsInput, Prisma.UserUncheckedCreateWithoutProviderCredentialsInput>
+}
+
+export type UserUpsertWithoutProviderCredentialsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutProviderCredentialsInput, Prisma.UserUncheckedUpdateWithoutProviderCredentialsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutProviderCredentialsInput, Prisma.UserUncheckedCreateWithoutProviderCredentialsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutProviderCredentialsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutProviderCredentialsInput, Prisma.UserUncheckedUpdateWithoutProviderCredentialsInput>
+}
+
+export type UserUpdateWithoutProviderCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutProviderCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUncheckedUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -2018,6 +2414,8 @@ export type UserCreateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
@@ -2047,6 +2445,8 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
@@ -2081,6 +2481,8 @@ export type UserCreateWithoutAssignedSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
@@ -2110,6 +2512,8 @@ export type UserUncheckedCreateWithoutAssignedSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
@@ -2155,6 +2559,8 @@ export type UserUpdateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
@@ -2184,6 +2590,8 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
@@ -2224,6 +2632,8 @@ export type UserUpdateWithoutAssignedSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
@@ -2253,6 +2663,8 @@ export type UserUncheckedUpdateWithoutAssignedSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
@@ -2282,6 +2694,8 @@ export type UserCreateWithoutSupportTicketPresetFavoritesInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
@@ -2311,6 +2725,8 @@ export type UserUncheckedCreateWithoutSupportTicketPresetFavoritesInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
@@ -2356,6 +2772,8 @@ export type UserUpdateWithoutSupportTicketPresetFavoritesInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
@@ -2385,6 +2803,8 @@ export type UserUncheckedUpdateWithoutSupportTicketPresetFavoritesInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
@@ -2414,6 +2834,8 @@ export type UserCreateWithoutSupportImpersonationSessionsStartedInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -2443,6 +2865,8 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsStartedInput =
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -2477,6 +2901,8 @@ export type UserCreateWithoutSupportImpersonationSessionsTargetedInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
@@ -2506,6 +2932,8 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsTargetedInput 
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
@@ -2551,6 +2979,8 @@ export type UserUpdateWithoutSupportImpersonationSessionsStartedInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -2580,6 +3010,8 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsStartedInput =
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -2620,6 +3052,8 @@ export type UserUpdateWithoutSupportImpersonationSessionsTargetedInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
@@ -2649,6 +3083,8 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsTargetedInput 
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
@@ -2670,6 +3106,8 @@ export type UserCountOutputType = {
   featureFlagOverrides: number
   remoteConfigVersions: number
   extensionInstallations: number
+  extensionInstallationSessions: number
+  providerCredentials: number
   supportTickets: number
   assignedSupportTickets: number
   supportTicketPresetFavorites: number
@@ -2687,6 +3125,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   featureFlagOverrides?: boolean | UserCountOutputTypeCountFeatureFlagOverridesArgs
   remoteConfigVersions?: boolean | UserCountOutputTypeCountRemoteConfigVersionsArgs
   extensionInstallations?: boolean | UserCountOutputTypeCountExtensionInstallationsArgs
+  extensionInstallationSessions?: boolean | UserCountOutputTypeCountExtensionInstallationSessionsArgs
+  providerCredentials?: boolean | UserCountOutputTypeCountProviderCredentialsArgs
   supportTickets?: boolean | UserCountOutputTypeCountSupportTicketsArgs
   assignedSupportTickets?: boolean | UserCountOutputTypeCountAssignedSupportTicketsArgs
   supportTicketPresetFavorites?: boolean | UserCountOutputTypeCountSupportTicketPresetFavoritesArgs
@@ -2770,6 +3210,20 @@ export type UserCountOutputTypeCountExtensionInstallationsArgs<ExtArgs extends r
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountExtensionInstallationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ExtensionInstallationSessionWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountProviderCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProviderCredentialWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountSupportTicketsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.SupportTicketWhereInput
 }
@@ -2826,6 +3280,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   featureFlagOverrides?: boolean | Prisma.User$featureFlagOverridesArgs<ExtArgs>
   remoteConfigVersions?: boolean | Prisma.User$remoteConfigVersionsArgs<ExtArgs>
   extensionInstallations?: boolean | Prisma.User$extensionInstallationsArgs<ExtArgs>
+  extensionInstallationSessions?: boolean | Prisma.User$extensionInstallationSessionsArgs<ExtArgs>
+  providerCredentials?: boolean | Prisma.User$providerCredentialsArgs<ExtArgs>
   supportTickets?: boolean | Prisma.User$supportTicketsArgs<ExtArgs>
   assignedSupportTickets?: boolean | Prisma.User$assignedSupportTicketsArgs<ExtArgs>
   supportTicketPresetFavorites?: boolean | Prisma.User$supportTicketPresetFavoritesArgs<ExtArgs>
@@ -2893,6 +3349,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   featureFlagOverrides?: boolean | Prisma.User$featureFlagOverridesArgs<ExtArgs>
   remoteConfigVersions?: boolean | Prisma.User$remoteConfigVersionsArgs<ExtArgs>
   extensionInstallations?: boolean | Prisma.User$extensionInstallationsArgs<ExtArgs>
+  extensionInstallationSessions?: boolean | Prisma.User$extensionInstallationSessionsArgs<ExtArgs>
+  providerCredentials?: boolean | Prisma.User$providerCredentialsArgs<ExtArgs>
   supportTickets?: boolean | Prisma.User$supportTicketsArgs<ExtArgs>
   assignedSupportTickets?: boolean | Prisma.User$assignedSupportTicketsArgs<ExtArgs>
   supportTicketPresetFavorites?: boolean | Prisma.User$supportTicketPresetFavoritesArgs<ExtArgs>
@@ -2915,6 +3373,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     featureFlagOverrides: Prisma.$FeatureFlagOverridePayload<ExtArgs>[]
     remoteConfigVersions: Prisma.$RemoteConfigVersionPayload<ExtArgs>[]
     extensionInstallations: Prisma.$ExtensionInstallationPayload<ExtArgs>[]
+    extensionInstallationSessions: Prisma.$ExtensionInstallationSessionPayload<ExtArgs>[]
+    providerCredentials: Prisma.$ProviderCredentialPayload<ExtArgs>[]
     supportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
     assignedSupportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
     supportTicketPresetFavorites: Prisma.$SupportTicketPresetFavoritePayload<ExtArgs>[]
@@ -3338,6 +3798,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   featureFlagOverrides<T extends Prisma.User$featureFlagOverridesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$featureFlagOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FeatureFlagOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   remoteConfigVersions<T extends Prisma.User$remoteConfigVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$remoteConfigVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RemoteConfigVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   extensionInstallations<T extends Prisma.User$extensionInstallationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$extensionInstallationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtensionInstallationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  extensionInstallationSessions<T extends Prisma.User$extensionInstallationSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$extensionInstallationSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtensionInstallationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  providerCredentials<T extends Prisma.User$providerCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$providerCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportTickets<T extends Prisma.User$supportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$supportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   assignedSupportTickets<T extends Prisma.User$assignedSupportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$assignedSupportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportTicketPresetFavorites<T extends Prisma.User$supportTicketPresetFavoritesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$supportTicketPresetFavoritesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPresetFavoritePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3991,6 +4453,54 @@ export type User$extensionInstallationsArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.ExtensionInstallationScalarFieldEnum | Prisma.ExtensionInstallationScalarFieldEnum[]
+}
+
+/**
+ * User.extensionInstallationSessions
+ */
+export type User$extensionInstallationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ExtensionInstallationSession
+   */
+  select?: Prisma.ExtensionInstallationSessionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ExtensionInstallationSession
+   */
+  omit?: Prisma.ExtensionInstallationSessionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExtensionInstallationSessionInclude<ExtArgs> | null
+  where?: Prisma.ExtensionInstallationSessionWhereInput
+  orderBy?: Prisma.ExtensionInstallationSessionOrderByWithRelationInput | Prisma.ExtensionInstallationSessionOrderByWithRelationInput[]
+  cursor?: Prisma.ExtensionInstallationSessionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ExtensionInstallationSessionScalarFieldEnum | Prisma.ExtensionInstallationSessionScalarFieldEnum[]
+}
+
+/**
+ * User.providerCredentials
+ */
+export type User$providerCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProviderCredential
+   */
+  select?: Prisma.ProviderCredentialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProviderCredential
+   */
+  omit?: Prisma.ProviderCredentialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProviderCredentialInclude<ExtArgs> | null
+  where?: Prisma.ProviderCredentialWhereInput
+  orderBy?: Prisma.ProviderCredentialOrderByWithRelationInput | Prisma.ProviderCredentialOrderByWithRelationInput[]
+  cursor?: Prisma.ProviderCredentialWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProviderCredentialScalarFieldEnum | Prisma.ProviderCredentialScalarFieldEnum[]
 }
 
 /**

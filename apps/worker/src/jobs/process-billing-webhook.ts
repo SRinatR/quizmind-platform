@@ -15,6 +15,7 @@ export interface BillingWebhookEventSnapshot {
 
 export interface BillingWorkspaceSnapshot {
   id: string;
+  providerCustomerId?: string | null;
   stripeCustomerId?: string | null;
 }
 
@@ -27,6 +28,10 @@ export interface BillingSubscriptionSnapshot {
   id: string;
   workspaceId: string;
   planId: string;
+  provider?: string | null;
+  providerCustomerId?: string | null;
+  providerPriceId?: string | null;
+  providerSubscriptionId?: string | null;
   status: SubscriptionStatus;
   billingInterval: 'monthly' | 'yearly';
   seatCount: number;
@@ -57,6 +62,10 @@ export interface BillingWebhookProcessingRepository {
   upsertStripeSubscriptionForWorkspace(input: {
     workspaceId: string;
     planId: string;
+    provider?: string;
+    providerCustomerId?: string;
+    providerPriceId?: string;
+    providerSubscriptionId?: string;
     stripeCustomerId?: string;
     stripePriceId?: string;
     stripeSubscriptionId: string;
@@ -71,6 +80,8 @@ export interface BillingWebhookProcessingRepository {
   updateSubscriptionStatus(subscriptionId: string, status: SubscriptionStatus): Promise<void>;
   upsertInvoice(input: {
     subscriptionId: string;
+    provider?: string;
+    providerInvoiceId?: string;
     externalId: string;
     amountDue: number;
     amountPaid: number;
@@ -81,6 +92,8 @@ export interface BillingWebhookProcessingRepository {
   }): Promise<BillingInvoiceSnapshot>;
   upsertPayment(input: {
     subscriptionId: string;
+    provider?: string;
+    providerPaymentId?: string;
     externalId: string;
     amount: number;
     currency: string;
@@ -402,6 +415,10 @@ async function processStripeCheckoutCompletedEvent(
   const persistedSubscription = await repository.upsertStripeSubscriptionForWorkspace({
     workspaceId: workspace.id,
     planId,
+    provider: 'stripe',
+    ...(customerId ? { providerCustomerId: customerId } : {}),
+    ...(stripePriceId ? { providerPriceId: stripePriceId } : {}),
+    providerSubscriptionId: stripeSubscriptionId,
     ...(customerId ? { stripeCustomerId: customerId } : {}),
     ...(stripePriceId ? { stripePriceId } : {}),
     stripeSubscriptionId,
@@ -475,6 +492,10 @@ async function processStripeSubscriptionEvent(
   const persistedSubscription = await repository.upsertStripeSubscriptionForWorkspace({
     workspaceId: workspace.id,
     planId,
+    provider: 'stripe',
+    ...(customerId ? { providerCustomerId: customerId } : {}),
+    ...(stripePriceId ? { providerPriceId: stripePriceId } : {}),
+    providerSubscriptionId: subscription.id,
     ...(customerId ? { stripeCustomerId: customerId } : {}),
     ...(stripePriceId ? { stripePriceId } : {}),
     stripeSubscriptionId: subscription.id,
@@ -527,6 +548,8 @@ async function processStripeInvoiceEvent(
     (event.type === 'invoice.payment_succeeded' ? webhook.receivedAt : undefined);
   const invoiceRecord = await repository.upsertInvoice({
     subscriptionId: subscription.id,
+    provider: 'stripe',
+    providerInvoiceId: invoice.id,
     externalId: invoice.id,
     amountDue: invoice.amount_due ?? 0,
     amountPaid: invoice.amount_paid ?? 0,
@@ -562,6 +585,8 @@ async function processStripeInvoiceEvent(
         : invoice.status ?? 'pending';
   const paymentRecord = await repository.upsertPayment({
     subscriptionId: subscription.id,
+    provider: 'stripe',
+    providerPaymentId: paymentExternalId,
     externalId: paymentExternalId,
     amount: invoice.amount_paid ?? invoice.amount_due ?? 0,
     currency: invoice.currency ?? 'usd',

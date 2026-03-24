@@ -38,6 +38,10 @@ export type SubscriptionMinAggregateOutputType = {
   id: string | null
   workspaceId: string | null
   planId: string | null
+  provider: string | null
+  providerCustomerId: string | null
+  providerPriceId: string | null
+  providerSubscriptionId: string | null
   externalId: string | null
   stripeCustomerId: string | null
   stripePriceId: string | null
@@ -57,6 +61,10 @@ export type SubscriptionMaxAggregateOutputType = {
   id: string | null
   workspaceId: string | null
   planId: string | null
+  provider: string | null
+  providerCustomerId: string | null
+  providerPriceId: string | null
+  providerSubscriptionId: string | null
   externalId: string | null
   stripeCustomerId: string | null
   stripePriceId: string | null
@@ -76,6 +84,10 @@ export type SubscriptionCountAggregateOutputType = {
   id: number
   workspaceId: number
   planId: number
+  provider: number
+  providerCustomerId: number
+  providerPriceId: number
+  providerSubscriptionId: number
   externalId: number
   stripeCustomerId: number
   stripePriceId: number
@@ -105,6 +117,10 @@ export type SubscriptionMinAggregateInputType = {
   id?: true
   workspaceId?: true
   planId?: true
+  provider?: true
+  providerCustomerId?: true
+  providerPriceId?: true
+  providerSubscriptionId?: true
   externalId?: true
   stripeCustomerId?: true
   stripePriceId?: true
@@ -124,6 +140,10 @@ export type SubscriptionMaxAggregateInputType = {
   id?: true
   workspaceId?: true
   planId?: true
+  provider?: true
+  providerCustomerId?: true
+  providerPriceId?: true
+  providerSubscriptionId?: true
   externalId?: true
   stripeCustomerId?: true
   stripePriceId?: true
@@ -143,6 +163,10 @@ export type SubscriptionCountAggregateInputType = {
   id?: true
   workspaceId?: true
   planId?: true
+  provider?: true
+  providerCustomerId?: true
+  providerPriceId?: true
+  providerSubscriptionId?: true
   externalId?: true
   stripeCustomerId?: true
   stripePriceId?: true
@@ -249,6 +273,10 @@ export type SubscriptionGroupByOutputType = {
   id: string
   workspaceId: string
   planId: string
+  provider: string | null
+  providerCustomerId: string | null
+  providerPriceId: string | null
+  providerSubscriptionId: string | null
   externalId: string | null
   stripeCustomerId: string | null
   stripePriceId: string | null
@@ -291,6 +319,10 @@ export type SubscriptionWhereInput = {
   id?: Prisma.StringFilter<"Subscription"> | string
   workspaceId?: Prisma.StringFilter<"Subscription"> | string
   planId?: Prisma.StringFilter<"Subscription"> | string
+  provider?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerCustomerId?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerPriceId?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerSubscriptionId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   externalId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   stripeCustomerId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   stripePriceId?: Prisma.StringNullableFilter<"Subscription"> | string | null
@@ -314,6 +346,10 @@ export type SubscriptionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   planId?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerPriceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
   externalId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -335,6 +371,7 @@ export type SubscriptionOrderByWithRelationInput = {
 
 export type SubscriptionWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  providerSubscriptionId?: string
   externalId?: string
   stripeSubscriptionId?: string
   AND?: Prisma.SubscriptionWhereInput | Prisma.SubscriptionWhereInput[]
@@ -342,6 +379,9 @@ export type SubscriptionWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SubscriptionWhereInput | Prisma.SubscriptionWhereInput[]
   workspaceId?: Prisma.StringFilter<"Subscription"> | string
   planId?: Prisma.StringFilter<"Subscription"> | string
+  provider?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerCustomerId?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerPriceId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   stripeCustomerId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   stripePriceId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   status?: Prisma.EnumSubscriptionStatusFilter<"Subscription"> | $Enums.SubscriptionStatus
@@ -357,12 +397,16 @@ export type SubscriptionWhereUniqueInput = Prisma.AtLeast<{
   plan?: Prisma.XOR<Prisma.PlanScalarRelationFilter, Prisma.PlanWhereInput>
   invoices?: Prisma.InvoiceListRelationFilter
   payments?: Prisma.PaymentListRelationFilter
-}, "id" | "externalId" | "stripeSubscriptionId">
+}, "id" | "providerSubscriptionId" | "externalId" | "stripeSubscriptionId">
 
 export type SubscriptionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   planId?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerPriceId?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
   externalId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -390,6 +434,10 @@ export type SubscriptionScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
   workspaceId?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
   planId?: Prisma.StringWithAggregatesFilter<"Subscription"> | string
+  provider?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
+  providerCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
+  providerPriceId?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
+  providerSubscriptionId?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
   externalId?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
   stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
   stripePriceId?: Prisma.StringNullableWithAggregatesFilter<"Subscription"> | string | null
@@ -407,6 +455,10 @@ export type SubscriptionScalarWhereWithAggregatesInput = {
 
 export type SubscriptionCreateInput = {
   id?: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -430,6 +482,10 @@ export type SubscriptionUncheckedCreateInput = {
   id?: string
   workspaceId: string
   planId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -449,6 +505,10 @@ export type SubscriptionUncheckedCreateInput = {
 
 export type SubscriptionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -472,6 +532,10 @@ export type SubscriptionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   planId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -493,6 +557,10 @@ export type SubscriptionCreateManyInput = {
   id?: string
   workspaceId: string
   planId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -510,6 +578,10 @@ export type SubscriptionCreateManyInput = {
 
 export type SubscriptionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -529,6 +601,10 @@ export type SubscriptionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   planId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -558,6 +634,10 @@ export type SubscriptionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   planId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrder
+  providerPriceId?: Prisma.SortOrder
+  providerSubscriptionId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
@@ -581,6 +661,10 @@ export type SubscriptionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   planId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrder
+  providerPriceId?: Prisma.SortOrder
+  providerSubscriptionId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
@@ -600,6 +684,10 @@ export type SubscriptionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   workspaceId?: Prisma.SortOrder
   planId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrder
+  providerPriceId?: Prisma.SortOrder
+  providerSubscriptionId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   stripePriceId?: Prisma.SortOrder
@@ -742,6 +830,10 @@ export type SubscriptionUpdateOneRequiredWithoutPaymentsNestedInput = {
 
 export type SubscriptionCreateWithoutWorkspaceInput = {
   id?: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -763,6 +855,10 @@ export type SubscriptionCreateWithoutWorkspaceInput = {
 export type SubscriptionUncheckedCreateWithoutWorkspaceInput = {
   id?: string
   planId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -813,6 +909,10 @@ export type SubscriptionScalarWhereInput = {
   id?: Prisma.StringFilter<"Subscription"> | string
   workspaceId?: Prisma.StringFilter<"Subscription"> | string
   planId?: Prisma.StringFilter<"Subscription"> | string
+  provider?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerCustomerId?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerPriceId?: Prisma.StringNullableFilter<"Subscription"> | string | null
+  providerSubscriptionId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   externalId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   stripeCustomerId?: Prisma.StringNullableFilter<"Subscription"> | string | null
   stripePriceId?: Prisma.StringNullableFilter<"Subscription"> | string | null
@@ -830,6 +930,10 @@ export type SubscriptionScalarWhereInput = {
 
 export type SubscriptionCreateWithoutPlanInput = {
   id?: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -851,6 +955,10 @@ export type SubscriptionCreateWithoutPlanInput = {
 export type SubscriptionUncheckedCreateWithoutPlanInput = {
   id?: string
   workspaceId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -896,6 +1004,10 @@ export type SubscriptionUpdateManyWithWhereWithoutPlanInput = {
 
 export type SubscriptionCreateWithoutInvoicesInput = {
   id?: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -918,6 +1030,10 @@ export type SubscriptionUncheckedCreateWithoutInvoicesInput = {
   id?: string
   workspaceId: string
   planId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -952,6 +1068,10 @@ export type SubscriptionUpdateToOneWithWhereWithoutInvoicesInput = {
 
 export type SubscriptionUpdateWithoutInvoicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -974,6 +1094,10 @@ export type SubscriptionUncheckedUpdateWithoutInvoicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   planId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -992,6 +1116,10 @@ export type SubscriptionUncheckedUpdateWithoutInvoicesInput = {
 
 export type SubscriptionCreateWithoutPaymentsInput = {
   id?: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -1014,6 +1142,10 @@ export type SubscriptionUncheckedCreateWithoutPaymentsInput = {
   id?: string
   workspaceId: string
   planId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -1048,6 +1180,10 @@ export type SubscriptionUpdateToOneWithWhereWithoutPaymentsInput = {
 
 export type SubscriptionUpdateWithoutPaymentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1070,6 +1206,10 @@ export type SubscriptionUncheckedUpdateWithoutPaymentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   planId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1089,6 +1229,10 @@ export type SubscriptionUncheckedUpdateWithoutPaymentsInput = {
 export type SubscriptionCreateManyWorkspaceInput = {
   id?: string
   planId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -1106,6 +1250,10 @@ export type SubscriptionCreateManyWorkspaceInput = {
 
 export type SubscriptionUpdateWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1127,6 +1275,10 @@ export type SubscriptionUpdateWithoutWorkspaceInput = {
 export type SubscriptionUncheckedUpdateWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   planId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1147,6 +1299,10 @@ export type SubscriptionUncheckedUpdateWithoutWorkspaceInput = {
 export type SubscriptionUncheckedUpdateManyWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   planId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1165,6 +1321,10 @@ export type SubscriptionUncheckedUpdateManyWithoutWorkspaceInput = {
 export type SubscriptionCreateManyPlanInput = {
   id?: string
   workspaceId: string
+  provider?: string | null
+  providerCustomerId?: string | null
+  providerPriceId?: string | null
+  providerSubscriptionId?: string | null
   externalId?: string | null
   stripeCustomerId?: string | null
   stripePriceId?: string | null
@@ -1182,6 +1342,10 @@ export type SubscriptionCreateManyPlanInput = {
 
 export type SubscriptionUpdateWithoutPlanInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1203,6 +1367,10 @@ export type SubscriptionUpdateWithoutPlanInput = {
 export type SubscriptionUncheckedUpdateWithoutPlanInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1223,6 +1391,10 @@ export type SubscriptionUncheckedUpdateWithoutPlanInput = {
 export type SubscriptionUncheckedUpdateManyWithoutPlanInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerPriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1282,6 +1454,10 @@ export type SubscriptionSelect<ExtArgs extends runtime.Types.Extensions.Internal
   id?: boolean
   workspaceId?: boolean
   planId?: boolean
+  provider?: boolean
+  providerCustomerId?: boolean
+  providerPriceId?: boolean
+  providerSubscriptionId?: boolean
   externalId?: boolean
   stripeCustomerId?: boolean
   stripePriceId?: boolean
@@ -1306,6 +1482,10 @@ export type SubscriptionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   workspaceId?: boolean
   planId?: boolean
+  provider?: boolean
+  providerCustomerId?: boolean
+  providerPriceId?: boolean
+  providerSubscriptionId?: boolean
   externalId?: boolean
   stripeCustomerId?: boolean
   stripePriceId?: boolean
@@ -1327,6 +1507,10 @@ export type SubscriptionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   workspaceId?: boolean
   planId?: boolean
+  provider?: boolean
+  providerCustomerId?: boolean
+  providerPriceId?: boolean
+  providerSubscriptionId?: boolean
   externalId?: boolean
   stripeCustomerId?: boolean
   stripePriceId?: boolean
@@ -1348,6 +1532,10 @@ export type SubscriptionSelectScalar = {
   id?: boolean
   workspaceId?: boolean
   planId?: boolean
+  provider?: boolean
+  providerCustomerId?: boolean
+  providerPriceId?: boolean
+  providerSubscriptionId?: boolean
   externalId?: boolean
   stripeCustomerId?: boolean
   stripePriceId?: boolean
@@ -1363,7 +1551,7 @@ export type SubscriptionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type SubscriptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "planId" | "externalId" | "stripeCustomerId" | "stripePriceId" | "stripeSubscriptionId" | "status" | "billingInterval" | "seatCount" | "trialStartAt" | "currentPeriodStart" | "currentPeriodEnd" | "cancelAtPeriodEnd" | "createdAt" | "updatedAt", ExtArgs["result"]["subscription"]>
+export type SubscriptionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "planId" | "provider" | "providerCustomerId" | "providerPriceId" | "providerSubscriptionId" | "externalId" | "stripeCustomerId" | "stripePriceId" | "stripeSubscriptionId" | "status" | "billingInterval" | "seatCount" | "trialStartAt" | "currentPeriodStart" | "currentPeriodEnd" | "cancelAtPeriodEnd" | "createdAt" | "updatedAt", ExtArgs["result"]["subscription"]>
 export type SubscriptionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
   plan?: boolean | Prisma.PlanDefaultArgs<ExtArgs>
@@ -1392,6 +1580,10 @@ export type $SubscriptionPayload<ExtArgs extends runtime.Types.Extensions.Intern
     id: string
     workspaceId: string
     planId: string
+    provider: string | null
+    providerCustomerId: string | null
+    providerPriceId: string | null
+    providerSubscriptionId: string | null
     externalId: string | null
     stripeCustomerId: string | null
     stripePriceId: string | null
@@ -1835,6 +2027,10 @@ export interface SubscriptionFieldRefs {
   readonly id: Prisma.FieldRef<"Subscription", 'String'>
   readonly workspaceId: Prisma.FieldRef<"Subscription", 'String'>
   readonly planId: Prisma.FieldRef<"Subscription", 'String'>
+  readonly provider: Prisma.FieldRef<"Subscription", 'String'>
+  readonly providerCustomerId: Prisma.FieldRef<"Subscription", 'String'>
+  readonly providerPriceId: Prisma.FieldRef<"Subscription", 'String'>
+  readonly providerSubscriptionId: Prisma.FieldRef<"Subscription", 'String'>
   readonly externalId: Prisma.FieldRef<"Subscription", 'String'>
   readonly stripeCustomerId: Prisma.FieldRef<"Subscription", 'String'>
   readonly stripePriceId: Prisma.FieldRef<"Subscription", 'String'>

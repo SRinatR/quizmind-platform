@@ -5,6 +5,7 @@ import {
   type UsageQuotaSnapshot,
   type UsageRecentEventSummary,
 } from '@quizmind/contracts';
+import { addUtcDays, resolveUsageMetricStatus, startOfUtcDay } from '@quizmind/usage';
 
 import {
   type WorkspaceActivityRecord,
@@ -21,17 +22,6 @@ const usageQuotaLabels: Record<string, string> = {
 
 const usageTrackedQuotaKeys = new Set(Object.keys(usageQuotaLabels));
 
-function startOfUtcDay(value: Date): Date {
-  return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-}
-
-function addUtcDays(value: Date, amount: number): Date {
-  const next = new Date(value);
-
-  next.setUTCDate(next.getUTCDate() + amount);
-  return next;
-}
-
 function humanizeQuotaKey(key: string): string {
   const normalized = key.startsWith('limit.') ? key.slice('limit.'.length) : key;
 
@@ -40,22 +30,6 @@ function humanizeQuotaKey(key: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
-}
-
-function resolveUsageMetricStatus(consumed: number, limit?: number): UsageMetricStatus {
-  if (typeof limit !== 'number') {
-    return 'healthy';
-  }
-
-  if (consumed >= limit) {
-    return 'exceeded';
-  }
-
-  if (consumed / limit >= 0.8) {
-    return 'warning';
-  }
-
-  return 'healthy';
 }
 
 function normalizeCapabilities(value: unknown): string[] {

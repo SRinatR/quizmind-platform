@@ -62,6 +62,7 @@ export const ModelName = {
   UserSystemRole: 'UserSystemRole',
   Plan: 'Plan',
   PlanPrice: 'PlanPrice',
+  PlanPriceProviderMapping: 'PlanPriceProviderMapping',
   PlanEntitlement: 'PlanEntitlement',
   Subscription: 'Subscription',
   Invoice: 'Invoice',
@@ -76,6 +77,8 @@ export const ModelName = {
   RemoteConfigLayer: 'RemoteConfigLayer',
   ExtensionCompatibilityRule: 'ExtensionCompatibilityRule',
   ExtensionInstallation: 'ExtensionInstallation',
+  ExtensionInstallationSession: 'ExtensionInstallationSession',
+  ProviderCredential: 'ProviderCredential',
   ExtensionTelemetry: 'ExtensionTelemetry',
   AuditLog: 'AuditLog',
   ActivityLog: 'ActivityLog',
@@ -178,6 +181,8 @@ export const WorkspaceScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   billingEmail: 'billingEmail',
+  billingProvider: 'billingProvider',
+  providerCustomerId: 'providerCustomerId',
   stripeCustomerId: 'stripeCustomerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -248,6 +253,19 @@ export const PlanPriceScalarFieldEnum = {
 export type PlanPriceScalarFieldEnum = (typeof PlanPriceScalarFieldEnum)[keyof typeof PlanPriceScalarFieldEnum]
 
 
+export const PlanPriceProviderMappingScalarFieldEnum = {
+  id: 'id',
+  planPriceId: 'planPriceId',
+  provider: 'provider',
+  providerPriceId: 'providerPriceId',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlanPriceProviderMappingScalarFieldEnum = (typeof PlanPriceProviderMappingScalarFieldEnum)[keyof typeof PlanPriceProviderMappingScalarFieldEnum]
+
+
 export const PlanEntitlementScalarFieldEnum = {
   id: 'id',
   planId: 'planId',
@@ -265,6 +283,10 @@ export const SubscriptionScalarFieldEnum = {
   id: 'id',
   workspaceId: 'workspaceId',
   planId: 'planId',
+  provider: 'provider',
+  providerCustomerId: 'providerCustomerId',
+  providerPriceId: 'providerPriceId',
+  providerSubscriptionId: 'providerSubscriptionId',
   externalId: 'externalId',
   stripeCustomerId: 'stripeCustomerId',
   stripePriceId: 'stripePriceId',
@@ -286,6 +308,8 @@ export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[k
 export const InvoiceScalarFieldEnum = {
   id: 'id',
   subscriptionId: 'subscriptionId',
+  provider: 'provider',
+  providerInvoiceId: 'providerInvoiceId',
   externalId: 'externalId',
   amountDue: 'amountDue',
   amountPaid: 'amountPaid',
@@ -302,6 +326,8 @@ export type InvoiceScalarFieldEnum = (typeof InvoiceScalarFieldEnum)[keyof typeo
 export const PaymentScalarFieldEnum = {
   id: 'id',
   subscriptionId: 'subscriptionId',
+  provider: 'provider',
+  providerPaymentId: 'providerPaymentId',
   externalId: 'externalId',
   amount: 'amount',
   currency: 'currency',
@@ -463,6 +489,40 @@ export const ExtensionInstallationScalarFieldEnum = {
 } as const
 
 export type ExtensionInstallationScalarFieldEnum = (typeof ExtensionInstallationScalarFieldEnum)[keyof typeof ExtensionInstallationScalarFieldEnum]
+
+
+export const ExtensionInstallationSessionScalarFieldEnum = {
+  id: 'id',
+  extensionInstallationId: 'extensionInstallationId',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type ExtensionInstallationSessionScalarFieldEnum = (typeof ExtensionInstallationSessionScalarFieldEnum)[keyof typeof ExtensionInstallationSessionScalarFieldEnum]
+
+
+export const ProviderCredentialScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  ownerType: 'ownerType',
+  ownerId: 'ownerId',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  encryptedSecretJson: 'encryptedSecretJson',
+  validationStatus: 'validationStatus',
+  scopesJson: 'scopesJson',
+  metadataJson: 'metadataJson',
+  lastValidatedAt: 'lastValidatedAt',
+  disabledAt: 'disabledAt',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
 
 
 export const ExtensionTelemetryScalarFieldEnum = {

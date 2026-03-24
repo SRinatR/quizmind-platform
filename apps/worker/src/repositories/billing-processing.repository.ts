@@ -15,6 +15,10 @@ const subscriptionSelect = {
   id: true,
   workspaceId: true,
   planId: true,
+  provider: true,
+  providerCustomerId: true,
+  providerPriceId: true,
+  providerSubscriptionId: true,
   status: true,
   billingInterval: true,
   seatCount: true,
@@ -28,6 +32,10 @@ interface SubscriptionRecord {
   id: string;
   workspaceId: string;
   planId: string;
+  provider: string | null;
+  providerCustomerId: string | null;
+  providerPriceId: string | null;
+  providerSubscriptionId: string | null;
   status: SubscriptionStatus;
   billingInterval: string;
   seatCount: number;
@@ -42,6 +50,10 @@ function mapSubscriptionRecord(record: SubscriptionRecord): BillingSubscriptionS
     id: record.id,
     workspaceId: record.workspaceId,
     planId: record.planId,
+    provider: record.provider,
+    providerCustomerId: record.providerCustomerId,
+    providerPriceId: record.providerPriceId,
+    providerSubscriptionId: record.providerSubscriptionId,
     status: record.status as SubscriptionStatus,
     billingInterval: record.billingInterval === 'yearly' ? 'yearly' : 'monthly',
     seatCount: record.seatCount,
@@ -95,6 +107,7 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
       },
       select: {
         id: true,
+        providerCustomerId: true,
         stripeCustomerId: true,
       },
     });
@@ -107,6 +120,7 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
       },
       select: {
         id: true,
+        providerCustomerId: true,
         stripeCustomerId: true,
       },
     });
@@ -163,6 +177,10 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
   async upsertStripeSubscriptionForWorkspace(input: {
     workspaceId: string;
     planId: string;
+    provider?: string;
+    providerCustomerId?: string;
+    providerPriceId?: string;
+    providerSubscriptionId?: string;
     stripeCustomerId?: string;
     stripePriceId?: string;
     stripeSubscriptionId: string;
@@ -198,6 +216,10 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
           data: {
             workspaceId: input.workspaceId,
             planId: input.planId,
+            ...(input.provider ? { provider: input.provider } : {}),
+            ...(input.providerCustomerId ? { providerCustomerId: input.providerCustomerId } : {}),
+            ...(input.providerPriceId ? { providerPriceId: input.providerPriceId } : {}),
+            ...(input.providerSubscriptionId ? { providerSubscriptionId: input.providerSubscriptionId } : {}),
             ...(input.stripeCustomerId ? { stripeCustomerId: input.stripeCustomerId } : {}),
             ...(input.stripePriceId ? { stripePriceId: input.stripePriceId } : {}),
             stripeSubscriptionId: input.stripeSubscriptionId,
@@ -215,6 +237,10 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
           data: {
             workspaceId: input.workspaceId,
             planId: input.planId,
+            ...(input.provider ? { provider: input.provider } : {}),
+            ...(input.providerCustomerId ? { providerCustomerId: input.providerCustomerId } : {}),
+            ...(input.providerPriceId ? { providerPriceId: input.providerPriceId } : {}),
+            ...(input.providerSubscriptionId ? { providerSubscriptionId: input.providerSubscriptionId } : {}),
             ...(input.stripeCustomerId ? { stripeCustomerId: input.stripeCustomerId } : {}),
             ...(input.stripePriceId ? { stripePriceId: input.stripePriceId } : {}),
             stripeSubscriptionId: input.stripeSubscriptionId,
@@ -245,6 +271,8 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
 
   upsertInvoice(input: {
     subscriptionId: string;
+    provider?: string;
+    providerInvoiceId?: string;
     externalId: string;
     amountDue: number;
     amountPaid: number;
@@ -258,6 +286,8 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
         externalId: input.externalId,
       },
       update: {
+        ...(input.provider ? { provider: input.provider } : {}),
+        ...(input.providerInvoiceId ? { providerInvoiceId: input.providerInvoiceId } : {}),
         amountDue: input.amountDue,
         amountPaid: input.amountPaid,
         currency: input.currency,
@@ -267,6 +297,8 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
       },
       create: {
         subscriptionId: input.subscriptionId,
+        ...(input.provider ? { provider: input.provider } : {}),
+        ...(input.providerInvoiceId ? { providerInvoiceId: input.providerInvoiceId } : {}),
         externalId: input.externalId,
         amountDue: input.amountDue,
         amountPaid: input.amountPaid,
@@ -283,6 +315,8 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
 
   upsertPayment(input: {
     subscriptionId: string;
+    provider?: string;
+    providerPaymentId?: string;
     externalId: string;
     amount: number;
     currency: string;
@@ -294,6 +328,8 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
         externalId: input.externalId,
       },
       update: {
+        ...(input.provider ? { provider: input.provider } : {}),
+        ...(input.providerPaymentId ? { providerPaymentId: input.providerPaymentId } : {}),
         amount: input.amount,
         currency: input.currency,
         status: input.status,
@@ -301,6 +337,8 @@ export class WorkerBillingProcessingRepository implements BillingWebhookProcessi
       },
       create: {
         subscriptionId: input.subscriptionId,
+        ...(input.provider ? { provider: input.provider } : {}),
+        ...(input.providerPaymentId ? { providerPaymentId: input.providerPaymentId } : {}),
         externalId: input.externalId,
         amount: input.amount,
         currency: input.currency,

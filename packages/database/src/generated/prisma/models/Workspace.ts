@@ -29,6 +29,8 @@ export type WorkspaceMinAggregateOutputType = {
   slug: string | null
   name: string | null
   billingEmail: string | null
+  billingProvider: string | null
+  providerCustomerId: string | null
   stripeCustomerId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -39,6 +41,8 @@ export type WorkspaceMaxAggregateOutputType = {
   slug: string | null
   name: string | null
   billingEmail: string | null
+  billingProvider: string | null
+  providerCustomerId: string | null
   stripeCustomerId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -49,6 +53,8 @@ export type WorkspaceCountAggregateOutputType = {
   slug: number
   name: number
   billingEmail: number
+  billingProvider: number
+  providerCustomerId: number
   stripeCustomerId: number
   createdAt: number
   updatedAt: number
@@ -61,6 +67,8 @@ export type WorkspaceMinAggregateInputType = {
   slug?: true
   name?: true
   billingEmail?: true
+  billingProvider?: true
+  providerCustomerId?: true
   stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
@@ -71,6 +79,8 @@ export type WorkspaceMaxAggregateInputType = {
   slug?: true
   name?: true
   billingEmail?: true
+  billingProvider?: true
+  providerCustomerId?: true
   stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
@@ -81,6 +91,8 @@ export type WorkspaceCountAggregateInputType = {
   slug?: true
   name?: true
   billingEmail?: true
+  billingProvider?: true
+  providerCustomerId?: true
   stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
@@ -164,6 +176,8 @@ export type WorkspaceGroupByOutputType = {
   slug: string
   name: string
   billingEmail: string | null
+  billingProvider: string | null
+  providerCustomerId: string | null
   stripeCustomerId: string | null
   createdAt: Date
   updatedAt: Date
@@ -195,6 +209,8 @@ export type WorkspaceWhereInput = {
   slug?: Prisma.StringFilter<"Workspace"> | string
   name?: Prisma.StringFilter<"Workspace"> | string
   billingEmail?: Prisma.StringNullableFilter<"Workspace"> | string | null
+  billingProvider?: Prisma.StringNullableFilter<"Workspace"> | string | null
+  providerCustomerId?: Prisma.StringNullableFilter<"Workspace"> | string | null
   stripeCustomerId?: Prisma.StringNullableFilter<"Workspace"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
@@ -211,6 +227,7 @@ export type WorkspaceWhereInput = {
   domainEvents?: Prisma.DomainEventListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionListRelationFilter
+  providerCredentials?: Prisma.ProviderCredentialListRelationFilter
 }
 
 export type WorkspaceOrderByWithRelationInput = {
@@ -218,6 +235,8 @@ export type WorkspaceOrderByWithRelationInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  billingProvider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -234,6 +253,7 @@ export type WorkspaceOrderByWithRelationInput = {
   domainEvents?: Prisma.DomainEventOrderByRelationAggregateInput
   supportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionOrderByRelationAggregateInput
+  providerCredentials?: Prisma.ProviderCredentialOrderByRelationAggregateInput
 }
 
 export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
@@ -245,6 +265,8 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.WorkspaceWhereInput | Prisma.WorkspaceWhereInput[]
   name?: Prisma.StringFilter<"Workspace"> | string
   billingEmail?: Prisma.StringNullableFilter<"Workspace"> | string | null
+  billingProvider?: Prisma.StringNullableFilter<"Workspace"> | string | null
+  providerCustomerId?: Prisma.StringNullableFilter<"Workspace"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   memberships?: Prisma.WorkspaceMembershipListRelationFilter
@@ -260,6 +282,7 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   domainEvents?: Prisma.DomainEventListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionListRelationFilter
+  providerCredentials?: Prisma.ProviderCredentialListRelationFilter
 }, "id" | "slug" | "stripeCustomerId">
 
 export type WorkspaceOrderByWithAggregationInput = {
@@ -267,6 +290,8 @@ export type WorkspaceOrderByWithAggregationInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
+  billingProvider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -283,6 +308,8 @@ export type WorkspaceScalarWhereWithAggregatesInput = {
   slug?: Prisma.StringWithAggregatesFilter<"Workspace"> | string
   name?: Prisma.StringWithAggregatesFilter<"Workspace"> | string
   billingEmail?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
+  billingProvider?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
+  providerCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
   stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Workspace"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Workspace"> | Date | string
@@ -293,6 +320,8 @@ export type WorkspaceCreateInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -309,6 +338,7 @@ export type WorkspaceCreateInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateInput = {
@@ -316,6 +346,8 @@ export type WorkspaceUncheckedCreateInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -332,6 +364,7 @@ export type WorkspaceUncheckedCreateInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUpdateInput = {
@@ -339,6 +372,8 @@ export type WorkspaceUpdateInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -355,6 +390,7 @@ export type WorkspaceUpdateInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateInput = {
@@ -362,6 +398,8 @@ export type WorkspaceUncheckedUpdateInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -378,6 +416,7 @@ export type WorkspaceUncheckedUpdateInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateManyInput = {
@@ -385,6 +424,8 @@ export type WorkspaceCreateManyInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -395,6 +436,8 @@ export type WorkspaceUpdateManyMutationInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -405,6 +448,8 @@ export type WorkspaceUncheckedUpdateManyInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -415,6 +460,8 @@ export type WorkspaceCountOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrder
+  billingProvider?: Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -425,6 +472,8 @@ export type WorkspaceMaxOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrder
+  billingProvider?: Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -435,6 +484,8 @@ export type WorkspaceMinOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
   billingEmail?: Prisma.SortOrder
+  billingProvider?: Prisma.SortOrder
+  providerCustomerId?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -554,6 +605,22 @@ export type WorkspaceUpdateOneWithoutExtensionInstallationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutExtensionInstallationsInput, Prisma.WorkspaceUpdateWithoutExtensionInstallationsInput>, Prisma.WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput>
 }
 
+export type WorkspaceCreateNestedOneWithoutProviderCredentialsInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutProviderCredentialsInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneWithoutProviderCredentialsNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutProviderCredentialsInput
+  upsert?: Prisma.WorkspaceUpsertWithoutProviderCredentialsInput
+  disconnect?: Prisma.WorkspaceWhereInput | boolean
+  delete?: Prisma.WorkspaceWhereInput | boolean
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutProviderCredentialsInput, Prisma.WorkspaceUpdateWithoutProviderCredentialsInput>, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
+}
+
 export type WorkspaceCreateNestedOneWithoutAuditLogsInput = {
   create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedCreateWithoutAuditLogsInput>
   connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAuditLogsInput
@@ -655,6 +722,8 @@ export type WorkspaceCreateWithoutMembershipsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -670,6 +739,7 @@ export type WorkspaceCreateWithoutMembershipsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
@@ -677,6 +747,8 @@ export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -692,6 +764,7 @@ export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutMembershipsInput = {
@@ -715,6 +788,8 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -730,6 +805,7 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
@@ -737,6 +813,8 @@ export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -752,6 +830,7 @@ export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutInvitationsInput = {
@@ -759,6 +838,8 @@ export type WorkspaceCreateWithoutInvitationsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -774,6 +855,7 @@ export type WorkspaceCreateWithoutInvitationsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
@@ -781,6 +863,8 @@ export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -796,6 +880,7 @@ export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutInvitationsInput = {
@@ -819,6 +904,8 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -834,6 +921,7 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
@@ -841,6 +929,8 @@ export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -856,6 +946,7 @@ export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSubscriptionsInput = {
@@ -863,6 +954,8 @@ export type WorkspaceCreateWithoutSubscriptionsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -878,6 +971,7 @@ export type WorkspaceCreateWithoutSubscriptionsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSubscriptionsInput = {
@@ -885,6 +979,8 @@ export type WorkspaceUncheckedCreateWithoutSubscriptionsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -900,6 +996,7 @@ export type WorkspaceUncheckedCreateWithoutSubscriptionsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSubscriptionsInput = {
@@ -923,6 +1020,8 @@ export type WorkspaceUpdateWithoutSubscriptionsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -938,6 +1037,7 @@ export type WorkspaceUpdateWithoutSubscriptionsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSubscriptionsInput = {
@@ -945,6 +1045,8 @@ export type WorkspaceUncheckedUpdateWithoutSubscriptionsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -960,6 +1062,7 @@ export type WorkspaceUncheckedUpdateWithoutSubscriptionsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutEntitlementOverridesInput = {
@@ -967,6 +1070,8 @@ export type WorkspaceCreateWithoutEntitlementOverridesInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -982,6 +1087,7 @@ export type WorkspaceCreateWithoutEntitlementOverridesInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutEntitlementOverridesInput = {
@@ -989,6 +1095,8 @@ export type WorkspaceUncheckedCreateWithoutEntitlementOverridesInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1004,6 +1112,7 @@ export type WorkspaceUncheckedCreateWithoutEntitlementOverridesInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutEntitlementOverridesInput = {
@@ -1027,6 +1136,8 @@ export type WorkspaceUpdateWithoutEntitlementOverridesInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1042,6 +1153,7 @@ export type WorkspaceUpdateWithoutEntitlementOverridesInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput = {
@@ -1049,6 +1161,8 @@ export type WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1064,6 +1178,7 @@ export type WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
@@ -1071,6 +1186,8 @@ export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1086,6 +1203,7 @@ export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
@@ -1093,6 +1211,8 @@ export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1108,6 +1228,7 @@ export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput = {
@@ -1131,6 +1252,8 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1146,6 +1269,7 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
@@ -1153,6 +1277,8 @@ export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1168,6 +1294,7 @@ export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
@@ -1175,6 +1302,8 @@ export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1190,6 +1319,7 @@ export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
@@ -1197,6 +1327,8 @@ export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1212,6 +1344,7 @@ export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutRemoteConfigVersionsInput = {
@@ -1235,6 +1368,8 @@ export type WorkspaceUpdateWithoutRemoteConfigVersionsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1250,6 +1385,7 @@ export type WorkspaceUpdateWithoutRemoteConfigVersionsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
@@ -1257,6 +1393,8 @@ export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1272,6 +1410,7 @@ export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutExtensionInstallationsInput = {
@@ -1279,6 +1418,8 @@ export type WorkspaceCreateWithoutExtensionInstallationsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1294,6 +1435,7 @@ export type WorkspaceCreateWithoutExtensionInstallationsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
@@ -1301,6 +1443,8 @@ export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1316,6 +1460,7 @@ export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutExtensionInstallationsInput = {
@@ -1339,6 +1484,8 @@ export type WorkspaceUpdateWithoutExtensionInstallationsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1354,6 +1501,7 @@ export type WorkspaceUpdateWithoutExtensionInstallationsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
@@ -1361,6 +1509,8 @@ export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1376,6 +1526,123 @@ export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutProviderCredentialsInput = {
+  id?: string
+  slug: string
+  name: string
+  billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
+  stripeCustomerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
+  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutProviderCredentialsInput = {
+  id?: string
+  slug: string
+  name: string
+  billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
+  stripeCustomerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
+  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutProviderCredentialsInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
+}
+
+export type WorkspaceUpsertWithoutProviderCredentialsInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutProviderCredentialsInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
+}
+
+export type WorkspaceUpdateWithoutProviderCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
+  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutProviderCredentialsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAuditLogsInput = {
@@ -1383,6 +1650,8 @@ export type WorkspaceCreateWithoutAuditLogsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1398,6 +1667,7 @@ export type WorkspaceCreateWithoutAuditLogsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
@@ -1405,6 +1675,8 @@ export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1420,6 +1692,7 @@ export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAuditLogsInput = {
@@ -1443,6 +1716,8 @@ export type WorkspaceUpdateWithoutAuditLogsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1458,6 +1733,7 @@ export type WorkspaceUpdateWithoutAuditLogsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
@@ -1465,6 +1741,8 @@ export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1480,6 +1758,7 @@ export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutActivityLogsInput = {
@@ -1487,6 +1766,8 @@ export type WorkspaceCreateWithoutActivityLogsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1502,6 +1783,7 @@ export type WorkspaceCreateWithoutActivityLogsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
@@ -1509,6 +1791,8 @@ export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1524,6 +1808,7 @@ export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutActivityLogsInput = {
@@ -1547,6 +1832,8 @@ export type WorkspaceUpdateWithoutActivityLogsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1562,6 +1849,7 @@ export type WorkspaceUpdateWithoutActivityLogsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
@@ -1569,6 +1857,8 @@ export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1584,6 +1874,7 @@ export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSecurityEventsInput = {
@@ -1591,6 +1882,8 @@ export type WorkspaceCreateWithoutSecurityEventsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1606,6 +1899,7 @@ export type WorkspaceCreateWithoutSecurityEventsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
@@ -1613,6 +1907,8 @@ export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1628,6 +1924,7 @@ export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSecurityEventsInput = {
@@ -1651,6 +1948,8 @@ export type WorkspaceUpdateWithoutSecurityEventsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1666,6 +1965,7 @@ export type WorkspaceUpdateWithoutSecurityEventsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
@@ -1673,6 +1973,8 @@ export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1688,6 +1990,7 @@ export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutDomainEventsInput = {
@@ -1695,6 +1998,8 @@ export type WorkspaceCreateWithoutDomainEventsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1710,6 +2015,7 @@ export type WorkspaceCreateWithoutDomainEventsInput = {
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
@@ -1717,6 +2023,8 @@ export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1732,6 +2040,7 @@ export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutDomainEventsInput = {
@@ -1755,6 +2064,8 @@ export type WorkspaceUpdateWithoutDomainEventsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1770,6 +2081,7 @@ export type WorkspaceUpdateWithoutDomainEventsInput = {
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
@@ -1777,6 +2089,8 @@ export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1792,6 +2106,7 @@ export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportTicketsInput = {
@@ -1799,6 +2114,8 @@ export type WorkspaceCreateWithoutSupportTicketsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1814,6 +2131,7 @@ export type WorkspaceCreateWithoutSupportTicketsInput = {
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
@@ -1821,6 +2139,8 @@ export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1836,6 +2156,7 @@ export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportTicketsInput = {
@@ -1859,6 +2180,8 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1874,6 +2197,7 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
@@ -1881,6 +2205,8 @@ export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1896,6 +2222,7 @@ export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
@@ -1903,6 +2230,8 @@ export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1918,6 +2247,7 @@ export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
@@ -1925,6 +2255,8 @@ export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
   slug: string
   name: string
   billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
   stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1940,6 +2272,7 @@ export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportImpersonationSessionsInput = {
@@ -1963,6 +2296,8 @@ export type WorkspaceUpdateWithoutSupportImpersonationSessionsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1978,6 +2313,7 @@ export type WorkspaceUpdateWithoutSupportImpersonationSessionsInput = {
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
@@ -1985,6 +2321,8 @@ export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
   billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -2000,6 +2338,7 @@ export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 
@@ -2021,6 +2360,7 @@ export type WorkspaceCountOutputType = {
   domainEvents: number
   supportTickets: number
   supportImpersonationSessions: number
+  providerCredentials: number
 }
 
 export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2037,6 +2377,7 @@ export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   domainEvents?: boolean | WorkspaceCountOutputTypeCountDomainEventsArgs
   supportTickets?: boolean | WorkspaceCountOutputTypeCountSupportTicketsArgs
   supportImpersonationSessions?: boolean | WorkspaceCountOutputTypeCountSupportImpersonationSessionsArgs
+  providerCredentials?: boolean | WorkspaceCountOutputTypeCountProviderCredentialsArgs
 }
 
 /**
@@ -2140,12 +2481,21 @@ export type WorkspaceCountOutputTypeCountSupportImpersonationSessionsArgs<ExtArg
   where?: Prisma.SupportImpersonationSessionWhereInput
 }
 
+/**
+ * WorkspaceCountOutputType without action
+ */
+export type WorkspaceCountOutputTypeCountProviderCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ProviderCredentialWhereInput
+}
+
 
 export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   slug?: boolean
   name?: boolean
   billingEmail?: boolean
+  billingProvider?: boolean
+  providerCustomerId?: boolean
   stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -2162,6 +2512,7 @@ export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   domainEvents?: boolean | Prisma.Workspace$domainEventsArgs<ExtArgs>
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
   supportImpersonationSessions?: boolean | Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>
+  providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["workspace"]>
 
@@ -2170,6 +2521,8 @@ export type WorkspaceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   slug?: boolean
   name?: boolean
   billingEmail?: boolean
+  billingProvider?: boolean
+  providerCustomerId?: boolean
   stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -2180,6 +2533,8 @@ export type WorkspaceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   slug?: boolean
   name?: boolean
   billingEmail?: boolean
+  billingProvider?: boolean
+  providerCustomerId?: boolean
   stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -2190,12 +2545,14 @@ export type WorkspaceSelectScalar = {
   slug?: boolean
   name?: boolean
   billingEmail?: boolean
+  billingProvider?: boolean
+  providerCustomerId?: boolean
   stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type WorkspaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "billingEmail" | "stripeCustomerId" | "createdAt" | "updatedAt", ExtArgs["result"]["workspace"]>
+export type WorkspaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "billingEmail" | "billingProvider" | "providerCustomerId" | "stripeCustomerId" | "createdAt" | "updatedAt", ExtArgs["result"]["workspace"]>
 export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | Prisma.Workspace$membershipsArgs<ExtArgs>
   invitations?: boolean | Prisma.Workspace$invitationsArgs<ExtArgs>
@@ -2210,6 +2567,7 @@ export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   domainEvents?: boolean | Prisma.Workspace$domainEventsArgs<ExtArgs>
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
   supportImpersonationSessions?: boolean | Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>
+  providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WorkspaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2231,12 +2589,15 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     domainEvents: Prisma.$DomainEventPayload<ExtArgs>[]
     supportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
     supportImpersonationSessions: Prisma.$SupportImpersonationSessionPayload<ExtArgs>[]
+    providerCredentials: Prisma.$ProviderCredentialPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     slug: string
     name: string
     billingEmail: string | null
+    billingProvider: string | null
+    providerCustomerId: string | null
     stripeCustomerId: string | null
     createdAt: Date
     updatedAt: Date
@@ -2647,6 +3008,7 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   domainEvents<T extends Prisma.Workspace$domainEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$domainEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DomainEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportTickets<T extends Prisma.Workspace$supportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportImpersonationSessions<T extends Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportImpersonationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  providerCredentials<T extends Prisma.Workspace$providerCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$providerCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2680,6 +3042,8 @@ export interface WorkspaceFieldRefs {
   readonly slug: Prisma.FieldRef<"Workspace", 'String'>
   readonly name: Prisma.FieldRef<"Workspace", 'String'>
   readonly billingEmail: Prisma.FieldRef<"Workspace", 'String'>
+  readonly billingProvider: Prisma.FieldRef<"Workspace", 'String'>
+  readonly providerCustomerId: Prisma.FieldRef<"Workspace", 'String'>
   readonly stripeCustomerId: Prisma.FieldRef<"Workspace", 'String'>
   readonly createdAt: Prisma.FieldRef<"Workspace", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Workspace", 'DateTime'>
@@ -3385,6 +3749,30 @@ export type Workspace$supportImpersonationSessionsArgs<ExtArgs extends runtime.T
   take?: number
   skip?: number
   distinct?: Prisma.SupportImpersonationSessionScalarFieldEnum | Prisma.SupportImpersonationSessionScalarFieldEnum[]
+}
+
+/**
+ * Workspace.providerCredentials
+ */
+export type Workspace$providerCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProviderCredential
+   */
+  select?: Prisma.ProviderCredentialSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ProviderCredential
+   */
+  omit?: Prisma.ProviderCredentialOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProviderCredentialInclude<ExtArgs> | null
+  where?: Prisma.ProviderCredentialWhereInput
+  orderBy?: Prisma.ProviderCredentialOrderByWithRelationInput | Prisma.ProviderCredentialOrderByWithRelationInput[]
+  cursor?: Prisma.ProviderCredentialWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ProviderCredentialScalarFieldEnum | Prisma.ProviderCredentialScalarFieldEnum[]
 }
 
 /**

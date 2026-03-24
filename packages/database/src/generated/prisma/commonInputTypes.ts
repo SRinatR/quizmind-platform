@@ -406,6 +406,40 @@ export type EnumCompatibilityStatusWithAggregatesFilter<$PrismaModel = never> = 
   _max?: Prisma.NestedEnumCompatibilityStatusFilter<$PrismaModel>
 }
 
+export type EnumCredentialOwnerTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialOwnerType | Prisma.EnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialOwnerTypeFilter<$PrismaModel> | $Enums.CredentialOwnerType
+}
+
+export type EnumCredentialValidationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialValidationStatus | Prisma.EnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel> | $Enums.CredentialValidationStatus
+}
+
+export type EnumCredentialOwnerTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialOwnerType | Prisma.EnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialOwnerTypeWithAggregatesFilter<$PrismaModel> | $Enums.CredentialOwnerType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCredentialOwnerTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCredentialOwnerTypeFilter<$PrismaModel>
+}
+
+export type EnumCredentialValidationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialValidationStatus | Prisma.EnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialValidationStatusWithAggregatesFilter<$PrismaModel> | $Enums.CredentialValidationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
+}
+
 export type EnumEventSeverityFilter<$PrismaModel = never> = {
   equals?: $Enums.EventSeverity | Prisma.EnumEventSeverityFieldRefInput<$PrismaModel>
   in?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel>
@@ -789,6 +823,40 @@ export type NestedEnumCompatibilityStatusWithAggregatesFilter<$PrismaModel = nev
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCompatibilityStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCompatibilityStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumCredentialOwnerTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialOwnerType | Prisma.EnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialOwnerTypeFilter<$PrismaModel> | $Enums.CredentialOwnerType
+}
+
+export type NestedEnumCredentialValidationStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialValidationStatus | Prisma.EnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel> | $Enums.CredentialValidationStatus
+}
+
+export type NestedEnumCredentialOwnerTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialOwnerType | Prisma.EnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialOwnerType[] | Prisma.ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialOwnerTypeWithAggregatesFilter<$PrismaModel> | $Enums.CredentialOwnerType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCredentialOwnerTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCredentialOwnerTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumCredentialValidationStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.CredentialValidationStatus | Prisma.EnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.CredentialValidationStatus[] | Prisma.ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumCredentialValidationStatusWithAggregatesFilter<$PrismaModel> | $Enums.CredentialValidationStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumEventSeverityFilter<$PrismaModel = never> = {

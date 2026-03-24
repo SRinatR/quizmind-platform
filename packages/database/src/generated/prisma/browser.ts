@@ -73,6 +73,11 @@ export type Plan = Prisma.PlanModel
  */
 export type PlanPrice = Prisma.PlanPriceModel
 /**
+ * Model PlanPriceProviderMapping
+ * 
+ */
+export type PlanPriceProviderMapping = Prisma.PlanPriceProviderMappingModel
+/**
  * Model PlanEntitlement
  * 
  */
@@ -142,6 +147,16 @@ export type ExtensionCompatibilityRule = Prisma.ExtensionCompatibilityRuleModel
  * 
  */
 export type ExtensionInstallation = Prisma.ExtensionInstallationModel
+/**
+ * Model ExtensionInstallationSession
+ * 
+ */
+export type ExtensionInstallationSession = Prisma.ExtensionInstallationSessionModel
+/**
+ * Model ProviderCredential
+ * 
+ */
+export type ProviderCredential = Prisma.ProviderCredentialModel
 /**
  * Model ExtensionTelemetry
  * 

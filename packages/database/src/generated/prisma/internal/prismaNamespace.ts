@@ -395,6 +395,7 @@ export const ModelName = {
   UserSystemRole: 'UserSystemRole',
   Plan: 'Plan',
   PlanPrice: 'PlanPrice',
+  PlanPriceProviderMapping: 'PlanPriceProviderMapping',
   PlanEntitlement: 'PlanEntitlement',
   Subscription: 'Subscription',
   Invoice: 'Invoice',
@@ -409,6 +410,8 @@ export const ModelName = {
   RemoteConfigLayer: 'RemoteConfigLayer',
   ExtensionCompatibilityRule: 'ExtensionCompatibilityRule',
   ExtensionInstallation: 'ExtensionInstallation',
+  ExtensionInstallationSession: 'ExtensionInstallationSession',
+  ProviderCredential: 'ProviderCredential',
   ExtensionTelemetry: 'ExtensionTelemetry',
   AuditLog: 'AuditLog',
   ActivityLog: 'ActivityLog',
@@ -432,7 +435,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "plan" | "planPrice" | "planEntitlement" | "subscription" | "invoice" | "payment" | "coupon" | "webhookEvent" | "entitlementOverride" | "quotaCounter" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "plan" | "planPrice" | "planPriceProviderMapping" | "planEntitlement" | "subscription" | "invoice" | "payment" | "coupon" | "webhookEvent" | "entitlementOverride" | "quotaCounter" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1247,6 +1250,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.PlanPriceCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.PlanPriceCountAggregateOutputType> | number
+        }
+      }
+    }
+    PlanPriceProviderMapping: {
+      payload: Prisma.$PlanPriceProviderMappingPayload<ExtArgs>
+      fields: Prisma.PlanPriceProviderMappingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlanPriceProviderMappingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlanPriceProviderMappingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>
+        }
+        findFirst: {
+          args: Prisma.PlanPriceProviderMappingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlanPriceProviderMappingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>
+        }
+        findMany: {
+          args: Prisma.PlanPriceProviderMappingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>[]
+        }
+        create: {
+          args: Prisma.PlanPriceProviderMappingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>
+        }
+        createMany: {
+          args: Prisma.PlanPriceProviderMappingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlanPriceProviderMappingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>[]
+        }
+        delete: {
+          args: Prisma.PlanPriceProviderMappingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>
+        }
+        update: {
+          args: Prisma.PlanPriceProviderMappingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlanPriceProviderMappingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlanPriceProviderMappingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlanPriceProviderMappingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlanPriceProviderMappingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlanPriceProviderMappingPayload>
+        }
+        aggregate: {
+          args: Prisma.PlanPriceProviderMappingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlanPriceProviderMapping>
+        }
+        groupBy: {
+          args: Prisma.PlanPriceProviderMappingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlanPriceProviderMappingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlanPriceProviderMappingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlanPriceProviderMappingCountAggregateOutputType> | number
         }
       }
     }
@@ -2286,6 +2363,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ExtensionInstallationSession: {
+      payload: Prisma.$ExtensionInstallationSessionPayload<ExtArgs>
+      fields: Prisma.ExtensionInstallationSessionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ExtensionInstallationSessionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ExtensionInstallationSessionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>
+        }
+        findFirst: {
+          args: Prisma.ExtensionInstallationSessionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ExtensionInstallationSessionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>
+        }
+        findMany: {
+          args: Prisma.ExtensionInstallationSessionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>[]
+        }
+        create: {
+          args: Prisma.ExtensionInstallationSessionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>
+        }
+        createMany: {
+          args: Prisma.ExtensionInstallationSessionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ExtensionInstallationSessionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>[]
+        }
+        delete: {
+          args: Prisma.ExtensionInstallationSessionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>
+        }
+        update: {
+          args: Prisma.ExtensionInstallationSessionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ExtensionInstallationSessionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ExtensionInstallationSessionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ExtensionInstallationSessionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>[]
+        }
+        upsert: {
+          args: Prisma.ExtensionInstallationSessionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExtensionInstallationSessionPayload>
+        }
+        aggregate: {
+          args: Prisma.ExtensionInstallationSessionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateExtensionInstallationSession>
+        }
+        groupBy: {
+          args: Prisma.ExtensionInstallationSessionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExtensionInstallationSessionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ExtensionInstallationSessionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExtensionInstallationSessionCountAggregateOutputType> | number
+        }
+      }
+    }
+    ProviderCredential: {
+      payload: Prisma.$ProviderCredentialPayload<ExtArgs>
+      fields: Prisma.ProviderCredentialFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ProviderCredentialFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ProviderCredentialFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        findFirst: {
+          args: Prisma.ProviderCredentialFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ProviderCredentialFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        findMany: {
+          args: Prisma.ProviderCredentialFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>[]
+        }
+        create: {
+          args: Prisma.ProviderCredentialCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        createMany: {
+          args: Prisma.ProviderCredentialCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ProviderCredentialCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>[]
+        }
+        delete: {
+          args: Prisma.ProviderCredentialDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        update: {
+          args: Prisma.ProviderCredentialUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        deleteMany: {
+          args: Prisma.ProviderCredentialDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ProviderCredentialUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ProviderCredentialUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>[]
+        }
+        upsert: {
+          args: Prisma.ProviderCredentialUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ProviderCredentialPayload>
+        }
+        aggregate: {
+          args: Prisma.ProviderCredentialAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateProviderCredential>
+        }
+        groupBy: {
+          args: Prisma.ProviderCredentialGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProviderCredentialGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ProviderCredentialCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ProviderCredentialCountAggregateOutputType> | number
+        }
+      }
+    }
     ExtensionTelemetry: {
       payload: Prisma.$ExtensionTelemetryPayload<ExtArgs>
       fields: Prisma.ExtensionTelemetryFieldRefs
@@ -2993,6 +3218,8 @@ export const WorkspaceScalarFieldEnum = {
   slug: 'slug',
   name: 'name',
   billingEmail: 'billingEmail',
+  billingProvider: 'billingProvider',
+  providerCustomerId: 'providerCustomerId',
   stripeCustomerId: 'stripeCustomerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -3063,6 +3290,19 @@ export const PlanPriceScalarFieldEnum = {
 export type PlanPriceScalarFieldEnum = (typeof PlanPriceScalarFieldEnum)[keyof typeof PlanPriceScalarFieldEnum]
 
 
+export const PlanPriceProviderMappingScalarFieldEnum = {
+  id: 'id',
+  planPriceId: 'planPriceId',
+  provider: 'provider',
+  providerPriceId: 'providerPriceId',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlanPriceProviderMappingScalarFieldEnum = (typeof PlanPriceProviderMappingScalarFieldEnum)[keyof typeof PlanPriceProviderMappingScalarFieldEnum]
+
+
 export const PlanEntitlementScalarFieldEnum = {
   id: 'id',
   planId: 'planId',
@@ -3080,6 +3320,10 @@ export const SubscriptionScalarFieldEnum = {
   id: 'id',
   workspaceId: 'workspaceId',
   planId: 'planId',
+  provider: 'provider',
+  providerCustomerId: 'providerCustomerId',
+  providerPriceId: 'providerPriceId',
+  providerSubscriptionId: 'providerSubscriptionId',
   externalId: 'externalId',
   stripeCustomerId: 'stripeCustomerId',
   stripePriceId: 'stripePriceId',
@@ -3101,6 +3345,8 @@ export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[k
 export const InvoiceScalarFieldEnum = {
   id: 'id',
   subscriptionId: 'subscriptionId',
+  provider: 'provider',
+  providerInvoiceId: 'providerInvoiceId',
   externalId: 'externalId',
   amountDue: 'amountDue',
   amountPaid: 'amountPaid',
@@ -3117,6 +3363,8 @@ export type InvoiceScalarFieldEnum = (typeof InvoiceScalarFieldEnum)[keyof typeo
 export const PaymentScalarFieldEnum = {
   id: 'id',
   subscriptionId: 'subscriptionId',
+  provider: 'provider',
+  providerPaymentId: 'providerPaymentId',
   externalId: 'externalId',
   amount: 'amount',
   currency: 'currency',
@@ -3278,6 +3526,40 @@ export const ExtensionInstallationScalarFieldEnum = {
 } as const
 
 export type ExtensionInstallationScalarFieldEnum = (typeof ExtensionInstallationScalarFieldEnum)[keyof typeof ExtensionInstallationScalarFieldEnum]
+
+
+export const ExtensionInstallationSessionScalarFieldEnum = {
+  id: 'id',
+  extensionInstallationId: 'extensionInstallationId',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  revokedAt: 'revokedAt'
+} as const
+
+export type ExtensionInstallationSessionScalarFieldEnum = (typeof ExtensionInstallationSessionScalarFieldEnum)[keyof typeof ExtensionInstallationSessionScalarFieldEnum]
+
+
+export const ProviderCredentialScalarFieldEnum = {
+  id: 'id',
+  provider: 'provider',
+  ownerType: 'ownerType',
+  ownerId: 'ownerId',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  encryptedSecretJson: 'encryptedSecretJson',
+  validationStatus: 'validationStatus',
+  scopesJson: 'scopesJson',
+  metadataJson: 'metadataJson',
+  lastValidatedAt: 'lastValidatedAt',
+  disabledAt: 'disabledAt',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
 
 
 export const ExtensionTelemetryScalarFieldEnum = {
@@ -3586,6 +3868,34 @@ export type ListEnumCompatibilityStatusFieldRefInput<$PrismaModel> = FieldRefInp
 
 
 /**
+ * Reference to a field of type 'CredentialOwnerType'
+ */
+export type EnumCredentialOwnerTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CredentialOwnerType'>
+    
+
+
+/**
+ * Reference to a field of type 'CredentialOwnerType[]'
+ */
+export type ListEnumCredentialOwnerTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CredentialOwnerType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'CredentialValidationStatus'
+ */
+export type EnumCredentialValidationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CredentialValidationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'CredentialValidationStatus[]'
+ */
+export type ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CredentialValidationStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'EventSeverity'
  */
 export type EnumEventSeverityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EventSeverity'>
@@ -3732,6 +4042,7 @@ export type GlobalOmitConfig = {
   userSystemRole?: Prisma.UserSystemRoleOmit
   plan?: Prisma.PlanOmit
   planPrice?: Prisma.PlanPriceOmit
+  planPriceProviderMapping?: Prisma.PlanPriceProviderMappingOmit
   planEntitlement?: Prisma.PlanEntitlementOmit
   subscription?: Prisma.SubscriptionOmit
   invoice?: Prisma.InvoiceOmit
@@ -3746,6 +4057,8 @@ export type GlobalOmitConfig = {
   remoteConfigLayer?: Prisma.RemoteConfigLayerOmit
   extensionCompatibilityRule?: Prisma.ExtensionCompatibilityRuleOmit
   extensionInstallation?: Prisma.ExtensionInstallationOmit
+  extensionInstallationSession?: Prisma.ExtensionInstallationSessionOmit
+  providerCredential?: Prisma.ProviderCredentialOmit
   extensionTelemetry?: Prisma.ExtensionTelemetryOmit
   auditLog?: Prisma.AuditLogOmit
   activityLog?: Prisma.ActivityLogOmit

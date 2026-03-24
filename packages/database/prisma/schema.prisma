@@ -78,6 +78,19 @@ enum EventSeverity {
   error
 }
 
+enum CredentialOwnerType {
+  platform
+  workspace
+  user
+}
+
+enum CredentialValidationStatus {
+  pending
+  valid
+  invalid
+  revoked
+}
+
 model User {
   id                     String                  @id @default(cuid())
   email                  String                  @unique
@@ -101,6 +114,8 @@ model User {
   featureFlagOverrides   FeatureFlagOverride[]
   remoteConfigVersions   RemoteConfigVersion[]   @relation("RemoteConfigPublishedBy")
   extensionInstallations ExtensionInstallation[]
+  extensionInstallationSessions ExtensionInstallationSession[]
+  providerCredentials    ProviderCredential[]
   supportTickets         SupportTicket[]         @relation("SupportTicketRequester")
   assignedSupportTickets SupportTicket[]         @relation("SupportTicketAssignee")
   supportTicketPresetFavorites SupportTicketPresetFavorite[]
@@ -159,6 +174,8 @@ model Workspace {
   slug                   String                  @unique
   name                   String
   billingEmail           String?
+  billingProvider        String?
+  providerCustomerId     String?
   stripeCustomerId       String?                 @unique
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -175,6 +192,7 @@ model Workspace {
   domainEvents           DomainEvent[]
   supportTickets         SupportTicket[]
   supportImpersonationSessions SupportImpersonationSession[]
+  providerCredentials    ProviderCredential[]
 }
 
 model WorkspaceMembership {
@@ -234,8 +252,23 @@ model PlanPrice {
   stripePriceId String? @unique
   createdAt    DateTime @default(now())
   plan         Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  providerMappings PlanPriceProviderMapping[]
 
   @@unique([planId, intervalCode, currency])
+}
+
+model PlanPriceProviderMapping {
+  id              String    @id @default(cuid())
+  planPriceId     String
+  provider        String
+  providerPriceId String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  planPrice       PlanPrice @relation(fields: [planPriceId], references: [id], onDelete: Cascade)
+
+  @@unique([planPriceId, provider])
+  @@unique([provider, providerPriceId])
 }
 
 model PlanEntitlement {
@@ -255,6 +288,10 @@ model Subscription {
   id                   String             @id @default(cuid())
   workspaceId          String
   planId               String
+  provider             String?
+  providerCustomerId   String?
+  providerPriceId      String?
+  providerSubscriptionId String?          @unique
   externalId           String?            @unique
   stripeCustomerId     String?
   stripePriceId        String?
@@ -277,6 +314,8 @@ model Subscription {
 model Invoice {
   id             String       @id @default(cuid())
   subscriptionId String
+  provider       String?
+  providerInvoiceId String?   @unique
   externalId     String?      @unique
   amountDue      Int
   amountPaid     Int          @default(0)
@@ -291,6 +330,8 @@ model Invoice {
 model Payment {
   id             String       @id @default(cuid())
   subscriptionId String
+  provider       String?
+  providerPaymentId String?   @unique
   externalId     String?      @unique
   amount         Int
   currency       String
@@ -439,6 +480,41 @@ model ExtensionInstallation {
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace        Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   telemetry        ExtensionTelemetry[]
+  sessions         ExtensionInstallationSession[]
+}
+
+model ExtensionInstallationSession {
+  id                      String                @id @default(cuid())
+  extensionInstallationId String
+  userId                  String
+  tokenHash               String                @unique
+  expiresAt               DateTime
+  createdAt               DateTime              @default(now())
+  revokedAt               DateTime?
+  installation            ExtensionInstallation @relation(fields: [extensionInstallationId], references: [id], onDelete: Cascade)
+  user                    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ProviderCredential {
+  id                String                     @id @default(cuid())
+  provider          String
+  ownerType         CredentialOwnerType
+  ownerId           String?
+  userId            String?
+  workspaceId       String?
+  encryptedSecretJson Json
+  validationStatus  CredentialValidationStatus @default(pending)
+  scopesJson        Json?
+  metadataJson      Json?
+  lastValidatedAt   DateTime?
+  disabledAt        DateTime?
+  revokedAt         DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  user              User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspace         Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([provider, ownerType, createdAt])
 }
 
 model ExtensionTelemetry {

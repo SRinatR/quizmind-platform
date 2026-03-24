@@ -66,8 +66,21 @@ export const platformQueues = [
   'config-publish',
   'audit-exports',
 ] as const;
-export const billingProviders = ['mock', 'stripe'] as const;
+export const billingProviders = ['mock', 'stripe', 'manual'] as const;
 export const billingIntervals = ['monthly', 'yearly'] as const;
+export const aiProviders = ['openai', 'anthropic', 'openrouter', 'internal'] as const;
+export const credentialOwnerTypes = ['platform', 'workspace', 'user'] as const;
+export const credentialValidationStatuses = ['pending', 'valid', 'invalid', 'revoked'] as const;
+export const aiAccessPolicyModes = [
+  'platform_only',
+  'user_key_optional',
+  'user_key_required',
+  'admin_approved_user_key',
+  'enterprise_managed',
+] as const;
+export const usageQuotaEnforcementModes = ['hard_limit', 'soft_limit', 'grace'] as const;
+export const usageDecisionCodes = ['accepted', 'quota_exceeded', 'policy_denied', 'unsupported'] as const;
+export const providerAvailabilityStates = ['active', 'beta', 'deprecated', 'disabled'] as const;
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
@@ -82,6 +95,13 @@ export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 export type PlatformQueue = (typeof platformQueues)[number];
 export type BillingProvider = (typeof billingProviders)[number];
 export type BillingInterval = (typeof billingIntervals)[number];
+export type AiProvider = (typeof aiProviders)[number];
+export type CredentialOwnerType = (typeof credentialOwnerTypes)[number];
+export type CredentialValidationStatus = (typeof credentialValidationStatuses)[number];
+export type AiAccessPolicyMode = (typeof aiAccessPolicyModes)[number];
+export type UsageQuotaEnforcementMode = (typeof usageQuotaEnforcementModes)[number];
+export type UsageDecisionCode = (typeof usageDecisionCodes)[number];
+export type ProviderAvailabilityState = (typeof providerAvailabilityStates)[number];
 
 export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
@@ -155,6 +175,7 @@ export interface PlanDefinition {
 
 export interface CompatibilityHandshake {
   extensionVersion: string;
+  buildId?: string;
   schemaVersion: string;
   capabilities: string[];
   browser: 'chrome' | 'edge' | 'brave' | 'other';
@@ -203,6 +224,7 @@ export interface RemoteConfigContext {
   workspaceId?: string;
   userId?: string;
   extensionVersion?: string;
+  buildId?: string;
   activeFlags?: string[];
 }
 
@@ -371,11 +393,18 @@ export interface SubscriptionSummary {
   entitlements: PlanEntitlement[];
 }
 
+export interface BillingPlanPriceProviderMapping {
+  provider: BillingProvider;
+  providerPriceId: string;
+  isActive: boolean;
+}
+
 export interface BillingPlanPrice {
   interval: BillingInterval;
   currency: string;
   amount: number;
   isDefault: boolean;
+  providerMappings?: BillingPlanPriceProviderMapping[];
   stripePriceId?: string | null;
 }
 
@@ -404,11 +433,18 @@ export interface BillingAdminPlanEntitlementInput {
   limit?: number | null;
 }
 
+export interface BillingAdminPlanPriceProviderMappingInput {
+  provider: BillingProvider;
+  providerPriceId: string;
+  isActive?: boolean;
+}
+
 export interface BillingAdminPlanPriceInput {
   interval: BillingInterval;
   currency: string;
   amount: number;
   isDefault: boolean;
+  providerMappings?: BillingAdminPlanPriceProviderMappingInput[];
   stripePriceId?: string | null;
 }
 
@@ -430,6 +466,7 @@ export interface BillingCheckoutRequest {
   workspaceId: string;
   planCode: string;
   interval: BillingInterval;
+  provider?: BillingProvider;
   successPath?: string;
   cancelPath?: string;
 }
@@ -438,6 +475,9 @@ export interface BillingCheckoutResult {
   workspaceId: string;
   planCode: string;
   interval: BillingInterval;
+  provider: BillingProvider;
+  providerCustomerId: string;
+  providerPriceId: string;
   customerId: string;
   stripePriceId: string;
   sessionId: string;
@@ -446,11 +486,14 @@ export interface BillingCheckoutResult {
 
 export interface BillingPortalRequest {
   workspaceId: string;
+  provider?: BillingProvider;
   returnPath?: string;
 }
 
 export interface BillingPortalResult {
   workspaceId: string;
+  provider: BillingProvider;
+  providerCustomerId: string;
   customerId: string;
   redirectUrl: string;
 }
@@ -462,6 +505,8 @@ export interface BillingSubscriptionMutationRequest {
 export interface BillingSubscriptionMutationResult {
   workspaceId: string;
   subscriptionId: string;
+  provider: BillingProvider;
+  providerSubscriptionId: string;
   stripeSubscriptionId: string;
   status: SubscriptionStatus;
   cancelAtPeriodEnd: boolean;
@@ -470,6 +515,8 @@ export interface BillingSubscriptionMutationResult {
 
 export interface BillingInvoiceSummary {
   id: string;
+  provider?: BillingProvider;
+  providerInvoiceId?: string | null;
   externalId?: string | null;
   subscriptionId: string;
   amountDue: number;
@@ -491,6 +538,8 @@ export type BillingInvoiceDocumentFormat = 'pdf' | 'hosted_page';
 export interface BillingInvoicePdfResult {
   invoiceId: string;
   workspaceId: string;
+  provider: BillingProvider;
+  providerInvoiceId: string;
   externalId: string;
   redirectUrl: string;
   format: BillingInvoiceDocumentFormat;
@@ -509,6 +558,87 @@ export interface ExtensionBootstrapPayload {
   compatibility: CompatibilityResult;
   featureFlags: string[];
   remoteConfig: ResolvedRemoteConfig;
+}
+
+export interface ExtensionBootstrapRequestV2 {
+  installationId: string;
+  environment: string;
+  handshake: CompatibilityHandshake;
+}
+
+export interface UsageQuotaHint {
+  key: string;
+  label: string;
+  limit?: number;
+  remaining?: number;
+  status: UsageMetricStatus;
+  enforcementMode: UsageQuotaEnforcementMode;
+}
+
+export interface UsageDecision {
+  accepted: boolean;
+  code: UsageDecisionCode;
+  quotaKey?: string;
+  message?: string;
+  retryAt?: string;
+}
+
+export interface AiAccessPolicy {
+  mode: AiAccessPolicyMode;
+  allowPlatformManaged: boolean;
+  allowBringYourOwnKey: boolean;
+  allowDirectProviderMode: boolean;
+  providers: AiProvider[];
+  defaultProvider?: AiProvider;
+  defaultModel?: string;
+  reason?: string;
+}
+
+export interface ExtensionInstallationBindingSummary {
+  installationId: string;
+  workspaceId?: string;
+  userId: string;
+  browser: CompatibilityHandshake['browser'];
+  extensionVersion: string;
+  buildId?: string;
+  schemaVersion: string;
+  capabilities: string[];
+  lastSeenAt: string;
+  boundAt: string;
+}
+
+export interface ExtensionInstallationTokenSession {
+  token: string;
+  expiresAt: string;
+  refreshAfterSeconds: number;
+}
+
+export interface ExtensionBootstrapPayloadV2 {
+  installationId: string;
+  workspaceId?: string;
+  compatibility: CompatibilityResult;
+  entitlements: PlanEntitlement[];
+  featureFlags: string[];
+  remoteConfig: ResolvedRemoteConfig;
+  quotaHints: UsageQuotaHint[];
+  aiAccessPolicy: AiAccessPolicy;
+  deprecationMessages: string[];
+  killSwitches: string[];
+  refreshAfterSeconds: number;
+  issuedAt: string;
+}
+
+export interface ExtensionInstallationBindRequest {
+  installationId: string;
+  workspaceId?: string;
+  environment: string;
+  handshake: CompatibilityHandshake;
+}
+
+export interface ExtensionInstallationBindResult {
+  installation: ExtensionInstallationBindingSummary;
+  session: ExtensionInstallationTokenSession;
+  bootstrap: ExtensionBootstrapPayloadV2;
 }
 
 export interface UsageEventPayload {
@@ -602,6 +732,47 @@ export interface BillingWebhookIngestResult {
   receivedAt: string;
   queue?: PlatformQueue;
   jobId?: string;
+}
+
+export interface ProviderRegistryEntry {
+  provider: AiProvider;
+  displayName: string;
+  availability: ProviderAvailabilityState;
+  supportsProxy: boolean;
+  supportsBringYourOwnKey: boolean;
+}
+
+export interface ProviderModelCatalogEntry {
+  provider: AiProvider;
+  modelId: string;
+  displayName: string;
+  capabilityTags: string[];
+  availability: ProviderAvailabilityState;
+  latencyClass?: 'low' | 'standard' | 'high';
+  planAvailability?: string[];
+}
+
+export interface ProviderCredentialSummary {
+  id: string;
+  provider: AiProvider;
+  ownerType: CredentialOwnerType;
+  ownerId: string;
+  validationStatus: CredentialValidationStatus;
+  scopes: string[];
+  lastValidatedAt?: string | null;
+  disabledAt?: string | null;
+  revokedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProviderCredentialCreateRequest {
+  provider: AiProvider;
+  ownerType: CredentialOwnerType;
+  ownerId?: string;
+  workspaceId?: string;
+  secret: string;
+  scopes?: string[];
 }
 
 

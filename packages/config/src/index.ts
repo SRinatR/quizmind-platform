@@ -1,3 +1,5 @@
+import process from 'node:process';
+
 export interface PlatformEnv {
   nodeEnv: 'development' | 'test' | 'production';
   appUrl: string;
@@ -57,11 +59,14 @@ export interface ApiEnv extends PlatformEnv {
   corsAllowedOrigins: string[];
   jwtSecret: string;
   jwtRefreshSecret: string;
+  extensionTokenSecret: string;
+  extensionSessionTtlMinutes: number;
+  providerCredentialSecret: string;
   jwtIssuer: string;
   jwtAudience: string;
   emailProvider: 'noop' | 'resend';
   emailFrom: string;
-  billingProvider: 'mock' | 'stripe';
+  billingProvider: 'mock' | 'stripe' | 'manual';
   resendApiKey?: string;
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
@@ -136,6 +141,10 @@ function resolveEmailProvider(source: EnvSource): ApiEnv['emailProvider'] {
 }
 
 function resolveBillingProvider(source: EnvSource): ApiEnv['billingProvider'] {
+  if (source.BILLING_PROVIDER === 'manual') {
+    return 'manual';
+  }
+
   return source.BILLING_PROVIDER === 'stripe' ? 'stripe' : 'mock';
 }
 
@@ -148,6 +157,9 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     corsAllowedOrigins: loadCorsAllowedOrigins(source, platformEnv.appUrl),
     jwtSecret: source.JWT_SECRET ?? 'replace-me',
     jwtRefreshSecret: source.JWT_REFRESH_SECRET ?? 'replace-me-refresh',
+    extensionTokenSecret: source.EXTENSION_TOKEN_SECRET ?? source.JWT_REFRESH_SECRET ?? 'replace-me-extension',
+    extensionSessionTtlMinutes: readNumberEnv(source, 'EXTENSION_SESSION_TTL_MINUTES', 30),
+    providerCredentialSecret: source.PROVIDER_CREDENTIAL_SECRET ?? source.JWT_REFRESH_SECRET ?? 'replace-me-provider',
     jwtIssuer: source.JWT_ISSUER ?? platformEnv.apiUrl,
     jwtAudience: source.JWT_AUDIENCE ?? platformEnv.appUrl,
     emailProvider: resolveEmailProvider(source),
@@ -218,6 +230,27 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
 
   if (!env.jwtRefreshSecret || env.jwtRefreshSecret === 'replace-me-refresh') {
     issues.push({ key: 'JWT_REFRESH_SECRET', message: 'JWT_REFRESH_SECRET must be set to a non-placeholder value.' });
+  }
+
+  if (!env.extensionTokenSecret || env.extensionTokenSecret === 'replace-me-extension') {
+    issues.push({
+      key: 'EXTENSION_TOKEN_SECRET',
+      message: 'EXTENSION_TOKEN_SECRET must be set to a non-placeholder value.',
+    });
+  }
+
+  if (!env.providerCredentialSecret || env.providerCredentialSecret === 'replace-me-provider') {
+    issues.push({
+      key: 'PROVIDER_CREDENTIAL_SECRET',
+      message: 'PROVIDER_CREDENTIAL_SECRET must be set to a non-placeholder value.',
+    });
+  }
+
+  if (!Number.isInteger(env.extensionSessionTtlMinutes) || env.extensionSessionTtlMinutes < 5) {
+    issues.push({
+      key: 'EXTENSION_SESSION_TTL_MINUTES',
+      message: 'EXTENSION_SESSION_TTL_MINUTES must be an integer of at least 5 minutes.',
+    });
   }
 
   if (isBlank(env.jwtIssuer)) {
@@ -294,10 +327,10 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
       issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required in production.' });
     }
 
-    if (env.billingProvider !== 'stripe') {
+    if (!['stripe', 'manual'].includes(env.billingProvider)) {
       issues.push({
         key: 'BILLING_PROVIDER',
-        message: 'BILLING_PROVIDER must be set to "stripe" in production.',
+        message: 'BILLING_PROVIDER must be set to "stripe" or "manual" in production.',
       });
     }
 

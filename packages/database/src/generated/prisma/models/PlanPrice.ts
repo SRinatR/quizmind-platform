@@ -241,6 +241,7 @@ export type PlanPriceWhereInput = {
   stripePriceId?: Prisma.StringNullableFilter<"PlanPrice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PlanPrice"> | Date | string
   plan?: Prisma.XOR<Prisma.PlanScalarRelationFilter, Prisma.PlanWhereInput>
+  providerMappings?: Prisma.PlanPriceProviderMappingListRelationFilter
 }
 
 export type PlanPriceOrderByWithRelationInput = {
@@ -253,6 +254,7 @@ export type PlanPriceOrderByWithRelationInput = {
   stripePriceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   plan?: Prisma.PlanOrderByWithRelationInput
+  providerMappings?: Prisma.PlanPriceProviderMappingOrderByRelationAggregateInput
 }
 
 export type PlanPriceWhereUniqueInput = Prisma.AtLeast<{
@@ -269,6 +271,7 @@ export type PlanPriceWhereUniqueInput = Prisma.AtLeast<{
   isDefault?: Prisma.BoolFilter<"PlanPrice"> | boolean
   createdAt?: Prisma.DateTimeFilter<"PlanPrice"> | Date | string
   plan?: Prisma.XOR<Prisma.PlanScalarRelationFilter, Prisma.PlanWhereInput>
+  providerMappings?: Prisma.PlanPriceProviderMappingListRelationFilter
 }, "id" | "stripePriceId" | "planId_intervalCode_currency">
 
 export type PlanPriceOrderByWithAggregationInput = {
@@ -310,6 +313,7 @@ export type PlanPriceCreateInput = {
   stripePriceId?: string | null
   createdAt?: Date | string
   plan: Prisma.PlanCreateNestedOneWithoutPricesInput
+  providerMappings?: Prisma.PlanPriceProviderMappingCreateNestedManyWithoutPlanPriceInput
 }
 
 export type PlanPriceUncheckedCreateInput = {
@@ -321,6 +325,7 @@ export type PlanPriceUncheckedCreateInput = {
   isDefault?: boolean
   stripePriceId?: string | null
   createdAt?: Date | string
+  providerMappings?: Prisma.PlanPriceProviderMappingUncheckedCreateNestedManyWithoutPlanPriceInput
 }
 
 export type PlanPriceUpdateInput = {
@@ -332,6 +337,7 @@ export type PlanPriceUpdateInput = {
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   plan?: Prisma.PlanUpdateOneRequiredWithoutPricesNestedInput
+  providerMappings?: Prisma.PlanPriceProviderMappingUpdateManyWithoutPlanPriceNestedInput
 }
 
 export type PlanPriceUncheckedUpdateInput = {
@@ -343,6 +349,7 @@ export type PlanPriceUncheckedUpdateInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  providerMappings?: Prisma.PlanPriceProviderMappingUncheckedUpdateManyWithoutPlanPriceNestedInput
 }
 
 export type PlanPriceCreateManyInput = {
@@ -434,6 +441,11 @@ export type PlanPriceSumOrderByAggregateInput = {
   amount?: Prisma.SortOrder
 }
 
+export type PlanPriceScalarRelationFilter = {
+  is?: Prisma.PlanPriceWhereInput
+  isNot?: Prisma.PlanPriceWhereInput
+}
+
 export type PlanPriceCreateNestedManyWithoutPlanInput = {
   create?: Prisma.XOR<Prisma.PlanPriceCreateWithoutPlanInput, Prisma.PlanPriceUncheckedCreateWithoutPlanInput> | Prisma.PlanPriceCreateWithoutPlanInput[] | Prisma.PlanPriceUncheckedCreateWithoutPlanInput[]
   connectOrCreate?: Prisma.PlanPriceCreateOrConnectWithoutPlanInput | Prisma.PlanPriceCreateOrConnectWithoutPlanInput[]
@@ -484,6 +496,20 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
+export type PlanPriceCreateNestedOneWithoutProviderMappingsInput = {
+  create?: Prisma.XOR<Prisma.PlanPriceCreateWithoutProviderMappingsInput, Prisma.PlanPriceUncheckedCreateWithoutProviderMappingsInput>
+  connectOrCreate?: Prisma.PlanPriceCreateOrConnectWithoutProviderMappingsInput
+  connect?: Prisma.PlanPriceWhereUniqueInput
+}
+
+export type PlanPriceUpdateOneRequiredWithoutProviderMappingsNestedInput = {
+  create?: Prisma.XOR<Prisma.PlanPriceCreateWithoutProviderMappingsInput, Prisma.PlanPriceUncheckedCreateWithoutProviderMappingsInput>
+  connectOrCreate?: Prisma.PlanPriceCreateOrConnectWithoutProviderMappingsInput
+  upsert?: Prisma.PlanPriceUpsertWithoutProviderMappingsInput
+  connect?: Prisma.PlanPriceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PlanPriceUpdateToOneWithWhereWithoutProviderMappingsInput, Prisma.PlanPriceUpdateWithoutProviderMappingsInput>, Prisma.PlanPriceUncheckedUpdateWithoutProviderMappingsInput>
+}
+
 export type PlanPriceCreateWithoutPlanInput = {
   id?: string
   intervalCode: string
@@ -492,6 +518,7 @@ export type PlanPriceCreateWithoutPlanInput = {
   isDefault?: boolean
   stripePriceId?: string | null
   createdAt?: Date | string
+  providerMappings?: Prisma.PlanPriceProviderMappingCreateNestedManyWithoutPlanPriceInput
 }
 
 export type PlanPriceUncheckedCreateWithoutPlanInput = {
@@ -502,6 +529,7 @@ export type PlanPriceUncheckedCreateWithoutPlanInput = {
   isDefault?: boolean
   stripePriceId?: string | null
   createdAt?: Date | string
+  providerMappings?: Prisma.PlanPriceProviderMappingUncheckedCreateNestedManyWithoutPlanPriceInput
 }
 
 export type PlanPriceCreateOrConnectWithoutPlanInput = {
@@ -544,6 +572,66 @@ export type PlanPriceScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"PlanPrice"> | Date | string
 }
 
+export type PlanPriceCreateWithoutProviderMappingsInput = {
+  id?: string
+  intervalCode: string
+  currency: string
+  amount: number
+  isDefault?: boolean
+  stripePriceId?: string | null
+  createdAt?: Date | string
+  plan: Prisma.PlanCreateNestedOneWithoutPricesInput
+}
+
+export type PlanPriceUncheckedCreateWithoutProviderMappingsInput = {
+  id?: string
+  planId: string
+  intervalCode: string
+  currency: string
+  amount: number
+  isDefault?: boolean
+  stripePriceId?: string | null
+  createdAt?: Date | string
+}
+
+export type PlanPriceCreateOrConnectWithoutProviderMappingsInput = {
+  where: Prisma.PlanPriceWhereUniqueInput
+  create: Prisma.XOR<Prisma.PlanPriceCreateWithoutProviderMappingsInput, Prisma.PlanPriceUncheckedCreateWithoutProviderMappingsInput>
+}
+
+export type PlanPriceUpsertWithoutProviderMappingsInput = {
+  update: Prisma.XOR<Prisma.PlanPriceUpdateWithoutProviderMappingsInput, Prisma.PlanPriceUncheckedUpdateWithoutProviderMappingsInput>
+  create: Prisma.XOR<Prisma.PlanPriceCreateWithoutProviderMappingsInput, Prisma.PlanPriceUncheckedCreateWithoutProviderMappingsInput>
+  where?: Prisma.PlanPriceWhereInput
+}
+
+export type PlanPriceUpdateToOneWithWhereWithoutProviderMappingsInput = {
+  where?: Prisma.PlanPriceWhereInput
+  data: Prisma.XOR<Prisma.PlanPriceUpdateWithoutProviderMappingsInput, Prisma.PlanPriceUncheckedUpdateWithoutProviderMappingsInput>
+}
+
+export type PlanPriceUpdateWithoutProviderMappingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  intervalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.IntFieldUpdateOperationsInput | number
+  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.PlanUpdateOneRequiredWithoutPricesNestedInput
+}
+
+export type PlanPriceUncheckedUpdateWithoutProviderMappingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  planId?: Prisma.StringFieldUpdateOperationsInput | string
+  intervalCode?: Prisma.StringFieldUpdateOperationsInput | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.IntFieldUpdateOperationsInput | number
+  isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type PlanPriceCreateManyPlanInput = {
   id?: string
   intervalCode: string
@@ -562,6 +650,7 @@ export type PlanPriceUpdateWithoutPlanInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  providerMappings?: Prisma.PlanPriceProviderMappingUpdateManyWithoutPlanPriceNestedInput
 }
 
 export type PlanPriceUncheckedUpdateWithoutPlanInput = {
@@ -572,6 +661,7 @@ export type PlanPriceUncheckedUpdateWithoutPlanInput = {
   isDefault?: Prisma.BoolFieldUpdateOperationsInput | boolean
   stripePriceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  providerMappings?: Prisma.PlanPriceProviderMappingUncheckedUpdateManyWithoutPlanPriceNestedInput
 }
 
 export type PlanPriceUncheckedUpdateManyWithoutPlanInput = {
@@ -585,6 +675,35 @@ export type PlanPriceUncheckedUpdateManyWithoutPlanInput = {
 }
 
 
+/**
+ * Count Type PlanPriceCountOutputType
+ */
+
+export type PlanPriceCountOutputType = {
+  providerMappings: number
+}
+
+export type PlanPriceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  providerMappings?: boolean | PlanPriceCountOutputTypeCountProviderMappingsArgs
+}
+
+/**
+ * PlanPriceCountOutputType without action
+ */
+export type PlanPriceCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PlanPriceCountOutputType
+   */
+  select?: Prisma.PlanPriceCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PlanPriceCountOutputType without action
+ */
+export type PlanPriceCountOutputTypeCountProviderMappingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PlanPriceProviderMappingWhereInput
+}
+
 
 export type PlanPriceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -596,6 +715,8 @@ export type PlanPriceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   stripePriceId?: boolean
   createdAt?: boolean
   plan?: boolean | Prisma.PlanDefaultArgs<ExtArgs>
+  providerMappings?: boolean | Prisma.PlanPrice$providerMappingsArgs<ExtArgs>
+  _count?: boolean | Prisma.PlanPriceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["planPrice"]>
 
 export type PlanPriceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -636,6 +757,8 @@ export type PlanPriceSelectScalar = {
 export type PlanPriceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "planId" | "intervalCode" | "currency" | "amount" | "isDefault" | "stripePriceId" | "createdAt", ExtArgs["result"]["planPrice"]>
 export type PlanPriceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   plan?: boolean | Prisma.PlanDefaultArgs<ExtArgs>
+  providerMappings?: boolean | Prisma.PlanPrice$providerMappingsArgs<ExtArgs>
+  _count?: boolean | Prisma.PlanPriceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PlanPriceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   plan?: boolean | Prisma.PlanDefaultArgs<ExtArgs>
@@ -648,6 +771,7 @@ export type $PlanPricePayload<ExtArgs extends runtime.Types.Extensions.InternalA
   name: "PlanPrice"
   objects: {
     plan: Prisma.$PlanPayload<ExtArgs>
+    providerMappings: Prisma.$PlanPriceProviderMappingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1053,6 +1177,7 @@ readonly fields: PlanPriceFieldRefs;
 export interface Prisma__PlanPriceClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   plan<T extends Prisma.PlanDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlanDefaultArgs<ExtArgs>>): Prisma.Prisma__PlanClient<runtime.Types.Result.GetResult<Prisma.$PlanPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  providerMappings<T extends Prisma.PlanPrice$providerMappingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.PlanPrice$providerMappingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlanPriceProviderMappingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1488,6 +1613,30 @@ export type PlanPriceDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Limit how many PlanPrices to delete.
    */
   limit?: number
+}
+
+/**
+ * PlanPrice.providerMappings
+ */
+export type PlanPrice$providerMappingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PlanPriceProviderMapping
+   */
+  select?: Prisma.PlanPriceProviderMappingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PlanPriceProviderMapping
+   */
+  omit?: Prisma.PlanPriceProviderMappingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PlanPriceProviderMappingInclude<ExtArgs> | null
+  where?: Prisma.PlanPriceProviderMappingWhereInput
+  orderBy?: Prisma.PlanPriceProviderMappingOrderByWithRelationInput | Prisma.PlanPriceProviderMappingOrderByWithRelationInput[]
+  cursor?: Prisma.PlanPriceProviderMappingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PlanPriceProviderMappingScalarFieldEnum | Prisma.PlanPriceProviderMappingScalarFieldEnum[]
 }
 
 /**

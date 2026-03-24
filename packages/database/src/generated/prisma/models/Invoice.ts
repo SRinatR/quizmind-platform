@@ -39,6 +39,8 @@ export type InvoiceSumAggregateOutputType = {
 export type InvoiceMinAggregateOutputType = {
   id: string | null
   subscriptionId: string | null
+  provider: string | null
+  providerInvoiceId: string | null
   externalId: string | null
   amountDue: number | null
   amountPaid: number | null
@@ -52,6 +54,8 @@ export type InvoiceMinAggregateOutputType = {
 export type InvoiceMaxAggregateOutputType = {
   id: string | null
   subscriptionId: string | null
+  provider: string | null
+  providerInvoiceId: string | null
   externalId: string | null
   amountDue: number | null
   amountPaid: number | null
@@ -65,6 +69,8 @@ export type InvoiceMaxAggregateOutputType = {
 export type InvoiceCountAggregateOutputType = {
   id: number
   subscriptionId: number
+  provider: number
+  providerInvoiceId: number
   externalId: number
   amountDue: number
   amountPaid: number
@@ -90,6 +96,8 @@ export type InvoiceSumAggregateInputType = {
 export type InvoiceMinAggregateInputType = {
   id?: true
   subscriptionId?: true
+  provider?: true
+  providerInvoiceId?: true
   externalId?: true
   amountDue?: true
   amountPaid?: true
@@ -103,6 +111,8 @@ export type InvoiceMinAggregateInputType = {
 export type InvoiceMaxAggregateInputType = {
   id?: true
   subscriptionId?: true
+  provider?: true
+  providerInvoiceId?: true
   externalId?: true
   amountDue?: true
   amountPaid?: true
@@ -116,6 +126,8 @@ export type InvoiceMaxAggregateInputType = {
 export type InvoiceCountAggregateInputType = {
   id?: true
   subscriptionId?: true
+  provider?: true
+  providerInvoiceId?: true
   externalId?: true
   amountDue?: true
   amountPaid?: true
@@ -216,6 +228,8 @@ export type InvoiceGroupByArgs<ExtArgs extends runtime.Types.Extensions.Internal
 export type InvoiceGroupByOutputType = {
   id: string
   subscriptionId: string
+  provider: string | null
+  providerInvoiceId: string | null
   externalId: string | null
   amountDue: number
   amountPaid: number
@@ -252,6 +266,8 @@ export type InvoiceWhereInput = {
   NOT?: Prisma.InvoiceWhereInput | Prisma.InvoiceWhereInput[]
   id?: Prisma.StringFilter<"Invoice"> | string
   subscriptionId?: Prisma.StringFilter<"Invoice"> | string
+  provider?: Prisma.StringNullableFilter<"Invoice"> | string | null
+  providerInvoiceId?: Prisma.StringNullableFilter<"Invoice"> | string | null
   externalId?: Prisma.StringNullableFilter<"Invoice"> | string | null
   amountDue?: Prisma.IntFilter<"Invoice"> | number
   amountPaid?: Prisma.IntFilter<"Invoice"> | number
@@ -266,6 +282,8 @@ export type InvoiceWhereInput = {
 export type InvoiceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerInvoiceId?: Prisma.SortOrderInput | Prisma.SortOrder
   externalId?: Prisma.SortOrderInput | Prisma.SortOrder
   amountDue?: Prisma.SortOrder
   amountPaid?: Prisma.SortOrder
@@ -279,11 +297,13 @@ export type InvoiceOrderByWithRelationInput = {
 
 export type InvoiceWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  providerInvoiceId?: string
   externalId?: string
   AND?: Prisma.InvoiceWhereInput | Prisma.InvoiceWhereInput[]
   OR?: Prisma.InvoiceWhereInput[]
   NOT?: Prisma.InvoiceWhereInput | Prisma.InvoiceWhereInput[]
   subscriptionId?: Prisma.StringFilter<"Invoice"> | string
+  provider?: Prisma.StringNullableFilter<"Invoice"> | string | null
   amountDue?: Prisma.IntFilter<"Invoice"> | number
   amountPaid?: Prisma.IntFilter<"Invoice"> | number
   currency?: Prisma.StringFilter<"Invoice"> | string
@@ -292,11 +312,13 @@ export type InvoiceWhereUniqueInput = Prisma.AtLeast<{
   paidAt?: Prisma.DateTimeNullableFilter<"Invoice"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Invoice"> | Date | string
   subscription?: Prisma.XOR<Prisma.SubscriptionScalarRelationFilter, Prisma.SubscriptionWhereInput>
-}, "id" | "externalId">
+}, "id" | "providerInvoiceId" | "externalId">
 
 export type InvoiceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerInvoiceId?: Prisma.SortOrderInput | Prisma.SortOrder
   externalId?: Prisma.SortOrderInput | Prisma.SortOrder
   amountDue?: Prisma.SortOrder
   amountPaid?: Prisma.SortOrder
@@ -318,6 +340,8 @@ export type InvoiceScalarWhereWithAggregatesInput = {
   NOT?: Prisma.InvoiceScalarWhereWithAggregatesInput | Prisma.InvoiceScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Invoice"> | string
   subscriptionId?: Prisma.StringWithAggregatesFilter<"Invoice"> | string
+  provider?: Prisma.StringNullableWithAggregatesFilter<"Invoice"> | string | null
+  providerInvoiceId?: Prisma.StringNullableWithAggregatesFilter<"Invoice"> | string | null
   externalId?: Prisma.StringNullableWithAggregatesFilter<"Invoice"> | string | null
   amountDue?: Prisma.IntWithAggregatesFilter<"Invoice"> | number
   amountPaid?: Prisma.IntWithAggregatesFilter<"Invoice"> | number
@@ -330,6 +354,8 @@ export type InvoiceScalarWhereWithAggregatesInput = {
 
 export type InvoiceCreateInput = {
   id?: string
+  provider?: string | null
+  providerInvoiceId?: string | null
   externalId?: string | null
   amountDue: number
   amountPaid?: number
@@ -344,6 +370,8 @@ export type InvoiceCreateInput = {
 export type InvoiceUncheckedCreateInput = {
   id?: string
   subscriptionId: string
+  provider?: string | null
+  providerInvoiceId?: string | null
   externalId?: string | null
   amountDue: number
   amountPaid?: number
@@ -356,6 +384,8 @@ export type InvoiceUncheckedCreateInput = {
 
 export type InvoiceUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -370,6 +400,8 @@ export type InvoiceUpdateInput = {
 export type InvoiceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -383,6 +415,8 @@ export type InvoiceUncheckedUpdateInput = {
 export type InvoiceCreateManyInput = {
   id?: string
   subscriptionId: string
+  provider?: string | null
+  providerInvoiceId?: string | null
   externalId?: string | null
   amountDue: number
   amountPaid?: number
@@ -395,6 +429,8 @@ export type InvoiceCreateManyInput = {
 
 export type InvoiceUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -408,6 +444,8 @@ export type InvoiceUpdateManyMutationInput = {
 export type InvoiceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionId?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -431,6 +469,8 @@ export type InvoiceOrderByRelationAggregateInput = {
 export type InvoiceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerInvoiceId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
   amountPaid?: Prisma.SortOrder
@@ -449,6 +489,8 @@ export type InvoiceAvgOrderByAggregateInput = {
 export type InvoiceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerInvoiceId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
   amountPaid?: Prisma.SortOrder
@@ -462,6 +504,8 @@ export type InvoiceMaxOrderByAggregateInput = {
 export type InvoiceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   subscriptionId?: Prisma.SortOrder
+  provider?: Prisma.SortOrder
+  providerInvoiceId?: Prisma.SortOrder
   externalId?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
   amountPaid?: Prisma.SortOrder
@@ -521,6 +565,8 @@ export type InvoiceUncheckedUpdateManyWithoutSubscriptionNestedInput = {
 
 export type InvoiceCreateWithoutSubscriptionInput = {
   id?: string
+  provider?: string | null
+  providerInvoiceId?: string | null
   externalId?: string | null
   amountDue: number
   amountPaid?: number
@@ -533,6 +579,8 @@ export type InvoiceCreateWithoutSubscriptionInput = {
 
 export type InvoiceUncheckedCreateWithoutSubscriptionInput = {
   id?: string
+  provider?: string | null
+  providerInvoiceId?: string | null
   externalId?: string | null
   amountDue: number
   amountPaid?: number
@@ -575,6 +623,8 @@ export type InvoiceScalarWhereInput = {
   NOT?: Prisma.InvoiceScalarWhereInput | Prisma.InvoiceScalarWhereInput[]
   id?: Prisma.StringFilter<"Invoice"> | string
   subscriptionId?: Prisma.StringFilter<"Invoice"> | string
+  provider?: Prisma.StringNullableFilter<"Invoice"> | string | null
+  providerInvoiceId?: Prisma.StringNullableFilter<"Invoice"> | string | null
   externalId?: Prisma.StringNullableFilter<"Invoice"> | string | null
   amountDue?: Prisma.IntFilter<"Invoice"> | number
   amountPaid?: Prisma.IntFilter<"Invoice"> | number
@@ -587,6 +637,8 @@ export type InvoiceScalarWhereInput = {
 
 export type InvoiceCreateManySubscriptionInput = {
   id?: string
+  provider?: string | null
+  providerInvoiceId?: string | null
   externalId?: string | null
   amountDue: number
   amountPaid?: number
@@ -599,6 +651,8 @@ export type InvoiceCreateManySubscriptionInput = {
 
 export type InvoiceUpdateWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -611,6 +665,8 @@ export type InvoiceUpdateWithoutSubscriptionInput = {
 
 export type InvoiceUncheckedUpdateWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -623,6 +679,8 @@ export type InvoiceUncheckedUpdateWithoutSubscriptionInput = {
 
 export type InvoiceUncheckedUpdateManyWithoutSubscriptionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  provider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerInvoiceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountDue?: Prisma.IntFieldUpdateOperationsInput | number
   amountPaid?: Prisma.IntFieldUpdateOperationsInput | number
@@ -638,6 +696,8 @@ export type InvoiceUncheckedUpdateManyWithoutSubscriptionInput = {
 export type InvoiceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerInvoiceId?: boolean
   externalId?: boolean
   amountDue?: boolean
   amountPaid?: boolean
@@ -652,6 +712,8 @@ export type InvoiceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type InvoiceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerInvoiceId?: boolean
   externalId?: boolean
   amountDue?: boolean
   amountPaid?: boolean
@@ -666,6 +728,8 @@ export type InvoiceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type InvoiceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerInvoiceId?: boolean
   externalId?: boolean
   amountDue?: boolean
   amountPaid?: boolean
@@ -680,6 +744,8 @@ export type InvoiceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
 export type InvoiceSelectScalar = {
   id?: boolean
   subscriptionId?: boolean
+  provider?: boolean
+  providerInvoiceId?: boolean
   externalId?: boolean
   amountDue?: boolean
   amountPaid?: boolean
@@ -690,7 +756,7 @@ export type InvoiceSelectScalar = {
   createdAt?: boolean
 }
 
-export type InvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subscriptionId" | "externalId" | "amountDue" | "amountPaid" | "currency" | "issuedAt" | "dueAt" | "paidAt" | "createdAt", ExtArgs["result"]["invoice"]>
+export type InvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subscriptionId" | "provider" | "providerInvoiceId" | "externalId" | "amountDue" | "amountPaid" | "currency" | "issuedAt" | "dueAt" | "paidAt" | "createdAt", ExtArgs["result"]["invoice"]>
 export type InvoiceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscription?: boolean | Prisma.SubscriptionDefaultArgs<ExtArgs>
 }
@@ -709,6 +775,8 @@ export type $InvoicePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     subscriptionId: string
+    provider: string | null
+    providerInvoiceId: string | null
     externalId: string | null
     amountDue: number
     amountPaid: number
@@ -1143,6 +1211,8 @@ export interface Prisma__InvoiceClient<T, Null = never, ExtArgs extends runtime.
 export interface InvoiceFieldRefs {
   readonly id: Prisma.FieldRef<"Invoice", 'String'>
   readonly subscriptionId: Prisma.FieldRef<"Invoice", 'String'>
+  readonly provider: Prisma.FieldRef<"Invoice", 'String'>
+  readonly providerInvoiceId: Prisma.FieldRef<"Invoice", 'String'>
   readonly externalId: Prisma.FieldRef<"Invoice", 'String'>
   readonly amountDue: Prisma.FieldRef<"Invoice", 'Int'>
   readonly amountPaid: Prisma.FieldRef<"Invoice", 'Int'>

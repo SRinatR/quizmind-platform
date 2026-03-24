@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { createHandshake } from '../../testing/src';
 import {
   buildExtensionBootstrap,
+  buildExtensionBootstrapV2,
   compareSemver,
   evaluateCompatibility,
   resolveFeatureFlags,
@@ -68,4 +69,50 @@ test('buildExtensionBootstrap combines compatibility, flags, and config', () => 
   assert.equal(payload.compatibility.status, 'supported');
   assert.deepEqual(payload.featureFlags, ['alpha']);
   assert.deepEqual(payload.remoteConfig.appliedLayerIds, ['base']);
+});
+
+test('buildExtensionBootstrapV2 adds entitlements, quota hints, and AI access policy', () => {
+  const payload = buildExtensionBootstrapV2({
+    installationId: 'inst_local_browser',
+    workspaceId: 'ws_1',
+    handshake: createHandshake({ extensionVersion: '1.6.0', schemaVersion: '2' }),
+    compatibilityPolicy: {
+      minimumVersion: '1.4.0',
+      recommendedVersion: '1.6.0',
+      supportedSchemaVersions: ['2'],
+      requiredCapabilities: ['quiz-capture'],
+    },
+    flagDefinitions: [{ key: 'alpha', status: 'active', description: 'alpha', enabled: true }],
+    remoteConfigLayers: [{ id: 'base', scope: 'global', priority: 1, values: { enabled: true } }],
+    entitlements: [{ key: 'feature.text_answering', enabled: true }],
+    quotaHints: [
+      {
+        key: 'limit.requests_per_day',
+        label: 'Requests today',
+        limit: 25,
+        remaining: 10,
+        status: 'healthy',
+        enforcementMode: 'hard_limit',
+      },
+    ],
+    aiAccessPolicy: {
+      mode: 'platform_only',
+      allowPlatformManaged: true,
+      allowBringYourOwnKey: false,
+      allowDirectProviderMode: false,
+      providers: ['openrouter'],
+      defaultProvider: 'openrouter',
+      defaultModel: 'openrouter/auto',
+    },
+    context: { workspaceId: 'ws_1', userId: 'user_1', planCode: 'pro' },
+    issuedAt: '2026-03-24T12:00:00.000Z',
+    refreshAfterSeconds: 120,
+  });
+
+  assert.equal(payload.installationId, 'inst_local_browser');
+  assert.equal(payload.compatibility.status, 'supported');
+  assert.equal(payload.entitlements[0]?.key, 'feature.text_answering');
+  assert.equal(payload.quotaHints[0]?.remaining, 10);
+  assert.equal(payload.aiAccessPolicy.mode, 'platform_only');
+  assert.equal(payload.refreshAfterSeconds, 120);
 });

@@ -132,8 +132,23 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
+    path: '/extension/installations/bind',
+    summary: 'Bind an authenticated extension installation to a platform user and issue a short-lived installation session.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/bootstrap/v2',
+    summary: 'Resolve the managed-client bootstrap payload for an installation-authenticated extension session.',
+  },
+  {
+    method: 'POST',
     path: '/extension/usage-events',
     summary: 'Ingest extension usage and telemetry events.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/usage-events/v2',
+    summary: 'Ingest extension telemetry using an installation-authenticated session.',
   },
   {
     method: 'GET',
