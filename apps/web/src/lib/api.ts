@@ -9,6 +9,8 @@ import {
   type BillingPortalResult,
   type BillingSubscriptionMutationResult,
   type ApiRouteDefinition,
+  type ExtensionBootstrapPayload,
+  type ExtensionBootstrapRequest,
   type FeatureFlagDefinition,
   type PlanDefinition,
   type RemoteConfigLayer,
@@ -128,6 +130,7 @@ export type BillingSubscriptionMutationSnapshot = BillingSubscriptionMutationRes
 export type UsageSummarySnapshot = WorkspaceUsageSnapshot;
 export type RemoteConfigStateSnapshot = RemoteConfigSnapshot;
 export type RemoteConfigPublishStateSnapshot = RemoteConfigPublishResponse;
+export type ExtensionBootstrapSnapshot = ExtensionBootstrapPayload;
 
 export const API_URL =
   process.env.API_INTERNAL_URL ??
@@ -179,6 +182,31 @@ async function readApiData<T>(path: string, init?: RequestInit): Promise<T | nul
         'content-type': 'application/json',
         ...(init?.headers ?? {}),
       },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as ApiEnvelope<T>;
+
+    return payload.ok ? payload.data : null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeApiData<T>(path: string, body: unknown, init?: RequestInit): Promise<T | null> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      ...init,
+      cache: 'no-store',
+      headers: {
+        'content-type': 'application/json',
+        ...(init?.headers ?? {}),
+      },
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -289,6 +317,17 @@ export async function getRemoteConfigState(
   });
 
   return readApiData<RemoteConfigStateSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function simulateExtensionBootstrap(
+  request: ExtensionBootstrapRequest,
+  accessToken?: string | null,
+) {
+  return writeApiData<ExtensionBootstrapSnapshot>(
+    '/extension/bootstrap',
+    request,
+    withAccessToken(undefined, accessToken),
+  );
 }
 
 export async function getAdminUsers(persona: string, accessToken?: string | null) {

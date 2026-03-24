@@ -1156,11 +1156,13 @@ a {
 }
 
 .admin-feature-flags-shell,
+.admin-extension-simulator-shell,
 .admin-remote-config-shell {
   display: grid;
   gap: 12px;
 }
 
+.admin-extension-snapshot-grid,
 .admin-plan-grid,
 .admin-feature-flag-grid {
   display: grid;
@@ -1352,13 +1354,25 @@ a {
 }
 
 .admin-feature-flag-card,
-.admin-plan-card {
+.admin-plan-card,
+.admin-extension-snapshot-card {
   display: grid;
   gap: 16px;
   padding: 18px;
   border-radius: 22px;
   border: 1px solid rgba(31, 41, 51, 0.08);
   background: rgba(255, 255, 255, 0.62);
+}
+
+.admin-extension-preview pre {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(31, 41, 51, 0.92);
+  color: #f8f4ee;
+  overflow-x: auto;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .admin-remote-config-preview pre {

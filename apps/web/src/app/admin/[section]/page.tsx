@@ -1,5 +1,5 @@
 import { buildAccessContext } from '@quizmind/auth';
-import { type SupportTicketQueueFilters } from '@quizmind/contracts';
+import { type ExtensionBootstrapRequest, type SupportTicketQueueFilters } from '@quizmind/contracts';
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
@@ -12,8 +12,10 @@ import {
   getSupportImpersonationSessions,
   getSupportTickets,
   resolvePersona,
+  simulateExtensionBootstrap,
 } from '../../../lib/api';
 import { getVisibleAdminSections } from '../../../features/navigation/visibility';
+import { ExtensionControlClient } from './extension-control-client';
 import { FeatureFlagsClient } from './feature-flags-client';
 import { RemoteConfigClient } from './remote-config-client';
 import { SupportSessionsClient } from './support-sessions-client';
@@ -53,6 +55,25 @@ function readIntegerSearchParam(
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function createInitialExtensionBootstrapRequest(input: {
+  sessionUserId: string;
+  workspaceId?: string;
+}): ExtensionBootstrapRequest {
+  return {
+    installationId: input.workspaceId ? `sim-${input.workspaceId}-chrome` : 'sim-local-browser',
+    userId: input.sessionUserId,
+    workspaceId: input.workspaceId,
+    environment: 'development',
+    planCode: 'pro',
+    handshake: {
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilities: ['quiz-capture', 'history-sync', 'remote-sync'],
+      browser: 'chrome',
+    },
+  };
+}
+
 export default async function AdminSectionPage({ params, searchParams }: AdminSectionPageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
@@ -71,6 +92,12 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     limit: readIntegerSearchParam(resolvedSearchParams, 'ticketLimit'),
     timelineLimit: readIntegerSearchParam(resolvedSearchParams, 'ticketTimeline'),
   };
+  const extensionBootstrapRequest = session
+    ? createInitialExtensionBootstrapRequest({
+        sessionUserId: session.user.id,
+        workspaceId: sessionWorkspaceId,
+      })
+    : null;
   const [featureFlags, billingPlans, adminUsers, remoteConfigState, supportImpersonationSessions, supportTickets] =
     await Promise.all([
       getFeatureFlags(persona, accessToken),
@@ -80,6 +107,10 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       getSupportImpersonationSessions(persona, accessToken),
       getSupportTickets(persona, accessToken, supportTicketFilters),
     ]);
+  const extensionBootstrap =
+    resolvedParams.section === 'extension-control' && extensionBootstrapRequest
+      ? await simulateExtensionBootstrap(extensionBootstrapRequest, accessToken)
+      : null;
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const canManageSupportSessions = Boolean(isConnectedSession && session?.permissions.includes('support:impersonate'));
@@ -231,6 +262,53 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 userId: session.user.id,
                 workspaceId: sessionWorkspaceId,
               }}
+            />
+          </>
+        ) : section.id === 'extension-control' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {extensionBootstrap?.featureFlags.length ?? 0} resolved
+                    {(extensionBootstrap?.featureFlags.length ?? 0) === 1 ? ' flag' : ' flags'}
+                  </span>
+                  <span className="tag">
+                    {extensionBootstrap?.remoteConfig.appliedLayerIds.length ?? 0} applied
+                    {(extensionBootstrap?.remoteConfig.appliedLayerIds.length ?? 0) === 1 ? ' layer' : ' layers'}
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Bootstrap summary</span>
+                <h2>Current simulation baseline</h2>
+                <div className="list-stack">
+                  <div className="list-item">
+                    <strong>Workspace</strong>
+                    <p>{sessionWorkspaceId ?? 'No workspace binding; request planCode will be used directly.'}</p>
+                  </div>
+                  <div className="list-item">
+                    <strong>Operator</strong>
+                    <p>{session.user.displayName || session.user.email}</p>
+                  </div>
+                  <div className="list-item">
+                    <strong>Compatibility status</strong>
+                    <p>{extensionBootstrap?.compatibility.status ?? 'No bootstrap snapshot available yet.'}</p>
+                  </div>
+                </div>
+              </article>
+            </section>
+            <ExtensionControlClient
+              initialRequest={extensionBootstrapRequest!}
+              initialResult={extensionBootstrap}
+              planOptions={Array.from(new Set((billingPlans?.plans ?? []).map((entry) => entry.plan.code)))}
+              workspaceOptions={session.workspaces.map((workspace) => ({
+                id: workspace.id,
+                name: workspace.name,
+              }))}
             />
           </>
         ) : section.id === 'remote-config' ? (

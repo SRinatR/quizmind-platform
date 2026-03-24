@@ -24,5 +24,6 @@ export const adminNavigation: NavigationItem[] = [
   { label: 'Support', href: '/admin/support', requiresAuth: true, adminOnly: true },
   { label: 'Plans', href: '/admin/plans', requiresAuth: true, adminOnly: true },
   { label: 'Flags', href: '/admin/feature-flags', requiresAuth: true, adminOnly: true },
+  { label: 'Extension', href: '/admin/extension-control', requiresAuth: true, adminOnly: true },
   { label: 'Remote Config', href: '/admin/remote-config', requiresAuth: true, adminOnly: true },
 ];

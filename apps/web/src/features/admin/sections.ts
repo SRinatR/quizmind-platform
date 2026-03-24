@@ -46,6 +46,15 @@ export const adminSections: AdminSection[] = [
     },
   },
   {
+    id: 'extension-control',
+    title: 'Extension Control',
+    href: '/admin/extension-control',
+    description: 'Simulate bootstrap, compatibility, flags, and resolved remote config.',
+    requirement: {
+      permission: 'remote_config:read',
+    },
+  },
+  {
     id: 'remote-config',
     title: 'Remote Config',
     href: '/admin/remote-config',
