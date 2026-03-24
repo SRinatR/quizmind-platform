@@ -370,6 +370,8 @@ model FeatureFlag {
   status                  FeatureFlagStatus
   enabled                 Boolean               @default(false)
   rolloutPercentage       Int?
+  allowRolesJson          Json?
+  allowPlansJson          Json?
   minimumExtensionVersion String?
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt

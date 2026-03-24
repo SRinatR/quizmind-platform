@@ -121,6 +121,24 @@ export interface FeatureFlagDefinition {
   minimumExtensionVersion?: string;
 }
 
+export interface FeatureFlagUpdateRequest {
+  key: string;
+  description?: string;
+  status?: FeatureFlagStatus;
+  enabled?: boolean;
+  rolloutPercentage?: number | null;
+  allowRoles?: Array<SystemRole | WorkspaceRole>;
+  allowPlans?: string[];
+  allowUsers?: string[];
+  allowWorkspaces?: string[];
+  minimumExtensionVersion?: string | null;
+}
+
+export interface FeatureFlagUpdateResult {
+  flag: FeatureFlagDefinition;
+  updatedAt: string;
+}
+
 export interface PlanEntitlement {
   key: string;
   enabled: boolean;

@@ -138,6 +138,7 @@ async function seed() {
       status: 'active',
       enabled: true,
       rolloutPercentage: 100,
+      allowPlansJson: ['pro'],
       minimumExtensionVersion: '1.5.0',
     },
     create: {
@@ -146,6 +147,7 @@ async function seed() {
       status: 'active',
       enabled: true,
       rolloutPercentage: 100,
+      allowPlansJson: ['pro'],
       minimumExtensionVersion: '1.5.0',
     },
   });
@@ -156,12 +158,14 @@ async function seed() {
       description: 'Show banner when a client is below the recommended version.',
       status: 'active',
       enabled: true,
+      allowPlansJson: null,
     },
     create: {
       key: 'ops.force-upgrade-banner',
       description: 'Show banner when a client is below the recommended version.',
       status: 'active',
       enabled: true,
+      allowPlansJson: null,
     },
   });
 

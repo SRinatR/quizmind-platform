@@ -18,6 +18,14 @@ export function canReadFeatureFlags(principal: SessionPrincipal): AccessDecision
   });
 }
 
+export function canWriteFeatureFlags(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'feature_flags:write',
+  });
+}
+
 export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
 
