@@ -137,6 +137,18 @@ export const apiRoutes: ApiRouteDefinition[] = [
     summary: 'Resolve compatibility, feature flags, and remote config for an extension installation.',
   },
   {
+    method: 'GET',
+    path: '/extension/installations',
+    summary: 'List extension installations, compatibility state, and active installation sessions for a workspace.',
+    permission: 'installations:read',
+  },
+  {
+    method: 'POST',
+    path: '/extension/installations/disconnect',
+    summary: 'Revoke active installation sessions for a workspace installation so the extension must reconnect.',
+    permission: 'installations:write',
+  },
+  {
     method: 'POST',
     path: '/extension/installations/bind',
     summary: 'Bind an authenticated extension installation to a platform user and issue a short-lived installation session.',
@@ -208,6 +220,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     path: '/admin/users',
     summary: 'List users, their system roles, and workspace memberships.',
     permission: 'users:read',
+  },
+  {
+    method: 'GET',
+    path: '/admin/installations',
+    summary: 'Inspect workspace-scoped extension installation fleet health, compatibility state, and installation token activity.',
+    permission: 'installations:read',
   },
   {
     method: 'GET',

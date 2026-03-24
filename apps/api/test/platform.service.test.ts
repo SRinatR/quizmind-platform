@@ -9,6 +9,8 @@ import { type UserRepository } from '../src/auth/repositories/user.repository';
 import { type BillingWebhookRepository } from '../src/billing/billing-webhook.repository';
 import { type SubscriptionRepository } from '../src/billing/subscription.repository';
 import { type ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
+import { type ExtensionInstallationRepository } from '../src/extension/extension-installation.repository';
+import { type ExtensionInstallationSessionRepository } from '../src/extension/extension-installation-session.repository';
 import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
 import { type AdminLogRepository } from '../src/logs/admin-log.repository';
 import { type QueueDispatchService } from '../src/queue/queue-dispatch.service';
@@ -24,6 +26,8 @@ function createPlatformService() {
   const infrastructureHealthService = {} as InfrastructureHealthService;
   const subscriptionRepository = {} as SubscriptionRepository;
   const extensionCompatibilityRepository = {} as ExtensionCompatibilityRepository;
+  const extensionInstallationRepository = {} as ExtensionInstallationRepository;
+  const extensionInstallationSessionRepository = {} as ExtensionInstallationSessionRepository;
   const featureFlagRepository = {} as FeatureFlagRepository;
   const adminLogRepository = {} as AdminLogRepository;
   const billingWebhookRepository = {} as BillingWebhookRepository;
@@ -39,6 +43,8 @@ function createPlatformService() {
     infrastructureHealthService,
     subscriptionRepository,
     extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
     featureFlagRepository,
     adminLogRepository,
     billingWebhookRepository,
@@ -56,6 +62,8 @@ function createPlatformService() {
     service,
     subscriptionRepository,
     extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
     featureFlagRepository,
     adminLogRepository,
     billingWebhookRepository,
@@ -67,6 +75,34 @@ function createPlatformService() {
     supportImpersonationRepository,
     usageRepository,
     queueDispatchService,
+  };
+}
+
+function createInstallationAdminSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    permissions: ['installations:read', 'installations:write', 'workspaces:read'],
+  };
+}
+
+function createInstallationRestrictedSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_member' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_member',
+      },
+    ],
+    permissions: ['workspaces:read'],
   };
 }
 
@@ -538,6 +574,276 @@ test('PlatformService.exportAdminLogsForCurrentSession denies principals without
     (error: unknown) => {
       assert.ok(error instanceof ForbiddenException);
       assert.match((error as Error).message, /Missing permission: audit_logs:export/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.listAdminExtensionFleetForCurrentSession maps installation auth health and compatibility drift', async () => {
+  const {
+    service,
+    extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+  } = createPlatformService();
+
+  extensionCompatibilityRepository.findLatest = async () =>
+    ({
+      id: 'compat_rule_1',
+      minimumVersion: '1.6.0',
+      recommendedVersion: '1.7.0',
+      supportedSchemaVersions: ['2'],
+      requiredCapabilities: ['quiz-capture'],
+      resultStatus: 'supported_with_warnings',
+      reason: 'Upgrade is recommended during staged rollout.',
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
+  extensionInstallationRepository.listByWorkspaceId = async () =>
+    [
+      {
+        id: 'ext_installation_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_chrome_primary',
+        browser: 'chrome',
+        extensionVersion: '1.7.1',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        createdAt: new Date('2026-03-24T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:20:00.000Z'),
+      },
+      {
+        id: 'ext_installation_2',
+        userId: 'user_2',
+        workspaceId: 'ws_1',
+        installationId: 'inst_edge_legacy',
+        browser: 'edge',
+        extensionVersion: '1.5.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture'],
+        createdAt: new Date('2026-03-23T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-23T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T11:00:00.000Z'),
+      },
+    ] as any;
+  extensionInstallationSessionRepository.listActiveByInstallationIds = async () =>
+    [
+      {
+        id: 'installation_session_1',
+        extensionInstallationId: 'ext_installation_1',
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        expiresAt: new Date('2026-03-24T13:00:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.listAdminExtensionFleetForCurrentSession(createInstallationAdminSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    connection: 'all',
+    compatibility: 'all',
+    limit: 20,
+  });
+
+  assert.equal(result.personaKey, 'connected-user');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.deepEqual(result.counts, {
+    total: 2,
+    connected: 1,
+    reconnectRequired: 1,
+    supported: 0,
+    supportedWithWarnings: 1,
+    deprecated: 0,
+    unsupported: 1,
+  });
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.installationId, 'inst_chrome_primary');
+  assert.equal(result.items[0]?.compatibility.status, 'supported_with_warnings');
+  assert.equal(result.items[0]?.activeSessionCount, 1);
+  assert.equal(result.items[0]?.requiresReconnect, false);
+  assert.equal(result.items[1]?.installationId, 'inst_edge_legacy');
+  assert.equal(result.items[1]?.compatibility.status, 'unsupported');
+  assert.equal(result.items[1]?.activeSessionCount, 0);
+  assert.equal(result.items[1]?.requiresReconnect, true);
+});
+
+test('PlatformService.listAdminExtensionFleetForCurrentSession filters reconnect-required installations', async () => {
+  const {
+    service,
+    extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+  } = createPlatformService();
+
+  extensionCompatibilityRepository.findLatest = async () =>
+    ({
+      id: 'compat_rule_1',
+      minimumVersion: '1.6.0',
+      recommendedVersion: '1.7.0',
+      supportedSchemaVersions: ['2'],
+      requiredCapabilities: ['quiz-capture'],
+      resultStatus: 'supported_with_warnings',
+      reason: 'Upgrade is recommended during staged rollout.',
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
+  extensionInstallationRepository.listByWorkspaceId = async () =>
+    [
+      {
+        id: 'ext_installation_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_chrome_primary',
+        browser: 'chrome',
+        extensionVersion: '1.7.1',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        createdAt: new Date('2026-03-24T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:20:00.000Z'),
+      },
+      {
+        id: 'ext_installation_2',
+        userId: 'user_2',
+        workspaceId: 'ws_1',
+        installationId: 'inst_edge_legacy',
+        browser: 'edge',
+        extensionVersion: '1.5.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture'],
+        createdAt: new Date('2026-03-23T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-23T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T11:00:00.000Z'),
+      },
+    ] as any;
+  extensionInstallationSessionRepository.listActiveByInstallationIds = async () =>
+    [
+      {
+        id: 'installation_session_1',
+        extensionInstallationId: 'ext_installation_1',
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        expiresAt: new Date('2026-03-24T13:00:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.listAdminExtensionFleetForCurrentSession(createInstallationAdminSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    connection: 'reconnect_required',
+    compatibility: 'all',
+    limit: 20,
+  });
+
+  assert.equal(result.counts.total, 1);
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.installationId, 'inst_edge_legacy');
+  assert.equal(result.items[0]?.requiresReconnect, true);
+});
+
+test('PlatformService.listAdminExtensionFleetForCurrentSession includes selected installation session history', async () => {
+  const {
+    service,
+    extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+  } = createPlatformService();
+  const now = Date.now();
+
+  extensionCompatibilityRepository.findLatest = async () =>
+    ({
+      id: 'compat_rule_detail_1',
+      minimumVersion: '1.6.0',
+      recommendedVersion: '1.7.0',
+      supportedSchemaVersions: ['2'],
+      requiredCapabilities: ['quiz-capture'],
+      resultStatus: 'supported_with_warnings',
+      reason: 'Upgrade is recommended during staged rollout.',
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
+  extensionInstallationRepository.listByWorkspaceId = async () =>
+    [
+      {
+        id: 'ext_installation_detail_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_chrome_primary',
+        browser: 'chrome',
+        extensionVersion: '1.7.1',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        createdAt: new Date('2026-03-24T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:20:00.000Z'),
+      },
+    ] as any;
+  extensionInstallationSessionRepository.listActiveByInstallationIds = async () =>
+    [
+      {
+        id: 'installation_session_active_1',
+        extensionInstallationId: 'ext_installation_detail_1',
+        createdAt: new Date(now - 15 * 60 * 1000),
+        expiresAt: new Date(now + 45 * 60 * 1000),
+      },
+    ] as any;
+  extensionInstallationSessionRepository.listRecentByInstallationRecordId = async () =>
+    [
+      {
+        id: 'installation_session_active_1',
+        extensionInstallationId: 'ext_installation_detail_1',
+        userId: 'user_1',
+        createdAt: new Date(now - 15 * 60 * 1000),
+        expiresAt: new Date(now + 45 * 60 * 1000),
+        revokedAt: null,
+      },
+      {
+        id: 'installation_session_revoked_1',
+        extensionInstallationId: 'ext_installation_detail_1',
+        userId: 'user_1',
+        createdAt: new Date(now - 3 * 60 * 60 * 1000),
+        expiresAt: new Date(now - 2 * 60 * 60 * 1000),
+        revokedAt: new Date(now - 150 * 60 * 1000),
+      },
+      {
+        id: 'installation_session_expired_1',
+        extensionInstallationId: 'ext_installation_detail_1',
+        userId: 'user_1',
+        createdAt: new Date(now - 6 * 60 * 60 * 1000),
+        expiresAt: new Date(now - 5 * 60 * 60 * 1000),
+        revokedAt: null,
+      },
+    ] as any;
+
+  const result = await service.listAdminExtensionFleetForCurrentSession(createInstallationAdminSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    installationId: 'inst_chrome_primary',
+    connection: 'all',
+    compatibility: 'all',
+    limit: 20,
+  });
+
+  assert.equal(result.selectedInstallationId, 'inst_chrome_primary');
+  assert.equal(result.selectedInstallation?.installation.installationId, 'inst_chrome_primary');
+  assert.deepEqual(result.selectedInstallation?.counts, {
+    total: 3,
+    active: 1,
+    expired: 1,
+    revoked: 1,
+  });
+  assert.equal(result.selectedInstallation?.sessions[0]?.installationId, 'inst_chrome_primary');
+  assert.equal(result.selectedInstallation?.sessions[0]?.status, 'active');
+  assert.equal(result.selectedInstallation?.sessions[1]?.status, 'revoked');
+  assert.equal(result.selectedInstallation?.sessions[2]?.status, 'expired');
+});
+
+test('PlatformService.listAdminExtensionFleetForCurrentSession denies principals without installations:read', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.listAdminExtensionFleetForCurrentSession(createInstallationRestrictedSessionSnapshot(), {
+        workspaceId: 'ws_1',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: installations:read/);
       return true;
     },
   );

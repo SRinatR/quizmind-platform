@@ -91,6 +91,15 @@ export const adminLogExportFormats = ['json', 'csv'] as const;
 export const adminWebhookStatusFilters = ['all', 'received', 'processed', 'failed'] as const;
 export const adminWebhookProviderFilters = ['all', 'mock', 'stripe', 'manual'] as const;
 export const adminQueueProcessorStates = ['bound', 'declared_only'] as const;
+export const adminExtensionConnectionFilters = ['all', 'connected', 'reconnect_required'] as const;
+export const adminExtensionCompatibilityFilters = [
+  'all',
+  'supported',
+  'supported_with_warnings',
+  'deprecated',
+  'unsupported',
+] as const;
+export const adminExtensionSessionStatuses = ['active', 'expired', 'revoked'] as const;
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
@@ -122,6 +131,9 @@ export type AdminLogExportFormat = (typeof adminLogExportFormats)[number];
 export type AdminWebhookStatusFilter = (typeof adminWebhookStatusFilters)[number];
 export type AdminWebhookProviderFilter = (typeof adminWebhookProviderFilters)[number];
 export type AdminQueueProcessorState = (typeof adminQueueProcessorStates)[number];
+export type AdminExtensionConnectionFilter = (typeof adminExtensionConnectionFilters)[number];
+export type AdminExtensionCompatibilityFilter = (typeof adminExtensionCompatibilityFilters)[number];
+export type AdminExtensionSessionStatus = (typeof adminExtensionSessionStatuses)[number];
 
 export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
@@ -862,6 +874,114 @@ export interface ExtensionInstallationBindResult {
   installation: ExtensionInstallationBindingSummary;
   session: ExtensionInstallationTokenSession;
   bootstrap: ExtensionBootstrapPayloadV2;
+}
+
+export interface ExtensionInstallationInventoryItem {
+  installationId: string;
+  workspaceId?: string;
+  browser: CompatibilityHandshake['browser'];
+  extensionVersion: string;
+  schemaVersion: string;
+  capabilities: string[];
+  boundAt: string;
+  lastSeenAt?: string;
+  activeSessionCount: number;
+  lastSessionIssuedAt?: string;
+  lastSessionExpiresAt?: string;
+  compatibility: CompatibilityResult;
+  requiresReconnect: boolean;
+}
+
+export interface ExtensionInstallationInventorySnapshot {
+  workspace: WorkspaceSummary;
+  accessDecision: AccessDecision;
+  disconnectDecision: AccessDecision;
+  items: ExtensionInstallationInventoryItem[];
+  permissions: string[];
+}
+
+export interface ExtensionInstallationDisconnectRequest {
+  installationId: string;
+  workspaceId?: string;
+}
+
+export interface ExtensionInstallationDisconnectResult {
+  installationId: string;
+  workspaceId?: string;
+  revokedSessionCount: number;
+  disconnectedAt: string;
+  requiresReconnect: boolean;
+}
+
+export interface AdminExtensionFleetFilters {
+  workspaceId: string;
+  compatibility: AdminExtensionCompatibilityFilter;
+  connection: AdminExtensionConnectionFilter;
+  installationId?: string;
+  search?: string;
+  limit: number;
+}
+
+export interface AdminExtensionFleetItem {
+  workspace: WorkspaceSummary;
+  userId: string;
+  installationId: string;
+  browser: CompatibilityHandshake['browser'];
+  extensionVersion: string;
+  schemaVersion: string;
+  capabilities: string[];
+  boundAt: string;
+  lastSeenAt?: string;
+  activeSessionCount: number;
+  lastSessionIssuedAt?: string;
+  lastSessionExpiresAt?: string;
+  compatibility: CompatibilityResult;
+  requiresReconnect: boolean;
+}
+
+export interface AdminExtensionFleetCounts {
+  total: number;
+  connected: number;
+  reconnectRequired: number;
+  supported: number;
+  supportedWithWarnings: number;
+  deprecated: number;
+  unsupported: number;
+}
+
+export interface AdminExtensionFleetSessionHistoryItem {
+  id: string;
+  installationId: string;
+  userId: string;
+  issuedAt: string;
+  expiresAt: string;
+  revokedAt?: string;
+  status: AdminExtensionSessionStatus;
+}
+
+export interface AdminExtensionFleetSessionHistoryCounts {
+  total: number;
+  active: number;
+  expired: number;
+  revoked: number;
+}
+
+export interface AdminExtensionFleetInstallationDetail {
+  installation: AdminExtensionFleetItem;
+  counts: AdminExtensionFleetSessionHistoryCounts;
+  sessions: AdminExtensionFleetSessionHistoryItem[];
+}
+
+export interface AdminExtensionFleetSnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  workspace: WorkspaceSummary;
+  filters: AdminExtensionFleetFilters;
+  items: AdminExtensionFleetItem[];
+  counts: AdminExtensionFleetCounts;
+  selectedInstallationId?: string;
+  selectedInstallation?: AdminExtensionFleetInstallationDetail;
+  permissions: string[];
 }
 
 export interface UsageEventPayload {

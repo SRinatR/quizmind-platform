@@ -85,6 +85,30 @@ export function canReadWorkspace(principal: SessionPrincipal, workspaceId: strin
   });
 }
 
+export function canReadExtensionInstallations(
+  principal: SessionPrincipal,
+  workspaceId: string,
+): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'installations:read',
+    workspaceId,
+  });
+}
+
+export function canWriteExtensionInstallations(
+  principal: SessionPrincipal,
+  workspaceId: string,
+): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'installations:write',
+    workspaceId,
+  });
+}
+
 export function canReadProviderCredentials(
   principal: SessionPrincipal,
   workspaceId: string,

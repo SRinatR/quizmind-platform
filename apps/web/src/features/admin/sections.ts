@@ -73,6 +73,15 @@ export const adminSections: AdminSection[] = [
     },
   },
   {
+    id: 'extension-fleet',
+    title: 'Extension Fleet',
+    href: '/admin/extension-fleet',
+    description: 'Workspace-scoped installation health, compatibility drift, and installation token activity.',
+    requirement: {
+      permission: 'installations:read',
+    },
+  },
+  {
     id: 'feature-flags',
     title: 'Feature Flags',
     href: '/admin/feature-flags',

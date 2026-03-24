@@ -31,7 +31,9 @@ Production and staging URLs must be injected through environment-specific config
 
 Available platform endpoints:
 
+- `GET /extension/installations`
 - `POST /extension/installations/bind`
+- `POST /extension/installations/disconnect`
 - `POST /extension/bootstrap/v2`
 - `POST /extension/usage-events/v2`
 
@@ -171,6 +173,7 @@ http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&e
 Recommended web files to build around this:
 
 - `apps/web/src/app/app/extension/connect/page.tsx`
+- `apps/web/src/app/app/extension/connect/extension-connect-client.tsx`
 - `apps/web/src/app/api/extension/bind/route.ts`
 
 ### Bind request
@@ -572,6 +575,7 @@ Responsibilities:
   - invalid installation token
   - expired installation token
   - installation token does not match requested installation
+  - installation was manually disconnected from the dashboard
 - `503 Service Unavailable`
   - bind attempted while platform runtime mode is not connected
 - network failure

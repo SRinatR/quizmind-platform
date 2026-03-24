@@ -15,6 +15,8 @@ export const permissionRegistry = [
   'users:suspend',
   'workspaces:read',
   'workspaces:update',
+  'installations:read',
+  'installations:write',
   'workspace_members:invite',
   'workspace_members:remove',
   'subscriptions:read',
@@ -95,6 +97,8 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
   workspace_owner: [
     'workspaces:read',
     'workspaces:update',
+    'installations:read',
+    'installations:write',
     'workspace_members:invite',
     'workspace_members:remove',
     'subscriptions:read',
@@ -110,6 +114,8 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
   workspace_admin: [
     'workspaces:read',
     'workspaces:update',
+    'installations:read',
+    'installations:write',
     'workspace_members:invite',
     'workspace_members:remove',
     'subscriptions:read',
@@ -128,11 +134,11 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
     'entitlements:read',
     'usage:read',
   ],
-  workspace_security_manager: ['audit_logs:read', 'audit_logs:export'],
-  workspace_manager: ['workspaces:read', 'remote_config:read', 'entitlements:read', 'usage:read'],
-  workspace_analyst: ['audit_logs:read', 'payments:read', 'subscriptions:read', 'usage:read', 'usage:export'],
+  workspace_security_manager: ['audit_logs:read', 'audit_logs:export', 'installations:read'],
+  workspace_manager: ['workspaces:read', 'installations:read', 'remote_config:read', 'entitlements:read', 'usage:read'],
+  workspace_analyst: ['audit_logs:read', 'installations:read', 'payments:read', 'subscriptions:read', 'usage:read', 'usage:export'],
   workspace_member: ['workspaces:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
-  workspace_viewer: ['workspaces:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
+  workspace_viewer: ['workspaces:read', 'installations:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
 };
 
 export const allSystemRoles = [...systemRoles];

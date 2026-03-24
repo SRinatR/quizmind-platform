@@ -150,11 +150,11 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
               <Link className="btn-ghost" href="/app">
                 Back to overview
               </Link>
+              <Link className="btn-ghost" href="/app/installations">
+                Open installations
+              </Link>
               <Link className="btn-ghost" href="/app/billing">
                 Open billing
-              </Link>
-              <Link className="btn-ghost" href="/app/settings">
-                Open settings
               </Link>
             </div>
           </section>

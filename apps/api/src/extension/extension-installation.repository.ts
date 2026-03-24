@@ -34,6 +34,16 @@ export class ExtensionInstallationRepository {
     });
   }
 
+  listByWorkspaceId(workspaceId: string): Promise<ExtensionInstallationRecord[]> {
+    return this.prisma.extensionInstallation.findMany({
+      where: {
+        workspaceId,
+      },
+      orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
+      select: extensionInstallationSelect,
+    });
+  }
+
   upsertBoundInstallation(input: {
     userId: string;
     workspaceId?: string;

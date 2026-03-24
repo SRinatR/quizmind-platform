@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { ForbiddenException } from '@nestjs/common';
 import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
 
 import { ExtensionControlService } from '../src/extension/extension-control.service';
@@ -43,6 +44,32 @@ function createConnectedSession(): CurrentSessionSnapshot {
       },
     ],
     permissions: ['workspaces:read', 'subscriptions:read', 'subscriptions:update'],
+  };
+}
+
+function createInstallationManagerSession(): CurrentSessionSnapshot {
+  return {
+    ...createConnectedSession(),
+    permissions: ['installations:read', 'installations:write', 'workspaces:read'],
+  };
+}
+
+function createInstallationViewerSession(): CurrentSessionSnapshot {
+  const session = createConnectedSession();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_viewer' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_viewer',
+      },
+    ],
+    permissions: ['installations:read', 'workspaces:read'],
   };
 }
 
@@ -330,4 +357,135 @@ test('ExtensionControlService.ingestUsageEventForInstallationSession queues work
   assert.equal(capturedPayload.workspaceId, 'ws_1');
   assert.equal(capturedPayload.payload.browser, 'chrome');
   assert.equal(capturedPayload.payload.questionType, 'multiple_choice');
+});
+
+test('ExtensionControlService.listInstallationsForCurrentSession returns compatibility and active session inventory', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+    extensionCompatibilityRepository,
+  } = createService();
+
+  extensionInstallationRepository.listByWorkspaceId = async () =>
+    [
+      {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_primary',
+        browser: 'chrome',
+        extensionVersion: '1.7.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync', 'remote-sync'],
+        createdAt: new Date('2026-03-24T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+      {
+        id: 'inst_record_2',
+        userId: 'user_2',
+        workspaceId: 'ws_1',
+        installationId: 'inst_stale',
+        browser: 'edge',
+        extensionVersion: '1.5.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture'],
+        createdAt: new Date('2026-03-23T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-23T10:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-23T11:00:00.000Z'),
+      },
+    ] as any;
+  extensionInstallationSessionRepository.listActiveByInstallationIds = async () =>
+    [
+      {
+        id: 'inst_session_1',
+        extensionInstallationId: 'inst_record_1',
+        createdAt: new Date('2026-03-24T12:05:00.000Z'),
+        expiresAt: new Date('2026-03-24T12:35:00.000Z'),
+      },
+    ] as any;
+  extensionCompatibilityRepository.findLatest = async () =>
+    ({
+      id: 'rule_1',
+      minimumVersion: '1.6.0',
+      recommendedVersion: '1.7.0',
+      supportedSchemaVersions: ['2'],
+      requiredCapabilities: ['quiz-capture'],
+      resultStatus: 'supported',
+      reason: null,
+      createdAt: new Date('2026-03-24T09:00:00.000Z'),
+    }) as any;
+
+  const result = await service.listInstallationsForCurrentSession(createInstallationManagerSession(), 'ws_1');
+
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.disconnectDecision.allowed, true);
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.installationId, 'inst_primary');
+  assert.equal(result.items[0]?.activeSessionCount, 1);
+  assert.equal(result.items[0]?.requiresReconnect, false);
+  assert.equal(result.items[0]?.compatibility.status, 'supported');
+  assert.equal(result.items[1]?.installationId, 'inst_stale');
+  assert.equal(result.items[1]?.activeSessionCount, 0);
+  assert.equal(result.items[1]?.requiresReconnect, true);
+  assert.equal(result.items[1]?.compatibility.status, 'unsupported');
+});
+
+test('ExtensionControlService.disconnectInstallationForCurrentSession revokes active installation sessions', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+  } = createService();
+  let capturedInstallationRecordId: string | null = null;
+
+  extensionInstallationRepository.findByInstallationId = async () =>
+    ({
+      id: 'inst_record_1',
+      userId: 'user_1',
+      workspaceId: 'ws_1',
+      installationId: 'inst_primary',
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture', 'history-sync'],
+      createdAt: new Date('2026-03-24T10:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+      lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
+  extensionInstallationSessionRepository.revokeActiveByInstallationId = async (installationRecordId) => {
+    capturedInstallationRecordId = installationRecordId;
+
+    return 2;
+  };
+
+  const result = await service.disconnectInstallationForCurrentSession(createInstallationManagerSession(), {
+    installationId: 'inst_primary',
+    workspaceId: 'ws_1',
+  });
+
+  assert.equal(capturedInstallationRecordId, 'inst_record_1');
+  assert.equal(result.installationId, 'inst_primary');
+  assert.equal(result.workspaceId, 'ws_1');
+  assert.equal(result.revokedSessionCount, 2);
+  assert.equal(result.requiresReconnect, true);
+});
+
+test('ExtensionControlService.disconnectInstallationForCurrentSession denies users without installation write permission', async () => {
+  const { service } = createService();
+
+  await assert.rejects(
+    () =>
+      service.disconnectInstallationForCurrentSession(createInstallationViewerSession(), {
+        installationId: 'inst_primary',
+        workspaceId: 'ws_1',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: installations:write/);
+      return true;
+    },
+  );
 });

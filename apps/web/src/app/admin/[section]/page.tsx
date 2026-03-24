@@ -1,5 +1,6 @@
 import { buildAccessContext } from '@quizmind/auth';
 import {
+  type AdminExtensionFleetFilters,
   type AdminLogFilters,
   type AdminWebhookFilters,
   type ExtensionBootstrapRequest,
@@ -10,6 +11,7 @@ import {
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
+  getAdminExtensionFleet,
   getAdminProviderGovernance,
   getAdminLogs,
   getAdminWebhooks,
@@ -39,6 +41,7 @@ import { UsersDirectoryClient } from './users-directory-client';
 import { UsageExplorerClient } from './usage-explorer-client';
 import { LogsExplorerClient } from './logs-explorer-client';
 import { WebhooksClient } from './webhooks-client';
+import { ExtensionFleetClient } from './extension-fleet-client';
 
 interface AdminSectionPageProps {
   params: Promise<{ section: string }>;
@@ -142,6 +145,18 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     search: readSearchParam(resolvedSearchParams, 'webhookSearch'),
     limit: readIntegerSearchParam(resolvedSearchParams, 'webhookLimit'),
   };
+  const extensionFleetFilters: Partial<AdminExtensionFleetFilters> = {
+    ...(sessionWorkspaceId ? { workspaceId: sessionWorkspaceId } : {}),
+    installationId: readSearchParam(resolvedSearchParams, 'fleetInstallationId'),
+    compatibility: readSearchParam(resolvedSearchParams, 'installationCompatibility') as
+      | AdminExtensionFleetFilters['compatibility']
+      | undefined,
+    connection: readSearchParam(resolvedSearchParams, 'installationConnection') as
+      | AdminExtensionFleetFilters['connection']
+      | undefined,
+    search: readSearchParam(resolvedSearchParams, 'installationSearch'),
+    limit: readIntegerSearchParam(resolvedSearchParams, 'installationLimit'),
+  };
   const extensionBootstrapRequest = session
     ? createInitialExtensionBootstrapRequest({
         sessionUserId: session.user.id,
@@ -159,6 +174,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     supportImpersonationSessions,
     supportTickets,
     usageSummary,
+    adminExtensionFleet,
     adminLogs,
     adminWebhooks,
   ] =
@@ -178,6 +194,9 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       getSupportTickets(persona, accessToken, supportTicketFilters),
       (resolvedParams.section === 'extension-control' || resolvedParams.section === 'usage') && sessionWorkspaceId
         ? getUsageSummary(persona, sessionWorkspaceId, accessToken)
+        : Promise.resolve(null),
+      resolvedParams.section === 'extension-fleet'
+        ? getAdminExtensionFleet(persona, extensionFleetFilters, accessToken)
         : Promise.resolve(null),
       resolvedParams.section === 'logs'
         ? getAdminLogs(persona, adminLogFilters, accessToken)
@@ -651,6 +670,72 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 <span className="micro-label">Usage</span>
                 <h2>Usage explorer state is unavailable.</h2>
                 <p>The API did not return a usage snapshot for this workspace context.</p>
+              </section>
+            )}
+          </>
+        ) : section.id === 'extension-fleet' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {adminExtensionFleet?.counts.total ?? 0} visible
+                    {(adminExtensionFleet?.counts.total ?? 0) === 1 ? ' installation' : ' installations'}
+                  </span>
+                  <span className={adminExtensionFleet && adminExtensionFleet.counts.reconnectRequired > 0 ? 'tag warn' : 'tag'}>
+                    reconnect {adminExtensionFleet?.counts.reconnectRequired ?? 0}
+                  </span>
+                  <span className={adminExtensionFleet && adminExtensionFleet.counts.unsupported > 0 ? 'tag warn' : 'tag'}>
+                    unsupported {adminExtensionFleet?.counts.unsupported ?? 0}
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Fleet context</span>
+                <h2>Selected workspace scope</h2>
+                {adminExtensionFleet ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Workspace</strong>
+                      <p>{adminExtensionFleet.workspace.name}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Current filters</strong>
+                      <p>
+                        {adminExtensionFleet.filters.compatibility} | {adminExtensionFleet.filters.connection}
+                        {adminExtensionFleet.filters.search ? ` | "${adminExtensionFleet.filters.search}"` : ''}
+                      </p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Compatibility drift</strong>
+                      <p>
+                        warnings {adminExtensionFleet.counts.supportedWithWarnings} | deprecated{' '}
+                        {adminExtensionFleet.counts.deprecated}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Extension fleet state is unavailable for this workspace context.</p>
+                )}
+              </article>
+            </section>
+            {adminExtensionFleet ? (
+              <ExtensionFleetClient
+                snapshot={adminExtensionFleet}
+                workspaceOptions={session.workspaces.map((workspace) => ({
+                  id: workspace.id,
+                  name: workspace.name,
+                  role: workspace.role,
+                }))}
+              />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Extension Fleet</span>
+                <h2>Extension fleet state is unavailable.</h2>
+                <p>The API did not return a fleet snapshot for this workspace context.</p>
               </section>
             )}
           </>

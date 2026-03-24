@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -7,15 +8,19 @@ import {
 } from '@nestjs/common';
 import { createOpaqueToken, hashOpaqueToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
-import { buildExtensionBootstrapV2 } from '@quizmind/extension';
+import { buildExtensionBootstrapV2, evaluateCompatibility } from '@quizmind/extension';
 import { createLogEvent } from '@quizmind/logger';
 import { buildQuotaHint } from '@quizmind/usage';
 import {
   type CompatibilityHandshake,
   type ExtensionBootstrapPayloadV2,
   type ExtensionBootstrapRequestV2,
+  type ExtensionInstallationDisconnectRequest,
+  type ExtensionInstallationDisconnectResult,
   type ExtensionInstallationBindRequest,
   type ExtensionInstallationBindResult,
+  type ExtensionInstallationInventoryItem,
+  type ExtensionInstallationInventorySnapshot,
   type UsageEventIngestResult,
   type UsageEventPayload,
 } from '@quizmind/contracts';
@@ -24,12 +29,19 @@ import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { SubscriptionRepository } from '../billing/subscription.repository';
 import { QueueDispatchService } from '../queue/queue-dispatch.service';
 import {
+  canReadExtensionInstallations,
+  canWriteExtensionInstallations,
+} from '../services/access-service';
+import {
   mapEntitlementOverrides,
   mapPlanRecordToDefinition,
   mapSubscriptionRecordToSnapshot,
   resolveWorkspaceSubscriptionSummary,
 } from '../services/billing-service';
-import { mapExtensionCompatibilityRuleToPolicy } from '../services/extension-bootstrap-service';
+import {
+  defaultCompatibilityPolicy,
+  mapExtensionCompatibilityRuleToPolicy,
+} from '../services/extension-bootstrap-service';
 import { mapFeatureFlagRecordToDefinition } from '../services/feature-flags-service';
 import { mapRemoteConfigLayerRecordToDefinition } from '../services/remote-config-service';
 import { buildUsageQuotas } from '../services/usage-service';
@@ -63,6 +75,12 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
   }
 
   return normalized;
+}
+
+function normalizeBrowser(value: string): CompatibilityHandshake['browser'] {
+  return ['chrome', 'edge', 'brave', 'other'].includes(value)
+    ? (value as CompatibilityHandshake['browser'])
+    : 'other';
 }
 
 @Injectable()
@@ -241,6 +259,96 @@ export class ExtensionControlService {
     };
   }
 
+  async listInstallationsForCurrentSession(
+    session: CurrentSessionSnapshot,
+    workspaceId?: string,
+  ): Promise<ExtensionInstallationInventorySnapshot> {
+    const requestedWorkspace = this.resolveRequestedWorkspace(session, workspaceId);
+    const accessDecision = canReadExtensionInstallations(session.principal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const [installations, compatibilityRule] = await Promise.all([
+      this.extensionInstallationRepository.listByWorkspaceId(requestedWorkspace.id),
+      this.extensionCompatibilityRepository.findLatest(),
+    ]);
+    const activeSessions = await this.extensionInstallationSessionRepository.listActiveByInstallationIds(
+      installations.map((record) => record.id),
+    );
+    const compatibilityPolicy = compatibilityRule
+      ? mapExtensionCompatibilityRuleToPolicy(compatibilityRule, defaultCompatibilityPolicy)
+      : defaultCompatibilityPolicy;
+    const sessionStats = new Map<
+      string,
+      {
+        count: number;
+        lastSessionIssuedAt?: string;
+        lastSessionExpiresAt?: string;
+      }
+    >();
+
+    for (const activeSession of activeSessions) {
+      const current = sessionStats.get(activeSession.extensionInstallationId) ?? { count: 0 };
+      const createdAt = activeSession.createdAt.toISOString();
+      const expiresAt = activeSession.expiresAt.toISOString();
+
+      sessionStats.set(activeSession.extensionInstallationId, {
+        count: current.count + 1,
+        lastSessionIssuedAt:
+          !current.lastSessionIssuedAt || createdAt > current.lastSessionIssuedAt
+            ? createdAt
+            : current.lastSessionIssuedAt,
+        lastSessionExpiresAt:
+          !current.lastSessionExpiresAt || expiresAt > current.lastSessionExpiresAt
+            ? expiresAt
+            : current.lastSessionExpiresAt,
+      });
+    }
+
+    return {
+      workspace: requestedWorkspace,
+      accessDecision,
+      disconnectDecision: canWriteExtensionInstallations(session.principal, requestedWorkspace.id),
+      items: installations.map((installation) => this.mapInstallationInventoryItem(installation, compatibilityPolicy, sessionStats)),
+      permissions: session.permissions,
+    };
+  }
+
+  async disconnectInstallationForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<ExtensionInstallationDisconnectRequest>,
+  ): Promise<ExtensionInstallationDisconnectResult> {
+    const installationId = readRequiredString(request?.installationId, 'installationId');
+    const requestedWorkspace = this.resolveRequestedWorkspace(session, request?.workspaceId);
+    const accessDecision = canWriteExtensionInstallations(session.principal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
+
+    if (!installation || installation.workspaceId !== requestedWorkspace.id) {
+      throw new NotFoundException('Extension installation not found for workspace.');
+    }
+
+    const disconnectedAt = new Date();
+    const revokedSessionCount = await this.extensionInstallationSessionRepository.revokeActiveByInstallationId(
+      installation.id,
+      disconnectedAt,
+    );
+
+    return {
+      installationId: installation.installationId,
+      workspaceId: installation.workspaceId ?? undefined,
+      revokedSessionCount,
+      disconnectedAt: disconnectedAt.toISOString(),
+      requiresReconnect: true,
+    };
+  }
+
   private async buildBootstrapPayload(input: {
     installation: ExtensionInstallationRecord;
     environment: string;
@@ -312,6 +420,64 @@ export class ExtensionControlService {
       issuedAt: input.issuedAt,
       refreshAfterSeconds: input.refreshAfterSeconds,
     });
+  }
+
+  private resolveRequestedWorkspace(session: CurrentSessionSnapshot, workspaceId?: string) {
+    const normalizedWorkspaceId = workspaceId?.trim();
+    const requestedWorkspace =
+      (normalizedWorkspaceId
+        ? session.workspaces.find((workspace) => workspace.id === normalizedWorkspaceId)
+        : session.workspaces[0]) ?? null;
+
+    if (!requestedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    return requestedWorkspace;
+  }
+
+  private mapInstallationInventoryItem(
+    installation: ExtensionInstallationRecord,
+    compatibilityPolicy: ReturnType<typeof mapExtensionCompatibilityRuleToPolicy> | typeof defaultCompatibilityPolicy,
+    sessionStats: Map<
+      string,
+      {
+        count: number;
+        lastSessionIssuedAt?: string;
+        lastSessionExpiresAt?: string;
+      }
+    >,
+  ): ExtensionInstallationInventoryItem {
+    const installationSessionStats = sessionStats.get(installation.id);
+    const compatibility = evaluateCompatibility(
+      {
+        extensionVersion: installation.extensionVersion,
+        schemaVersion: installation.schemaVersion,
+        capabilities: normalizeCapabilities(installation.capabilitiesJson),
+        browser: normalizeBrowser(installation.browser),
+      },
+      compatibilityPolicy,
+    );
+
+    return {
+      installationId: installation.installationId,
+      ...(installation.workspaceId ? { workspaceId: installation.workspaceId } : {}),
+      browser: normalizeBrowser(installation.browser),
+      extensionVersion: installation.extensionVersion,
+      schemaVersion: installation.schemaVersion,
+      capabilities: normalizeCapabilities(installation.capabilitiesJson),
+      boundAt: installation.createdAt.toISOString(),
+      ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt.toISOString() } : {}),
+      activeSessionCount: installationSessionStats?.count ?? 0,
+      ...(installationSessionStats?.lastSessionIssuedAt
+        ? { lastSessionIssuedAt: installationSessionStats.lastSessionIssuedAt }
+        : {}),
+      ...(installationSessionStats?.lastSessionExpiresAt
+        ? { lastSessionExpiresAt: installationSessionStats.lastSessionExpiresAt }
+        : {}),
+      compatibility,
+      requiresReconnect: (installationSessionStats?.count ?? 0) === 0,
+    };
   }
 
   private normalizeBindRequest(

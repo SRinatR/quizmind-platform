@@ -12,6 +12,8 @@ import { BillingWebhookRepository } from '../src/billing/billing-webhook.reposit
 import { SubscriptionRepository } from '../src/billing/subscription.repository';
 import { PrismaService } from '../src/database/prisma.service';
 import { ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
+import { ExtensionInstallationRepository } from '../src/extension/extension-installation.repository';
+import { ExtensionInstallationSessionRepository } from '../src/extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
 import { AdminLogRepository } from '../src/logs/admin-log.repository';
 import { PlatformService } from '../src/platform.service';
@@ -91,6 +93,8 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
   const workspaceRepository = new WorkspaceRepository(prismaService);
   const subscriptionRepository = new SubscriptionRepository(prismaService);
   const extensionCompatibilityRepository = new ExtensionCompatibilityRepository(prismaService);
+  const extensionInstallationRepository = new ExtensionInstallationRepository(prismaService);
+  const extensionInstallationSessionRepository = new ExtensionInstallationSessionRepository(prismaService);
   const featureFlagRepository = new FeatureFlagRepository(prismaService);
   const adminLogRepository = new AdminLogRepository(prismaService);
   const billingWebhookRepository = new BillingWebhookRepository(prismaService);
@@ -131,6 +135,8 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     } as InfrastructureHealthService,
     subscriptionRepository,
     extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
     featureFlagRepository,
     adminLogRepository,
     billingWebhookRepository,

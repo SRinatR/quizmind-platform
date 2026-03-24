@@ -6,8 +6,15 @@ import { createLogEvent } from '@quizmind/logger';
 import { listQueueDefinitions } from '@quizmind/queue';
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
+  adminExtensionCompatibilityFilters,
+  adminExtensionConnectionFilters,
   adminWebhookProviderFilters,
   adminWebhookStatusFilters,
+  type AdminExtensionFleetFilters,
+  type AdminExtensionFleetInstallationDetail,
+  type AdminExtensionFleetItem,
+  type AdminExtensionFleetSessionHistoryItem,
+  type AdminExtensionFleetSnapshot,
   type AdminLogExportFormat,
   type AdminLogExportRequest,
   type AdminLogExportResult,
@@ -63,6 +70,7 @@ import {
   canExportAuditLogs,
   canExportUsage,
   canReadAuditLogs,
+  canReadExtensionInstallations,
   canReadFeatureFlags,
   canReadJobs,
   canManageCompatibilityRules,
@@ -134,6 +142,15 @@ import { UserRepository } from './auth/repositories/user.repository';
 import { SubscriptionRepository } from './billing/subscription.repository';
 import { BillingWebhookRepository, type BillingWebhookAdminRecord } from './billing/billing-webhook.repository';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
+import {
+  ExtensionInstallationRepository,
+  type ExtensionInstallationRecord,
+} from './extension/extension-installation.repository';
+import {
+  ExtensionInstallationSessionRepository,
+  type ActiveExtensionInstallationSessionRecord,
+  type RecentExtensionInstallationSessionRecord,
+} from './extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
 import { AdminLogRepository } from './logs/admin-log.repository';
 import { QueueDispatchService } from './queue/queue-dispatch.service';
@@ -143,13 +160,38 @@ import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-
 import { SupportTicketRepository } from './support/support-ticket.repository';
 import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
-import { compareSemver } from '@quizmind/extension';
+import { compareSemver, evaluateCompatibility } from '@quizmind/extension';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
 const validAdminLogSeverityFilters = new Set<string>(adminLogSeverityFilters);
 const validAdminWebhookProviderFilters = new Set<string>(adminWebhookProviderFilters);
 const validAdminWebhookStatusFilters = new Set<string>(adminWebhookStatusFilters);
+const validAdminExtensionConnectionFilters = new Set<string>(adminExtensionConnectionFilters);
+const validAdminExtensionCompatibilityFilters = new Set<string>(adminExtensionCompatibilityFilters);
+
+function normalizeInstallationCapabilities(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+}
+
+function normalizeInstallationBrowser(value: string): AdminExtensionFleetItem['browser'] {
+  return value === 'chrome' || value === 'edge' || value === 'brave' ? value : 'other';
+}
+
+function resolveAdminExtensionSessionStatus(
+  session: Pick<RecentExtensionInstallationSessionRecord, 'expiresAt' | 'revokedAt'>,
+  now = new Date(),
+): AdminExtensionFleetSessionHistoryItem['status'] {
+  if (session.revokedAt) {
+    return 'revoked';
+  }
+
+  return session.expiresAt <= now ? 'expired' : 'active';
+}
 
 @Injectable()
 export class PlatformService {
@@ -162,6 +204,10 @@ export class PlatformService {
     private readonly subscriptionRepository: SubscriptionRepository,
     @Inject(ExtensionCompatibilityRepository)
     private readonly extensionCompatibilityRepository: ExtensionCompatibilityRepository,
+    @Inject(ExtensionInstallationRepository)
+    private readonly extensionInstallationRepository: ExtensionInstallationRepository,
+    @Inject(ExtensionInstallationSessionRepository)
+    private readonly extensionInstallationSessionRepository: ExtensionInstallationSessionRepository,
     @Inject(FeatureFlagRepository)
     private readonly featureFlagRepository: FeatureFlagRepository,
     @Inject(AdminLogRepository)
@@ -640,6 +686,107 @@ export class PlatformService {
       }),
       request,
     );
+  }
+
+  listAdminExtensionFleet(
+    personaKey?: string,
+    filters?: Partial<AdminExtensionFleetFilters>,
+  ): AdminExtensionFleetSnapshot {
+    const persona = getPersona(personaKey);
+    const resolvedWorkspaceId = filters?.workspaceId?.trim() || persona.preferredWorkspaceId;
+
+    if (!resolvedWorkspaceId) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const normalizedFilters = this.normalizeAdminExtensionFleetFilters(filters, resolvedWorkspaceId);
+    const accessDecision = canReadExtensionInstallations(persona.principal, normalizedFilters.workspaceId);
+    const workspace = getWorkspaceSummary(normalizedFilters.workspaceId);
+    const baseItems = accessDecision.allowed
+      ? this.buildFoundationAdminExtensionFleetItems(persona.key, workspace)
+      : [];
+    const filtered = this.filterAdminExtensionFleetItems(baseItems, normalizedFilters);
+    const selectedInstallation =
+      accessDecision.allowed && normalizedFilters.installationId
+        ? this.buildFoundationAdminExtensionInstallationDetail(
+            baseItems.find((item) => item.installationId === normalizedFilters.installationId),
+          )
+        : undefined;
+
+    return {
+      personaKey: persona.key,
+      accessDecision,
+      workspace,
+      filters: normalizedFilters,
+      items: filtered.items,
+      counts: filtered.counts,
+      ...(normalizedFilters.installationId ? { selectedInstallationId: normalizedFilters.installationId } : {}),
+      ...(selectedInstallation ? { selectedInstallation } : {}),
+      permissions: listPrincipalPermissions(persona.principal, normalizedFilters.workspaceId),
+    };
+  }
+
+  async listAdminExtensionFleetForCurrentSession(
+    session: CurrentSessionSnapshot,
+    filters?: Partial<AdminExtensionFleetFilters>,
+  ): Promise<AdminExtensionFleetSnapshot> {
+    const resolvedWorkspaceId = filters?.workspaceId?.trim() || session.workspaces[0]?.id;
+
+    if (!resolvedWorkspaceId) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const requestedWorkspace = session.workspaces.find((workspace) => workspace.id === resolvedWorkspaceId) ?? null;
+
+    if (!requestedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const accessDecision = canReadExtensionInstallations(session.principal as SessionPrincipal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const normalizedFilters = this.normalizeAdminExtensionFleetFilters(filters, requestedWorkspace.id);
+    const [installations, compatibilityRule] = await Promise.all([
+      this.extensionInstallationRepository.listByWorkspaceId(requestedWorkspace.id),
+      this.extensionCompatibilityRepository.findLatest(),
+    ]);
+    const sessionStats = this.buildInstallationSessionStats(
+      await this.extensionInstallationSessionRepository.listActiveByInstallationIds(
+        installations.map((installation) => installation.id),
+      ),
+    );
+    const compatibilityPolicy = compatibilityRule
+      ? mapExtensionCompatibilityRuleToPolicy(compatibilityRule, defaultCompatibilityPolicy)
+      : defaultCompatibilityPolicy;
+    const allItems = installations.map((installation) =>
+      this.mapAdminExtensionFleetItem(installation, requestedWorkspace, compatibilityPolicy, sessionStats),
+    );
+    const filtered = this.filterAdminExtensionFleetItems(
+      allItems,
+      normalizedFilters,
+    );
+    const selectedInstallation =
+      normalizedFilters.installationId
+        ? await this.buildAdminExtensionInstallationDetail(
+            installations.find((installation) => installation.installationId === normalizedFilters.installationId),
+            allItems.find((item) => item.installationId === normalizedFilters.installationId),
+          )
+        : undefined;
+
+    return {
+      personaKey: 'connected-user',
+      accessDecision,
+      workspace: requestedWorkspace,
+      filters: normalizedFilters,
+      items: filtered.items,
+      counts: filtered.counts,
+      ...(normalizedFilters.installationId ? { selectedInstallationId: normalizedFilters.installationId } : {}),
+      ...(selectedInstallation ? { selectedInstallation } : {}),
+      permissions: session.permissions,
+    };
   }
 
   listAdminWebhooks(personaKey?: string, filters?: Partial<AdminWebhookFilters>): AdminWebhooksSnapshot {
@@ -1448,6 +1595,301 @@ export class PlatformService {
       resultStatus,
       ...(reason ? { reason } : {}),
     };
+  }
+
+  private normalizeAdminExtensionFleetFilters(
+    filters?: Partial<AdminExtensionFleetFilters>,
+    defaultWorkspaceId?: string,
+  ): AdminExtensionFleetFilters {
+    const workspaceId = filters?.workspaceId?.trim() || defaultWorkspaceId;
+
+    if (!workspaceId) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const compatibility =
+      typeof filters?.compatibility === 'string' && validAdminExtensionCompatibilityFilters.has(filters.compatibility)
+        ? filters.compatibility
+        : 'all';
+    const connection =
+      typeof filters?.connection === 'string' && validAdminExtensionConnectionFilters.has(filters.connection)
+        ? filters.connection
+        : 'all';
+    const installationId = filters?.installationId?.trim() || undefined;
+    const search = filters?.search?.trim() || undefined;
+    const limit =
+      typeof filters?.limit === 'number' && Number.isFinite(filters.limit)
+        ? Math.min(Math.max(Math.trunc(filters.limit), 8), 50)
+        : 12;
+
+    return {
+      workspaceId,
+      compatibility,
+      connection,
+      ...(installationId ? { installationId } : {}),
+      ...(search ? { search } : {}),
+      limit,
+    };
+  }
+
+  private buildFoundationAdminExtensionFleetItems(
+    personaKey: string | undefined,
+    workspace: AdminExtensionFleetSnapshot['workspace'],
+  ): AdminExtensionFleetItem[] {
+    const persona = getPersona(personaKey);
+    const usageSummary = this.getUsage(persona.key, workspace.id);
+    const activeRule = this.buildFoundationCompatibilityRules()[0];
+    const compatibilityPolicy = {
+      minimumVersion: activeRule.minimumVersion,
+      recommendedVersion: activeRule.recommendedVersion,
+      supportedSchemaVersions: activeRule.supportedSchemaVersions,
+      ...(activeRule.requiredCapabilities ? { requiredCapabilities: activeRule.requiredCapabilities } : {}),
+      resultStatus: activeRule.resultStatus,
+      ...(activeRule.reason ? { reason: activeRule.reason } : {}),
+    };
+
+    return usageSummary.installations.map((installation, index) => {
+      const compatibility = evaluateCompatibility(
+        {
+          extensionVersion: installation.extensionVersion,
+          schemaVersion: installation.schemaVersion,
+          capabilities: installation.capabilities,
+          browser: normalizeInstallationBrowser(installation.browser),
+        },
+        compatibilityPolicy,
+      );
+      const lastSeenAt = installation.lastSeenAt ?? new Date('2026-03-24T12:00:00.000Z').toISOString();
+      const lastSeenTime = new Date(lastSeenAt).getTime();
+
+      return {
+        workspace,
+        userId: persona.user.id,
+        installationId: installation.installationId,
+        browser: normalizeInstallationBrowser(installation.browser),
+        extensionVersion: installation.extensionVersion,
+        schemaVersion: installation.schemaVersion,
+        capabilities: installation.capabilities,
+        boundAt: new Date(lastSeenTime - (index + 1) * 60 * 60 * 1000).toISOString(),
+        ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt } : {}),
+        activeSessionCount: 1,
+        lastSessionIssuedAt: new Date(lastSeenTime - 15 * 60 * 1000).toISOString(),
+        lastSessionExpiresAt: new Date(lastSeenTime + 45 * 60 * 1000).toISOString(),
+        compatibility,
+        requiresReconnect: false,
+      };
+    });
+  }
+
+  private buildFoundationAdminExtensionInstallationDetail(
+    installation: AdminExtensionFleetItem | undefined,
+  ): AdminExtensionFleetInstallationDetail | undefined {
+    if (!installation) {
+      return undefined;
+    }
+
+    const issuedAt = installation.lastSessionIssuedAt ?? installation.boundAt;
+    const activeSession: AdminExtensionFleetSessionHistoryItem = {
+      id: `${installation.installationId}:session:active`,
+      installationId: installation.installationId,
+      userId: installation.userId,
+      issuedAt,
+      expiresAt:
+        installation.lastSessionExpiresAt ??
+        new Date(new Date(issuedAt).getTime() + 45 * 60 * 1000).toISOString(),
+      status: installation.requiresReconnect ? 'expired' : 'active',
+    };
+    const previousSession: AdminExtensionFleetSessionHistoryItem = {
+      id: `${installation.installationId}:session:previous`,
+      installationId: installation.installationId,
+      userId: installation.userId,
+      issuedAt: new Date(new Date(issuedAt).getTime() - 90 * 60 * 1000).toISOString(),
+      expiresAt: new Date(new Date(issuedAt).getTime() - 30 * 60 * 1000).toISOString(),
+      revokedAt: new Date(new Date(issuedAt).getTime() - 50 * 60 * 1000).toISOString(),
+      status: 'revoked',
+    };
+    const sessions: AdminExtensionFleetSessionHistoryItem[] = installation.requiresReconnect
+      ? [previousSession, activeSession]
+      : [activeSession, previousSession];
+
+    return {
+      installation,
+      counts: this.buildAdminExtensionSessionHistoryCounts(sessions),
+      sessions,
+    };
+  }
+
+  private buildInstallationSessionStats(
+    sessions: ActiveExtensionInstallationSessionRecord[],
+  ): Map<string, { count: number; lastSessionIssuedAt?: string; lastSessionExpiresAt?: string }> {
+    return sessions.reduce((stats, session) => {
+      const existing = stats.get(session.extensionInstallationId);
+
+      stats.set(session.extensionInstallationId, {
+        count: (existing?.count ?? 0) + 1,
+        lastSessionIssuedAt: existing?.lastSessionIssuedAt ?? session.createdAt.toISOString(),
+        lastSessionExpiresAt: existing?.lastSessionExpiresAt ?? session.expiresAt.toISOString(),
+      });
+
+      return stats;
+    }, new Map<string, { count: number; lastSessionIssuedAt?: string; lastSessionExpiresAt?: string }>());
+  }
+
+  private async buildAdminExtensionInstallationDetail(
+    installationRecord: ExtensionInstallationRecord | undefined,
+    installation: AdminExtensionFleetItem | undefined,
+  ): Promise<AdminExtensionFleetInstallationDetail | undefined> {
+    if (!installationRecord || !installation) {
+      return undefined;
+    }
+
+    const sessions = this.mapAdminExtensionSessionHistory(
+      installation.installationId,
+      await this.extensionInstallationSessionRepository.listRecentByInstallationRecordId(installationRecord.id),
+    );
+
+    return {
+      installation,
+      counts: this.buildAdminExtensionSessionHistoryCounts(sessions),
+      sessions,
+    };
+  }
+
+  private mapAdminExtensionFleetItem(
+    installation: ExtensionInstallationRecord,
+    workspace: AdminExtensionFleetSnapshot['workspace'],
+    compatibilityPolicy: typeof defaultCompatibilityPolicy,
+    sessionStats: Map<string, { count: number; lastSessionIssuedAt?: string; lastSessionExpiresAt?: string }>,
+  ): AdminExtensionFleetItem {
+    const normalizedBrowser = normalizeInstallationBrowser(installation.browser);
+    const compatibility = evaluateCompatibility(
+      {
+        extensionVersion: installation.extensionVersion,
+        schemaVersion: installation.schemaVersion,
+        capabilities: normalizeInstallationCapabilities(installation.capabilitiesJson),
+        browser: normalizedBrowser,
+      },
+      compatibilityPolicy,
+    );
+    const stats = sessionStats.get(installation.id);
+
+    return {
+      workspace,
+      userId: installation.userId,
+      installationId: installation.installationId,
+      browser: normalizedBrowser,
+      extensionVersion: installation.extensionVersion,
+      schemaVersion: installation.schemaVersion,
+      capabilities: normalizeInstallationCapabilities(installation.capabilitiesJson),
+      boundAt: installation.createdAt.toISOString(),
+      ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt.toISOString() } : {}),
+      activeSessionCount: stats?.count ?? 0,
+      ...(stats?.lastSessionIssuedAt ? { lastSessionIssuedAt: stats.lastSessionIssuedAt } : {}),
+      ...(stats?.lastSessionExpiresAt ? { lastSessionExpiresAt: stats.lastSessionExpiresAt } : {}),
+      compatibility,
+      requiresReconnect: (stats?.count ?? 0) === 0,
+    };
+  }
+
+  private mapAdminExtensionSessionHistory(
+    installationId: string,
+    sessions: RecentExtensionInstallationSessionRecord[],
+    now = new Date(),
+  ): AdminExtensionFleetSessionHistoryItem[] {
+    return sessions.map((session) => ({
+      id: session.id,
+      installationId,
+      userId: session.userId,
+      issuedAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString(),
+      ...(session.revokedAt ? { revokedAt: session.revokedAt.toISOString() } : {}),
+      status: resolveAdminExtensionSessionStatus(session, now),
+    }));
+  }
+
+  private buildAdminExtensionSessionHistoryCounts(
+    sessions: AdminExtensionFleetSessionHistoryItem[],
+  ): AdminExtensionFleetInstallationDetail['counts'] {
+    return {
+      total: sessions.length,
+      active: sessions.filter((session) => session.status === 'active').length,
+      expired: sessions.filter((session) => session.status === 'expired').length,
+      revoked: sessions.filter((session) => session.status === 'revoked').length,
+    };
+  }
+
+  private filterAdminExtensionFleetItems(
+    items: AdminExtensionFleetItem[],
+    filters: AdminExtensionFleetFilters,
+  ): {
+    items: AdminExtensionFleetItem[];
+    counts: AdminExtensionFleetSnapshot['counts'];
+  } {
+    const filteredItems = items.filter((item) => {
+      if (filters.compatibility !== 'all' && item.compatibility.status !== filters.compatibility) {
+        return false;
+      }
+
+      if (filters.connection === 'connected' && item.requiresReconnect) {
+        return false;
+      }
+
+      if (filters.connection === 'reconnect_required' && !item.requiresReconnect) {
+        return false;
+      }
+
+      if (!filters.search) {
+        return true;
+      }
+
+      return this.matchesAdminExtensionFleetSearch(item, filters.search);
+    });
+    const counts: AdminExtensionFleetSnapshot['counts'] = {
+      total: filteredItems.length,
+      connected: filteredItems.filter((item) => !item.requiresReconnect).length,
+      reconnectRequired: filteredItems.filter((item) => item.requiresReconnect).length,
+      supported: filteredItems.filter((item) => item.compatibility.status === 'supported').length,
+      supportedWithWarnings: filteredItems.filter((item) => item.compatibility.status === 'supported_with_warnings').length,
+      deprecated: filteredItems.filter((item) => item.compatibility.status === 'deprecated').length,
+      unsupported: filteredItems.filter((item) => item.compatibility.status === 'unsupported').length,
+    };
+
+    return {
+      items: filteredItems
+        .sort((left, right) => {
+          const rightDate = right.lastSeenAt ?? right.boundAt;
+          const leftDate = left.lastSeenAt ?? left.boundAt;
+
+          return new Date(rightDate).getTime() - new Date(leftDate).getTime();
+        })
+        .slice(0, filters.limit),
+      counts,
+    };
+  }
+
+  private matchesAdminExtensionFleetSearch(item: AdminExtensionFleetItem, search: string): boolean {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [
+      item.workspace.id,
+      item.workspace.slug,
+      item.workspace.name,
+      item.userId,
+      item.installationId,
+      item.browser,
+      item.extensionVersion,
+      item.schemaVersion,
+      item.compatibility.status,
+      item.compatibility.reason,
+      item.capabilities.join(' '),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedSearch);
   }
 
   private normalizeAdminWebhookFilters(filters?: Partial<AdminWebhookFilters>): AdminWebhookFilters {

@@ -3,6 +3,7 @@ import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
 import {
+  type AdminExtensionFleetFilters,
   type AdminLogFilters,
   type AdminLogExportRequest,
   type AdminWebhookFilters,
@@ -94,6 +95,34 @@ export class PlatformController {
     }
 
     return ok(await this.platformService.getUsageForCurrentSession(session, workspaceId));
+  }
+
+  @Get('admin/installations')
+  async listAdminExtensionFleet(
+    @Query('persona') persona?: string,
+    @Query('workspaceId') workspaceId?: string,
+    @Query('installationId') installationId?: string,
+    @Query('compatibility') compatibility?: string,
+    @Query('connection') connection?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const filters: Partial<AdminExtensionFleetFilters> = {
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(installationId ? { installationId } : {}),
+      ...(compatibility ? { compatibility: compatibility as AdminExtensionFleetFilters['compatibility'] } : {}),
+      ...(connection ? { connection: connection as AdminExtensionFleetFilters['connection'] } : {}),
+      ...(search ? { search } : {}),
+      ...(limit ? { limit: Number(limit) } : {}),
+    };
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listAdminExtensionFleet(persona, filters));
+    }
+
+    return ok(await this.platformService.listAdminExtensionFleetForCurrentSession(session, filters));
   }
 
   @Get('admin/logs')

@@ -1112,7 +1112,25 @@ a {
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
+.auth-field select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
 .auth-field input:focus {
+  outline: none;
+  border-color: rgba(184, 92, 56, 0.42);
+  box-shadow: 0 0 0 4px rgba(184, 92, 56, 0.12);
+  transform: translateY(-1px);
+}
+
+.auth-field select:focus {
   outline: none;
   border-color: rgba(184, 92, 56, 0.42);
   box-shadow: 0 0 0 4px rgba(184, 92, 56, 0.12);

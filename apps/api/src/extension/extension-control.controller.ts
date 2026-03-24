@@ -1,9 +1,10 @@
-import { Body, Controller, Headers, Inject, Post, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import {
   type ApiSuccess,
   type ExtensionBootstrapRequestV2,
+  type ExtensionInstallationDisconnectRequest,
   type ExtensionInstallationBindRequest,
   type UsageEventPayload,
 } from '@quizmind/contracts';
@@ -37,6 +38,32 @@ export class ExtensionControlController {
   ) {
     return ok(
       await this.extensionControlService.bindInstallationForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        request,
+      ),
+    );
+  }
+
+  @Get('extension/installations')
+  async listInstallations(
+    @Query('workspaceId') workspaceId?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.extensionControlService.listInstallationsForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        workspaceId,
+      ),
+    );
+  }
+
+  @Post('extension/installations/disconnect')
+  async disconnectInstallation(
+    @Body() request?: Partial<ExtensionInstallationDisconnectRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.extensionControlService.disconnectInstallationForCurrentSession(
         await this.requireConnectedSession(authorization),
         request,
       ),

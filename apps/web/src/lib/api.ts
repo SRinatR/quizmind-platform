@@ -1,5 +1,7 @@
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
+  type AdminExtensionFleetFilters,
+  type AdminExtensionFleetSnapshot,
   type AuthSessionsPayload,
   type AccessDecision,
   type AdminLogsSnapshot,
@@ -18,6 +20,7 @@ import {
   type AdminProviderGovernanceSnapshot,
   type ExtensionBootstrapPayload,
   type ExtensionBootstrapRequest,
+  type ExtensionInstallationInventorySnapshot,
   type ProviderCatalogPayload,
   type ProviderCredentialInventory,
   type FeatureFlagDefinition,
@@ -138,6 +141,7 @@ export type CompatibilityRulesStateSnapshot = CompatibilityRulesSnapshot;
 export type AuthSessionsSnapshot = AuthSessionsPayload;
 export type BillingPlansSnapshot = BillingPlansPayload;
 export type AdminBillingPlansSnapshot = BillingAdminPlansPayload;
+export type AdminExtensionFleetStateSnapshot = AdminExtensionFleetSnapshot;
 export type BillingInvoicesSnapshot = BillingInvoicesPayload;
 export type BillingCheckoutSnapshot = BillingCheckoutResult;
 export type BillingPortalSnapshot = BillingPortalResult;
@@ -147,6 +151,7 @@ export type UsageEventIngestSnapshot = UsageEventIngestResult;
 export type RemoteConfigStateSnapshot = RemoteConfigSnapshot;
 export type RemoteConfigPublishStateSnapshot = RemoteConfigPublishResponse;
 export type ExtensionBootstrapSnapshot = ExtensionBootstrapPayload;
+export type ExtensionInstallationInventoryStateSnapshot = ExtensionInstallationInventorySnapshot;
 export type ProviderCatalogSnapshot = ProviderCatalogPayload;
 export type ProviderCredentialInventorySnapshot = ProviderCredentialInventory;
 export type AdminProviderGovernanceStateSnapshot = AdminProviderGovernanceSnapshot;
@@ -340,6 +345,24 @@ export async function getAdminPlans(accessToken?: string | null) {
   return readApiData<AdminBillingPlansSnapshot>('/admin/plans', withAccessToken(undefined, accessToken));
 }
 
+export async function getAdminExtensionFleet(
+  persona: string,
+  filters?: Partial<AdminExtensionFleetFilters>,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/admin/installations' : withPersona('/admin/installations', persona);
+  const path = withQuery(basePath, {
+    workspaceId: filters?.workspaceId,
+    installationId: filters?.installationId,
+    compatibility: filters?.compatibility,
+    connection: filters?.connection,
+    search: filters?.search,
+    limit: filters?.limit,
+  });
+
+  return readApiData<AdminExtensionFleetStateSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
 export async function getCompatibilityRules(persona: string, accessToken?: string | null) {
   const path = accessToken ? '/admin/compatibility' : withPersona('/admin/compatibility', persona);
 
@@ -365,6 +388,21 @@ export async function getUsageSummary(
   });
 
   return readApiData<UsageSummarySnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getExtensionInstallationInventory(
+  workspaceId?: string,
+  accessToken?: string | null,
+) {
+  if (!accessToken) {
+    return null;
+  }
+
+  const path = withQuery('/extension/installations', {
+    workspaceId,
+  });
+
+  return readApiData<ExtensionInstallationInventoryStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getFeatureFlags(persona: string, accessToken?: string | null) {

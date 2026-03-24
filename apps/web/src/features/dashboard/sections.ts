@@ -37,6 +37,15 @@ export const dashboardSections: DashboardSection[] = [
     },
   },
   {
+    id: 'installations',
+    title: 'Installations',
+    href: '/app/installations',
+    description: 'Connected extension installations, compatibility state, and reconnect controls.',
+    requirement: {
+      permission: 'installations:read',
+    },
+  },
+  {
     id: 'settings',
     title: 'Settings',
     href: '/app/settings',

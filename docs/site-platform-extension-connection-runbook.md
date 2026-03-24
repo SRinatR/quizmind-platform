@@ -22,7 +22,9 @@ The current repo already has the core control-plane endpoints:
 - `GET /auth/me`
 - `GET /workspaces`
 - `GET /billing/subscription`
+- `GET /extension/installations`
 - `POST /extension/installations/bind`
+- `POST /extension/installations/disconnect`
 - `POST /extension/bootstrap/v2`
 - `POST /extension/usage-events/v2`
 
@@ -185,9 +187,10 @@ Recommended extension action:
 http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local
 ```
 
-Recommended new web implementation:
+Current web bridge implementation:
 
 - `apps/web/src/app/app/extension/connect/page.tsx`
+- `apps/web/src/app/app/extension/connect/extension-connect-client.tsx`
 - `apps/web/src/app/api/extension/bind/route.ts`
 
 Bridge page responsibilities:
@@ -329,6 +332,9 @@ Existing useful endpoints:
 - `GET /workspaces`
 - `GET /billing/subscription`
 - `GET /usage/summary`
+- `GET /extension/installations`
+- `POST /extension/installations/disconnect`
+- `GET /admin/installations`
 - `GET /providers/credentials`
 - `GET /admin/compatibility`
 - `GET /admin/logs`
@@ -344,13 +350,13 @@ Existing useful endpoints:
 
 ### Phase B. Web-To-Extension Auth Bridge
 
-1. Add web page `app/app/extension/connect/page.tsx`
-2. Add web proxy route `app/api/extension/bind/route.ts`
+1. Open the implemented web page `app/app/extension/connect/page.tsx`
+2. Use the implemented web proxy route `app/api/extension/bind/route.ts`
 3. Read cookie session with `getAccessTokenFromCookies()`
 4. Proxy bind request to the API
-5. Return installation token to the extension through a browser-safe callback channel
+5. Return installation token to the extension through `window.postMessage`
 
-This is the highest-priority missing integration step.
+This bridge is now the main integration entrypoint between the signed-in site session and the managed extension runtime.
 
 ### Phase C. Extension Runtime Wiring
 
@@ -367,6 +373,8 @@ This is the highest-priority missing integration step.
 2. Show current compatibility state
 3. Show AI access mode and credential policy
 4. Show usage and quota warnings
+5. Give operators a workspace-scoped extension fleet view in `/admin/extension-fleet`
+6. Let operators inspect recent installation token history there so reconnect and revoke churn is diagnosable
 
 ### Phase E. Production Hardening
 
@@ -424,9 +432,10 @@ The site, platform, and extension are considered properly connected when all of 
 
 ## Immediate Next Files To Implement
 
-If you want to finish the end-to-end browser binding next, start here:
+If you want to extend or harden the current browser binding flow next, start here:
 
 - `apps/web/src/app/app/extension/connect/page.tsx`
+- `apps/web/src/app/app/extension/connect/extension-connect-client.tsx`
 - `apps/web/src/app/api/extension/bind/route.ts`
 - extension-side `platform-auth.ts`
 - extension-side `platform-bootstrap.ts`
