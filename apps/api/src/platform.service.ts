@@ -3,7 +3,7 @@ import { Prisma } from '@quizmind/database';
 import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 import { createLogEvent } from '@quizmind/logger';
-import { buildQueueJob, listQueueDefinitions } from '@quizmind/queue';
+import { listQueueDefinitions } from '@quizmind/queue';
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
   type AdminUserDirectorySnapshot,
@@ -11,6 +11,7 @@ import {
   type ExtensionBootstrapRequest,
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
+  type RemoteConfigSnapshot,
   supportTicketQueuePresets,
   type SupportImpersonationEndRequest,
   type SupportImpersonationEndResult,
@@ -25,6 +26,7 @@ import {
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
   type UsageEventPayload,
+  type WorkspaceUsageSnapshot,
 } from '@quizmind/contracts';
 
 import {
@@ -33,6 +35,7 @@ import {
   canReadSupportImpersonationSessions,
   canReadSupportTickets,
   canReadUsers,
+  canReadWorkspace,
   canStartSupportImpersonation,
   canPublishRemoteConfig,
   canReadWorkspaceSubscription,
@@ -70,6 +73,7 @@ import {
   type SupportTicketQueueFilterInput,
 } from './services/support-service';
 import { mapFeatureFlagRecordToDefinition } from './services/feature-flags-service';
+import { buildRecentUsageEvents, buildUsageQuotas, mapUsageInstallations } from './services/usage-service';
 import { type CurrentSessionSnapshot } from './auth/auth.types';
 import { mapUserRecordToDirectoryEntry } from './services/users-service';
 import {
@@ -87,10 +91,12 @@ import { UserRepository } from './auth/repositories/user.repository';
 import { SubscriptionRepository } from './billing/subscription.repository';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
+import { QueueDispatchService } from './queue/queue-dispatch.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
 import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-preset-favorite.repository';
 import { SupportTicketRepository } from './support/support-ticket.repository';
+import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
@@ -120,6 +126,10 @@ export class PlatformService {
     private readonly supportTicketPresetFavoriteRepository: SupportTicketPresetFavoriteRepository,
     @Inject(SupportImpersonationRepository)
     private readonly supportImpersonationRepository: SupportImpersonationRepository,
+    @Inject(UsageRepository)
+    private readonly usageRepository: UsageRepository,
+    @Inject(QueueDispatchService)
+    private readonly queueDispatchService: QueueDispatchService,
   ) {}
 
   async getHealth() {
@@ -315,6 +325,141 @@ export class PlatformService {
     };
   }
 
+  getUsage(personaKey?: string, workspaceId?: string): WorkspaceUsageSnapshot {
+    const persona = getPersona(personaKey);
+    const workspace = getWorkspaceSummary(workspaceId ?? persona.preferredWorkspaceId);
+    const accessDecision = canReadWorkspace(persona.principal as SessionPrincipal, workspace.id);
+    const plan = getPlanForWorkspace(workspace.id);
+    const currentPeriodStart = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
+    const currentPeriodEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const seatCount = workspace.id === 'ws_beta' ? 3 : 2;
+    const quotas = buildUsageQuotas({
+      entitlements: plan.entitlements,
+      seatCount,
+      currentPeriodStart,
+      currentPeriodEnd,
+      counters: [
+        {
+          key: 'limit.requests_per_day',
+          consumed: workspace.id === 'ws_beta' ? 7 : 312,
+          periodStart: new Date(Date.now() - 10 * 60 * 60 * 1000),
+          periodEnd: new Date(Date.now() + 14 * 60 * 60 * 1000),
+          updatedAt: new Date(),
+        },
+      ],
+    });
+    const installations = mapUsageInstallations([
+      {
+        installationId: workspace.id === 'ws_beta' ? 'inst_foundation_edge' : 'inst_foundation_chrome',
+        browser: workspace.id === 'ws_beta' ? 'edge' : 'chrome',
+        extensionVersion: workspace.id === 'ws_beta' ? '1.6.1' : '1.7.0',
+        schemaVersion: '2',
+        capabilitiesJson:
+          workspace.id === 'ws_beta' ? ['quiz-capture', 'history-sync'] : ['quiz-capture', 'history-sync', 'remote-sync'],
+        lastSeenAt: new Date(Date.now() - 5 * 60 * 1000),
+      },
+    ]);
+    const recentEvents = buildRecentUsageEvents({
+      telemetry: [
+        {
+          id: `${workspace.id}:telemetry:1`,
+          eventType: 'extension.quiz_answer_requested',
+          severity: 'info',
+          payloadJson: {
+            questionType: workspace.id === 'ws_beta' ? 'short_answer' : 'multiple_choice',
+            surface: 'content_script',
+          },
+          createdAt: new Date(Date.now() - 12 * 60 * 1000),
+          installation: {
+            installationId: installations[0]?.installationId ?? 'inst_foundation',
+          },
+        },
+      ],
+      activity: [
+        {
+          id: `${workspace.id}:activity:1`,
+          actorId: persona.user.id,
+          eventType: 'usage.dashboard_opened',
+          metadataJson: {
+            workspaceId: workspace.id,
+            route: '/app/usage',
+          },
+          createdAt: new Date(Date.now() - 30 * 60 * 1000),
+        },
+      ],
+    });
+
+    return {
+      workspace,
+      accessDecision,
+      planCode: plan.code,
+      subscriptionStatus: workspace.id === 'ws_beta' ? 'trialing' : 'active',
+      currentPeriodStart: currentPeriodStart.toISOString(),
+      currentPeriodEnd: currentPeriodEnd.toISOString(),
+      quotas,
+      installations,
+      recentEvents,
+    };
+  }
+
+  async getUsageForCurrentSession(
+    session: CurrentSessionSnapshot,
+    workspaceId?: string,
+  ): Promise<WorkspaceUsageSnapshot> {
+    const requestedWorkspace =
+      (workspaceId ? session.workspaces.find((workspace) => workspace.id === workspaceId) : session.workspaces[0]) ?? null;
+
+    if (!requestedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const accessDecision = canReadWorkspace(session.principal as SessionPrincipal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const subscription = await this.subscriptionRepository.findCurrentByWorkspaceId(requestedWorkspace.id);
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found for workspace.');
+    }
+
+    const [installations, counters, telemetry, activity] = await Promise.all([
+      this.usageRepository.listInstallationsByWorkspaceId(requestedWorkspace.id),
+      this.usageRepository.listQuotaCountersByWorkspaceId(requestedWorkspace.id),
+      this.usageRepository.listRecentTelemetryByWorkspaceId(requestedWorkspace.id),
+      this.usageRepository.listRecentActivityByWorkspaceId(requestedWorkspace.id),
+    ]);
+    const summary = resolveWorkspaceSubscriptionSummary({
+      workspaceId: requestedWorkspace.id,
+      plan: mapPlanRecordToDefinition(subscription.plan),
+      subscription: mapSubscriptionRecordToSnapshot(subscription),
+      overrides: mapEntitlementOverrides(subscription.workspace.entitlementOverrides),
+    });
+
+    return {
+      workspace: requestedWorkspace,
+      accessDecision,
+      planCode: summary.planCode,
+      subscriptionStatus: summary.status,
+      currentPeriodStart: subscription.currentPeriodStart?.toISOString(),
+      currentPeriodEnd: summary.currentPeriodEnd,
+      quotas: buildUsageQuotas({
+        entitlements: summary.entitlements,
+        counters,
+        seatCount: summary.seatCount,
+        currentPeriodStart: subscription.currentPeriodStart,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+      }),
+      installations: mapUsageInstallations(installations),
+      recentEvents: buildRecentUsageEvents({
+        telemetry,
+        activity,
+      }),
+    };
+  }
+
   listFeatureFlags(personaKey?: string) {
     const persona = getPersona(personaKey);
     const foundation = getFoundationOverview();
@@ -369,6 +514,69 @@ export class PlatformService {
       personaKey: 'connected-user',
       flags: flags.map(mapFeatureFlagRecordToDefinition),
       publishDecision: canPublishRemoteConfig(session.principal as SessionPrincipal),
+      permissions: session.permissions,
+    };
+  }
+
+  listRemoteConfig(personaKey?: string, workspaceId?: string): RemoteConfigSnapshot {
+    const persona = getPersona(personaKey);
+    const resolvedWorkspaceId = workspaceId ?? persona.preferredWorkspaceId;
+    const previewContext: RemoteConfigPreviewRequest['context'] = {
+      environment: 'development',
+      planCode: getPlanForWorkspace(resolvedWorkspaceId).code,
+      workspaceId: resolvedWorkspaceId,
+      userId: persona.user.id,
+      activeFlags: persona.principal.featureFlags,
+    };
+    const activeLayers = getFoundationOverview().remoteConfigLayers;
+
+    return {
+      personaKey: persona.key,
+      publishDecision: canPublishRemoteConfig(persona.principal),
+      activeLayers,
+      previewContext,
+      preview: previewRemoteConfig({
+        layers: activeLayers,
+        context: previewContext,
+      }),
+      permissions: listPrincipalPermissions(persona.principal, resolvedWorkspaceId),
+    };
+  }
+
+  async listRemoteConfigForCurrentSession(
+    session: CurrentSessionSnapshot,
+    workspaceId?: string,
+  ): Promise<RemoteConfigSnapshot> {
+    const accessDecision = canPublishRemoteConfig(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const resolvedWorkspaceId = workspaceId?.trim() || session.workspaces[0]?.id;
+    const subscription = resolvedWorkspaceId
+      ? await this.subscriptionRepository.findCurrentByWorkspaceId(resolvedWorkspaceId)
+      : null;
+    const activeLayers = (
+      await this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId)
+    ).map(mapRemoteConfigLayerRecordToDefinition);
+    const previewContext: RemoteConfigPreviewRequest['context'] = {
+      environment: 'development',
+      planCode: subscription?.plan.code ?? 'pro',
+      workspaceId: resolvedWorkspaceId,
+      userId: session.user.id,
+      activeFlags: session.principal.featureFlags,
+    };
+
+    return {
+      personaKey: 'connected-user',
+      publishDecision: accessDecision,
+      activeLayers,
+      previewContext,
+      preview: previewRemoteConfig({
+        layers: activeLayers,
+        context: previewContext,
+      }),
       permissions: session.permissions,
     };
   }
@@ -494,7 +702,7 @@ export class PlatformService {
     );
   }
 
-  ingestUsageEvent(event?: Partial<UsageEventPayload>) {
+  async ingestUsageEvent(event?: Partial<UsageEventPayload>) {
     const usageEvent: UsageEventPayload = {
       installationId: event?.installationId ?? 'inst_local_browser',
       workspaceId: event?.workspaceId ?? 'ws_alpha',
@@ -506,7 +714,7 @@ export class PlatformService {
       },
     };
 
-    const queueJob = buildQueueJob({
+    const queueJob = await this.queueDispatchService.dispatch({
       queue: 'usage-events',
       payload: usageEvent,
       dedupeKey: `${usageEvent.installationId}:${usageEvent.occurredAt}`,

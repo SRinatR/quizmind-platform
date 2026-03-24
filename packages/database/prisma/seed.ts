@@ -1,4 +1,4 @@
-import { PrismaClient, SubscriptionStatus, SystemRole, WorkspaceRole } from '@prisma/client';
+import { EventSeverity, PrismaClient, SubscriptionStatus, SystemRole, WorkspaceRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const demoPasswordHash = '$2b$12$PHJXSUJWEvesXLnQh90hv.tvljJ4FN/GTqhqHoVFNtmRzGvsaMzVi';
@@ -421,6 +421,151 @@ async function seed() {
       cancelAtPeriodEnd: false,
     },
   });
+
+  const chromeInstallation = await prisma.extensionInstallation.upsert({
+    where: { installationId: 'inst_local_browser' },
+    update: {
+      userId: adminUser.id,
+      workspaceId: workspace.id,
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture', 'history-sync', 'remote-sync'],
+      lastSeenAt: new Date(),
+    },
+    create: {
+      userId: adminUser.id,
+      workspaceId: workspace.id,
+      installationId: 'inst_local_browser',
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture', 'history-sync', 'remote-sync'],
+      lastSeenAt: new Date(),
+    },
+  });
+
+  const edgeInstallation = await prisma.extensionInstallation.upsert({
+    where: { installationId: 'inst_demo_edge' },
+    update: {
+      userId: viewerUser.id,
+      workspaceId: workspace.id,
+      browser: 'edge',
+      extensionVersion: '1.6.4',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture', 'history-sync'],
+      lastSeenAt: new Date(Date.now() - 75 * 60 * 1000),
+    },
+    create: {
+      userId: viewerUser.id,
+      workspaceId: workspace.id,
+      installationId: 'inst_demo_edge',
+      browser: 'edge',
+      extensionVersion: '1.6.4',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture', 'history-sync'],
+      lastSeenAt: new Date(Date.now() - 75 * 60 * 1000),
+    },
+  });
+
+  const quotaPeriodStart = new Date();
+  quotaPeriodStart.setUTCHours(0, 0, 0, 0);
+  const quotaPeriodEnd = new Date(quotaPeriodStart);
+  quotaPeriodEnd.setUTCDate(quotaPeriodEnd.getUTCDate() + 1);
+
+  await prisma.quotaCounter.upsert({
+    where: {
+      workspaceId_key_periodStart_periodEnd: {
+        workspaceId: workspace.id,
+        key: 'limit.requests_per_day',
+        periodStart: quotaPeriodStart,
+        periodEnd: quotaPeriodEnd,
+      },
+    },
+    update: {
+      consumed: 41,
+    },
+    create: {
+      workspaceId: workspace.id,
+      key: 'limit.requests_per_day',
+      consumed: 41,
+      periodStart: quotaPeriodStart,
+      periodEnd: quotaPeriodEnd,
+    },
+  });
+
+  const seededTelemetryCount = await prisma.extensionTelemetry.count({
+    where: {
+      extensionInstallationId: {
+        in: [chromeInstallation.id, edgeInstallation.id],
+      },
+    },
+  });
+
+  if (seededTelemetryCount === 0) {
+    await prisma.extensionTelemetry.createMany({
+      data: [
+        {
+          extensionInstallationId: chromeInstallation.id,
+          eventType: 'extension.quiz_answer_requested',
+          severity: EventSeverity.info,
+          payloadJson: {
+            questionType: 'multiple_choice',
+            surface: 'content_script',
+          },
+          createdAt: new Date(Date.now() - 15 * 60 * 1000),
+        },
+        {
+          extensionInstallationId: edgeInstallation.id,
+          eventType: 'extension.screenshot_answer_requested',
+          severity: EventSeverity.warn,
+          payloadJson: {
+            questionType: 'image',
+            surface: 'overlay',
+          },
+          createdAt: new Date(Date.now() - 95 * 60 * 1000),
+        },
+      ],
+    });
+  }
+
+  const existingUsageActivityCount = await prisma.activityLog.count({
+    where: {
+      workspaceId: workspace.id,
+      eventType: {
+        in: ['usage.dashboard_opened', 'usage.extension.quiz_answer_requested'],
+      },
+    },
+  });
+
+  if (existingUsageActivityCount === 0) {
+    await prisma.activityLog.createMany({
+      data: [
+        {
+          workspaceId: workspace.id,
+          actorId: adminUser.id,
+          eventType: 'usage.dashboard_opened',
+          metadataJson: {
+            route: '/app/usage',
+            source: 'seed',
+          },
+          createdAt: new Date(Date.now() - 12 * 60 * 1000),
+        },
+        {
+          workspaceId: workspace.id,
+          actorId: adminUser.id,
+          eventType: 'usage.extension.quiz_answer_requested',
+          metadataJson: {
+            installationId: chromeInstallation.installationId,
+            accepted: true,
+            quotaKey: 'limit.requests_per_day',
+            questionType: 'multiple_choice',
+          },
+          createdAt: new Date(Date.now() - 14 * 60 * 1000),
+        },
+      ],
+    });
+  }
 
   const activeGlobalRemoteConfigVersion = await prisma.remoteConfigVersion.findFirst({
     where: {

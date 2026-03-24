@@ -80,6 +80,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/usage/summary',
+    summary: 'Return quota counters, extension installations, and recent usage activity for a workspace.',
+    permission: 'workspaces:read',
+  },
+  {
+    method: 'GET',
     path: '/billing/invoices',
     summary: 'Return billing invoices for the current workspace, ordered from newest to oldest.',
     permission: 'subscriptions:read',
@@ -140,6 +146,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     path: '/admin/feature-flags',
     summary: 'List feature flags and rollout state.',
     permission: 'feature_flags:read',
+  },
+  {
+    method: 'GET',
+    path: '/admin/remote-config',
+    summary: 'Return active remote config layers plus a resolved preview for the current workspace context.',
+    permission: 'remote_config:publish',
   },
   {
     method: 'POST',

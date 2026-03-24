@@ -8,10 +8,11 @@ import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
 import { processBillingWebhookJob } from './jobs/process-billing-webhook';
-import { processUsageEvent } from './jobs/process-usage-event';
+import { processUsageEvent, processUsageEventJob } from './jobs/process-usage-event';
 import { propagateRemoteConfigPublish } from './jobs/publish-remote-config';
 import { resetQuotaCounter } from './jobs/reset-quota-counter';
 import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
+import { WorkerUsageProcessingRepository } from './repositories/usage-processing.repository';
 
 async function bootstrap() {
   const env = loadWorkerEnv();
@@ -81,11 +82,24 @@ async function bootstrap() {
           }),
       );
       const billingWebhookRepository = new WorkerBillingProcessingRepository(prisma);
+      const usageProcessingRepository = new WorkerUsageProcessingRepository(prisma);
       const queueWorkers = [
         new Worker(
           'billing-webhooks',
           async (job) => {
             const result = await processBillingWebhookJob(job.data, billingWebhookRepository);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'usage-events',
+          async (job) => {
+            const result = await processUsageEventJob(job.data, usageProcessingRepository);
 
             console.log(JSON.stringify(result.logEvent));
             return result;

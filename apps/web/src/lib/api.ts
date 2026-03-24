@@ -12,10 +12,13 @@ import {
   type FeatureFlagDefinition,
   type PlanDefinition,
   type RemoteConfigLayer,
+  type RemoteConfigPublishResponse,
+  type RemoteConfigSnapshot,
   type SupportImpersonationHistorySnapshot,
   type SupportTicketQueueFilters,
   type SupportTicketQueueSnapshot,
   type SubscriptionSummary,
+  type WorkspaceUsageSnapshot,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 
@@ -122,6 +125,9 @@ export type BillingInvoicesSnapshot = BillingInvoicesPayload;
 export type BillingCheckoutSnapshot = BillingCheckoutResult;
 export type BillingPortalSnapshot = BillingPortalResult;
 export type BillingSubscriptionMutationSnapshot = BillingSubscriptionMutationResult;
+export type UsageSummarySnapshot = WorkspaceUsageSnapshot;
+export type RemoteConfigStateSnapshot = RemoteConfigSnapshot;
+export type RemoteConfigPublishStateSnapshot = RemoteConfigPublishResponse;
 
 export const API_URL =
   process.env.API_INTERNAL_URL ??
@@ -253,10 +259,36 @@ export async function getBillingInvoices(workspaceId: string, accessToken?: stri
   return readApiData<BillingInvoicesSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
+export async function getUsageSummary(
+  persona: string,
+  workspaceId?: string,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/usage/summary' : withPersona('/usage/summary', persona);
+  const path = withQuery(basePath, {
+    workspaceId,
+  });
+
+  return readApiData<UsageSummarySnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
 export async function getFeatureFlags(persona: string, accessToken?: string | null) {
   const path = accessToken ? '/admin/feature-flags' : withPersona('/admin/feature-flags', persona);
 
   return readApiData<FeatureFlagsSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getRemoteConfigState(
+  persona: string,
+  workspaceId?: string,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/admin/remote-config' : withPersona('/admin/remote-config', persona);
+  const path = withQuery(basePath, {
+    workspaceId,
+  });
+
+  return readApiData<RemoteConfigStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getAdminUsers(persona: string, accessToken?: string | null) {

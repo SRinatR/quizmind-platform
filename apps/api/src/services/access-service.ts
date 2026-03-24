@@ -26,6 +26,15 @@ export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   });
 }
 
+export function canReadWorkspace(principal: SessionPrincipal, workspaceId: string): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'workspaces:read',
+    workspaceId,
+  });
+}
+
 export function canReadWorkspaceSubscription(
   principal: SessionPrincipal,
   workspaceId: string,

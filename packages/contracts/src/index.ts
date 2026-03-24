@@ -463,6 +463,53 @@ export interface UsageEventPayload {
   payload: Record<string, unknown>;
 }
 
+export type UsageMetricStatus = 'healthy' | 'warning' | 'exceeded';
+export type UsageEventSource = 'telemetry' | 'activity';
+export type UsageEventSeverity = 'debug' | 'info' | 'warn' | 'error';
+
+export interface UsageQuotaSnapshot {
+  key: string;
+  label: string;
+  consumed: number;
+  limit?: number;
+  remaining?: number;
+  periodStart: string;
+  periodEnd: string;
+  status: UsageMetricStatus;
+}
+
+export interface UsageInstallationSummary {
+  installationId: string;
+  browser: string;
+  extensionVersion: string;
+  schemaVersion: string;
+  capabilities: string[];
+  lastSeenAt?: string | null;
+}
+
+export interface UsageRecentEventSummary {
+  id: string;
+  source: UsageEventSource;
+  eventType: string;
+  severity?: UsageEventSeverity;
+  occurredAt: string;
+  installationId?: string;
+  actorId?: string;
+  summary: string;
+}
+
+export interface WorkspaceUsageSnapshot {
+  workspace: WorkspaceSummary;
+  accessDecision: AccessDecision;
+  planCode: string;
+  subscriptionStatus: SubscriptionStatus;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  quotas: UsageQuotaSnapshot[];
+  installations: UsageInstallationSummary[];
+  recentEvents: UsageRecentEventSummary[];
+}
+
 export interface BillingWebhookJobPayload {
   provider: BillingProvider;
   webhookEventId: string;
@@ -496,6 +543,20 @@ export interface RemoteConfigPublishResult {
   publishedAt: string;
   actorId: string;
   workspaceId?: string;
+}
+
+export interface RemoteConfigSnapshot {
+  personaKey: string;
+  publishDecision: AccessDecision;
+  activeLayers: RemoteConfigLayer[];
+  previewContext: RemoteConfigContext;
+  preview: ResolvedRemoteConfig;
+  permissions: string[];
+}
+
+export interface RemoteConfigPublishResponse {
+  publishResult: RemoteConfigPublishResult;
+  preview: ResolvedRemoteConfig;
 }
 
 export interface RemoteConfigPreviewRequest {

@@ -1155,6 +1155,19 @@ a {
   gap: 12px;
 }
 
+.admin-feature-flags-shell,
+.admin-remote-config-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-plan-grid,
+.admin-feature-flag-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .admin-support-shell {
   display: grid;
   gap: 12px;
@@ -1321,6 +1334,42 @@ a {
 .admin-user-actions button[disabled] {
   opacity: 0.72;
   cursor: wait;
+}
+
+.admin-remote-config-preview,
+.admin-remote-config-layers {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-remote-config-layer {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.admin-feature-flag-card,
+.admin-plan-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.admin-remote-config-preview pre {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(31, 41, 51, 0.92);
+  color: #f8f4ee;
+  overflow-x: auto;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 900px) {

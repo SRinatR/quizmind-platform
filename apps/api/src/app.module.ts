@@ -17,6 +17,7 @@ import { ExtensionCompatibilityRepository } from './extension/extension-compatib
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
 import { PlatformController } from './platform.controller';
 import { PlatformService } from './platform.service';
+import { QueueDispatchService } from './queue/queue-dispatch.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
 import { RateLimitGuard } from './security/rate-limit.guard';
@@ -25,6 +26,7 @@ import { InfrastructureHealthService } from './services/infrastructure-health-se
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
 import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-preset-favorite.repository';
 import { SupportTicketRepository } from './support/support-ticket.repository';
+import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
@@ -42,6 +44,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     PasswordResetRepository,
     PlatformService,
     PrismaService,
+    QueueDispatchService,
     RateLimitGuard,
     RemoteConfigRepository,
     RequestLoggingInterceptor,
@@ -50,6 +53,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     SupportImpersonationRepository,
     SupportTicketPresetFavoriteRepository,
     SupportTicketRepository,
+    UsageRepository,
     UserRepository,
     InMemoryRateLimitService,
     WorkspaceRepository,

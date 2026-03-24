@@ -73,6 +73,21 @@ export class PlatformController {
     return ok(await this.platformService.getSubscriptionForCurrentSession(session, workspaceId));
   }
 
+  @Get('usage/summary')
+  async getUsage(
+    @Query('persona') persona?: string,
+    @Query('workspaceId') workspaceId?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.getUsage(persona, workspaceId));
+    }
+
+    return ok(await this.platformService.getUsageForCurrentSession(session, workspaceId));
+  }
+
   @Get('admin/users')
   async listUsers(
     @Query('persona') persona?: string,
@@ -101,6 +116,21 @@ export class PlatformController {
     return ok(await this.platformService.listFeatureFlagsForCurrentSession(session));
   }
 
+  @Get('admin/remote-config')
+  async listRemoteConfig(
+    @Query('persona') persona?: string,
+    @Query('workspaceId') workspaceId?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listRemoteConfig(persona, workspaceId));
+    }
+
+    return ok(await this.platformService.listRemoteConfigForCurrentSession(session, workspaceId));
+  }
+
   @Post('admin/remote-config/publish')
   async publishRemoteConfig(
     @Body() request?: Partial<RemoteConfigPublishRequest>,
@@ -121,8 +151,8 @@ export class PlatformController {
   }
 
   @Post('extension/usage-events')
-  ingestUsageEvent(@Body() event?: Partial<UsageEventPayload>) {
-    return ok(this.platformService.ingestUsageEvent(event));
+  async ingestUsageEvent(@Body() event?: Partial<UsageEventPayload>) {
+    return ok(await this.platformService.ingestUsageEvent(event));
   }
 
   @Get('support/impersonation-sessions')

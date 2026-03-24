@@ -25,9 +25,9 @@ import {
   type SubscriptionStatus,
 } from '@quizmind/contracts';
 import { Prisma } from '@quizmind/database';
-import { buildQueueJob } from '@quizmind/queue';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
+import { QueueDispatchService } from '../queue/queue-dispatch.service';
 import { canReadWorkspaceSubscription, canUpdateWorkspaceSubscription } from '../services/access-service';
 import { mapPlanCatalogRecordToEntry } from '../services/billing-service';
 import { BillingRepository, type BillingInvoiceRecord, type BillingWorkspaceContextRecord } from './billing.repository';
@@ -126,6 +126,8 @@ export class BillingService {
     private readonly billingWebhookRepository: BillingWebhookRepository,
     @Inject(BillingRepository)
     private readonly billingRepository: BillingRepository,
+    @Inject(QueueDispatchService)
+    private readonly queueDispatchService: QueueDispatchService,
   ) {}
 
   async listPlans(): Promise<BillingPlansPayload> {
@@ -472,7 +474,7 @@ export class BillingService {
       };
     }
 
-    const job = buildQueueJob<BillingWebhookJobPayload>({
+    const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>({
       queue: 'billing-webhooks',
       dedupeKey: `stripe:${event.id}`,
       payload: {
