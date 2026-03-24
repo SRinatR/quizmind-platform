@@ -8,7 +8,12 @@ import {
   canConsumeQuota,
   incrementUsage,
   isActiveSubscription,
+  mapStripeBillingInterval,
+  mapStripeSubscriptionStatus,
+  resolveSubscriptionStatusFromStripeEvent,
   resolveEntitlements,
+  signStripeWebhookPayload,
+  verifyStripeWebhookSignature,
 } from '@quizmind/billing';
 
 test('resolveEntitlements lets overrides replace plan defaults', () => {
@@ -61,4 +66,64 @@ test('buildSubscriptionSummary merges override limits into response', () => {
   assert.equal(summary.entitlements[1]?.key, 'limit.requests_per_day');
   assert.equal(summary.entitlements[1]?.enabled, true);
   assert.equal(summary.entitlements[1]?.limit, 500);
+});
+
+test('Stripe helpers verify webhook signatures and enforce timestamp tolerance', () => {
+  const payload = JSON.stringify({
+    id: 'evt_123',
+    type: 'invoice.payment_succeeded',
+  });
+  const secret = 'whsec_test';
+  const timestamp = 1_700_000_000;
+  const signature = signStripeWebhookPayload(payload, secret, timestamp);
+
+  assert.deepEqual(
+    verifyStripeWebhookSignature({
+      payload,
+      secret,
+      signatureHeader: `t=${timestamp},v1=${signature}`,
+      now: new Date(timestamp * 1000),
+    }),
+    { timestamp },
+  );
+  assert.throws(
+    () =>
+      verifyStripeWebhookSignature({
+        payload,
+        secret,
+        signatureHeader: `t=${timestamp},v1=${signature}`,
+        now: new Date((timestamp + 600) * 1000),
+        toleranceSeconds: 300,
+      }),
+    /outside the allowed tolerance/,
+  );
+});
+
+test('Stripe billing lifecycle helpers map provider states into internal subscription states', () => {
+  assert.equal(mapStripeBillingInterval('month'), 'monthly');
+  assert.equal(mapStripeBillingInterval('year'), 'yearly');
+  assert.equal(mapStripeSubscriptionStatus('active'), 'active');
+  assert.equal(mapStripeSubscriptionStatus('unpaid'), 'past_due');
+  assert.equal(
+    resolveSubscriptionStatusFromStripeEvent({
+      currentStatus: 'trialing',
+      eventType: 'invoice.payment_succeeded',
+    }),
+    'active',
+  );
+  assert.equal(
+    resolveSubscriptionStatusFromStripeEvent({
+      currentStatus: 'active',
+      eventType: 'customer.subscription.updated',
+      stripeStatus: 'paused',
+    }),
+    'paused',
+  );
+  assert.equal(
+    resolveSubscriptionStatusFromStripeEvent({
+      currentStatus: 'active',
+      eventType: 'customer.subscription.deleted',
+    }),
+    'canceled',
+  );
 });

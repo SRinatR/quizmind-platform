@@ -5,6 +5,7 @@ import { PrismaClient } from '@quizmind/database';
 
 import { AuthService } from '../src/auth/auth.service';
 import { EmailVerificationRepository } from '../src/auth/repositories/email-verification.repository';
+import { PasswordResetRepository } from '../src/auth/repositories/password-reset.repository';
 import { SessionRepository } from '../src/auth/repositories/session.repository';
 import { UserRepository } from '../src/auth/repositories/user.repository';
 import { SubscriptionRepository } from '../src/billing/subscription.repository';
@@ -49,6 +50,7 @@ export interface IntegrationHarness {
   extensionCompatibilityRepository: ExtensionCompatibilityRepository;
   prisma: PrismaClient;
   featureFlagRepository: FeatureFlagRepository;
+  passwordResetRepository: PasswordResetRepository;
   platformService: PlatformService;
   remoteConfigRepository: RemoteConfigRepository;
   sessionRepository: SessionRepository;
@@ -88,6 +90,7 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
   const userRepository = new UserRepository(prismaService);
   const sessionRepository = new SessionRepository(prismaService);
   const emailVerificationRepository = new EmailVerificationRepository(prismaService);
+  const passwordResetRepository = new PasswordResetRepository(prismaService);
   const workspaceRepository = new WorkspaceRepository(prismaService);
   const subscriptionRepository = new SubscriptionRepository(prismaService);
   const extensionCompatibilityRepository = new ExtensionCompatibilityRepository(prismaService);
@@ -96,7 +99,12 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
   const supportTicketRepository = new SupportTicketRepository(prismaService);
   const supportTicketPresetFavoriteRepository = new SupportTicketPresetFavoriteRepository(prismaService);
   const supportImpersonationRepository = new SupportImpersonationRepository(prismaService);
-  const authService = new AuthService(userRepository, sessionRepository, emailVerificationRepository);
+  const authService = new AuthService(
+    userRepository,
+    sessionRepository,
+    emailVerificationRepository,
+    passwordResetRepository,
+  );
   const platformService = new PlatformService(
     {
       checkDatabaseConnection: async () => ({ status: 'up', latencyMs: 0 }),
@@ -147,6 +155,7 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     env,
     extensionCompatibilityRepository,
     featureFlagRepository,
+    passwordResetRepository,
     prisma,
     platformService,
     remoteConfigRepository,

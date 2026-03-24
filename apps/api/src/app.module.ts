@@ -2,8 +2,13 @@ import { Module } from '@nestjs/common';
 
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
+import { BillingController } from './billing/billing.controller';
+import { BillingRepository } from './billing/billing.repository';
+import { BillingService } from './billing/billing.service';
+import { BillingWebhookRepository } from './billing/billing-webhook.repository';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { EmailVerificationRepository } from './auth/repositories/email-verification.repository';
+import { PasswordResetRepository } from './auth/repositories/password-reset.repository';
 import { SessionRepository } from './auth/repositories/session.repository';
 import { UserRepository } from './auth/repositories/user.repository';
 import { SubscriptionRepository } from './billing/subscription.repository';
@@ -23,14 +28,18 @@ import { SupportTicketRepository } from './support/support-ticket.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
-  controllers: [AuthController, PlatformController],
+  controllers: [AuthController, BillingController, PlatformController],
   providers: [
     AuthService,
+    BillingRepository,
+    BillingService,
+    BillingWebhookRepository,
     EmailVerificationRepository,
     ExtensionCompatibilityRepository,
     FeatureFlagRepository,
     InfrastructureHealthService,
     JwtAuthGuard,
+    PasswordResetRepository,
     PlatformService,
     PrismaService,
     RateLimitGuard,

@@ -1,14 +1,17 @@
 import 'dotenv/config';
 
-import { Queue } from 'bullmq';
+import { PrismaClient } from '@quizmind/database';
 import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
 import { queueNames } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
+import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
+import { processBillingWebhookJob } from './jobs/process-billing-webhook';
 import { processUsageEvent } from './jobs/process-usage-event';
 import { propagateRemoteConfigPublish } from './jobs/publish-remote-config';
 import { resetQuotaCounter } from './jobs/reset-quota-counter';
+import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
 
 async function bootstrap() {
   const env = loadWorkerEnv();
@@ -51,9 +54,19 @@ async function bootstrap() {
   );
 
   let redisConnection: IORedis | null = null;
+  let prisma: PrismaClient | null = null;
 
   if (env.runtimeMode === 'connected') {
     try {
+      prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: env.databaseUrl,
+          },
+        },
+        log: env.nodeEnv === 'development' ? ['warn', 'error'] : ['error'],
+      });
+      await prisma.$connect();
       redisConnection = new IORedis(env.redisUrl, {
         enableReadyCheck: false,
         lazyConnect: true,
@@ -67,6 +80,21 @@ async function bootstrap() {
             connection: redisConnectionOptions,
           }),
       );
+      const billingWebhookRepository = new WorkerBillingProcessingRepository(prisma);
+      const queueWorkers = [
+        new Worker(
+          'billing-webhooks',
+          async (job) => {
+            const result = await processBillingWebhookJob(job.data, billingWebhookRepository);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+      ];
 
       console.log(
         JSON.stringify(
@@ -84,6 +112,7 @@ async function bootstrap() {
             metadata: {
               queues: queueNames,
               boundQueueCount: queueBindings.length,
+              processorCount: queueWorkers.length,
             },
           }),
         ),
@@ -112,7 +141,7 @@ async function bootstrap() {
   }
 
   if (!redisConnection) {
-    runDryRun();
+    await runDryRun();
   }
 
   setInterval(() => {
@@ -139,7 +168,7 @@ async function bootstrap() {
   }, env.heartbeatIntervalMs);
 }
 
-function runDryRun() {
+async function runDryRun() {
   const usageResult = processUsageEvent(
     {
       installationId: 'inst_local_browser',
@@ -174,10 +203,113 @@ function runDryRun() {
     new Date().toISOString(),
     new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   );
+  const webhookReceivedAt = new Date();
+  const billingResult = await processBillingWebhookJob(
+    {
+      provider: 'stripe',
+      webhookEventId: 'wh_local_1',
+      externalEventId: 'evt_local_1',
+      eventType: 'customer.subscription.updated',
+      receivedAt: webhookReceivedAt.toISOString(),
+    },
+    {
+      async findWebhookEventById() {
+        return {
+          id: 'wh_local_1',
+          provider: 'stripe',
+          externalEventId: 'evt_local_1',
+          eventType: 'customer.subscription.updated',
+          payloadJson: {
+            id: 'evt_local_1',
+            type: 'customer.subscription.updated',
+            data: {
+              object: {
+                id: 'sub_local_1',
+                customer: 'cus_local_1',
+                status: 'active',
+                cancel_at_period_end: false,
+                current_period_start: Math.floor(Date.now() / 1000),
+                current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+                metadata: {
+                  workspaceId: 'ws_alpha',
+                  planCode: 'pro',
+                },
+                items: {
+                  data: [
+                    {
+                      quantity: 3,
+                      price: {
+                        recurring: {
+                          interval: 'month',
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          status: 'received',
+          receivedAt: webhookReceivedAt,
+          processedAt: null,
+        };
+      },
+      async markWebhookEventProcessed() {},
+      async markWebhookEventFailed() {},
+      async findWorkspaceById() {
+        return {
+          id: 'ws_alpha',
+          stripeCustomerId: null,
+        };
+      },
+      async findWorkspaceByStripeCustomerId() {
+        return null;
+      },
+      async setWorkspaceStripeCustomerId() {},
+      async findPlanByCode(planCode) {
+        return {
+          id: `plan_${planCode}`,
+          code: planCode,
+        };
+      },
+      async findSubscriptionByStripeSubscriptionId() {
+        return null;
+      },
+      async findCurrentSubscriptionByWorkspaceId() {
+        return null;
+      },
+      async upsertStripeSubscriptionForWorkspace(input) {
+        return {
+          id: 'sub_local_record',
+          workspaceId: input.workspaceId,
+          planId: input.planId,
+          status: input.status,
+          billingInterval: input.billingInterval,
+          seatCount: input.seatCount,
+          stripeCustomerId: input.stripeCustomerId,
+          stripePriceId: input.stripePriceId,
+          stripeSubscriptionId: input.stripeSubscriptionId,
+          trialStartAt: input.trialStartAt,
+        };
+      },
+      async updateSubscriptionStatus() {},
+      async upsertInvoice() {
+        return {
+          id: 'in_local_record',
+        };
+      },
+      async upsertPayment() {
+        return {
+          id: 'pay_local_record',
+        };
+      },
+    },
+  );
 
   console.log(JSON.stringify(usageResult.logEvent));
   console.log(JSON.stringify(publishResult.logEvent));
   console.log(JSON.stringify(quotaResetResult.logEvent));
+  console.log(JSON.stringify(billingResult.logEvent));
 }
 
 void bootstrap();

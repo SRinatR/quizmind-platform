@@ -25,7 +25,6 @@ export const dashboardSections: DashboardSection[] = [
     description: 'Plan, invoices, entitlements, and renewal state.',
     requirement: {
       permission: 'subscriptions:read',
-      requiredEntitlements: ['feature.remote_sync'],
     },
   },
   {
@@ -41,9 +40,9 @@ export const dashboardSections: DashboardSection[] = [
     id: 'settings',
     title: 'Settings',
     href: '/app/settings',
-    description: 'Account, workspace, and extension defaults.',
+    description: 'Account security, active sessions, and workspace defaults.',
     requirement: {
-      permission: 'workspaces:update',
+      permission: 'workspaces:read',
     },
   },
 ];

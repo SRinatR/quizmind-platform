@@ -66,6 +66,8 @@ export const platformQueues = [
   'config-publish',
   'audit-exports',
 ] as const;
+export const billingProviders = ['mock', 'stripe'] as const;
+export const billingIntervals = ['monthly', 'yearly'] as const;
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
@@ -78,6 +80,8 @@ export type SupportTicketOwnershipFilter = (typeof supportTicketOwnershipFilters
 export type SupportTicketQueuePreset = (typeof supportTicketQueuePresets)[number];
 export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 export type PlatformQueue = (typeof platformQueues)[number];
+export type BillingProvider = (typeof billingProviders)[number];
+export type BillingInterval = (typeof billingIntervals)[number];
 
 export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
@@ -230,6 +234,20 @@ export interface AuthLogoutRequest {
   refreshToken?: string;
 }
 
+export interface AuthForgotPasswordRequest {
+  email: string;
+}
+
+export interface AuthForgotPasswordResult {
+  accepted: boolean;
+  expiresInMinutes: number;
+}
+
+export interface AuthResetPasswordRequest {
+  token: string;
+  password: string;
+}
+
 export interface AuthSessionPayload {
   accessToken: string;
   refreshToken: string;
@@ -258,6 +276,11 @@ export interface AuthExchangePayload {
   emailVerification: AuthEmailVerificationStatus;
 }
 
+export interface AuthResetPasswordResult {
+  session: AuthSessionPayload;
+  resetAt: string;
+}
+
 export interface AuthLogoutResult {
   revoked: boolean;
   revokedSessionId?: string;
@@ -266,6 +289,25 @@ export interface AuthLogoutResult {
 export interface AuthLogoutAllResult {
   revoked: boolean;
   revokedCount: number;
+}
+
+export interface AuthVerifyEmailResult {
+  verified: boolean;
+  emailVerifiedAt: string;
+}
+
+export interface AuthSessionSummary {
+  id: string;
+  browser?: string | null;
+  deviceName?: string | null;
+  ipAddress?: string | null;
+  createdAt: string;
+  expiresAt: string;
+  current: boolean;
+}
+
+export interface AuthSessionsPayload {
+  items: AuthSessionSummary[];
 }
 
 export interface WorkspaceSummary {
@@ -304,9 +346,98 @@ export interface SubscriptionSummary {
   workspaceId: string;
   planCode: string;
   status: SubscriptionStatus;
+  billingInterval: BillingInterval;
+  cancelAtPeriodEnd: boolean;
   seatCount: number;
   currentPeriodEnd?: string;
   entitlements: PlanEntitlement[];
+}
+
+export interface BillingPlanPrice {
+  interval: BillingInterval;
+  currency: string;
+  amount: number;
+  isDefault: boolean;
+  stripePriceId?: string | null;
+}
+
+export interface BillingPlanCatalogEntry {
+  plan: PlanDefinition;
+  prices: BillingPlanPrice[];
+}
+
+export interface BillingPlansPayload {
+  plans: BillingPlanCatalogEntry[];
+}
+
+export interface BillingCheckoutRequest {
+  workspaceId: string;
+  planCode: string;
+  interval: BillingInterval;
+  successPath?: string;
+  cancelPath?: string;
+}
+
+export interface BillingCheckoutResult {
+  workspaceId: string;
+  planCode: string;
+  interval: BillingInterval;
+  customerId: string;
+  stripePriceId: string;
+  sessionId: string;
+  redirectUrl: string;
+}
+
+export interface BillingPortalRequest {
+  workspaceId: string;
+  returnPath?: string;
+}
+
+export interface BillingPortalResult {
+  workspaceId: string;
+  customerId: string;
+  redirectUrl: string;
+}
+
+export interface BillingSubscriptionMutationRequest {
+  workspaceId: string;
+}
+
+export interface BillingSubscriptionMutationResult {
+  workspaceId: string;
+  subscriptionId: string;
+  stripeSubscriptionId: string;
+  status: SubscriptionStatus;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd?: string;
+}
+
+export interface BillingInvoiceSummary {
+  id: string;
+  externalId?: string | null;
+  subscriptionId: string;
+  amountDue: number;
+  amountPaid: number;
+  currency: string;
+  status: string;
+  issuedAt: string;
+  dueAt?: string | null;
+  paidAt?: string | null;
+}
+
+export interface BillingInvoicesPayload {
+  workspaceId: string;
+  items: BillingInvoiceSummary[];
+}
+
+export type BillingInvoiceDocumentFormat = 'pdf' | 'hosted_page';
+
+export interface BillingInvoicePdfResult {
+  invoiceId: string;
+  workspaceId: string;
+  externalId: string;
+  redirectUrl: string;
+  format: BillingInvoiceDocumentFormat;
 }
 
 export interface ExtensionBootstrapRequest {
@@ -330,6 +461,25 @@ export interface UsageEventPayload {
   eventType: string;
   occurredAt: string;
   payload: Record<string, unknown>;
+}
+
+export interface BillingWebhookJobPayload {
+  provider: BillingProvider;
+  webhookEventId: string;
+  externalEventId: string;
+  eventType: string;
+  receivedAt: string;
+}
+
+export interface BillingWebhookIngestResult {
+  accepted: boolean;
+  duplicate: boolean;
+  provider: BillingProvider;
+  eventId: string;
+  eventType: string;
+  receivedAt: string;
+  queue?: PlatformQueue;
+  jobId?: string;
 }
 
 

@@ -51,6 +51,20 @@ export class SessionRepository extends BaseRepository<AuthSessionRecord, CreateS
     });
   }
 
+  listActiveByUserId(userId: string, now = new Date()): Promise<AuthSessionRecord[]> {
+    return this.prisma.session.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+        expiresAt: {
+          gt: now,
+        },
+      },
+      include: authSessionInclude,
+      orderBy: [{ createdAt: 'desc' }],
+    });
+  }
+
   create(data: CreateSessionInput): Promise<AuthSessionRecord> {
     return this.prisma.session.create({
       data,

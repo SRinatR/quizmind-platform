@@ -1,6 +1,14 @@
 import { buildSubscriptionSummary, type SubscriptionSnapshot } from '@quizmind/billing';
+import {
+  type BillingPlanCatalogEntry,
+  type BillingPlanPrice,
+  type PlanDefinition,
+  type PlanEntitlement,
+  type SubscriptionSummary,
+} from '@quizmind/contracts';
+
+import { type BillingPlanCatalogRecord } from '../billing/billing.repository';
 import { type WorkspaceSubscriptionRecord } from '../billing/subscription.repository';
-import { type PlanDefinition, type PlanEntitlement, type SubscriptionSummary } from '@quizmind/contracts';
 
 export function resolveWorkspaceSubscriptionSummary(input: {
   workspaceId: string;
@@ -26,6 +34,29 @@ export function mapPlanRecordToDefinition(record: WorkspaceSubscriptionRecord['p
       key: entitlement.key,
       enabled: entitlement.enabled,
       limit: entitlement.limitValue ?? undefined,
+    })),
+  };
+}
+
+export function mapPlanCatalogRecordToEntry(record: BillingPlanCatalogRecord): BillingPlanCatalogEntry {
+  return {
+    plan: {
+      id: record.id,
+      code: record.code,
+      name: record.name,
+      description: record.description,
+      entitlements: record.entitlements.map((entitlement) => ({
+        key: entitlement.key,
+        enabled: entitlement.enabled,
+        limit: entitlement.limitValue ?? undefined,
+      })),
+    },
+    prices: record.prices.map<BillingPlanPrice>((price) => ({
+      interval: price.intervalCode === 'yearly' ? 'yearly' : 'monthly',
+      currency: price.currency,
+      amount: price.amount,
+      isDefault: price.isDefault,
+      stripePriceId: price.stripePriceId,
     })),
   };
 }

@@ -6,6 +6,7 @@
     "@quizmind/billing": "workspace:*",
     "@quizmind/config": "workspace:*",
     "@quizmind/contracts": "workspace:*",
+    "@quizmind/database": "workspace:*",
     "@quizmind/logger": "workspace:*",
     "@quizmind/queue": "workspace:*",
     "bullmq": "^5.43.2",

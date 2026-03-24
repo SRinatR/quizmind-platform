@@ -1,7 +1,13 @@
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
+  type AuthSessionsPayload,
   type AccessDecision,
   type AdminUserDirectorySnapshot,
+  type BillingCheckoutResult,
+  type BillingInvoicesPayload,
+  type BillingPlansPayload,
+  type BillingPortalResult,
+  type BillingSubscriptionMutationResult,
   type ApiRouteDefinition,
   type FeatureFlagDefinition,
   type PlanDefinition,
@@ -81,7 +87,8 @@ export interface SessionSnapshot {
   user: {
     id: string;
     email: string;
-    displayName: string;
+    displayName?: string | null;
+    emailVerifiedAt?: string | null;
   };
   principal: SessionPrincipal;
   workspaces: WorkspaceSummary[];
@@ -109,6 +116,12 @@ export interface FeatureFlagsSnapshot {
 export type SupportImpersonationSnapshot = SupportImpersonationHistorySnapshot;
 export type SupportTicketsSnapshot = SupportTicketQueueSnapshot;
 export type AdminUsersSnapshot = AdminUserDirectorySnapshot;
+export type AuthSessionsSnapshot = AuthSessionsPayload;
+export type BillingPlansSnapshot = BillingPlansPayload;
+export type BillingInvoicesSnapshot = BillingInvoicesPayload;
+export type BillingCheckoutSnapshot = BillingCheckoutResult;
+export type BillingPortalSnapshot = BillingPortalResult;
+export type BillingSubscriptionMutationSnapshot = BillingSubscriptionMutationResult;
 
 export const API_URL =
   process.env.API_INTERNAL_URL ??
@@ -202,6 +215,14 @@ export async function getSession(persona: string, accessToken?: string | null) {
   return readApiData<SessionSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
+export async function getAuthSessions(accessToken?: string | null) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return readApiData<AuthSessionsSnapshot>('/auth/sessions', withAccessToken(undefined, accessToken));
+}
+
 export async function getWorkspaces(persona: string, accessToken?: string | null) {
   const path = accessToken ? '/workspaces' : withPersona('/workspaces', persona);
 
@@ -218,6 +239,18 @@ export async function getSubscription(persona: string, workspaceId?: string, acc
     path,
     withAccessToken(undefined, accessToken),
   );
+}
+
+export async function getBillingPlans() {
+  return readApiData<BillingPlansSnapshot>('/billing/plans');
+}
+
+export async function getBillingInvoices(workspaceId: string, accessToken?: string | null) {
+  const path = withQuery('/billing/invoices', {
+    workspaceId,
+  });
+
+  return readApiData<BillingInvoicesSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getFeatureFlags(persona: string, accessToken?: string | null) {

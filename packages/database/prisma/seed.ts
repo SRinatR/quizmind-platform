@@ -34,6 +34,21 @@ async function seed() {
     },
   });
 
+  const businessPlan = await prisma.plan.upsert({
+    where: { code: 'business' },
+    update: {
+      name: 'Business',
+      description: 'Business tier with higher quotas, more seats, and priority billing support.',
+      isActive: true,
+    },
+    create: {
+      code: 'business',
+      name: 'Business',
+      description: 'Business tier with higher quotas, more seats, and priority billing support.',
+      isActive: true,
+    },
+  });
+
   await prisma.planEntitlement.createMany({
     data: [
       { planId: freePlan.id, key: 'feature.text_answering', enabled: true },
@@ -42,9 +57,79 @@ async function seed() {
       { planId: proPlan.id, key: 'feature.screenshot_answering', enabled: true },
       { planId: proPlan.id, key: 'feature.remote_config', enabled: true },
       { planId: proPlan.id, key: 'limit.requests_per_day', enabled: true, limitValue: 500 },
+      { planId: businessPlan.id, key: 'feature.text_answering', enabled: true },
+      { planId: businessPlan.id, key: 'feature.screenshot_answering', enabled: true },
+      { planId: businessPlan.id, key: 'feature.remote_config', enabled: true },
+      { planId: businessPlan.id, key: 'feature.priority_support', enabled: true },
+      { planId: businessPlan.id, key: 'limit.screenshots_per_day', enabled: true, limitValue: 200 },
+      { planId: businessPlan.id, key: 'limit.seats', enabled: true, limitValue: 5 },
+      { planId: businessPlan.id, key: 'limit.history_retention_days', enabled: true, limitValue: 365 },
     ],
     skipDuplicates: true,
   });
+
+  const seededPlanPrices = [
+    {
+      planId: freePlan.id,
+      intervalCode: 'monthly',
+      currency: 'usd',
+      amount: 0,
+      isDefault: true,
+      stripePriceId: null,
+    },
+    {
+      planId: proPlan.id,
+      intervalCode: 'monthly',
+      currency: 'usd',
+      amount: 900,
+      isDefault: true,
+      stripePriceId: 'price_pro_monthly',
+    },
+    {
+      planId: proPlan.id,
+      intervalCode: 'yearly',
+      currency: 'usd',
+      amount: 9000,
+      isDefault: false,
+      stripePriceId: 'price_pro_yearly',
+    },
+    {
+      planId: businessPlan.id,
+      intervalCode: 'monthly',
+      currency: 'usd',
+      amount: 2900,
+      isDefault: true,
+      stripePriceId: 'price_biz_monthly',
+    },
+    {
+      planId: businessPlan.id,
+      intervalCode: 'yearly',
+      currency: 'usd',
+      amount: 29000,
+      isDefault: false,
+      stripePriceId: 'price_biz_yearly',
+    },
+  ] as const;
+
+  for (const price of seededPlanPrices) {
+    await prisma.planPrice.upsert({
+      where: {
+        planId_intervalCode_currency: {
+          planId: price.planId,
+          intervalCode: price.intervalCode,
+          currency: price.currency,
+        },
+      },
+      update: {
+        amount: price.amount,
+        isDefault: price.isDefault,
+        stripePriceId: price.stripePriceId,
+      },
+      create: {
+        ...price,
+      },
+    });
+  }
 
   await prisma.featureFlag.upsert({
     where: { key: 'beta.remote-config-v2' },
@@ -318,6 +403,7 @@ async function seed() {
       status: SubscriptionStatus.trialing,
       billingInterval: 'monthly',
       seatCount: 1,
+      trialStartAt: new Date(),
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
       cancelAtPeriodEnd: false,
@@ -329,6 +415,7 @@ async function seed() {
       status: SubscriptionStatus.trialing,
       billingInterval: 'monthly',
       seatCount: 1,
+      trialStartAt: new Date(),
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
       cancelAtPeriodEnd: false,

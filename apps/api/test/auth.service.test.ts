@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { hashOpaqueToken } from '@quizmind/auth';
+
 import { AuthService } from '../src/auth/auth.service';
 import { type EmailVerificationRepository } from '../src/auth/repositories/email-verification.repository';
+import { type PasswordResetRepository } from '../src/auth/repositories/password-reset.repository';
 import { type SessionRepository } from '../src/auth/repositories/session.repository';
 import { type UserRepository } from '../src/auth/repositories/user.repository';
 
@@ -23,7 +26,8 @@ function createAuthService() {
 
   const sessionRepository = {} as SessionRepository;
   const emailVerificationRepository = {} as EmailVerificationRepository;
-  const service = new AuthService(userRepository, sessionRepository, emailVerificationRepository);
+  const passwordResetRepository = {} as PasswordResetRepository;
+  const service = new AuthService(userRepository, sessionRepository, emailVerificationRepository, passwordResetRepository);
 
   service['env'] = {
     nodeEnv: 'test',
@@ -47,7 +51,9 @@ function createAuthService() {
     authRateLimitMaxRequests: 10,
   };
 
-  return { service, sessionRepository };
+  service['logSecurityEvent'] = () => {};
+
+  return { service, sessionRepository, userRepository, passwordResetRepository };
 }
 
 test('AuthService.getCurrentSession keeps the mock-compatible session shape in connected mode', async () => {
@@ -113,4 +119,198 @@ test('AuthService.getCurrentSession keeps the mock-compatible session shape in c
   assert.equal(snapshot.principal.workspaceMemberships[0]?.workspaceId, 'ws_1');
   assert.ok(snapshot.permissions.includes('workspaces:read'));
   assert.ok(snapshot.permissions.includes('remote_config:publish'));
+});
+
+test('AuthService.listSessions returns active sessions and marks the current session', async () => {
+  const { service, sessionRepository } = createAuthService();
+
+  sessionRepository.listActiveByUserId = async () =>
+    [
+      {
+        id: 'session_current',
+        userId: 'user_1',
+        tokenHash: 'hash_current',
+        ipAddress: '127.0.0.1',
+        userAgent: 'Mozilla/5.0',
+        browser: 'chrome',
+        deviceName: 'Chrome on Windows',
+        expiresAt: new Date('2026-03-25T12:00:00.000Z'),
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        revokedAt: null,
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        user: {
+          id: 'user_1',
+          email: 'owner@quizmind.dev',
+          systemRoleAssignments: [],
+          memberships: [],
+        },
+      },
+      {
+        id: 'session_other',
+        userId: 'user_1',
+        tokenHash: 'hash_other',
+        ipAddress: '127.0.0.2',
+        userAgent: 'Mozilla/5.0',
+        browser: 'firefox',
+        deviceName: 'Firefox on macOS',
+        expiresAt: new Date('2026-03-26T12:00:00.000Z'),
+        createdAt: new Date('2026-03-23T12:00:00.000Z'),
+        revokedAt: null,
+        updatedAt: new Date('2026-03-23T12:00:00.000Z'),
+        user: {
+          id: 'user_1',
+          email: 'owner@quizmind.dev',
+          systemRoleAssignments: [],
+          memberships: [],
+        },
+      },
+    ] as any;
+
+  const result = await service.listSessions('user_1', 'session_current');
+
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.id, 'session_current');
+  assert.equal(result.items[0]?.current, true);
+  assert.equal(result.items[0]?.browser, 'chrome');
+  assert.equal(result.items[1]?.id, 'session_other');
+  assert.equal(result.items[1]?.current, false);
+});
+
+test('AuthService.requestPasswordReset persists a password reset token and responds with a generic accepted payload', async () => {
+  const { service, userRepository, passwordResetRepository } = createAuthService();
+  let invalidatedUserId: string | null = null;
+  let createdReset: Record<string, unknown> | null = null;
+
+  userRepository.findByEmail = async () =>
+    ({
+      id: 'user_1',
+      email: 'owner@quizmind.dev',
+      displayName: 'Workspace Owner',
+      passwordHash: 'existing-hash',
+      suspendedAt: null,
+      systemRoleAssignments: [],
+      memberships: [],
+    }) as any;
+  passwordResetRepository.invalidateActiveForUser = async (userId: string) => {
+    invalidatedUserId = userId;
+    return 1;
+  };
+  passwordResetRepository.create = async (input: Record<string, unknown>) => {
+    createdReset = input;
+    return {
+      id: 'reset_1',
+      ...input,
+      usedAt: null,
+      createdAt: new Date(),
+    } as any;
+  };
+
+  const result = await service.requestPasswordReset(
+    {
+      email: 'owner@quizmind.dev',
+    },
+    {
+      ipAddress: '127.0.0.1',
+      userAgent: 'Mozilla/5.0 Chrome/123.0.0.0',
+    },
+  );
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.expiresInMinutes, 60);
+  assert.equal(invalidatedUserId, 'user_1');
+  assert.equal(createdReset?.userId, 'user_1');
+  assert.equal(typeof createdReset?.tokenHash, 'string');
+});
+
+test('AuthService.resetPassword consumes the token, rotates sessions, and issues a fresh auth session', async () => {
+  const { service, sessionRepository, userRepository, passwordResetRepository } = createAuthService();
+  const user = {
+    id: 'user_1',
+    email: 'owner@quizmind.dev',
+    displayName: 'Workspace Owner',
+    passwordHash: 'existing-hash',
+    emailVerifiedAt: null,
+    suspendedAt: null,
+    systemRoleAssignments: [
+      {
+        id: 'role_1',
+        userId: 'user_1',
+        role: 'platform_admin',
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    ],
+    memberships: [],
+  };
+  let persistedUser = user as any;
+  let lookedUpTokenHash: string | null = null;
+  let usedResetId: string | null = null;
+  let revokedSessionUserId: string | null = null;
+
+  passwordResetRepository.findActiveByTokenHash = async (tokenHash: string) => {
+    lookedUpTokenHash = tokenHash;
+    return {
+      id: 'reset_1',
+      userId: 'user_1',
+      tokenHash,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      usedAt: null,
+      createdAt: new Date(),
+    } as any;
+  };
+  passwordResetRepository.markUsed = async (id: string, usedAt = new Date()) => {
+    usedResetId = id;
+    return {
+      id,
+      userId: 'user_1',
+      tokenHash: lookedUpTokenHash,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      usedAt,
+      createdAt: new Date(),
+    } as any;
+  };
+  userRepository.findById = async () => persistedUser;
+  userRepository.update = async (_id: string, data: Record<string, unknown>) => {
+    persistedUser = {
+      ...persistedUser,
+      passwordHash: data.passwordHash,
+    };
+    return persistedUser;
+  };
+  sessionRepository.revokeAllForUser = async (userId: string) => {
+    revokedSessionUserId = userId;
+    return 2;
+  };
+  sessionRepository.create = async (input: Record<string, unknown>) =>
+    ({
+      id: 'session_new',
+      userId: 'user_1',
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      revokedAt: null,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+      browser: input.browser,
+      deviceName: input.deviceName,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: persistedUser,
+    }) as any;
+
+  const result = await service.resetPassword(
+    {
+      token: 'reset-token',
+      password: 'new-password-123',
+    },
+    {
+      ipAddress: '127.0.0.1',
+      userAgent: 'Mozilla/5.0 Chrome/123.0.0.0',
+    },
+  );
+
+  assert.equal(lookedUpTokenHash, hashOpaqueToken('reset-token', service['env'].jwtRefreshSecret));
+  assert.equal(usedResetId, 'reset_1');
+  assert.equal(revokedSessionUserId, 'user_1');
+  assert.equal(result.session.user.email, 'owner@quizmind.dev');
+  assert.ok(result.session.accessToken.length > 20);
+  assert.match(result.resetAt, /\d{4}-\d{2}-\d{2}T/);
 });

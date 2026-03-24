@@ -9,6 +9,7 @@ import {
 import {
   ACCESS_TOKEN_LIFETIME_MINUTES,
   EMAIL_VERIFICATION_LIFETIME_HOURS,
+  PASSWORD_RESET_LIFETIME_HOURS,
   REFRESH_TOKEN_LIFETIME_DAYS,
   assertPasswordPolicy,
   createOpaqueToken,
@@ -23,20 +24,27 @@ import {
 import { loadApiEnv } from '@quizmind/config';
 import {
   type AuthExchangePayload,
+  type AuthForgotPasswordRequest,
+  type AuthForgotPasswordResult,
   type AuthLoginRequest,
   type AuthLogoutResult,
   type AuthRefreshRequest,
   type AuthRegisterRequest,
+  type AuthResetPasswordRequest,
+  type AuthResetPasswordResult,
   type AuthSessionPayload,
+  type AuthSessionsPayload,
+  type AuthVerifyEmailResult,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { createSecurityLogEvent } from '@quizmind/logger';
-import { sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
+import { passwordResetTemplate, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 
 import { type AuthSessionRecord, SessionRepository } from './repositories/session.repository';
 import { type AuthUserRecord, UserRepository } from './repositories/user.repository';
 import { EmailVerificationRepository } from './repositories/email-verification.repository';
-import { type CurrentSessionSnapshot, type RequestSessionMetadata, type VerifyEmailResult } from './auth.types';
+import { PasswordResetRepository } from './repositories/password-reset.repository';
+import { type CurrentSessionSnapshot, type RequestSessionMetadata } from './auth.types';
 import { createApiEmailAdapter } from '../email/email-adapter';
 
 interface SessionIssueResult {
@@ -56,6 +64,8 @@ export class AuthService {
     private readonly sessionRepository: SessionRepository,
     @Inject(EmailVerificationRepository)
     private readonly emailVerificationRepository: EmailVerificationRepository,
+    @Inject(PasswordResetRepository)
+    private readonly passwordResetRepository: PasswordResetRepository,
   ) {}
 
   async register(request: AuthRegisterRequest, metadata: RequestSessionMetadata = {}): Promise<AuthExchangePayload> {
@@ -155,6 +165,68 @@ export class AuthService {
     };
   }
 
+  async requestPasswordReset(
+    request: AuthForgotPasswordRequest,
+    metadata: RequestSessionMetadata = {},
+  ): Promise<AuthForgotPasswordResult> {
+    this.assertConnectedMode();
+
+    const email = this.normalizeEmail(request.email);
+
+    this.assertEmailAddress(email);
+
+    const user = await this.userRepository.findByEmail(email);
+
+    if (!user?.passwordHash || user.suspendedAt) {
+      this.logSecurityEvent('auth.password_reset_requested', user?.id ?? 'anonymous', {
+        email,
+        delivered: false,
+        reason: user?.suspendedAt ? 'user_suspended' : 'user_not_found',
+        ipAddress: metadata.ipAddress,
+        userAgent: metadata.userAgent,
+      });
+
+      return {
+        accepted: true,
+        expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+      };
+    }
+
+    const resetToken = createOpaqueToken();
+    const resetTokenHash = hashOpaqueToken(resetToken, this.env.jwtRefreshSecret);
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_LIFETIME_HOURS * 60 * 60 * 1000);
+
+    await this.passwordResetRepository.invalidateActiveForUser(user.id);
+    await this.passwordResetRepository.create({
+      userId: user.id,
+      tokenHash: resetTokenHash,
+      expiresAt,
+    });
+    await sendTemplatedEmail(
+      this.emailAdapter,
+      passwordResetTemplate,
+      user.email,
+      {
+        productName: 'QuizMind',
+        displayName: user.displayName ?? undefined,
+        resetUrl: `${this.env.appUrl}/auth/reset-password?token=${resetToken}`,
+        expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+      },
+    );
+
+    this.logSecurityEvent('auth.password_reset_requested', user.id, {
+      email,
+      delivered: true,
+      ipAddress: metadata.ipAddress,
+      userAgent: metadata.userAgent,
+    });
+
+    return {
+      accepted: true,
+      expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+    };
+  }
+
   async refresh(request: AuthRefreshRequest, metadata: RequestSessionMetadata = {}): Promise<AuthSessionPayload> {
     this.assertConnectedMode();
 
@@ -239,7 +311,62 @@ export class AuthService {
     };
   }
 
-  async verifyEmail(token: string): Promise<VerifyEmailResult> {
+  async resetPassword(
+    request: AuthResetPasswordRequest,
+    metadata: RequestSessionMetadata = {},
+  ): Promise<AuthResetPasswordResult> {
+    this.assertConnectedMode();
+
+    const token = request.token?.trim();
+
+    if (!token) {
+      throw new BadRequestException('Password reset token is required.');
+    }
+
+    assertPasswordPolicy(request.password);
+
+    const passwordReset = await this.passwordResetRepository.findActiveByTokenHash(
+      hashOpaqueToken(token, this.env.jwtRefreshSecret),
+    );
+
+    if (!passwordReset) {
+      throw new UnauthorizedException('Invalid or expired password reset token.');
+    }
+
+    const user = await this.userRepository.findById(passwordReset.userId);
+
+    if (!user?.passwordHash) {
+      throw new UnauthorizedException('Invalid or expired password reset token.');
+    }
+
+    if (user.suspendedAt) {
+      throw new UnauthorizedException('This account is currently suspended.');
+    }
+
+    const passwordHash = await hashPassword(request.password);
+    const resetAt = new Date();
+
+    await this.passwordResetRepository.markUsed(passwordReset.id, resetAt);
+    const updatedUser = await this.userRepository.update(user.id, {
+      passwordHash,
+    });
+    await this.sessionRepository.revokeAllForUser(user.id, resetAt);
+    const sessionResult = await this.issueSession(updatedUser, metadata);
+
+    this.logSecurityEvent('auth.password_reset_completed', user.id, {
+      resetId: passwordReset.id,
+      sessionId: sessionResult.session.id,
+      ipAddress: metadata.ipAddress,
+      userAgent: metadata.userAgent,
+    });
+
+    return {
+      session: sessionResult.payload,
+      resetAt: resetAt.toISOString(),
+    };
+  }
+
+  async verifyEmail(token: string): Promise<AuthVerifyEmailResult> {
     this.assertConnectedMode();
 
     if (!token.trim()) {
@@ -280,6 +407,24 @@ export class AuthService {
     }
 
     return this.buildCurrentSessionSnapshot(session.user);
+  }
+
+  async listSessions(userId: string, currentSessionId?: string): Promise<AuthSessionsPayload> {
+    this.assertConnectedMode();
+
+    const sessions = await this.sessionRepository.listActiveByUserId(userId);
+
+    return {
+      items: sessions.map((session) => ({
+        id: session.id,
+        browser: session.browser ?? null,
+        deviceName: session.deviceName ?? null,
+        ipAddress: session.ipAddress ?? null,
+        createdAt: session.createdAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString(),
+        current: session.id === currentSessionId,
+      })),
+    };
   }
 
   private async issueSession(user: AuthUserRecord, metadata: RequestSessionMetadata): Promise<SessionIssueResult> {

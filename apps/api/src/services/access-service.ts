@@ -38,6 +38,18 @@ export function canReadWorkspaceSubscription(
   });
 }
 
+export function canUpdateWorkspaceSubscription(
+  principal: SessionPrincipal,
+  workspaceId: string,
+): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'subscriptions:update',
+    workspaceId,
+  });
+}
+
 export function canStartSupportImpersonation(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
 

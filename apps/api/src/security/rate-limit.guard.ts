@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
 
 import { InMemoryRateLimitService } from './rate-limit.service';
@@ -28,7 +28,10 @@ interface RateLimitPolicy {
 export class RateLimitGuard implements CanActivate {
   private readonly env = loadApiEnv();
 
-  constructor(private readonly rateLimitService: InMemoryRateLimitService) {}
+  constructor(
+    @Inject(InMemoryRateLimitService)
+    private readonly rateLimitService: InMemoryRateLimitService,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RateLimitedRequest>();
@@ -65,7 +68,13 @@ export class RateLimitGuard implements CanActivate {
       return null;
     }
 
-    if (path.startsWith('/auth/login') || path.startsWith('/auth/register') || path.startsWith('/auth/refresh')) {
+    if (
+      path.startsWith('/auth/login') ||
+      path.startsWith('/auth/register') ||
+      path.startsWith('/auth/refresh') ||
+      path.startsWith('/auth/forgot-password') ||
+      path.startsWith('/auth/reset-password')
+    ) {
       return {
         key: `auth:${method}:${path}`,
         maxRequests: this.env.authRateLimitMaxRequests,

@@ -221,6 +221,10 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
 
       {statusMessage ? <p className="auth-inline-status">{statusMessage}</p> : null}
       {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
+      <div className="auth-links">
+        <Link href="/auth/register">Create account</Link>
+        <Link href="/auth/forgot-password">Forgot password?</Link>
+      </div>
 
       <div className="auth-demo-grid">
         {demoAccounts.map((account) => (

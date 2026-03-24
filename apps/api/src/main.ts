@@ -17,7 +17,9 @@ async function bootstrap() {
   if (envIssues.length > 0) {
     throw new Error(`Invalid API environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
   }
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
 
   app.enableCors(buildCorsOptions(env));
   app.useGlobalGuards(app.get(RateLimitGuard));

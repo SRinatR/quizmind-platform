@@ -231,8 +231,11 @@ model PlanPrice {
   currency     String
   amount       Int
   isDefault    Boolean  @default(false)
+  stripePriceId String? @unique
   createdAt    DateTime @default(now())
   plan         Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, intervalCode, currency])
 }
 
 model PlanEntitlement {
@@ -249,23 +252,26 @@ model PlanEntitlement {
 }
 
 model Subscription {
-  id                 String             @id @default(cuid())
-  workspaceId        String
-  planId             String
-  externalId         String?            @unique
+  id                   String             @id @default(cuid())
+  workspaceId          String
+  planId               String
+  externalId           String?            @unique
+  stripeCustomerId     String?
+  stripePriceId        String?
   stripeSubscriptionId String?          @unique
-  status             SubscriptionStatus
-  billingInterval    String
-  seatCount          Int                @default(1)
-  currentPeriodStart DateTime?
-  currentPeriodEnd   DateTime?
-  cancelAtPeriodEnd  Boolean            @default(false)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  workspace          Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  plan               Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
-  invoices           Invoice[]
-  payments           Payment[]
+  status               SubscriptionStatus
+  billingInterval      String
+  seatCount            Int                @default(1)
+  trialStartAt         DateTime?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  workspace            Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan                 Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  invoices             Invoice[]
+  payments             Payment[]
 }
 
 model Invoice {

@@ -28,6 +28,16 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
+    path: '/auth/forgot-password',
+    summary: 'Accept a password reset request and send a reset email when the account exists.',
+  },
+  {
+    method: 'POST',
+    path: '/auth/reset-password',
+    summary: 'Redeem a password reset token, rotate sessions, and issue a fresh auth session.',
+  },
+  {
+    method: 'POST',
     path: '/auth/logout',
     summary: 'Revoke the current session by refresh token or bearer access token.',
   },
@@ -43,6 +53,11 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/auth/sessions',
+    summary: 'List active sessions for the current user and flag the current browser session.',
+  },
+  {
+    method: 'GET',
     path: '/auth/verify-email',
     summary: 'Verify a pending email verification token and mark the email as confirmed.',
   },
@@ -54,9 +69,55 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/billing/plans',
+    summary: 'Return the public billing plan catalog, prices, and entitlements for pricing surfaces.',
+  },
+  {
+    method: 'GET',
     path: '/billing/subscription',
     summary: 'Return current subscription, plan, and entitlement state for a workspace.',
     permission: 'subscriptions:read',
+  },
+  {
+    method: 'GET',
+    path: '/billing/invoices',
+    summary: 'Return billing invoices for the current workspace, ordered from newest to oldest.',
+    permission: 'subscriptions:read',
+  },
+  {
+    method: 'GET',
+    path: '/billing/invoices/:invoiceId/pdf',
+    summary: 'Resolve the Stripe-hosted PDF or invoice page for a workspace invoice export.',
+    permission: 'subscriptions:read',
+  },
+  {
+    method: 'POST',
+    path: '/billing/checkout',
+    summary: 'Create a Stripe Checkout Session and return a hosted redirect URL for a workspace upgrade.',
+    permission: 'subscriptions:update',
+  },
+  {
+    method: 'GET',
+    path: '/billing/portal',
+    summary: 'Create a Stripe Customer Portal session for payment method and subscription management.',
+    permission: 'subscriptions:update',
+  },
+  {
+    method: 'POST',
+    path: '/billing/cancel',
+    summary: 'Mark the current Stripe subscription to cancel at period end for a workspace.',
+    permission: 'subscriptions:update',
+  },
+  {
+    method: 'POST',
+    path: '/billing/resume',
+    summary: 'Undo a scheduled subscription cancellation for a workspace before the billing period ends.',
+    permission: 'subscriptions:update',
+  },
+  {
+    method: 'POST',
+    path: '/billing/webhooks/stripe',
+    summary: 'Verify, persist, and enqueue Stripe billing webhook deliveries.',
   },
   {
     method: 'POST',

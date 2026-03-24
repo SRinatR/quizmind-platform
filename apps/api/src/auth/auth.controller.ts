@@ -15,10 +15,12 @@ import {
 import { parseBearerToken } from '@quizmind/auth';
 import {
   type ApiSuccess,
+  type AuthForgotPasswordRequest,
   type AuthLoginRequest,
   type AuthLogoutRequest,
   type AuthRefreshRequest,
   type AuthRegisterRequest,
+  type AuthResetPasswordRequest,
 } from '@quizmind/contracts';
 import { loadApiEnv } from '@quizmind/config';
 
@@ -81,6 +83,31 @@ export class AuthController {
     return ok(await this.authService.refresh(this.requireBody(request, 'refresh'), { ipAddress, userAgent }));
   }
 
+  @Post('forgot-password')
+  async requestPasswordReset(
+    @Body() request?: AuthForgotPasswordRequest,
+    @Ip() ipAddress?: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    this.assertConnectedMode();
+    return ok(
+      await this.authService.requestPasswordReset(this.requireBody(request, 'forgot-password'), {
+        ipAddress,
+        userAgent,
+      }),
+    );
+  }
+
+  @Post('reset-password')
+  async resetPassword(
+    @Body() request?: AuthResetPasswordRequest,
+    @Ip() ipAddress?: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    this.assertConnectedMode();
+    return ok(await this.authService.resetPassword(this.requireBody(request, 'reset-password'), { ipAddress, userAgent }));
+  }
+
   @Post('logout')
   async logout(
     @Body() request?: AuthLogoutRequest,
@@ -134,6 +161,18 @@ export class AuthController {
     }
 
     return ok(await this.authService.getCurrentSession(accessToken));
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  async listSessions(@CurrentUser() currentUser?: AuthenticatedRequestUser) {
+    this.assertConnectedMode();
+
+    if (!currentUser) {
+      throw new UnauthorizedException('Missing bearer token.');
+    }
+
+    return ok(await this.authService.listSessions(currentUser.userId, currentUser.sessionId));
   }
 
   private requireBody<T>(request: T | undefined, action: string): T {
