@@ -148,6 +148,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     permission: 'feature_flags:read',
   },
   {
+    method: 'POST',
+    path: '/admin/feature-flags/update',
+    summary: 'Update a feature flag definition, rollout, and targeting allow-lists.',
+    permission: 'feature_flags:write',
+  },
+  {
     method: 'GET',
     path: '/admin/remote-config',
     summary: 'Return active remote config layers plus a resolved preview for the current workspace context.',

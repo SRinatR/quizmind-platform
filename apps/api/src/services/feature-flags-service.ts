@@ -63,6 +63,10 @@ export function normalizeFeatureFlagUpdate(
   request?: Partial<FeatureFlagUpdateRequest>,
 ): NormalizedFeatureFlagUpdate {
   const rolloutPercentage = request?.rolloutPercentage ?? existing.rolloutPercentage ?? null;
+  const minimumExtensionVersion =
+    request && 'minimumExtensionVersion' in request
+      ? normalizeOptionalString(request.minimumExtensionVersion)
+      : existing.minimumExtensionVersion;
 
   return {
     key: existing.key,
@@ -70,12 +74,7 @@ export function normalizeFeatureFlagUpdate(
     status: request?.status ?? existing.status,
     enabled: request?.enabled ?? existing.enabled,
     ...(rolloutPercentage === null ? {} : { rolloutPercentage }),
-    ...(normalizeOptionalString(request?.minimumExtensionVersion) ?? existing.minimumExtensionVersion
-      ? {
-          minimumExtensionVersion:
-            normalizeOptionalString(request?.minimumExtensionVersion) ?? existing.minimumExtensionVersion,
-        }
-      : {}),
+    ...(minimumExtensionVersion ? { minimumExtensionVersion } : {}),
     allowRoles: request?.allowRoles ? parseAllowedRoles(request.allowRoles) : existing.allowRoles ?? [],
     allowPlans: request?.allowPlans ? normalizeList(request.allowPlans) : existing.allowPlans ?? [],
     allowUsers: request?.allowUsers ? normalizeList(request.allowUsers) : existing.allowUsers ?? [],

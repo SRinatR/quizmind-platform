@@ -9,6 +9,8 @@ import {
   type AdminUserDirectorySnapshot,
   type AuthLoginRequest,
   type ExtensionBootstrapRequest,
+  type FeatureFlagUpdateRequest,
+  type FeatureFlagUpdateResult,
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
   type RemoteConfigSnapshot,
@@ -35,6 +37,7 @@ import {
   canReadSupportImpersonationSessions,
   canReadSupportTickets,
   canReadUsers,
+  canWriteFeatureFlags,
   canReadWorkspace,
   canStartSupportImpersonation,
   canPublishRemoteConfig,
@@ -72,7 +75,11 @@ import {
   startSupportImpersonation,
   type SupportTicketQueueFilterInput,
 } from './services/support-service';
-import { mapFeatureFlagRecordToDefinition } from './services/feature-flags-service';
+import {
+  mapFeatureFlagRecordToDefinition,
+  normalizeFeatureFlagUpdate,
+  type NormalizedFeatureFlagUpdate,
+} from './services/feature-flags-service';
 import { buildRecentUsageEvents, buildUsageQuotas, mapUsageInstallations } from './services/usage-service';
 import { type CurrentSessionSnapshot } from './auth/auth.types';
 import { mapUserRecordToDirectoryEntry } from './services/users-service';
@@ -518,6 +525,86 @@ export class PlatformService {
     };
   }
 
+  updateFeatureFlag(request?: Partial<FeatureFlagUpdateRequest>): FeatureFlagUpdateResult {
+    const key = request?.key?.trim();
+
+    if (!key) {
+      throw new BadRequestException('Feature flag key is required.');
+    }
+
+    const existing = getFoundationOverview().featureFlags.find((flag) => flag.key === key);
+
+    if (!existing) {
+      throw new NotFoundException('Feature flag not found.');
+    }
+
+    const normalized = normalizeFeatureFlagUpdate(existing, request);
+
+    this.assertValidFeatureFlagMutation(normalized);
+
+    return {
+      flag: this.mapNormalizedFeatureFlag(normalized),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  async updateFeatureFlagForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<FeatureFlagUpdateRequest>,
+  ): Promise<FeatureFlagUpdateResult> {
+    const accessDecision = canWriteFeatureFlags(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const key = request?.key?.trim();
+
+    if (!key) {
+      throw new BadRequestException('Feature flag key is required.');
+    }
+
+    const existingRecord = await this.featureFlagRepository.findByKey(key);
+
+    if (!existingRecord) {
+      throw new NotFoundException('Feature flag not found.');
+    }
+
+    const normalized = normalizeFeatureFlagUpdate(mapFeatureFlagRecordToDefinition(existingRecord), request);
+
+    this.assertValidFeatureFlagMutation(normalized);
+
+    try {
+      const updatedRecord = await this.featureFlagRepository.replaceDefinition({
+        key: normalized.key,
+        description: normalized.description,
+        status: normalized.status,
+        enabled: normalized.enabled,
+        rolloutPercentage: normalized.rolloutPercentage ?? null,
+        minimumExtensionVersion: normalized.minimumExtensionVersion ?? null,
+        allowRoles: normalized.allowRoles,
+        allowPlans: normalized.allowPlans,
+        allowUsers: normalized.allowUsers,
+        allowWorkspaces: normalized.allowWorkspaces,
+      });
+
+      if (!updatedRecord) {
+        throw new NotFoundException('Feature flag not found.');
+      }
+
+      return {
+        flag: mapFeatureFlagRecordToDefinition(updatedRecord),
+        updatedAt: updatedRecord.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new NotFoundException('Target user or workspace not found for feature flag targeting.');
+      }
+
+      throw error;
+    }
+  }
+
   listRemoteConfig(personaKey?: string, workspaceId?: string): RemoteConfigSnapshot {
     const persona = getPersona(personaKey);
     const resolvedWorkspaceId = workspaceId ?? persona.preferredWorkspaceId;
@@ -738,8 +825,40 @@ export class PlatformService {
         severity: 'info',
         status: 'success',
         metadata: usageEvent.payload,
-      }),
+        }),
+      };
+  }
+
+  private mapNormalizedFeatureFlag(normalized: NormalizedFeatureFlagUpdate) {
+    return {
+      key: normalized.key,
+      status: normalized.status,
+      description: normalized.description,
+      enabled: normalized.enabled,
+      ...(normalized.rolloutPercentage === undefined ? {} : { rolloutPercentage: normalized.rolloutPercentage }),
+      ...(normalized.allowRoles.length > 0 ? { allowRoles: normalized.allowRoles } : {}),
+      ...(normalized.allowPlans.length > 0 ? { allowPlans: normalized.allowPlans } : {}),
+      ...(normalized.allowUsers.length > 0 ? { allowUsers: normalized.allowUsers } : {}),
+      ...(normalized.allowWorkspaces.length > 0 ? { allowWorkspaces: normalized.allowWorkspaces } : {}),
+      ...(normalized.minimumExtensionVersion
+        ? { minimumExtensionVersion: normalized.minimumExtensionVersion }
+        : {}),
     };
+  }
+
+  private assertValidFeatureFlagMutation(normalized: NormalizedFeatureFlagUpdate) {
+    if (!normalized.description.trim()) {
+      throw new BadRequestException('Feature flag description is required.');
+    }
+
+    if (
+      normalized.rolloutPercentage !== undefined &&
+      (!Number.isInteger(normalized.rolloutPercentage) ||
+        normalized.rolloutPercentage < 0 ||
+        normalized.rolloutPercentage > 100)
+    ) {
+      throw new BadRequestException('Feature flag rollout percentage must be an integer between 0 and 100.');
+    }
   }
 
   listSupportImpersonationSessions(personaKey?: string): SupportImpersonationHistorySnapshot {

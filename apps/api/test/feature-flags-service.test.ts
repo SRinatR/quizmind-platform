@@ -10,6 +10,8 @@ test('mapFeatureFlagRecordToDefinition exposes enabled user and workspace overri
     description: 'Enable the second-generation remote config payload.',
     enabled: true,
     rolloutPercentage: 100,
+    allowRolesJson: ['platform_admin', 'workspace_owner', 'invalid_role'],
+    allowPlansJson: ['pro', 'business', 'pro'],
     minimumExtensionVersion: '1.5.0',
     overrides: [
       {
@@ -39,6 +41,8 @@ test('mapFeatureFlagRecordToDefinition exposes enabled user and workspace overri
     ],
   } as any);
 
+  assert.deepEqual(definition.allowRoles, ['platform_admin', 'workspace_owner']);
+  assert.deepEqual(definition.allowPlans, ['pro', 'business']);
   assert.deepEqual(definition.allowUsers, ['user_1']);
   assert.deepEqual(definition.allowWorkspaces, ['ws_1']);
 });

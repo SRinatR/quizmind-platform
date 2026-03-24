@@ -4,6 +4,7 @@ import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
 import {
   type ExtensionBootstrapRequest,
+  type FeatureFlagUpdateRequest,
   type RemoteConfigPublishRequest,
   type SupportImpersonationEndRequest,
   type SupportImpersonationRequest,
@@ -114,6 +115,20 @@ export class PlatformController {
     }
 
     return ok(await this.platformService.listFeatureFlagsForCurrentSession(session));
+  }
+
+  @Post('admin/feature-flags/update')
+  async updateFeatureFlag(
+    @Body() request?: Partial<FeatureFlagUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.updateFeatureFlag(request));
+    }
+
+    return ok(await this.platformService.updateFeatureFlagForCurrentSession(session, request));
   }
 
   @Get('admin/remote-config')

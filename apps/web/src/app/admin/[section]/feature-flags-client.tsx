@@ -1,11 +1,21 @@
 'use client';
 
 import { compareSemver, resolveFeatureFlags } from '@quizmind/extension';
-import { type FeatureFlagDefinition } from '@quizmind/contracts';
-import { useDeferredValue, useState } from 'react';
+import {
+  featureFlagStatuses,
+  systemRoles,
+  workspaceRoles,
+  type FeatureFlagDefinition,
+  type FeatureFlagUpdateResult,
+} from '@quizmind/contracts';
+import { startTransition, useDeferredValue, useState } from 'react';
+
+import { formatUtcDateTime } from '../../../lib/datetime';
 
 interface FeatureFlagsClientProps {
   flags: FeatureFlagDefinition[];
+  canEdit?: boolean;
+  planOptions?: string[];
   initialPreviewContext: {
     extensionVersion?: string;
     planCode?: string;
@@ -14,6 +24,25 @@ interface FeatureFlagsClientProps {
     workspaceId?: string;
   };
 }
+
+interface FeatureFlagDraft {
+  description: string;
+  status: FeatureFlagDefinition['status'];
+  enabled: boolean;
+  rolloutPercentage: string;
+  minimumExtensionVersion: string;
+  allowPlans: string;
+  allowRoles: string;
+  allowUsers: string;
+  allowWorkspaces: string;
+}
+
+interface MutationFeedback {
+  tone: 'success' | 'error';
+  message: string;
+}
+
+const availableRoleOptions = [...systemRoles, ...workspaceRoles];
 
 function parseCsv(value: string): string[] {
   return value
@@ -65,10 +94,78 @@ function describeTargeting(flag: FeatureFlagDefinition): string {
   return parts.join(' | ');
 }
 
+function createDraft(flag: FeatureFlagDefinition): FeatureFlagDraft {
+  return {
+    description: flag.description,
+    status: flag.status,
+    enabled: flag.enabled,
+    rolloutPercentage: flag.rolloutPercentage === undefined ? '' : String(flag.rolloutPercentage),
+    minimumExtensionVersion: flag.minimumExtensionVersion ?? '',
+    allowPlans: stringifyCsv(flag.allowPlans),
+    allowRoles: stringifyCsv(flag.allowRoles),
+    allowUsers: stringifyCsv(flag.allowUsers),
+    allowWorkspaces: stringifyCsv(flag.allowWorkspaces),
+  };
+}
+
+function createDraftMap(flags: FeatureFlagDefinition[]) {
+  return Object.fromEntries(flags.map((flag) => [flag.key, createDraft(flag)])) as Record<string, FeatureFlagDraft>;
+}
+
+function areDraftsEqual(left: FeatureFlagDraft, right: FeatureFlagDraft) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function getErrorMessage(payload: unknown, fallback: string) {
+  if (payload && typeof payload === 'object' && 'error' in payload) {
+    const error = payload.error;
+
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+  }
+
+  if (payload && typeof payload === 'object' && 'message' in payload) {
+    const message = payload.message;
+
+    if (Array.isArray(message)) {
+      return typeof message[0] === 'string' ? message[0] : fallback;
+    }
+
+    if (typeof message === 'string') {
+      return message;
+    }
+  }
+
+  return fallback;
+}
+
+function parseRolloutPercentage(value: string): number | null {
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 100) {
+    throw new Error('Rollout percentage must be an integer between 0 and 100.');
+  }
+
+  return parsed;
+}
+
 export function FeatureFlagsClient({
   flags,
+  canEdit = false,
+  planOptions = [],
   initialPreviewContext,
 }: FeatureFlagsClientProps) {
+  const [flagItems, setFlagItems] = useState(flags);
+  const [drafts, setDrafts] = useState<Record<string, FeatureFlagDraft>>(() => createDraftMap(flags));
+  const [feedbackByKey, setFeedbackByKey] = useState<Record<string, MutationFeedback | undefined>>({});
+  const [savingKey, setSavingKey] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [previewContext, setPreviewContext] = useState({
@@ -79,8 +176,8 @@ export function FeatureFlagsClient({
     workspaceId: initialPreviewContext.workspaceId ?? '',
   });
 
-  const filteredFlags = flags.filter((flag) => matchesSearch(flag, deferredSearchTerm));
-  const resolvedFlags = resolveFeatureFlags(flags, {
+  const filteredFlags = flagItems.filter((flag) => matchesSearch(flag, deferredSearchTerm));
+  const resolvedFlags = resolveFeatureFlags(flagItems, {
     extensionVersion: previewContext.extensionVersion.trim() || undefined,
     planCode: previewContext.planCode.trim() || undefined,
     roles: parseCsv(previewContext.roles),
@@ -94,6 +191,133 @@ export function FeatureFlagsClient({
 
     return compareSemver(previewContext.extensionVersion.trim(), flag.minimumExtensionVersion) < 0;
   }).length;
+
+  function setDraftValue(key: string, patch: Partial<FeatureFlagDraft>) {
+    setDrafts((current) => ({
+      ...current,
+      [key]: {
+        ...(current[key] ?? createDraft(flagItems.find((flag) => flag.key === key) ?? flags[0]!)),
+        ...patch,
+      },
+    }));
+    setFeedbackByKey((current) => {
+      if (!current[key]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }
+
+  function resetDraft(key: string) {
+    const flag = flagItems.find((item) => item.key === key);
+
+    if (!flag) {
+      return;
+    }
+
+    setDrafts((current) => ({
+      ...current,
+      [key]: createDraft(flag),
+    }));
+    setFeedbackByKey((current) => {
+      if (!current[key]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }
+
+  async function saveFlag(key: string) {
+    const flag = flagItems.find((item) => item.key === key);
+    const draft = drafts[key];
+
+    if (!flag || !draft) {
+      return;
+    }
+
+    let rolloutPercentage: number | null;
+
+    try {
+      rolloutPercentage = parseRolloutPercentage(draft.rolloutPercentage);
+    } catch (error) {
+      setFeedbackByKey((current) => ({
+        ...current,
+        [key]: {
+          tone: 'error',
+          message: error instanceof Error ? error.message : 'Unable to parse rollout percentage.',
+        },
+      }));
+      return;
+    }
+
+    setSavingKey(key);
+
+    try {
+      const response = await fetch('/api/admin/feature-flags/update', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          key,
+          description: draft.description,
+          status: draft.status,
+          enabled: draft.enabled,
+          rolloutPercentage,
+          minimumExtensionVersion: draft.minimumExtensionVersion.trim() || null,
+          allowPlans: parseCsv(draft.allowPlans),
+          allowRoles: parseCsv(draft.allowRoles),
+          allowUsers: parseCsv(draft.allowUsers),
+          allowWorkspaces: parseCsv(draft.allowWorkspaces),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            ok?: boolean;
+            data?: FeatureFlagUpdateResult;
+            error?: {
+              message?: string;
+            };
+            message?: string | string[];
+          }
+        | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        throw new Error(getErrorMessage(payload, 'Unable to update feature flag right now.'));
+      }
+
+      startTransition(() => {
+        setFlagItems((current) => current.map((item) => (item.key === key ? payload.data!.flag : item)));
+        setDrafts((current) => ({
+          ...current,
+          [key]: createDraft(payload.data!.flag),
+        }));
+        setFeedbackByKey((current) => ({
+          ...current,
+          [key]: {
+            tone: 'success',
+            message: `Saved ${formatUtcDateTime(payload.data!.updatedAt)}.`,
+          },
+        }));
+      });
+    } catch (error) {
+      setFeedbackByKey((current) => ({
+        ...current,
+        [key]: {
+          tone: 'error',
+          message: error instanceof Error ? error.message : 'Unable to update feature flag right now.',
+        },
+      }));
+    } finally {
+      setSavingKey((current) => (current === key ? null : current));
+    }
+  }
 
   return (
     <div className="admin-feature-flags-shell">
@@ -176,6 +400,15 @@ export function FeatureFlagsClient({
               />
             </label>
           </div>
+          {canEdit ? (
+            <p className="admin-ticket-note">
+              Saving a flag updates the connected control plane and immediately affects future bootstrap resolution.
+            </p>
+          ) : (
+            <p className="admin-ticket-note">
+              This session can preview rollout targeting but does not currently have write access to feature flags.
+            </p>
+          )}
         </article>
 
         <article className="panel">
@@ -211,11 +444,14 @@ export function FeatureFlagsClient({
         <h2>Rollout definitions</h2>
         <div className="admin-feature-flag-grid">
           {filteredFlags.map((flag) => {
+            const draft = drafts[flag.key] ?? createDraft(flag);
             const isActiveInPreview = resolvedFlags.includes(flag.key);
             const isVersionBlocked =
               Boolean(flag.minimumExtensionVersion) &&
               Boolean(previewContext.extensionVersion.trim()) &&
               compareSemver(previewContext.extensionVersion.trim(), flag.minimumExtensionVersion!) < 0;
+            const isDirty = !areDraftsEqual(draft, createDraft(flag));
+            const feedback = feedbackByKey[flag.key];
 
             return (
               <article className="admin-feature-flag-card" key={flag.key}>
@@ -231,6 +467,7 @@ export function FeatureFlagsClient({
                     <span className={isActiveInPreview ? 'tag' : 'tag warn'}>
                       {isActiveInPreview ? 'preview on' : 'preview off'}
                     </span>
+                    {isDirty ? <span className="tag warn">unsaved draft</span> : null}
                   </div>
                 </div>
                 <p>{flag.description}</p>
@@ -257,6 +494,137 @@ export function FeatureFlagsClient({
                     </div>
                   ) : null}
                 </div>
+
+                {canEdit ? (
+                  <div className="admin-ticket-editor">
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Description</span>
+                      <textarea
+                        onChange={(event) => setDraftValue(flag.key, { description: event.target.value })}
+                        value={draft.description}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Status</span>
+                      <select
+                        onChange={(event) =>
+                          setDraftValue(flag.key, {
+                            status: event.target.value as FeatureFlagDefinition['status'],
+                          })
+                        }
+                        value={draft.status}
+                      >
+                        {featureFlagStatuses.map((status) => (
+                          <option key={status} value={status}>
+                            {status}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Enabled state</span>
+                      <select
+                        onChange={(event) =>
+                          setDraftValue(flag.key, {
+                            enabled: event.target.value === 'enabled',
+                          })
+                        }
+                        value={draft.enabled ? 'enabled' : 'disabled'}
+                      >
+                        <option value="enabled">enabled</option>
+                        <option value="disabled">disabled</option>
+                      </select>
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Rollout percentage</span>
+                      <input
+                        max={100}
+                        min={0}
+                        onChange={(event) => setDraftValue(flag.key, { rolloutPercentage: event.target.value })}
+                        placeholder="leave blank to remove"
+                        type="number"
+                        value={draft.rolloutPercentage}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Minimum extension version</span>
+                      <input
+                        onChange={(event) =>
+                          setDraftValue(flag.key, {
+                            minimumExtensionVersion: event.target.value,
+                          })
+                        }
+                        placeholder="1.7.0"
+                        value={draft.minimumExtensionVersion}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Allowed plans</span>
+                      <input
+                        onChange={(event) => setDraftValue(flag.key, { allowPlans: event.target.value })}
+                        placeholder="pro, business"
+                        value={draft.allowPlans}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Allowed roles</span>
+                      <input
+                        onChange={(event) => setDraftValue(flag.key, { allowRoles: event.target.value })}
+                        placeholder="platform_admin, workspace_owner"
+                        value={draft.allowRoles}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Allowed users</span>
+                      <input
+                        onChange={(event) => setDraftValue(flag.key, { allowUsers: event.target.value })}
+                        placeholder="user_1, user_2"
+                        value={draft.allowUsers}
+                      />
+                    </label>
+                    <label className="admin-ticket-field">
+                      <span className="micro-label">Allowed workspaces</span>
+                      <input
+                        onChange={(event) => setDraftValue(flag.key, { allowWorkspaces: event.target.value })}
+                        placeholder="ws_1, ws_2"
+                        value={draft.allowWorkspaces}
+                      />
+                    </label>
+                    <p className="admin-ticket-note">
+                      Available roles: {availableRoleOptions.join(', ')}.
+                      {planOptions.length > 0 ? ` Available plan codes: ${planOptions.join(', ')}.` : ''}
+                    </p>
+                    <div className="admin-feature-flag-actions">
+                      <button
+                        className="btn-primary"
+                        disabled={savingKey === flag.key || !isDirty}
+                        onClick={() => void saveFlag(flag.key)}
+                        type="button"
+                      >
+                        {savingKey === flag.key ? 'Saving...' : 'Save changes'}
+                      </button>
+                      <button
+                        className="btn-ghost"
+                        disabled={savingKey === flag.key || !isDirty}
+                        onClick={() => resetDraft(flag.key)}
+                        type="button"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                    {feedback ? (
+                      <p
+                        className={
+                          feedback.tone === 'error'
+                            ? 'admin-inline-feedback admin-inline-feedback--error'
+                            : 'admin-inline-feedback'
+                        }
+                      >
+                        {feedback.message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </article>
             );
           })}

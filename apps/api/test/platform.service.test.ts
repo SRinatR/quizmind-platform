@@ -9,11 +9,13 @@ import { type UserRepository } from '../src/auth/repositories/user.repository';
 import { type SubscriptionRepository } from '../src/billing/subscription.repository';
 import { type ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
 import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
+import { type QueueDispatchService } from '../src/queue/queue-dispatch.service';
 import { type RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { type InfrastructureHealthService } from '../src/services/infrastructure-health-service';
 import { type SupportImpersonationRepository } from '../src/support/support-impersonation.repository';
 import { type SupportTicketPresetFavoriteRepository } from '../src/support/support-ticket-preset-favorite.repository';
 import { type SupportTicketRepository } from '../src/support/support-ticket.repository';
+import { type UsageRepository } from '../src/usage/usage.repository';
 import { type WorkspaceRepository } from '../src/workspaces/workspace.repository';
 
 function createPlatformService() {
@@ -27,6 +29,8 @@ function createPlatformService() {
   const supportTicketRepository = {} as SupportTicketRepository;
   const supportTicketPresetFavoriteRepository = {} as SupportTicketPresetFavoriteRepository;
   const supportImpersonationRepository = {} as SupportImpersonationRepository;
+  const usageRepository = {} as UsageRepository;
+  const queueDispatchService = {} as QueueDispatchService;
   const service = new PlatformService(
     infrastructureHealthService,
     subscriptionRepository,
@@ -38,6 +42,8 @@ function createPlatformService() {
     supportTicketRepository,
     supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
+    usageRepository,
+    queueDispatchService,
   );
 
   return {
@@ -51,6 +57,8 @@ function createPlatformService() {
     supportTicketRepository,
     supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
+    usageRepository,
+    queueDispatchService,
   };
 }
 
@@ -311,6 +319,110 @@ test('PlatformService.listFeatureFlagsForCurrentSession maps persisted feature f
       minimumExtensionVersion: undefined,
     },
   ]);
+});
+
+test('PlatformService.updateFeatureFlagForCurrentSession persists rollout targeting updates for connected admins', async () => {
+  const { service, featureFlagRepository } = createPlatformService();
+  let capturedInput: any = null;
+
+  featureFlagRepository.findByKey = async () =>
+    ({
+      id: 'flag_1',
+      key: 'beta.remote-config-v2',
+      status: 'active',
+      description: 'Enable v2 config payload.',
+      enabled: true,
+      rolloutPercentage: 50,
+      allowRolesJson: ['workspace_owner'],
+      allowPlansJson: ['pro'],
+      minimumExtensionVersion: '1.5.0',
+      updatedAt: new Date('2026-03-23T12:00:00.000Z'),
+      overrides: [],
+    }) as any;
+  featureFlagRepository.replaceDefinition = async (input) => {
+    capturedInput = input;
+
+    return {
+      id: 'flag_1',
+      key: input.key,
+      status: input.status,
+      description: input.description,
+      enabled: input.enabled,
+      rolloutPercentage: input.rolloutPercentage,
+      allowRolesJson: input.allowRoles,
+      allowPlansJson: input.allowPlans,
+      minimumExtensionVersion: input.minimumExtensionVersion,
+      updatedAt: new Date('2026-03-24T10:15:00.000Z'),
+      overrides: [
+        {
+          id: 'override_user',
+          featureFlagId: 'flag_1',
+          userId: 'user_2',
+          workspaceId: null,
+          enabled: true,
+          createdAt: new Date('2026-03-24T10:15:00.000Z'),
+        },
+        {
+          id: 'override_workspace',
+          featureFlagId: 'flag_1',
+          userId: null,
+          workspaceId: 'ws_2',
+          enabled: true,
+          createdAt: new Date('2026-03-24T10:15:00.000Z'),
+        },
+      ],
+    } as any;
+  };
+
+  const result = await service.updateFeatureFlagForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        systemRoles: ['platform_admin'],
+      },
+      permissions: ['feature_flags:read', 'feature_flags:write'],
+    },
+    {
+      key: 'beta.remote-config-v2',
+      description: 'Enable the second-generation remote config payload.',
+      status: 'paused',
+      enabled: false,
+      rolloutPercentage: 75,
+      allowRoles: ['platform_admin', 'workspace_owner'],
+      allowPlans: ['business'],
+      allowUsers: ['user_2'],
+      allowWorkspaces: ['ws_2'],
+      minimumExtensionVersion: null,
+    },
+  );
+
+  assert.deepEqual(capturedInput, {
+    key: 'beta.remote-config-v2',
+    description: 'Enable the second-generation remote config payload.',
+    status: 'paused',
+    enabled: false,
+    rolloutPercentage: 75,
+    minimumExtensionVersion: null,
+    allowRoles: ['platform_admin', 'workspace_owner'],
+    allowPlans: ['business'],
+    allowUsers: ['user_2'],
+    allowWorkspaces: ['ws_2'],
+  });
+  assert.deepEqual(result, {
+    flag: {
+      key: 'beta.remote-config-v2',
+      status: 'paused',
+      description: 'Enable the second-generation remote config payload.',
+      enabled: false,
+      rolloutPercentage: 75,
+      allowRoles: ['platform_admin', 'workspace_owner'],
+      allowPlans: ['business'],
+      allowUsers: ['user_2'],
+      allowWorkspaces: ['ws_2'],
+    },
+    updatedAt: '2026-03-24T10:15:00.000Z',
+  });
 });
 
 test('PlatformService.publishRemoteConfigForCurrentSession persists a connected publish for admins', async () => {
