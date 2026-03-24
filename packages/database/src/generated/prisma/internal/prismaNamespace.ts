@@ -412,6 +412,7 @@ export const ModelName = {
   ExtensionInstallation: 'ExtensionInstallation',
   ExtensionInstallationSession: 'ExtensionInstallationSession',
   ProviderCredential: 'ProviderCredential',
+  AiProviderPolicy: 'AiProviderPolicy',
   ExtensionTelemetry: 'ExtensionTelemetry',
   AuditLog: 'AuditLog',
   ActivityLog: 'ActivityLog',
@@ -435,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "plan" | "planPrice" | "planPriceProviderMapping" | "planEntitlement" | "subscription" | "invoice" | "payment" | "coupon" | "webhookEvent" | "entitlementOverride" | "quotaCounter" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "plan" | "planPrice" | "planPriceProviderMapping" | "planEntitlement" | "subscription" | "invoice" | "payment" | "coupon" | "webhookEvent" | "entitlementOverride" | "quotaCounter" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2511,6 +2512,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AiProviderPolicy: {
+      payload: Prisma.$AiProviderPolicyPayload<ExtArgs>
+      fields: Prisma.AiProviderPolicyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiProviderPolicyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiProviderPolicyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>
+        }
+        findFirst: {
+          args: Prisma.AiProviderPolicyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiProviderPolicyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>
+        }
+        findMany: {
+          args: Prisma.AiProviderPolicyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>[]
+        }
+        create: {
+          args: Prisma.AiProviderPolicyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>
+        }
+        createMany: {
+          args: Prisma.AiProviderPolicyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiProviderPolicyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>[]
+        }
+        delete: {
+          args: Prisma.AiProviderPolicyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>
+        }
+        update: {
+          args: Prisma.AiProviderPolicyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiProviderPolicyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiProviderPolicyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiProviderPolicyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiProviderPolicyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiProviderPolicyPayload>
+        }
+        aggregate: {
+          args: Prisma.AiProviderPolicyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiProviderPolicy>
+        }
+        groupBy: {
+          args: Prisma.AiProviderPolicyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiProviderPolicyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiProviderPolicyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiProviderPolicyCountAggregateOutputType> | number
+        }
+      }
+    }
     ExtensionTelemetry: {
       payload: Prisma.$ExtensionTelemetryPayload<ExtArgs>
       fields: Prisma.ExtensionTelemetryFieldRefs
@@ -3562,6 +3637,31 @@ export const ProviderCredentialScalarFieldEnum = {
 export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
 
 
+export const AiProviderPolicyScalarFieldEnum = {
+  id: 'id',
+  scopeKey: 'scopeKey',
+  scopeType: 'scopeType',
+  workspaceId: 'workspaceId',
+  mode: 'mode',
+  allowPlatformManaged: 'allowPlatformManaged',
+  allowBringYourOwnKey: 'allowBringYourOwnKey',
+  allowDirectProviderMode: 'allowDirectProviderMode',
+  allowWorkspaceSharedCredentials: 'allowWorkspaceSharedCredentials',
+  requireAdminApproval: 'requireAdminApproval',
+  allowVisionOnUserKeys: 'allowVisionOnUserKeys',
+  providersJson: 'providersJson',
+  allowedModelTagsJson: 'allowedModelTagsJson',
+  defaultProvider: 'defaultProvider',
+  defaultModel: 'defaultModel',
+  reason: 'reason',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AiProviderPolicyScalarFieldEnum = (typeof AiProviderPolicyScalarFieldEnum)[keyof typeof AiProviderPolicyScalarFieldEnum]
+
+
 export const ExtensionTelemetryScalarFieldEnum = {
   id: 'id',
   extensionInstallationId: 'extensionInstallationId',
@@ -3896,6 +3996,34 @@ export type ListEnumCredentialValidationStatusFieldRefInput<$PrismaModel> = Fiel
 
 
 /**
+ * Reference to a field of type 'AiProviderPolicyScopeType'
+ */
+export type EnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AiProviderPolicyScopeType'>
+    
+
+
+/**
+ * Reference to a field of type 'AiProviderPolicyScopeType[]'
+ */
+export type ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AiProviderPolicyScopeType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'AiAccessPolicyMode'
+ */
+export type EnumAiAccessPolicyModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AiAccessPolicyMode'>
+    
+
+
+/**
+ * Reference to a field of type 'AiAccessPolicyMode[]'
+ */
+export type ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AiAccessPolicyMode[]'>
+    
+
+
+/**
  * Reference to a field of type 'EventSeverity'
  */
 export type EnumEventSeverityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EventSeverity'>
@@ -4059,6 +4187,7 @@ export type GlobalOmitConfig = {
   extensionInstallation?: Prisma.ExtensionInstallationOmit
   extensionInstallationSession?: Prisma.ExtensionInstallationSessionOmit
   providerCredential?: Prisma.ProviderCredentialOmit
+  aiProviderPolicy?: Prisma.AiProviderPolicyOmit
   extensionTelemetry?: Prisma.ExtensionTelemetryOmit
   auditLog?: Prisma.AuditLogOmit
   activityLog?: Prisma.ActivityLogOmit

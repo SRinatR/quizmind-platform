@@ -158,6 +158,11 @@ export type ExtensionInstallationSession = Prisma.ExtensionInstallationSessionMo
  */
 export type ProviderCredential = Prisma.ProviderCredentialModel
 /**
+ * Model AiProviderPolicy
+ * 
+ */
+export type AiProviderPolicy = Prisma.AiProviderPolicyModel
+/**
  * Model ExtensionTelemetry
  * 
  */

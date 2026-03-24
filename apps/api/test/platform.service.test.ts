@@ -6,9 +6,11 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { PlatformService } from '../src/platform.service';
 import { type CurrentSessionSnapshot } from '../src/auth/auth.types';
 import { type UserRepository } from '../src/auth/repositories/user.repository';
+import { type BillingWebhookRepository } from '../src/billing/billing-webhook.repository';
 import { type SubscriptionRepository } from '../src/billing/subscription.repository';
 import { type ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
 import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
+import { type AdminLogRepository } from '../src/logs/admin-log.repository';
 import { type QueueDispatchService } from '../src/queue/queue-dispatch.service';
 import { type RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { type InfrastructureHealthService } from '../src/services/infrastructure-health-service';
@@ -23,6 +25,8 @@ function createPlatformService() {
   const subscriptionRepository = {} as SubscriptionRepository;
   const extensionCompatibilityRepository = {} as ExtensionCompatibilityRepository;
   const featureFlagRepository = {} as FeatureFlagRepository;
+  const adminLogRepository = {} as AdminLogRepository;
+  const billingWebhookRepository = {} as BillingWebhookRepository;
   const remoteConfigRepository = {} as RemoteConfigRepository;
   const workspaceRepository = {} as WorkspaceRepository;
   const userRepository = {} as UserRepository;
@@ -36,6 +40,8 @@ function createPlatformService() {
     subscriptionRepository,
     extensionCompatibilityRepository,
     featureFlagRepository,
+    adminLogRepository,
+    billingWebhookRepository,
     remoteConfigRepository,
     workspaceRepository,
     userRepository,
@@ -51,6 +57,8 @@ function createPlatformService() {
     subscriptionRepository,
     extensionCompatibilityRepository,
     featureFlagRepository,
+    adminLogRepository,
+    billingWebhookRepository,
     remoteConfigRepository,
     workspaceRepository,
     userRepository,
@@ -91,6 +99,120 @@ function createConnectedSessionSnapshot(): CurrentSessionSnapshot {
     ],
     permissions: ['workspaces:read', 'subscriptions:read'],
   };
+}
+
+function createAuditLogsSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_analyst' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_analyst',
+      },
+    ],
+    permissions: ['audit_logs:read'],
+  };
+}
+
+function createAuditLogExportSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_security_manager' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_security_manager',
+      },
+    ],
+    permissions: ['audit_logs:read', 'audit_logs:export'],
+  };
+}
+
+function createWebhookJobsSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      systemRoles: ['ops_admin'],
+    },
+    permissions: ['jobs:read', 'jobs:retry'],
+  };
+}
+
+function createUsageRestrictedSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_viewer' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_viewer',
+      },
+    ],
+    permissions: ['workspaces:read'],
+  };
+}
+
+function createUsageExportSessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_analyst' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_analyst',
+      },
+    ],
+    permissions: ['usage:read', 'usage:export', 'subscriptions:read'],
+  };
+}
+
+function createUsageSubscriptionRecord() {
+  return {
+    planId: 'plan_pro',
+    status: 'active',
+    billingInterval: 'monthly',
+    cancelAtPeriodEnd: false,
+    seatCount: 5,
+    currentPeriodStart: new Date('2026-03-01T00:00:00.000Z'),
+    currentPeriodEnd: new Date('2026-04-01T00:00:00.000Z'),
+    plan: {
+      id: 'plan_pro',
+      code: 'pro',
+      name: 'Pro',
+      description: 'Production tier',
+      entitlements: [
+        { key: 'feature.text_answering', enabled: true, limitValue: null },
+        { key: 'limit.requests_per_day', enabled: true, limitValue: 500 },
+      ],
+    },
+    workspace: {
+      entitlementOverrides: [],
+    },
+  } as any;
 }
 
 test('PlatformService.listWorkspacesForCurrentSession maps Prisma records into workspace summaries', async () => {
@@ -223,6 +345,305 @@ test('PlatformService.listUsersForCurrentSession denies principals without users
   );
 });
 
+test('PlatformService.listAdminLogsForCurrentSession maps persisted audit, security, activity, and domain events', async () => {
+  const { service, adminLogRepository } = createPlatformService();
+
+  adminLogRepository.listRecent = async () =>
+    ({
+      audit: [
+        {
+          id: 'audit_1',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          action: 'support.ticket_workflow_updated',
+          targetType: 'support_ticket',
+          targetId: 'ticket_1',
+          metadataJson: {
+            summary: 'Moved the ticket into progress and assigned it to support.',
+            severity: 'info',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T12:00:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      activity: [
+        {
+          id: 'activity_1',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'usage.dashboard_opened',
+          metadataJson: {
+            route: '/app/usage',
+            source: 'dashboard',
+          },
+          createdAt: new Date('2026-03-24T11:45:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      security: [
+        {
+          id: 'security_1',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'auth.login_failed',
+          severity: 'warn',
+          metadataJson: {
+            reason: 'invalid_password',
+            status: 'failure',
+          },
+          createdAt: new Date('2026-03-24T11:50:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      domain: [
+        {
+          id: 'domain_1',
+          workspaceId: 'ws_1',
+          eventType: 'billing.subscription_changed',
+          payloadJson: {
+            status: 'active',
+            provider: 'stripe',
+          },
+          createdAt: new Date('2026-03-24T11:55:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      actors: [
+        {
+          id: 'user_1',
+          email: 'owner@quizmind.dev',
+          displayName: 'Workspace Owner',
+        },
+      ],
+    }) as any;
+
+  const result = await service.listAdminLogsForCurrentSession(createAuditLogsSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    limit: 10,
+    stream: 'all',
+    severity: 'all',
+    search: 'ticket',
+  });
+
+  assert.equal(result.personaKey, 'connected-user');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.workspace?.id, 'ws_1');
+  assert.deepEqual(result.streamCounts, {
+    audit: 1,
+    activity: 0,
+    security: 0,
+    domain: 0,
+  });
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.stream, 'audit');
+  assert.equal(result.items[0]?.eventType, 'support.ticket_workflow_updated');
+  assert.equal(result.items[0]?.actor?.displayName, 'Workspace Owner');
+  assert.equal(result.items[0]?.targetType, 'support_ticket');
+  assert.equal(result.items[0]?.targetId, 'ticket_1');
+});
+
+test('PlatformService.listAdminLogsForCurrentSession denies principals without audit_logs:read', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () => service.listAdminLogsForCurrentSession(createConnectedSessionSnapshot(), { workspaceId: 'ws_1' }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: audit_logs:read/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.exportAdminLogsForCurrentSession exports filtered admin logs as JSON', async () => {
+  const { service, adminLogRepository } = createPlatformService();
+
+  adminLogRepository.listRecent = async () =>
+    ({
+      audit: [
+        {
+          id: 'audit_1',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          action: 'support.ticket_workflow_updated',
+          targetType: 'support_ticket',
+          targetId: 'ticket_1',
+          metadataJson: {
+            summary: 'Moved the ticket into progress and assigned it to support.',
+            severity: 'info',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T12:00:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      activity: [],
+      security: [],
+      domain: [],
+      actors: [
+        {
+          id: 'user_1',
+          email: 'owner@quizmind.dev',
+          displayName: 'Workspace Owner',
+        },
+      ],
+    }) as any;
+
+  const result = await service.exportAdminLogsForCurrentSession(createAuditLogExportSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    stream: 'all',
+    severity: 'all',
+    search: 'ticket',
+    limit: 10,
+    format: 'json',
+  });
+
+  assert.equal(result.workspaceId, 'ws_1');
+  assert.equal(result.format, 'json');
+  assert.match(result.fileName, /^audit-logs-demo-workspace-\d{4}-\d{2}-\d{2}\.json$/);
+  assert.equal(result.itemCount, 1);
+  assert.match(result.content, /support\.ticket_workflow_updated/);
+});
+
+test('PlatformService.exportAdminLogsForCurrentSession denies principals without audit_logs:export', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.exportAdminLogsForCurrentSession(createAuditLogsSessionSnapshot(), {
+        workspaceId: 'ws_1',
+        format: 'csv',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: audit_logs:export/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.listAdminWebhooksForCurrentSession maps persisted webhook deliveries and queue catalog', async () => {
+  const { service, billingWebhookRepository } = createPlatformService();
+
+  billingWebhookRepository.listRecentEvents = async () =>
+    [
+      {
+        id: 'wh_1',
+        provider: 'stripe',
+        externalEventId: 'evt_1',
+        eventType: 'invoice.payment_failed',
+        status: 'failed',
+        providerCreatedAt: new Date('2026-03-24T11:59:40.000Z'),
+        processedAt: null,
+        lastError: 'Missing workspace customer mapping.',
+        receivedAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+      {
+        id: 'wh_2',
+        provider: 'stripe',
+        externalEventId: 'evt_2',
+        eventType: 'customer.subscription.updated',
+        status: 'processed',
+        providerCreatedAt: new Date('2026-03-24T11:24:44.000Z'),
+        processedAt: new Date('2026-03-24T11:25:04.000Z'),
+        lastError: null,
+        receivedAt: new Date('2026-03-24T11:25:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.listAdminWebhooksForCurrentSession(createWebhookJobsSessionSnapshot(), {
+    provider: 'all',
+    status: 'all',
+    limit: 12,
+  });
+
+  assert.equal(result.personaKey, 'connected-user');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.retryDecision.allowed, true);
+  assert.deepEqual(result.statusCounts, {
+    received: 0,
+    processed: 1,
+    failed: 1,
+  });
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.id, 'wh_1');
+  assert.equal(result.items[0]?.retryable, true);
+  assert.equal(result.items[1]?.status, 'processed');
+  assert.equal(result.queues[0]?.name, 'billing-webhooks');
+  assert.equal(result.queues[0]?.processorState, 'bound');
+});
+
+test('PlatformService.retryAdminWebhookForCurrentSession requeues a failed Stripe delivery', async () => {
+  const { service, billingWebhookRepository, queueDispatchService } = createPlatformService();
+
+  billingWebhookRepository.findEventById = async () =>
+    ({
+      id: 'wh_1',
+      provider: 'stripe',
+      externalEventId: 'evt_1',
+      eventType: 'invoice.payment_failed',
+      status: 'failed',
+      receivedAt: new Date('2026-03-24T12:00:00.000Z'),
+      processedAt: null,
+    }) as any;
+  billingWebhookRepository.resetEventForRetry = async () =>
+    ({
+      id: 'wh_1',
+    }) as any;
+  queueDispatchService.dispatch = async (request: any) => ({
+    id: 'billing-webhooks:retry:wh_1:123',
+    queue: request.queue,
+    payload: request.payload,
+    dedupeKey: request.dedupeKey,
+    createdAt: '2026-03-24T12:02:00.000Z',
+    attempts: 10,
+  });
+
+  const result = await service.retryAdminWebhookForCurrentSession(createWebhookJobsSessionSnapshot(), {
+    webhookEventId: 'wh_1',
+  });
+
+  assert.equal(result.webhookEventId, 'wh_1');
+  assert.equal(result.provider, 'stripe');
+  assert.equal(result.queue, 'billing-webhooks');
+  assert.equal(result.jobId, 'billing-webhooks:retry:wh_1:123');
+  assert.equal(result.status, 'received');
+});
+
+test('PlatformService.retryAdminWebhookForCurrentSession denies principals without jobs:retry', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () => service.retryAdminWebhookForCurrentSession(createConnectedSessionSnapshot(), { webhookEventId: 'wh_1' }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: jobs:retry/);
+      return true;
+    },
+  );
+});
+
 test('PlatformService.getSubscriptionForCurrentSession reads a persisted subscription snapshot', async () => {
   const { service, subscriptionRepository } = createPlatformService();
 
@@ -264,6 +685,198 @@ test('PlatformService.getSubscriptionForCurrentSession reads a persisted subscri
     { key: 'feature.text_answering', enabled: true, limit: undefined },
     { key: 'limit.requests_per_day', enabled: true, limit: 50 },
   ]);
+});
+
+test('PlatformService.getUsageForCurrentSession maps persisted usage counters and telemetry snapshots', async () => {
+  const { service, subscriptionRepository, usageRepository } = createPlatformService();
+
+  subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
+  usageRepository.listInstallationsByWorkspaceId = async () =>
+    [
+      {
+        installationId: 'inst_chrome_1',
+        browser: 'chrome',
+        extensionVersion: '1.7.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        lastSeenAt: new Date('2026-03-24T11:58:00.000Z'),
+      },
+    ] as any;
+  usageRepository.listQuotaCountersByWorkspaceId = async () =>
+    [
+      {
+        key: 'limit.requests_per_day',
+        consumed: 126,
+        periodStart: new Date('2026-03-24T00:00:00.000Z'),
+        periodEnd: new Date('2026-03-25T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T11:59:00.000Z'),
+      },
+    ] as any;
+  usageRepository.listRecentTelemetryByWorkspaceId = async () =>
+    [
+      {
+        id: 'telemetry_1',
+        eventType: 'extension.quiz_answer_requested',
+        severity: 'info',
+        payloadJson: {
+          questionType: 'multiple_choice',
+          surface: 'content_script',
+        },
+        createdAt: new Date('2026-03-24T11:59:00.000Z'),
+        installation: {
+          installationId: 'inst_chrome_1',
+        },
+      },
+    ] as any;
+  usageRepository.listRecentActivityByWorkspaceId = async () =>
+    [
+      {
+        id: 'activity_1',
+        actorId: 'user_1',
+        eventType: 'usage.dashboard_opened',
+        metadataJson: {
+          route: '/app/usage',
+          workspaceId: 'ws_1',
+        },
+        createdAt: new Date('2026-03-24T11:50:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.getUsageForCurrentSession(createConnectedSessionSnapshot(), 'ws_1');
+
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.planCode, 'pro');
+  assert.equal(result.subscriptionStatus, 'active');
+  assert.equal(result.quotas[0]?.key, 'limit.requests_per_day');
+  assert.equal(result.quotas[0]?.consumed, 126);
+  assert.equal(result.installations[0]?.installationId, 'inst_chrome_1');
+  assert.equal(result.recentEvents.length, 2);
+  assert.equal(result.recentEvents[0]?.eventType, 'extension.quiz_answer_requested');
+  assert.equal(result.recentEvents[0]?.source, 'telemetry');
+});
+
+test('PlatformService.getUsageForCurrentSession denies principals without usage:read', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () => service.getUsageForCurrentSession(createUsageRestrictedSessionSnapshot(), 'ws_1'),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: usage:read/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.exportUsageForCurrentSession exports scoped usage data for principals with usage:export', async () => {
+  const { service, subscriptionRepository, usageRepository } = createPlatformService();
+
+  subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
+  usageRepository.listInstallationsByWorkspaceId = async () =>
+    [
+      {
+        installationId: 'inst_chrome_1',
+        browser: 'chrome',
+        extensionVersion: '1.7.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        lastSeenAt: new Date('2026-03-24T11:58:00.000Z'),
+      },
+    ] as any;
+  usageRepository.listQuotaCountersByWorkspaceId = async () =>
+    [
+      {
+        key: 'limit.requests_per_day',
+        consumed: 126,
+        periodStart: new Date('2026-03-24T00:00:00.000Z'),
+        periodEnd: new Date('2026-03-25T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T11:59:00.000Z'),
+      },
+    ] as any;
+  usageRepository.listRecentTelemetryByWorkspaceId = async () =>
+    [
+      {
+        id: 'telemetry_1',
+        eventType: 'extension.quiz_answer_requested',
+        severity: 'info',
+        payloadJson: {
+          questionType: 'multiple_choice',
+          surface: 'content_script',
+        },
+        createdAt: new Date('2026-03-24T11:59:00.000Z'),
+        installation: {
+          installationId: 'inst_chrome_1',
+        },
+      },
+    ] as any;
+  usageRepository.listRecentActivityByWorkspaceId = async () =>
+    [
+      {
+        id: 'activity_1',
+        actorId: 'user_1',
+        eventType: 'usage.dashboard_opened',
+        metadataJson: {
+          route: '/app/usage',
+          workspaceId: 'ws_1',
+        },
+        createdAt: new Date('2026-03-24T11:50:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.exportUsageForCurrentSession(createUsageExportSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    format: 'json',
+    scope: 'events',
+  });
+
+  assert.equal(result.workspaceId, 'ws_1');
+  assert.equal(result.format, 'json');
+  assert.equal(result.scope, 'events');
+  assert.match(result.fileName, /^usage-demo-workspace-events-/);
+  assert.match(result.content, /extension\.quiz_answer_requested/);
+});
+
+test('PlatformService.exportUsageForCurrentSession denies principals without usage:export', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.exportUsageForCurrentSession(createConnectedSessionSnapshot(), {
+        workspaceId: 'ws_1',
+        format: 'json',
+        scope: 'full',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: usage:export/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.exportUsageForCurrentSession rejects csv full exports', async () => {
+  const { service, subscriptionRepository, usageRepository } = createPlatformService();
+
+  subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
+  usageRepository.listInstallationsByWorkspaceId = async () => [] as any;
+  usageRepository.listQuotaCountersByWorkspaceId = async () => [] as any;
+  usageRepository.listRecentTelemetryByWorkspaceId = async () => [] as any;
+  usageRepository.listRecentActivityByWorkspaceId = async () => [] as any;
+
+  await assert.rejects(
+    () =>
+      service.exportUsageForCurrentSession(createUsageExportSessionSnapshot(), {
+        workspaceId: 'ws_1',
+        format: 'csv',
+        scope: 'full',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof BadRequestException);
+      assert.match((error as Error).message, /CSV export requires a specific scope/);
+      return true;
+    },
+  );
 });
 
 test('PlatformService.listFeatureFlagsForCurrentSession maps persisted feature flags for connected admins', async () => {
@@ -424,6 +1037,101 @@ test('PlatformService.updateFeatureFlagForCurrentSession persists rollout target
     },
     updatedAt: '2026-03-24T10:15:00.000Z',
   });
+});
+
+test('PlatformService.listCompatibilityRulesForCurrentSession returns recent persisted compatibility rules', async () => {
+  const { service, extensionCompatibilityRepository } = createPlatformService();
+
+  extensionCompatibilityRepository.findRecent = async () =>
+    [
+      {
+        id: 'compat_2',
+        minimumVersion: '1.5.0',
+        recommendedVersion: '1.7.0',
+        supportedSchemaVersions: ['2', '3'],
+        requiredCapabilities: ['quiz-capture', 'history-sync'],
+        resultStatus: 'supported_with_warnings',
+        reason: 'Prompt users to upgrade during phased rollout.',
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+      {
+        id: 'compat_1',
+        minimumVersion: '1.4.0',
+        recommendedVersion: '1.6.0',
+        supportedSchemaVersions: ['2'],
+        requiredCapabilities: ['quiz-capture'],
+        resultStatus: 'supported',
+        reason: null,
+        createdAt: new Date('2026-03-23T12:00:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.listCompatibilityRulesForCurrentSession({
+    ...createConnectedSessionSnapshot(),
+    principal: {
+      ...createConnectedSessionSnapshot().principal,
+      systemRoles: ['ops_admin'],
+    },
+    permissions: ['compatibility_rules:manage'],
+  });
+
+  assert.equal(result.publishDecision.allowed, true);
+  assert.equal(result.items.length, 2);
+  assert.equal(result.items[0]?.id, 'compat_2');
+  assert.equal(result.items[0]?.resultStatus, 'supported_with_warnings');
+  assert.equal(result.items[0]?.reason, 'Prompt users to upgrade during phased rollout.');
+});
+
+test('PlatformService.publishCompatibilityRuleForCurrentSession persists a new compatibility rule for admins', async () => {
+  const { service, extensionCompatibilityRepository } = createPlatformService();
+  let capturedInput: any = null;
+
+  extensionCompatibilityRepository.create = async (input) => {
+    capturedInput = input;
+
+    return {
+      id: 'compat_3',
+      minimumVersion: input.minimumVersion,
+      recommendedVersion: input.recommendedVersion,
+      supportedSchemaVersions: input.supportedSchemaVersions,
+      requiredCapabilities: input.requiredCapabilities,
+      resultStatus: input.resultStatus,
+      reason: input.reason ?? null,
+      createdAt: new Date('2026-03-24T13:45:00.000Z'),
+    } as any;
+  };
+
+  const result = await service.publishCompatibilityRuleForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        systemRoles: ['ops_admin'],
+      },
+      permissions: ['compatibility_rules:manage'],
+    },
+    {
+      minimumVersion: '1.5.0',
+      recommendedVersion: '1.7.0',
+      supportedSchemaVersions: ['2', '3'],
+      requiredCapabilities: ['quiz-capture', 'history-sync'],
+      resultStatus: 'deprecated',
+      reason: 'Schema v2 stays available, but upgrade prompts should remain visible.',
+    },
+  );
+
+  assert.deepEqual(capturedInput, {
+    minimumVersion: '1.5.0',
+    recommendedVersion: '1.7.0',
+    supportedSchemaVersions: ['2', '3'],
+    requiredCapabilities: ['quiz-capture', 'history-sync'],
+    resultStatus: 'deprecated',
+    reason: 'Schema v2 stays available, but upgrade prompts should remain visible.',
+  });
+  assert.equal(result.rule.id, 'compat_3');
+  assert.equal(result.rule.resultStatus, 'deprecated');
+  assert.equal(result.rule.reason, 'Schema v2 stays available, but upgrade prompts should remain visible.');
+  assert.equal(result.publishedAt, '2026-03-24T13:45:00.000Z');
 });
 
 test('PlatformService.publishRemoteConfigForCurrentSession persists a connected publish for admins', async () => {
@@ -592,6 +1300,8 @@ test('PlatformService.bootstrapExtensionForConnectedRuntime uses persisted flags
       recommendedVersion: '1.6.0',
       supportedSchemaVersions: ['2'],
       requiredCapabilities: ['quiz-capture'],
+      resultStatus: 'deprecated',
+      reason: 'This rule keeps older builds in a deprecation state during staged rollout.',
     }) as any;
 
   featureFlagRepository.findAll = async () =>
@@ -678,7 +1388,8 @@ test('PlatformService.bootstrapExtensionForConnectedRuntime uses persisted flags
     },
   });
 
-  assert.equal(result.compatibility.status, 'supported_with_warnings');
+  assert.equal(result.compatibility.status, 'deprecated');
+  assert.equal(result.compatibility.reason, 'This rule keeps older builds in a deprecation state during staged rollout.');
   assert.equal(result.compatibility.minimumVersion, '1.4.0');
   assert.equal(result.compatibility.recommendedVersion, '1.6.0');
   assert.deepEqual(result.featureFlags, ['beta.remote-config-v2', 'ops.force-upgrade-banner']);

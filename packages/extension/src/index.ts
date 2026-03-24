@@ -1,6 +1,7 @@
 import {
   type AiAccessPolicy,
   type CompatibilityHandshake,
+  type CompatibilityStatus,
   type CompatibilityResult,
   type ExtensionBootstrapPayload,
   type ExtensionBootstrapPayloadV2,
@@ -17,6 +18,22 @@ export interface CompatibilityPolicy {
   recommendedVersion: string;
   supportedSchemaVersions: string[];
   requiredCapabilities?: string[];
+  resultStatus?: CompatibilityStatus;
+  reason?: string;
+}
+
+function createCompatibilityResult(
+  policy: CompatibilityPolicy,
+  status: CompatibilityStatus,
+  reason?: string,
+): CompatibilityResult {
+  return {
+    status,
+    minimumVersion: policy.minimumVersion,
+    recommendedVersion: policy.recommendedVersion,
+    supportedSchemaVersions: policy.supportedSchemaVersions,
+    ...(reason ? { reason } : {}),
+  };
 }
 
 export function compareSemver(left: string, right: string): number {
@@ -39,23 +56,19 @@ export function evaluateCompatibility(
   policy: CompatibilityPolicy,
 ): CompatibilityResult {
   if (compareSemver(handshake.extensionVersion, policy.minimumVersion) < 0) {
-    return {
-      status: 'unsupported',
-      minimumVersion: policy.minimumVersion,
-      recommendedVersion: policy.recommendedVersion,
-      supportedSchemaVersions: policy.supportedSchemaVersions,
-      reason: 'Extension version is below the minimum supported version.',
-    };
+    return createCompatibilityResult(
+      policy,
+      'unsupported',
+      'Extension version is below the minimum supported version.',
+    );
   }
 
   if (!policy.supportedSchemaVersions.includes(handshake.schemaVersion)) {
-    return {
-      status: 'supported_with_warnings',
-      minimumVersion: policy.minimumVersion,
-      recommendedVersion: policy.recommendedVersion,
-      supportedSchemaVersions: policy.supportedSchemaVersions,
-      reason: 'Config schema version is not a preferred match.',
-    };
+    return createCompatibilityResult(
+      policy,
+      'supported_with_warnings',
+      'Config schema version is not a preferred match.',
+    );
   }
 
   const missingCapabilities = (policy.requiredCapabilities ?? []).filter(
@@ -63,23 +76,21 @@ export function evaluateCompatibility(
   );
 
   if (missingCapabilities.length > 0) {
-    return {
-      status: 'deprecated',
-      minimumVersion: policy.minimumVersion,
-      recommendedVersion: policy.recommendedVersion,
-      supportedSchemaVersions: policy.supportedSchemaVersions,
-      reason: `Missing capabilities: ${missingCapabilities.join(', ')}`,
-    };
+    return createCompatibilityResult(
+      policy,
+      'deprecated',
+      `Missing capabilities: ${missingCapabilities.join(', ')}`,
+    );
   }
 
-  return {
-    status: compareSemver(handshake.extensionVersion, policy.recommendedVersion) < 0
+  const computedStatus =
+    compareSemver(handshake.extensionVersion, policy.recommendedVersion) < 0
       ? 'supported_with_warnings'
-      : 'supported',
-    minimumVersion: policy.minimumVersion,
-    recommendedVersion: policy.recommendedVersion,
-    supportedSchemaVersions: policy.supportedSchemaVersions,
-  };
+      : 'supported';
+  const status = policy.resultStatus && policy.resultStatus !== 'supported' ? policy.resultStatus : computedStatus;
+  const reason = status !== computedStatus ? policy.reason : policy.reason ?? undefined;
+
+  return createCompatibilityResult(policy, status, reason);
 }
 
 export function resolveFeatureFlags(

@@ -19,8 +19,14 @@ import { ExtensionControlService } from './extension/extension-control.service';
 import { ExtensionInstallationRepository } from './extension/extension-installation.repository';
 import { ExtensionInstallationSessionRepository } from './extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
+import { AdminLogRepository } from './logs/admin-log.repository';
 import { PlatformController } from './platform.controller';
 import { PlatformService } from './platform.service';
+import { AiProviderPolicyRepository } from './providers/ai-provider-policy.repository';
+import { AiProviderPolicyService } from './providers/ai-provider-policy.service';
+import { ProviderCredentialController } from './providers/provider-credential.controller';
+import { ProviderCredentialRepository } from './providers/provider-credential.repository';
+import { ProviderCredentialService } from './providers/provider-credential.service';
 import { QueueDispatchService } from './queue/queue-dispatch.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
@@ -34,7 +40,7 @@ import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
-  controllers: [AuthController, BillingController, PlatformController, ExtensionControlController],
+  controllers: [AuthController, BillingController, PlatformController, ExtensionControlController, ProviderCredentialController],
   providers: [
     AuthService,
     BillingRepository,
@@ -47,10 +53,15 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     ExtensionInstallationSessionRepository,
     FeatureFlagRepository,
     InfrastructureHealthService,
+    AdminLogRepository,
     JwtAuthGuard,
     PasswordResetRepository,
     PlatformService,
     PrismaService,
+    AiProviderPolicyRepository,
+    AiProviderPolicyService,
+    ProviderCredentialRepository,
+    ProviderCredentialService,
     QueueDispatchService,
     RateLimitGuard,
     RemoteConfigRepository,

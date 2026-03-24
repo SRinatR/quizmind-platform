@@ -11,59 +11,10 @@
     "types": [
       "node"
     ],
-    "ignoreDeprecations": "6.0",
     "strict": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@quizmind/contracts": [
-        "packages/contracts/src"
-      ],
-      "@quizmind/config": [
-        "packages/config/src"
-      ],
-      "@quizmind/auth": [
-        "packages/auth/src"
-      ],
-      "@quizmind/billing": [
-        "packages/billing/src"
-      ],
-      "@quizmind/providers": [
-        "packages/providers/src"
-      ],
-      "@quizmind/secrets": [
-        "packages/secrets/src"
-      ],
-      "@quizmind/usage": [
-        "packages/usage/src"
-      ],
-      "@quizmind/extension": [
-        "packages/extension/src"
-      ],
-      "@quizmind/logger": [
-        "packages/logger/src"
-      ],
-      "@quizmind/permissions": [
-        "packages/permissions/src"
-      ],
-      "@quizmind/ui": [
-        "packages/ui/src"
-      ],
-      "@quizmind/database": [
-        "packages/database/src"
-      ],
-      "@quizmind/email": [
-        "packages/email/src"
-      ],
-      "@quizmind/queue": [
-        "packages/queue/src"
-      ],
-      "@quizmind/testing": [
-        "packages/testing/src"
-      ]
-    }
+    "forceConsistentCasingInFileNames": true
   }
 }

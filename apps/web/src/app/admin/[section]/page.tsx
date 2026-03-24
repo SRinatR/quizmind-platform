@@ -1,5 +1,7 @@
 import { buildAccessContext } from '@quizmind/auth';
 import {
+  type AdminLogFilters,
+  type AdminWebhookFilters,
   type ExtensionBootstrapRequest,
   type SupportTicketQueueFilters,
   type UsageEventPayload,
@@ -8,9 +10,13 @@ import {
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
+  getAdminProviderGovernance,
+  getAdminLogs,
+  getAdminWebhooks,
   getAdminUsers,
   getAdminPlans,
   getBillingPlans,
+  getCompatibilityRules,
   getFeatureFlags,
   getRemoteConfigState,
   getSession,
@@ -23,11 +29,16 @@ import {
 import { getVisibleAdminSections } from '../../../features/navigation/visibility';
 import { ExtensionControlClient } from './extension-control-client';
 import { FeatureFlagsClient } from './feature-flags-client';
+import { CompatibilityClient } from './compatibility-client';
+import { AdminAiProvidersClient } from './admin-ai-providers-client';
 import { PlansClient } from './plans-client';
 import { RemoteConfigClient } from './remote-config-client';
 import { SupportSessionsClient } from './support-sessions-client';
 import { SupportTicketsClient } from './support-tickets-client';
 import { UsersDirectoryClient } from './users-directory-client';
+import { UsageExplorerClient } from './usage-explorer-client';
+import { LogsExplorerClient } from './logs-explorer-client';
+import { WebhooksClient } from './webhooks-client';
 
 interface AdminSectionPageProps {
   params: Promise<{ section: string }>;
@@ -116,6 +127,21 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     limit: readIntegerSearchParam(resolvedSearchParams, 'ticketLimit'),
     timelineLimit: readIntegerSearchParam(resolvedSearchParams, 'ticketTimeline'),
   };
+  const adminLogFilters: Partial<AdminLogFilters> = {
+    ...(sessionWorkspaceId ? { workspaceId: sessionWorkspaceId } : {}),
+    stream: readSearchParam(resolvedSearchParams, 'logStream') as AdminLogFilters['stream'] | undefined,
+    severity: readSearchParam(resolvedSearchParams, 'logSeverity') as AdminLogFilters['severity'] | undefined,
+    search: readSearchParam(resolvedSearchParams, 'logSearch'),
+    limit: readIntegerSearchParam(resolvedSearchParams, 'logLimit'),
+  };
+  const adminWebhookFilters: Partial<AdminWebhookFilters> = {
+    provider: readSearchParam(resolvedSearchParams, 'webhookProvider') as
+      | AdminWebhookFilters['provider']
+      | undefined,
+    status: readSearchParam(resolvedSearchParams, 'webhookStatus') as AdminWebhookFilters['status'] | undefined,
+    search: readSearchParam(resolvedSearchParams, 'webhookSearch'),
+    limit: readIntegerSearchParam(resolvedSearchParams, 'webhookLimit'),
+  };
   const extensionBootstrapRequest = session
     ? createInitialExtensionBootstrapRequest({
         sessionUserId: session.user.id,
@@ -126,22 +152,38 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     featureFlags,
     billingPlans,
     adminPlans,
+    adminProviderGovernance,
+    compatibilityRules,
     adminUsers,
     remoteConfigState,
     supportImpersonationSessions,
     supportTickets,
     usageSummary,
+    adminLogs,
+    adminWebhooks,
   ] =
     await Promise.all([
       getFeatureFlags(persona, accessToken),
       getBillingPlans(),
       getAdminPlans(accessToken),
+      resolvedParams.section === 'ai-providers'
+        ? getAdminProviderGovernance(sessionWorkspaceId, accessToken)
+        : Promise.resolve(null),
+      resolvedParams.section === 'compatibility'
+        ? getCompatibilityRules(persona, accessToken)
+        : Promise.resolve(null),
       getAdminUsers(persona, accessToken),
       getRemoteConfigState(persona, sessionWorkspaceId, accessToken),
       getSupportImpersonationSessions(persona, accessToken),
       getSupportTickets(persona, accessToken, supportTicketFilters),
-      resolvedParams.section === 'extension-control' && sessionWorkspaceId
+      (resolvedParams.section === 'extension-control' || resolvedParams.section === 'usage') && sessionWorkspaceId
         ? getUsageSummary(persona, sessionWorkspaceId, accessToken)
+        : Promise.resolve(null),
+      resolvedParams.section === 'logs'
+        ? getAdminLogs(persona, adminLogFilters, accessToken)
+        : Promise.resolve(null),
+      resolvedParams.section === 'webhooks'
+        ? getAdminWebhooks(persona, adminWebhookFilters, accessToken)
         : Promise.resolve(null),
     ]);
   const extensionBootstrap =
@@ -151,6 +193,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const isConnectedSession = session?.personaKey === 'connected-user';
   const canEditFeatureFlags = Boolean(isConnectedSession && session?.permissions.includes('feature_flags:write'));
   const canManagePlans = Boolean(isConnectedSession && session?.permissions.includes('plans:manage'));
+  const canExportAuditLogs = Boolean(isConnectedSession && session?.permissions.includes('audit_logs:export'));
+  const canExportUsage = Boolean(isConnectedSession && session?.permissions.includes('usage:export'));
   const sessionLabel = session?.user.displayName || session?.user.email;
   const canManageSupportSessions = Boolean(isConnectedSession && session?.permissions.includes('support:impersonate'));
   const context = session ? buildAccessContext(session.principal) : null;
@@ -257,6 +301,130 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               )}
             </article>
           </section>
+        ) : section.id === 'logs' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {adminLogs?.items.length ?? 0} visible
+                    {(adminLogs?.items.length ?? 0) === 1 ? ' event' : ' events'}
+                  </span>
+                  <span className="tag">
+                    {adminLogs
+                      ? adminLogs.streamCounts.audit +
+                        adminLogs.streamCounts.activity +
+                        adminLogs.streamCounts.security +
+                        adminLogs.streamCounts.domain
+                      : 0}{' '}
+                    matched
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Visibility</span>
+                <h2>Current log scope</h2>
+                {adminLogs ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Workspace</strong>
+                      <p>{adminLogs.workspace?.name ?? 'No workspace scope selected.'}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Filter</strong>
+                      <p>
+                        {adminLogs.filters.stream} | {adminLogs.filters.severity}
+                        {adminLogs.filters.search ? ` | ${adminLogs.filters.search}` : ''}
+                      </p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Limit</strong>
+                      <p>{adminLogs.filters.limit}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Admin log state is unavailable for this environment.</p>
+                )}
+              </article>
+            </section>
+            {adminLogs ? (
+              <LogsExplorerClient
+                canExportLogs={canExportAuditLogs}
+                isConnectedSession={isConnectedSession}
+                snapshot={adminLogs}
+                workspaceOptions={session.workspaces.map((workspace) => ({
+                  id: workspace.id,
+                  name: workspace.name,
+                  role: workspace.role,
+                }))}
+              />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Logs</span>
+                <h2>Admin log stream state is unavailable.</h2>
+                <p>The API did not return an audit log snapshot for this workspace context.</p>
+              </section>
+            )}
+          </>
+        ) : section.id === 'webhooks' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {adminWebhooks?.items.length ?? 0} visible
+                    {(adminWebhooks?.items.length ?? 0) === 1 ? ' delivery' : ' deliveries'}
+                  </span>
+                  <span className={adminWebhooks && adminWebhooks.statusCounts.failed > 0 ? 'tag warn' : 'tag'}>
+                    failed {adminWebhooks?.statusCounts.failed ?? 0}
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Queue coverage</span>
+                <h2>Current worker surface</h2>
+                {adminWebhooks ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Queues</strong>
+                      <p>{adminWebhooks.queues.length} declared control-plane queues</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Retry access</strong>
+                      <p>{adminWebhooks.retryDecision.allowed ? 'Allowed for this operator.' : 'Read-only inspection mode.'}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Filters</strong>
+                      <p>
+                        {adminWebhooks.filters.provider} | {adminWebhooks.filters.status}
+                        {adminWebhooks.filters.search ? ` | ${adminWebhooks.filters.search}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Webhook inspection state is unavailable for this environment.</p>
+                )}
+              </article>
+            </section>
+            {adminWebhooks ? (
+              <WebhooksClient
+                isConnectedSession={isConnectedSession}
+                snapshot={adminWebhooks}
+              />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Webhooks</span>
+                <h2>Webhook ops state is unavailable.</h2>
+                <p>The API did not return webhook delivery visibility for this environment.</p>
+              </section>
+            )}
+          </>
         ) : section.id === 'feature-flags' ? (
           <>
             <section className="split-grid">
@@ -304,6 +472,187 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               }}
               planOptions={Array.from(new Set((billingPlans?.plans ?? []).map((entry) => entry.plan.code)))}
             />
+          </>
+        ) : section.id === 'compatibility' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className={compatibilityRules?.publishDecision.allowed ? 'tag' : 'tag warn'}>
+                    {compatibilityRules?.publishDecision.allowed ? 'publish access' : 'publish blocked'}
+                  </span>
+                  <span className="tag">
+                    {compatibilityRules?.items.length ?? 0} rule
+                    {(compatibilityRules?.items.length ?? 0) === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Compatibility baseline</span>
+                <h2>Latest extension gate</h2>
+                {compatibilityRules?.items[0] ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Version policy</strong>
+                      <p>
+                        min {compatibilityRules.items[0].minimumVersion} | recommended{' '}
+                        {compatibilityRules.items[0].recommendedVersion}
+                      </p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Verdict</strong>
+                      <p>{compatibilityRules.items[0].resultStatus}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Reason</strong>
+                      <p>{compatibilityRules.items[0].reason ?? 'No explicit override reason on the latest rule.'}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>No compatibility rules are available for this environment.</p>
+                )}
+              </article>
+            </section>
+            {compatibilityRules ? (
+              <CompatibilityClient initialState={compatibilityRules} isConnectedSession={isConnectedSession} />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Compatibility</span>
+                <h2>Compatibility rule state is unavailable.</h2>
+                <p>The API did not return a compatibility rule snapshot for this environment.</p>
+              </section>
+            )}
+          </>
+        ) : section.id === 'ai-providers' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {adminProviderGovernance?.items.length ?? 0} visible
+                    {(adminProviderGovernance?.items.length ?? 0) === 1 ? ' credential' : ' credentials'}
+                  </span>
+                  <span className="tag">
+                    {adminProviderGovernance?.providerBreakdown.filter((entry) => entry.totalCredentials > 0).length ?? 0} active
+                    {' '}providers
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Governance context</span>
+                <h2>Selected workspace scope</h2>
+                {adminProviderGovernance ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Workspace</strong>
+                      <p>{adminProviderGovernance.workspace?.name ?? 'No workspace resolved.'}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Policy mode</strong>
+                      <p>{adminProviderGovernance.aiAccessPolicy.mode}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Routing rule</strong>
+                      <p>{adminProviderGovernance.aiAccessPolicy.reason ?? 'Proxy routing remains platform-managed.'}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Provider governance state is unavailable for this environment.</p>
+                )}
+              </article>
+            </section>
+            {adminProviderGovernance ? (
+              <AdminAiProvidersClient
+                governance={adminProviderGovernance}
+                isConnectedSession={isConnectedSession}
+                workspaceOptions={session.workspaces.map((workspace) => ({
+                  id: workspace.id,
+                  name: workspace.name,
+                  role: workspace.role,
+                }))}
+              />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">AI Providers</span>
+                <h2>Provider governance is unavailable.</h2>
+                <p>The API did not return an admin provider governance snapshot for this workspace context.</p>
+              </section>
+            )}
+          </>
+        ) : section.id === 'usage' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {usageSummary?.quotas.length ?? 0} quota
+                    {(usageSummary?.quotas.length ?? 0) === 1 ? '' : 's'}
+                  </span>
+                  <span className="tag">
+                    {usageSummary?.installations.length ?? 0} installation
+                    {(usageSummary?.installations.length ?? 0) === 1 ? '' : 's'}
+                  </span>
+                  <span className={canExportUsage ? 'tag' : 'tag warn'}>
+                    {canExportUsage ? 'export access' : 'read-only'}
+                  </span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Usage context</span>
+                <h2>Current workspace scope</h2>
+                {usageSummary ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Workspace</strong>
+                      <p>{usageSummary.workspace.name}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Plan and status</strong>
+                      <p>
+                        {usageSummary.planCode} | {usageSummary.subscriptionStatus}
+                      </p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Current period</strong>
+                      <p>
+                        {usageSummary.currentPeriodStart && usageSummary.currentPeriodEnd
+                          ? `${usageSummary.currentPeriodStart} -> ${usageSummary.currentPeriodEnd}`
+                          : 'Current period unavailable'}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Usage summary is unavailable for this workspace context.</p>
+                )}
+              </article>
+            </section>
+            {usageSummary ? (
+              <UsageExplorerClient
+                canExportUsage={canExportUsage}
+                isConnectedSession={isConnectedSession}
+                usageSummary={usageSummary}
+                workspaceOptions={session.workspaces.map((workspace) => ({
+                  id: workspace.id,
+                  name: workspace.name,
+                  role: workspace.role,
+                }))}
+              />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Usage</span>
+                <h2>Usage explorer state is unavailable.</h2>
+                <p>The API did not return a usage snapshot for this workspace context.</p>
+              </section>
+            )}
           </>
         ) : section.id === 'extension-control' ? (
           <>

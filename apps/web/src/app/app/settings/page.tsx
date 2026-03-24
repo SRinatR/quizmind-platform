@@ -4,6 +4,8 @@ import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAuthSessions,
+  getProviderCatalog,
+  getProviderCredentialInventory,
   getSession,
   getSubscription,
   resolvePersona,
@@ -25,6 +27,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const workspaceId = session?.workspaces[0]?.id;
   const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
   const authSessions = await getAuthSessions(accessToken);
+  const providerCatalog = await getProviderCatalog();
+  const providerCredentialInventory = await getProviderCredentialInventory(workspaceId, accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
 
@@ -34,7 +38,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
       }
       currentPersona={persona}
-      description="Account security and session inventory now come from the live auth system, so this dashboard page reflects real session state instead of a static placeholder."
+      description="Account security, AI access policy, and provider key inventory now come from the live control plane instead of local-only extension state."
       eyebrow="Settings"
       pathname="/app/settings"
       showPersonaSwitcher={!isConnectedSession}
@@ -44,6 +48,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <SettingsPageClient
           authSessions={authSessions}
           isConnectedSession={isConnectedSession}
+          providerCatalog={providerCatalog}
+          providerCredentialInventory={providerCredentialInventory}
           session={session}
           subscription={subscription}
           visibleSections={visibleSections}

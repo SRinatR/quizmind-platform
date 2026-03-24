@@ -3,6 +3,11 @@ import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
 import {
+  type AdminLogFilters,
+  type AdminLogExportRequest,
+  type AdminWebhookFilters,
+  type AdminWebhookRetryRequest,
+  type CompatibilityRulePublishRequest,
   type ExtensionBootstrapRequest,
   type FeatureFlagUpdateRequest,
   type RemoteConfigActivateVersionRequest,
@@ -11,6 +16,7 @@ import {
   type SupportImpersonationRequest,
   type SupportTicketQueuePresetFavoriteRequest,
   type SupportTicketWorkflowUpdateRequest,
+  type UsageExportRequest,
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
@@ -90,6 +96,70 @@ export class PlatformController {
     return ok(await this.platformService.getUsageForCurrentSession(session, workspaceId));
   }
 
+  @Get('admin/logs')
+  async listAdminLogs(
+    @Query('persona') persona?: string,
+    @Query('workspaceId') workspaceId?: string,
+    @Query('stream') stream?: string,
+    @Query('severity') severity?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const filters: Partial<AdminLogFilters> = {
+      workspaceId,
+      ...(stream ? { stream: stream as AdminLogFilters['stream'] } : {}),
+      ...(severity ? { severity: severity as AdminLogFilters['severity'] } : {}),
+      ...(search ? { search } : {}),
+      ...(limit ? { limit: Number(limit) } : {}),
+    };
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listAdminLogs(persona, filters));
+    }
+
+    return ok(await this.platformService.listAdminLogsForCurrentSession(session, filters));
+  }
+
+  @Get('admin/webhooks')
+  async listAdminWebhooks(
+    @Query('persona') persona?: string,
+    @Query('provider') provider?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const filters: Partial<AdminWebhookFilters> = {
+      ...(provider ? { provider: provider as AdminWebhookFilters['provider'] } : {}),
+      ...(status ? { status: status as AdminWebhookFilters['status'] } : {}),
+      ...(search ? { search } : {}),
+      ...(limit ? { limit: Number(limit) } : {}),
+    };
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listAdminWebhooks(persona, filters));
+    }
+
+    return ok(await this.platformService.listAdminWebhooksForCurrentSession(session, filters));
+  }
+
+  @Post('admin/webhooks/retry')
+  async retryAdminWebhook(
+    @Body() request?: Partial<AdminWebhookRetryRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      throw new UnauthorizedException('Connected admin authentication is required to retry webhook deliveries.');
+    }
+
+    return ok(await this.platformService.retryAdminWebhookForCurrentSession(session, request));
+  }
+
   @Get('admin/users')
   async listUsers(
     @Query('persona') persona?: string,
@@ -116,6 +186,34 @@ export class PlatformController {
     }
 
     return ok(await this.platformService.listFeatureFlagsForCurrentSession(session));
+  }
+
+  @Get('admin/compatibility')
+  async listCompatibilityRules(
+    @Query('persona') persona?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listCompatibilityRules(persona));
+    }
+
+    return ok(await this.platformService.listCompatibilityRulesForCurrentSession(session));
+  }
+
+  @Post('admin/compatibility/publish')
+  async publishCompatibilityRule(
+    @Body() request?: Partial<CompatibilityRulePublishRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.publishCompatibilityRule(request));
+    }
+
+    return ok(await this.platformService.publishCompatibilityRuleForCurrentSession(session, request));
   }
 
   @Post('admin/feature-flags/update')
@@ -183,6 +281,36 @@ export class PlatformController {
   @Post('extension/usage-events')
   async ingestUsageEvent(@Body() event?: Partial<UsageEventPayload>) {
     return ok(await this.platformService.ingestUsageEvent(event));
+  }
+
+  @Post('admin/usage/export')
+  async exportUsage(
+    @Body() request?: Partial<UsageExportRequest>,
+    @Query('persona') persona?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.exportUsage(persona, request));
+    }
+
+    return ok(await this.platformService.exportUsageForCurrentSession(session, request));
+  }
+
+  @Post('admin/logs/export')
+  async exportAdminLogs(
+    @Body() request?: Partial<AdminLogExportRequest>,
+    @Query('persona') persona?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.exportAdminLogs(persona, request));
+    }
+
+    return ok(await this.platformService.exportAdminLogsForCurrentSession(session, request));
   }
 
   @Get('support/impersonation-sessions')

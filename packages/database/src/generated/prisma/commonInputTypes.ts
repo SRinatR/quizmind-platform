@@ -440,6 +440,40 @@ export type EnumCredentialValidationStatusWithAggregatesFilter<$PrismaModel = ne
   _max?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
 }
 
+export type EnumAiProviderPolicyScopeTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiProviderPolicyScopeType | Prisma.EnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel> | $Enums.AiProviderPolicyScopeType
+}
+
+export type EnumAiAccessPolicyModeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiAccessPolicyMode | Prisma.EnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiAccessPolicyModeFilter<$PrismaModel> | $Enums.AiAccessPolicyMode
+}
+
+export type EnumAiProviderPolicyScopeTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiProviderPolicyScopeType | Prisma.EnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiProviderPolicyScopeTypeWithAggregatesFilter<$PrismaModel> | $Enums.AiProviderPolicyScopeType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel>
+}
+
+export type EnumAiAccessPolicyModeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiAccessPolicyMode | Prisma.EnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiAccessPolicyModeWithAggregatesFilter<$PrismaModel> | $Enums.AiAccessPolicyMode
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAiAccessPolicyModeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAiAccessPolicyModeFilter<$PrismaModel>
+}
+
 export type EnumEventSeverityFilter<$PrismaModel = never> = {
   equals?: $Enums.EventSeverity | Prisma.EnumEventSeverityFieldRefInput<$PrismaModel>
   in?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel>
@@ -857,6 +891,40 @@ export type NestedEnumCredentialValidationStatusWithAggregatesFilter<$PrismaMode
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCredentialValidationStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiProviderPolicyScopeType | Prisma.EnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel> | $Enums.AiProviderPolicyScopeType
+}
+
+export type NestedEnumAiAccessPolicyModeFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiAccessPolicyMode | Prisma.EnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiAccessPolicyModeFilter<$PrismaModel> | $Enums.AiAccessPolicyMode
+}
+
+export type NestedEnumAiProviderPolicyScopeTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiProviderPolicyScopeType | Prisma.EnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiProviderPolicyScopeType[] | Prisma.ListEnumAiProviderPolicyScopeTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiProviderPolicyScopeTypeWithAggregatesFilter<$PrismaModel> | $Enums.AiProviderPolicyScopeType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAiProviderPolicyScopeTypeFilter<$PrismaModel>
+}
+
+export type NestedEnumAiAccessPolicyModeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.AiAccessPolicyMode | Prisma.EnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  in?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.AiAccessPolicyMode[] | Prisma.ListEnumAiAccessPolicyModeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumAiAccessPolicyModeWithAggregatesFilter<$PrismaModel> | $Enums.AiAccessPolicyMode
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumAiAccessPolicyModeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumAiAccessPolicyModeFilter<$PrismaModel>
 }
 
 export type NestedEnumEventSeverityFilter<$PrismaModel = never> = {

@@ -78,9 +78,19 @@ export const aiAccessPolicyModes = [
   'admin_approved_user_key',
   'enterprise_managed',
 ] as const;
+export const aiProviderPolicyScopeTypes = ['global', 'workspace'] as const;
 export const usageQuotaEnforcementModes = ['hard_limit', 'soft_limit', 'grace'] as const;
 export const usageDecisionCodes = ['accepted', 'quota_exceeded', 'policy_denied', 'unsupported'] as const;
 export const providerAvailabilityStates = ['active', 'beta', 'deprecated', 'disabled'] as const;
+export const usageExportFormats = ['json', 'csv'] as const;
+export const usageExportScopes = ['full', 'quotas', 'installations', 'events'] as const;
+export const adminLogStreams = ['audit', 'activity', 'security', 'domain'] as const;
+export const adminLogStreamFilters = ['all', 'audit', 'activity', 'security', 'domain'] as const;
+export const adminLogSeverityFilters = ['all', 'debug', 'info', 'warn', 'error'] as const;
+export const adminLogExportFormats = ['json', 'csv'] as const;
+export const adminWebhookStatusFilters = ['all', 'received', 'processed', 'failed'] as const;
+export const adminWebhookProviderFilters = ['all', 'mock', 'stripe', 'manual'] as const;
+export const adminQueueProcessorStates = ['bound', 'declared_only'] as const;
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
@@ -99,9 +109,19 @@ export type AiProvider = (typeof aiProviders)[number];
 export type CredentialOwnerType = (typeof credentialOwnerTypes)[number];
 export type CredentialValidationStatus = (typeof credentialValidationStatuses)[number];
 export type AiAccessPolicyMode = (typeof aiAccessPolicyModes)[number];
+export type AiProviderPolicyScopeType = (typeof aiProviderPolicyScopeTypes)[number];
 export type UsageQuotaEnforcementMode = (typeof usageQuotaEnforcementModes)[number];
 export type UsageDecisionCode = (typeof usageDecisionCodes)[number];
 export type ProviderAvailabilityState = (typeof providerAvailabilityStates)[number];
+export type UsageExportFormat = (typeof usageExportFormats)[number];
+export type UsageExportScope = (typeof usageExportScopes)[number];
+export type AdminLogStream = (typeof adminLogStreams)[number];
+export type AdminLogStreamFilter = (typeof adminLogStreamFilters)[number];
+export type AdminLogSeverityFilter = (typeof adminLogSeverityFilters)[number];
+export type AdminLogExportFormat = (typeof adminLogExportFormats)[number];
+export type AdminWebhookStatusFilter = (typeof adminWebhookStatusFilters)[number];
+export type AdminWebhookProviderFilter = (typeof adminWebhookProviderFilters)[number];
+export type AdminQueueProcessorState = (typeof adminQueueProcessorStates)[number];
 
 export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
@@ -187,6 +207,38 @@ export interface CompatibilityResult {
   recommendedVersion: string;
   supportedSchemaVersions: string[];
   reason?: string;
+}
+
+export interface CompatibilityRuleDefinition {
+  id: string;
+  minimumVersion: string;
+  recommendedVersion: string;
+  supportedSchemaVersions: string[];
+  requiredCapabilities?: string[];
+  resultStatus: CompatibilityStatus;
+  reason?: string;
+  createdAt: string;
+}
+
+export interface CompatibilityRulesSnapshot {
+  personaKey: string;
+  publishDecision: AccessDecision;
+  items: CompatibilityRuleDefinition[];
+  permissions: string[];
+}
+
+export interface CompatibilityRulePublishRequest {
+  minimumVersion: string;
+  recommendedVersion: string;
+  supportedSchemaVersions: string[];
+  requiredCapabilities?: string[];
+  resultStatus: CompatibilityStatus;
+  reason?: string | null;
+}
+
+export interface CompatibilityRulePublishResult {
+  rule: CompatibilityRuleDefinition;
+  publishedAt: string;
 }
 
 export interface AuditEvent {
@@ -380,6 +432,138 @@ export interface AdminUserDirectorySnapshot {
   accessDecision: AccessDecision;
   items: AdminUserDirectoryEntry[];
   permissions: string[];
+}
+
+export interface AdminLogActorSummary {
+  id: string;
+  email?: string;
+  displayName?: string;
+}
+
+export interface AdminLogWorkspaceSummary {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export interface AdminLogFilters {
+  workspaceId?: string;
+  stream: AdminLogStreamFilter;
+  severity: AdminLogSeverityFilter;
+  search?: string;
+  limit: number;
+}
+
+export interface AdminLogEntry {
+  id: string;
+  stream: AdminLogStream;
+  eventType: string;
+  summary: string;
+  occurredAt: string;
+  severity?: UsageEventSeverity;
+  status?: 'success' | 'failure';
+  actor?: AdminLogActorSummary;
+  workspace?: AdminLogWorkspaceSummary;
+  targetType?: string;
+  targetId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface AdminLogStreamCounts {
+  audit: number;
+  activity: number;
+  security: number;
+  domain: number;
+}
+
+export interface AdminLogsSnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  workspace?: WorkspaceSummary;
+  filters: AdminLogFilters;
+  items: AdminLogEntry[];
+  streamCounts: AdminLogStreamCounts;
+  permissions: string[];
+}
+
+export interface AdminLogExportRequest {
+  workspaceId?: string;
+  stream?: AdminLogStreamFilter;
+  severity?: AdminLogSeverityFilter;
+  search?: string;
+  limit?: number;
+  format: AdminLogExportFormat;
+}
+
+export interface AdminLogExportResult {
+  workspaceId?: string;
+  format: AdminLogExportFormat;
+  fileName: string;
+  contentType: string;
+  exportedAt: string;
+  itemCount: number;
+  content: string;
+}
+
+export interface AdminWebhookFilters {
+  provider: AdminWebhookProviderFilter;
+  status: AdminWebhookStatusFilter;
+  search?: string;
+  limit: number;
+}
+
+export interface AdminQueueSummary {
+  name: PlatformQueue;
+  description: string;
+  attempts: number;
+  processorState: AdminQueueProcessorState;
+  handler?: string;
+}
+
+export interface AdminWebhookEventSummary {
+  id: string;
+  provider: BillingProvider;
+  externalEventId: string;
+  eventType: string;
+  status: 'received' | 'processed' | 'failed';
+  queue: PlatformQueue;
+  retryable: boolean;
+  receivedAt: string;
+  providerCreatedAt?: string | null;
+  processedAt?: string | null;
+  lastError?: string | null;
+}
+
+export interface AdminWebhookStatusCounts {
+  received: number;
+  processed: number;
+  failed: number;
+}
+
+export interface AdminWebhooksSnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  retryDecision: AccessDecision;
+  filters: AdminWebhookFilters;
+  items: AdminWebhookEventSummary[];
+  statusCounts: AdminWebhookStatusCounts;
+  queues: AdminQueueSummary[];
+  permissions: string[];
+}
+
+export interface AdminWebhookRetryRequest {
+  webhookEventId: string;
+}
+
+export interface AdminWebhookRetryResult {
+  webhookEventId: string;
+  provider: BillingProvider;
+  externalEventId: string;
+  eventType: string;
+  queue: PlatformQueue;
+  jobId: string;
+  retriedAt: string;
+  status: 'received';
 }
 
 export interface SubscriptionSummary {
@@ -588,9 +772,48 @@ export interface AiAccessPolicy {
   allowPlatformManaged: boolean;
   allowBringYourOwnKey: boolean;
   allowDirectProviderMode: boolean;
+  allowWorkspaceSharedCredentials?: boolean;
+  requireAdminApproval?: boolean;
+  allowVisionOnUserKeys?: boolean;
   providers: AiProvider[];
+  allowedModelTags?: string[];
   defaultProvider?: AiProvider;
   defaultModel?: string;
+  reason?: string;
+}
+
+export interface AiProviderPolicySnapshot extends AiAccessPolicy {
+  scopeType: AiProviderPolicyScopeType;
+  scopeKey: string;
+  workspaceId?: string | null;
+  updatedById?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiProviderPolicyHistoryActor {
+  id: string;
+  email?: string | null;
+  displayName?: string | null;
+}
+
+export interface AiProviderPolicyHistoryEntry {
+  id: string;
+  eventType: string;
+  summary: string;
+  scopeType: AiProviderPolicyScopeType;
+  scopeKey: string;
+  workspaceId?: string | null;
+  actor?: AiProviderPolicyHistoryActor | null;
+  occurredAt: string;
+  mode?: AiAccessPolicyMode;
+  providers: AiProvider[];
+  allowBringYourOwnKey?: boolean;
+  allowWorkspaceSharedCredentials?: boolean;
+  requireAdminApproval?: boolean;
+  defaultProvider?: AiProvider;
+  defaultModel?: string;
+  allowedModelTags?: string[];
   reason?: string;
 }
 
@@ -666,6 +889,22 @@ export interface UsageEventIngestResult {
     occurredAt: string;
     status: string;
   };
+}
+
+export interface UsageExportRequest {
+  workspaceId: string;
+  format: UsageExportFormat;
+  scope: UsageExportScope;
+}
+
+export interface UsageExportResult {
+  workspaceId: string;
+  format: UsageExportFormat;
+  scope: UsageExportScope;
+  fileName: string;
+  contentType: string;
+  exportedAt: string;
+  content: string;
 }
 
 export type UsageMetricStatus = 'healthy' | 'warning' | 'exceeded';
@@ -752,18 +991,106 @@ export interface ProviderModelCatalogEntry {
   planAvailability?: string[];
 }
 
+export interface ProviderCatalogPayload {
+  providers: ProviderRegistryEntry[];
+  models: ProviderModelCatalogEntry[];
+}
+
 export interface ProviderCredentialSummary {
   id: string;
   provider: AiProvider;
   ownerType: CredentialOwnerType;
   ownerId: string;
+  userId?: string | null;
+  workspaceId?: string | null;
   validationStatus: CredentialValidationStatus;
+  validationMessage?: string | null;
   scopes: string[];
+  secretPreview?: string | null;
   lastValidatedAt?: string | null;
   disabledAt?: string | null;
   revokedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProviderCredentialInventory {
+  workspace?: WorkspaceSummary;
+  permissions: string[];
+  providers: ProviderRegistryEntry[];
+  models: ProviderModelCatalogEntry[];
+  aiAccessPolicy: AiAccessPolicy;
+  policy: AiProviderPolicySnapshot;
+  items: ProviderCredentialSummary[];
+}
+
+export interface ProviderCredentialOwnerBreakdown {
+  platform: number;
+  workspace: number;
+  user: number;
+}
+
+export interface ProviderCredentialStatusBreakdown {
+  pending: number;
+  valid: number;
+  invalid: number;
+  revoked: number;
+}
+
+export interface ProviderCredentialProviderBreakdown {
+  provider: AiProvider;
+  displayName: string;
+  availability: ProviderAvailabilityState;
+  totalCredentials: number;
+  ownerBreakdown: ProviderCredentialOwnerBreakdown;
+  statusBreakdown: ProviderCredentialStatusBreakdown;
+}
+
+export interface AdminProviderGovernanceSnapshot {
+  workspace?: WorkspaceSummary;
+  permissions: string[];
+  providers: ProviderRegistryEntry[];
+  models: ProviderModelCatalogEntry[];
+  aiAccessPolicy: AiAccessPolicy;
+  policy: AiProviderPolicySnapshot;
+  policyHistory: AiProviderPolicyHistoryEntry[];
+  items: ProviderCredentialSummary[];
+  ownerBreakdown: ProviderCredentialOwnerBreakdown;
+  statusBreakdown: ProviderCredentialStatusBreakdown;
+  providerBreakdown: ProviderCredentialProviderBreakdown[];
+}
+
+export interface AiProviderPolicyUpdateRequest {
+  workspaceId?: string;
+  mode?: AiAccessPolicyMode;
+  allowPlatformManaged?: boolean;
+  allowBringYourOwnKey?: boolean;
+  allowDirectProviderMode?: boolean;
+  allowWorkspaceSharedCredentials?: boolean;
+  requireAdminApproval?: boolean;
+  allowVisionOnUserKeys?: boolean;
+  providers?: AiProvider[];
+  allowedModelTags?: string[];
+  defaultProvider?: AiProvider | null;
+  defaultModel?: string | null;
+  reason?: string | null;
+}
+
+export interface AiProviderPolicyUpdateResult {
+  policy: AiProviderPolicySnapshot;
+  updatedAt: string;
+}
+
+export interface AiProviderPolicyResetRequest {
+  workspaceId: string;
+}
+
+export interface AiProviderPolicyResetResult {
+  workspaceId: string;
+  scopeKey: string;
+  resetApplied: boolean;
+  policy: AiProviderPolicySnapshot;
+  resetAt: string;
 }
 
 export interface ProviderCredentialCreateRequest {
@@ -773,6 +1100,27 @@ export interface ProviderCredentialCreateRequest {
   workspaceId?: string;
   secret: string;
   scopes?: string[];
+}
+
+export interface ProviderCredentialRotateRequest {
+  credentialId: string;
+  secret: string;
+  scopes?: string[];
+}
+
+export interface ProviderCredentialRevokeRequest {
+  credentialId: string;
+  reason?: string;
+}
+
+export interface ProviderCredentialMutationResult {
+  credential: ProviderCredentialSummary;
+  validationMessage?: string;
+}
+
+export interface ProviderCredentialRevokeResult {
+  credentialId: string;
+  revokedAt: string;
 }
 
 

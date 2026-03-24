@@ -26,9 +26,12 @@ COPY packages/email/package.json       ./packages/email/
 COPY packages/extension/package.json   ./packages/extension/
 COPY packages/logger/package.json      ./packages/logger/
 COPY packages/permissions/package.json ./packages/permissions/
+COPY packages/providers/package.json   ./packages/providers/
 COPY packages/queue/package.json       ./packages/queue/
+COPY packages/secrets/package.json     ./packages/secrets/
 COPY packages/testing/package.json     ./packages/testing/
 COPY packages/ui/package.json          ./packages/ui/
+COPY packages/usage/package.json       ./packages/usage/
 
 COPY pnpm-lock.yaml ./
 

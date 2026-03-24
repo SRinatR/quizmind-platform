@@ -228,6 +228,7 @@ export type WorkspaceWhereInput = {
   supportTickets?: Prisma.SupportTicketListRelationFilter
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionListRelationFilter
   providerCredentials?: Prisma.ProviderCredentialListRelationFilter
+  aiProviderPolicies?: Prisma.AiProviderPolicyListRelationFilter
 }
 
 export type WorkspaceOrderByWithRelationInput = {
@@ -254,6 +255,7 @@ export type WorkspaceOrderByWithRelationInput = {
   supportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionOrderByRelationAggregateInput
   providerCredentials?: Prisma.ProviderCredentialOrderByRelationAggregateInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyOrderByRelationAggregateInput
 }
 
 export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
@@ -283,6 +285,7 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   supportTickets?: Prisma.SupportTicketListRelationFilter
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionListRelationFilter
   providerCredentials?: Prisma.ProviderCredentialListRelationFilter
+  aiProviderPolicies?: Prisma.AiProviderPolicyListRelationFilter
 }, "id" | "slug" | "stripeCustomerId">
 
 export type WorkspaceOrderByWithAggregationInput = {
@@ -339,6 +342,7 @@ export type WorkspaceCreateInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateInput = {
@@ -365,6 +369,7 @@ export type WorkspaceUncheckedCreateInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUpdateInput = {
@@ -391,6 +396,7 @@ export type WorkspaceUpdateInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateInput = {
@@ -417,6 +423,7 @@ export type WorkspaceUncheckedUpdateInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateManyInput = {
@@ -621,6 +628,22 @@ export type WorkspaceUpdateOneWithoutProviderCredentialsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutProviderCredentialsInput, Prisma.WorkspaceUpdateWithoutProviderCredentialsInput>, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
 }
 
+export type WorkspaceCreateNestedOneWithoutAiProviderPoliciesInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneWithoutAiProviderPoliciesNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput
+  upsert?: Prisma.WorkspaceUpsertWithoutAiProviderPoliciesInput
+  disconnect?: Prisma.WorkspaceWhereInput | boolean
+  delete?: Prisma.WorkspaceWhereInput | boolean
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAiProviderPoliciesInput, Prisma.WorkspaceUpdateWithoutAiProviderPoliciesInput>, Prisma.WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput>
+}
+
 export type WorkspaceCreateNestedOneWithoutAuditLogsInput = {
   create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedCreateWithoutAuditLogsInput>
   connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAuditLogsInput
@@ -740,6 +763,7 @@ export type WorkspaceCreateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
@@ -765,6 +789,7 @@ export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutMembershipsInput = {
@@ -806,6 +831,7 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
@@ -831,6 +857,7 @@ export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutInvitationsInput = {
@@ -856,6 +883,7 @@ export type WorkspaceCreateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
@@ -881,6 +909,7 @@ export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutInvitationsInput = {
@@ -922,6 +951,7 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
@@ -947,6 +977,7 @@ export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSubscriptionsInput = {
@@ -972,6 +1003,7 @@ export type WorkspaceCreateWithoutSubscriptionsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSubscriptionsInput = {
@@ -997,6 +1029,7 @@ export type WorkspaceUncheckedCreateWithoutSubscriptionsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSubscriptionsInput = {
@@ -1038,6 +1071,7 @@ export type WorkspaceUpdateWithoutSubscriptionsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSubscriptionsInput = {
@@ -1063,6 +1097,7 @@ export type WorkspaceUncheckedUpdateWithoutSubscriptionsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutEntitlementOverridesInput = {
@@ -1088,6 +1123,7 @@ export type WorkspaceCreateWithoutEntitlementOverridesInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutEntitlementOverridesInput = {
@@ -1113,6 +1149,7 @@ export type WorkspaceUncheckedCreateWithoutEntitlementOverridesInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutEntitlementOverridesInput = {
@@ -1154,6 +1191,7 @@ export type WorkspaceUpdateWithoutEntitlementOverridesInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput = {
@@ -1179,6 +1217,7 @@ export type WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
@@ -1204,6 +1243,7 @@ export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
@@ -1229,6 +1269,7 @@ export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput = {
@@ -1270,6 +1311,7 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
@@ -1295,6 +1337,7 @@ export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
@@ -1320,6 +1363,7 @@ export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
@@ -1345,6 +1389,7 @@ export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutRemoteConfigVersionsInput = {
@@ -1386,6 +1431,7 @@ export type WorkspaceUpdateWithoutRemoteConfigVersionsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
@@ -1411,6 +1457,7 @@ export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutExtensionInstallationsInput = {
@@ -1436,6 +1483,7 @@ export type WorkspaceCreateWithoutExtensionInstallationsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
@@ -1461,6 +1509,7 @@ export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutExtensionInstallationsInput = {
@@ -1502,6 +1551,7 @@ export type WorkspaceUpdateWithoutExtensionInstallationsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
@@ -1527,6 +1577,7 @@ export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutProviderCredentialsInput = {
@@ -1552,6 +1603,7 @@ export type WorkspaceCreateWithoutProviderCredentialsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutProviderCredentialsInput = {
@@ -1577,6 +1629,7 @@ export type WorkspaceUncheckedCreateWithoutProviderCredentialsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutProviderCredentialsInput = {
@@ -1618,6 +1671,7 @@ export type WorkspaceUpdateWithoutProviderCredentialsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutProviderCredentialsInput = {
@@ -1643,6 +1697,127 @@ export type WorkspaceUncheckedUpdateWithoutProviderCredentialsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutAiProviderPoliciesInput = {
+  id?: string
+  slug: string
+  name: string
+  billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
+  stripeCustomerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
+  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput = {
+  id?: string
+  slug: string
+  name: string
+  billingEmail?: string | null
+  billingProvider?: string | null
+  providerCustomerId?: string | null
+  stripeCustomerId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
+  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
+}
+
+export type WorkspaceUpsertWithoutAiProviderPoliciesInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutAiProviderPoliciesInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput>
+}
+
+export type WorkspaceUpdateWithoutAiProviderPoliciesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
+  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAuditLogsInput = {
@@ -1668,6 +1843,7 @@ export type WorkspaceCreateWithoutAuditLogsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
@@ -1693,6 +1869,7 @@ export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAuditLogsInput = {
@@ -1734,6 +1911,7 @@ export type WorkspaceUpdateWithoutAuditLogsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
@@ -1759,6 +1937,7 @@ export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutActivityLogsInput = {
@@ -1784,6 +1963,7 @@ export type WorkspaceCreateWithoutActivityLogsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
@@ -1809,6 +1989,7 @@ export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutActivityLogsInput = {
@@ -1850,6 +2031,7 @@ export type WorkspaceUpdateWithoutActivityLogsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
@@ -1875,6 +2057,7 @@ export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSecurityEventsInput = {
@@ -1900,6 +2083,7 @@ export type WorkspaceCreateWithoutSecurityEventsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
@@ -1925,6 +2109,7 @@ export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSecurityEventsInput = {
@@ -1966,6 +2151,7 @@ export type WorkspaceUpdateWithoutSecurityEventsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
@@ -1991,6 +2177,7 @@ export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutDomainEventsInput = {
@@ -2016,6 +2203,7 @@ export type WorkspaceCreateWithoutDomainEventsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
@@ -2041,6 +2229,7 @@ export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutDomainEventsInput = {
@@ -2082,6 +2271,7 @@ export type WorkspaceUpdateWithoutDomainEventsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
@@ -2107,6 +2297,7 @@ export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportTicketsInput = {
@@ -2132,6 +2323,7 @@ export type WorkspaceCreateWithoutSupportTicketsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
@@ -2157,6 +2349,7 @@ export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportTicketsInput = {
@@ -2198,6 +2391,7 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
@@ -2223,6 +2417,7 @@ export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
@@ -2248,6 +2443,7 @@ export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
   domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
@@ -2273,6 +2469,7 @@ export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
   domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportImpersonationSessionsInput = {
@@ -2314,6 +2511,7 @@ export type WorkspaceUpdateWithoutSupportImpersonationSessionsInput = {
   domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
@@ -2339,6 +2537,7 @@ export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
   domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 
@@ -2361,6 +2560,7 @@ export type WorkspaceCountOutputType = {
   supportTickets: number
   supportImpersonationSessions: number
   providerCredentials: number
+  aiProviderPolicies: number
 }
 
 export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2378,6 +2578,7 @@ export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   supportTickets?: boolean | WorkspaceCountOutputTypeCountSupportTicketsArgs
   supportImpersonationSessions?: boolean | WorkspaceCountOutputTypeCountSupportImpersonationSessionsArgs
   providerCredentials?: boolean | WorkspaceCountOutputTypeCountProviderCredentialsArgs
+  aiProviderPolicies?: boolean | WorkspaceCountOutputTypeCountAiProviderPoliciesArgs
 }
 
 /**
@@ -2488,6 +2689,13 @@ export type WorkspaceCountOutputTypeCountProviderCredentialsArgs<ExtArgs extends
   where?: Prisma.ProviderCredentialWhereInput
 }
 
+/**
+ * WorkspaceCountOutputType without action
+ */
+export type WorkspaceCountOutputTypeCountAiProviderPoliciesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AiProviderPolicyWhereInput
+}
+
 
 export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2513,6 +2721,7 @@ export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
   supportImpersonationSessions?: boolean | Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>
   providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
+  aiProviderPolicies?: boolean | Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["workspace"]>
 
@@ -2568,6 +2777,7 @@ export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
   supportImpersonationSessions?: boolean | Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>
   providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
+  aiProviderPolicies?: boolean | Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WorkspaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2590,6 +2800,7 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     supportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
     supportImpersonationSessions: Prisma.$SupportImpersonationSessionPayload<ExtArgs>[]
     providerCredentials: Prisma.$ProviderCredentialPayload<ExtArgs>[]
+    aiProviderPolicies: Prisma.$AiProviderPolicyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3009,6 +3220,7 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   supportTickets<T extends Prisma.Workspace$supportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportImpersonationSessions<T extends Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportImpersonationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   providerCredentials<T extends Prisma.Workspace$providerCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$providerCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  aiProviderPolicies<T extends Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiProviderPolicyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3773,6 +3985,30 @@ export type Workspace$providerCredentialsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.ProviderCredentialScalarFieldEnum | Prisma.ProviderCredentialScalarFieldEnum[]
+}
+
+/**
+ * Workspace.aiProviderPolicies
+ */
+export type Workspace$aiProviderPoliciesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AiProviderPolicy
+   */
+  select?: Prisma.AiProviderPolicySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AiProviderPolicy
+   */
+  omit?: Prisma.AiProviderPolicyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AiProviderPolicyInclude<ExtArgs> | null
+  where?: Prisma.AiProviderPolicyWhereInput
+  orderBy?: Prisma.AiProviderPolicyOrderByWithRelationInput | Prisma.AiProviderPolicyOrderByWithRelationInput[]
+  cursor?: Prisma.AiProviderPolicyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AiProviderPolicyScalarFieldEnum | Prisma.AiProviderPolicyScalarFieldEnum[]
 }
 
 /**

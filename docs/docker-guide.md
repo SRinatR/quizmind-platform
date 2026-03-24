@@ -66,3 +66,5 @@ If you changed host ports in `.env.docker`, use those values instead.
 - The browser still uses `localhost` URLs on your laptop.
 - PostgreSQL and Redis are available to the host machine for local inspection.
 - Current API runtime is foundation-oriented: infrastructure is configured and reachable through Docker, while business data is still demo-seeded in memory.
+- `docker-compose.yml` now forces `pull_policy: always` for `postgres` and `redis`, so the first `docker compose up --build` refreshes infra images automatically.
+- Custom host ports are controlled through `API_HOST_PORT`, `WEB_HOST_PORT`, `POSTGRES_HOST_PORT`, and `REDIS_HOST_PORT` in `.env.docker`.

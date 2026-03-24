@@ -2,7 +2,12 @@ import { type SessionPrincipal } from '@quizmind/auth';
 import {
   type AuthSessionsPayload,
   type AccessDecision,
+  type AdminLogsSnapshot,
+  type AdminLogFilters,
+  type AdminWebhookFilters,
+  type AdminWebhooksSnapshot,
   type AdminUserDirectorySnapshot,
+  type CompatibilityRulesSnapshot,
   type BillingAdminPlansPayload,
   type BillingCheckoutResult,
   type BillingInvoicesPayload,
@@ -10,8 +15,11 @@ import {
   type BillingPortalResult,
   type BillingSubscriptionMutationResult,
   type ApiRouteDefinition,
+  type AdminProviderGovernanceSnapshot,
   type ExtensionBootstrapPayload,
   type ExtensionBootstrapRequest,
+  type ProviderCatalogPayload,
+  type ProviderCredentialInventory,
   type FeatureFlagDefinition,
   type PlanDefinition,
   type RemoteConfigLayer,
@@ -123,7 +131,10 @@ export interface FeatureFlagsSnapshot {
 
 export type SupportImpersonationSnapshot = SupportImpersonationHistorySnapshot;
 export type SupportTicketsSnapshot = SupportTicketQueueSnapshot;
+export type AdminLogsStateSnapshot = AdminLogsSnapshot;
+export type AdminWebhooksStateSnapshot = AdminWebhooksSnapshot;
 export type AdminUsersSnapshot = AdminUserDirectorySnapshot;
+export type CompatibilityRulesStateSnapshot = CompatibilityRulesSnapshot;
 export type AuthSessionsSnapshot = AuthSessionsPayload;
 export type BillingPlansSnapshot = BillingPlansPayload;
 export type AdminBillingPlansSnapshot = BillingAdminPlansPayload;
@@ -136,6 +147,9 @@ export type UsageEventIngestSnapshot = UsageEventIngestResult;
 export type RemoteConfigStateSnapshot = RemoteConfigSnapshot;
 export type RemoteConfigPublishStateSnapshot = RemoteConfigPublishResponse;
 export type ExtensionBootstrapSnapshot = ExtensionBootstrapPayload;
+export type ProviderCatalogSnapshot = ProviderCatalogPayload;
+export type ProviderCredentialInventorySnapshot = ProviderCredentialInventory;
+export type AdminProviderGovernanceStateSnapshot = AdminProviderGovernanceSnapshot;
 
 export const API_URL =
   process.env.API_INTERNAL_URL ??
@@ -284,12 +298,52 @@ export async function getBillingPlans() {
   return readApiData<BillingPlansSnapshot>('/billing/plans');
 }
 
+export async function getProviderCatalog() {
+  return readApiData<ProviderCatalogSnapshot>('/providers/catalog');
+}
+
+export async function getProviderCredentialInventory(
+  workspaceId?: string,
+  accessToken?: string | null,
+) {
+  if (!accessToken) {
+    return null;
+  }
+
+  const path = withQuery('/providers/credentials', {
+    workspaceId,
+  });
+
+  return readApiData<ProviderCredentialInventorySnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getAdminProviderGovernance(
+  workspaceId?: string,
+  accessToken?: string | null,
+) {
+  if (!accessToken) {
+    return null;
+  }
+
+  const path = withQuery('/admin/providers', {
+    workspaceId,
+  });
+
+  return readApiData<AdminProviderGovernanceStateSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
 export async function getAdminPlans(accessToken?: string | null) {
   if (!accessToken) {
     return null;
   }
 
   return readApiData<AdminBillingPlansSnapshot>('/admin/plans', withAccessToken(undefined, accessToken));
+}
+
+export async function getCompatibilityRules(persona: string, accessToken?: string | null) {
+  const path = accessToken ? '/admin/compatibility' : withPersona('/admin/compatibility', persona);
+
+  return readApiData<CompatibilityRulesStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getBillingInvoices(workspaceId: string, accessToken?: string | null) {
@@ -358,6 +412,39 @@ export async function getAdminUsers(persona: string, accessToken?: string | null
   const path = accessToken ? '/admin/users' : withPersona('/admin/users', persona);
 
   return readApiData<AdminUsersSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getAdminLogs(
+  persona: string,
+  filters?: Partial<AdminLogFilters>,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/admin/logs' : withPersona('/admin/logs', persona);
+  const path = withQuery(basePath, {
+    workspaceId: filters?.workspaceId,
+    stream: filters?.stream,
+    severity: filters?.severity,
+    search: filters?.search,
+    limit: filters?.limit,
+  });
+
+  return readApiData<AdminLogsStateSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getAdminWebhooks(
+  persona: string,
+  filters?: Partial<AdminWebhookFilters>,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/admin/webhooks' : withPersona('/admin/webhooks', persona);
+  const path = withQuery(basePath, {
+    provider: filters?.provider,
+    status: filters?.status,
+    search: filters?.search,
+    limit: filters?.limit,
+  });
+
+  return readApiData<AdminWebhooksStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getSupportImpersonationSessions(persona: string, accessToken?: string | null) {

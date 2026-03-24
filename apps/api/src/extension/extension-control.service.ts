@@ -9,7 +9,6 @@ import { createOpaqueToken, hashOpaqueToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { buildExtensionBootstrapV2 } from '@quizmind/extension';
 import { createLogEvent } from '@quizmind/logger';
-import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
 import { buildQuotaHint } from '@quizmind/usage';
 import {
   type CompatibilityHandshake,
@@ -46,6 +45,7 @@ import {
 } from './extension-installation-session.repository';
 import { FeatureFlagRepository } from '../feature-flags/feature-flag.repository';
 import { RemoteConfigRepository } from '../remote-config/remote-config.repository';
+import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
 
 function normalizeCapabilities(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -80,6 +80,8 @@ export class ExtensionControlService {
     private readonly featureFlagRepository: FeatureFlagRepository,
     @Inject(RemoteConfigRepository)
     private readonly remoteConfigRepository: RemoteConfigRepository,
+    @Inject(AiProviderPolicyService)
+    private readonly aiProviderPolicyService: AiProviderPolicyService,
     @Inject(SubscriptionRepository)
     private readonly subscriptionRepository: SubscriptionRepository,
     @Inject(UsageRepository)
@@ -246,10 +248,11 @@ export class ExtensionControlService {
     issuedAt?: string;
     refreshAfterSeconds: number;
   }): Promise<ExtensionBootstrapPayloadV2> {
-    const [compatibilityRule, featureFlags, remoteConfigLayers, workspaceSubscription, quotaCounters] = await Promise.all([
+    const [compatibilityRule, featureFlags, remoteConfigLayers, aiAccessPolicy, workspaceSubscription, quotaCounters] = await Promise.all([
       this.extensionCompatibilityRepository.findLatest(),
       this.featureFlagRepository.findAll(),
       this.remoteConfigRepository.findActiveLayers(input.installation.workspaceId ?? undefined),
+      this.aiProviderPolicyService.resolvePolicyForWorkspace(input.installation.workspaceId ?? undefined),
       input.installation.workspaceId
         ? this.subscriptionRepository.findCurrentByWorkspaceId(input.installation.workspaceId)
         : Promise.resolve(null),
@@ -298,9 +301,7 @@ export class ExtensionControlService {
       remoteConfigLayers: remoteConfigLayers.map(mapRemoteConfigLayerRecordToDefinition),
       entitlements: subscriptionSummary?.entitlements ?? [],
       quotaHints,
-      aiAccessPolicy: buildDefaultAiAccessPolicy({
-        defaultModel: 'openrouter/auto',
-      }),
+      aiAccessPolicy,
       context: {
         environment: input.environment,
         workspaceId: input.installation.workspaceId ?? undefined,

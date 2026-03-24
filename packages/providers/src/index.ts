@@ -4,6 +4,7 @@ import {
   type AiProvider,
   type BillingProvider,
   type ProviderModelCatalogEntry,
+  type ProviderCatalogPayload,
   type ProviderRegistryEntry,
 } from '@quizmind/contracts';
 
@@ -68,6 +69,19 @@ export const providerModelCatalog: ProviderModelCatalogEntry[] = [
   },
 ];
 
+export interface ProviderSecretValidationResult {
+  valid: boolean;
+  normalizedSecret?: string;
+  reason?: string;
+}
+
+export function getProviderCatalog(): ProviderCatalogPayload {
+  return {
+    providers: providerRegistry,
+    models: providerModelCatalog,
+  };
+}
+
 export function listModelsForProvider(provider: AiProvider): ProviderModelCatalogEntry[] {
   return providerModelCatalog.filter((entry) => entry.provider === provider);
 }
@@ -91,6 +105,10 @@ export function buildDefaultAiAccessPolicy(input: {
   providers?: AiProvider[];
   defaultProvider?: AiProvider;
   defaultModel?: string;
+  allowWorkspaceSharedCredentials?: boolean;
+  requireAdminApproval?: boolean;
+  allowVisionOnUserKeys?: boolean;
+  allowedModelTags?: string[];
   reason?: string;
 } = {}): AiAccessPolicy {
   const mode = input.mode ?? 'platform_only';
@@ -101,10 +119,69 @@ export function buildDefaultAiAccessPolicy(input: {
     allowPlatformManaged: true,
     allowBringYourOwnKey: mode !== 'platform_only',
     allowDirectProviderMode: false,
+    allowWorkspaceSharedCredentials: input.allowWorkspaceSharedCredentials ?? false,
+    requireAdminApproval: input.requireAdminApproval ?? mode === 'admin_approved_user_key',
+    allowVisionOnUserKeys: input.allowVisionOnUserKeys ?? false,
     providers,
+    allowedModelTags: [...(input.allowedModelTags ?? [])].sort(),
     defaultProvider: input.defaultProvider ?? providers[0],
     defaultModel: input.defaultModel,
     reason: input.reason,
+  };
+}
+
+export function validateProviderSecretShape(
+  provider: AiProvider,
+  secret: string,
+): ProviderSecretValidationResult {
+  const normalizedSecret = secret.trim();
+
+  if (!normalizedSecret) {
+    return {
+      valid: false,
+      reason: 'Provider secret is required.',
+    };
+  }
+
+  if (normalizedSecret.length < 12) {
+    return {
+      valid: false,
+      reason: 'Provider secret looks too short to be valid.',
+    };
+  }
+
+  if (provider === 'internal') {
+    return {
+      valid: false,
+      reason: 'Internal gateway credentials are platform-managed only.',
+    };
+  }
+
+  if (provider === 'openai' && !normalizedSecret.startsWith('sk-')) {
+    return {
+      valid: false,
+      reason: 'OpenAI keys usually start with "sk-".',
+    };
+  }
+
+  if (provider === 'anthropic' && !normalizedSecret.startsWith('sk-ant-')) {
+    return {
+      valid: false,
+      reason: 'Anthropic keys usually start with "sk-ant-".',
+    };
+  }
+
+  if (provider === 'openrouter' && !normalizedSecret.startsWith('sk-or-')) {
+    return {
+      valid: false,
+      reason: 'OpenRouter keys usually start with "sk-or-".',
+    };
+  }
+
+  return {
+    valid: true,
+    normalizedSecret,
+    reason: 'Provider secret passed local shape validation.',
   };
 }
 

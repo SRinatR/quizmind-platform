@@ -91,6 +91,19 @@ enum CredentialValidationStatus {
   revoked
 }
 
+enum AiProviderPolicyScopeType {
+  global
+  workspace
+}
+
+enum AiAccessPolicyMode {
+  platform_only
+  user_key_optional
+  user_key_required
+  admin_approved_user_key
+  enterprise_managed
+}
+
 model User {
   id                     String                  @id @default(cuid())
   email                  String                  @unique
@@ -116,6 +129,7 @@ model User {
   extensionInstallations ExtensionInstallation[]
   extensionInstallationSessions ExtensionInstallationSession[]
   providerCredentials    ProviderCredential[]
+  aiProviderPoliciesUpdated AiProviderPolicy[]  @relation("AiProviderPolicyUpdatedBy")
   supportTickets         SupportTicket[]         @relation("SupportTicketRequester")
   assignedSupportTickets SupportTicket[]         @relation("SupportTicketAssignee")
   supportTicketPresetFavorites SupportTicketPresetFavorite[]
@@ -193,6 +207,7 @@ model Workspace {
   supportTickets         SupportTicket[]
   supportImpersonationSessions SupportImpersonationSession[]
   providerCredentials    ProviderCredential[]
+  aiProviderPolicies     AiProviderPolicy[]
 }
 
 model WorkspaceMembership {
@@ -515,6 +530,32 @@ model ProviderCredential {
   workspace         Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([provider, ownerType, createdAt])
+}
+
+model AiProviderPolicy {
+  id                              String                    @id @default(cuid())
+  scopeKey                        String                    @unique
+  scopeType                       AiProviderPolicyScopeType
+  workspaceId                     String?
+  mode                            AiAccessPolicyMode
+  allowPlatformManaged            Boolean                   @default(true)
+  allowBringYourOwnKey            Boolean                   @default(false)
+  allowDirectProviderMode         Boolean                   @default(false)
+  allowWorkspaceSharedCredentials Boolean                   @default(false)
+  requireAdminApproval            Boolean                   @default(false)
+  allowVisionOnUserKeys           Boolean                   @default(false)
+  providersJson                   Json
+  allowedModelTagsJson            Json?
+  defaultProvider                 String?
+  defaultModel                    String?
+  reason                          String?
+  updatedById                     String?
+  createdAt                       DateTime                  @default(now())
+  updatedAt                       DateTime                  @updatedAt
+  workspace                       Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  updatedBy                       User?                     @relation("AiProviderPolicyUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([scopeType, workspaceId])
 }
 
 model ExtensionTelemetry {

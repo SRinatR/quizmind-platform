@@ -41,6 +41,7 @@ export const databaseSchemas = {
     'extension_installations',
     'extension_installation_sessions',
     'provider_credentials',
+    'ai_provider_policies',
   ],
   observability: ['audit_logs', 'activity_logs', 'domain_events', 'security_events'],
   support: ['support_tickets', 'support_impersonation_sessions'],

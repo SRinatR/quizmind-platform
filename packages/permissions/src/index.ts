@@ -46,6 +46,7 @@ export const permissionRegistry = [
   'support_tickets:manage',
   'usage:read',
   'usage:export',
+  'jobs:read',
   'jobs:retry',
 ] as const satisfies readonly ResourceAction[];
 
@@ -63,6 +64,7 @@ const systemRolePermissions: Record<SystemRole, Permission[]> = {
     'billing_providers:manage',
     'entitlements:read',
     'usage:read',
+    'jobs:read',
   ],
   support_admin: [
     'users:read',
@@ -76,6 +78,7 @@ const systemRolePermissions: Record<SystemRole, Permission[]> = {
   ],
   security_admin: ['users:read', 'audit_logs:read', 'audit_logs:export'],
   ops_admin: [
+    'jobs:read',
     'jobs:retry',
     'remote_config:read',
     'feature_flags:read',
@@ -102,6 +105,7 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
     'usage:read',
     'credentials:read',
     'credentials:write',
+    'credentials:rotate',
   ],
   workspace_admin: [
     'workspaces:read',
@@ -114,6 +118,8 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
     'remote_config:read',
     'usage:read',
     'credentials:read',
+    'credentials:write',
+    'credentials:rotate',
   ],
   workspace_billing_manager: [
     'subscriptions:read',
@@ -125,8 +131,8 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
   workspace_security_manager: ['audit_logs:read', 'audit_logs:export'],
   workspace_manager: ['workspaces:read', 'remote_config:read', 'entitlements:read', 'usage:read'],
   workspace_analyst: ['audit_logs:read', 'payments:read', 'subscriptions:read', 'usage:read', 'usage:export'],
-  workspace_member: ['workspaces:read'],
-  workspace_viewer: ['workspaces:read'],
+  workspace_member: ['workspaces:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
+  workspace_viewer: ['workspaces:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
 };
 
 export const allSystemRoles = [...systemRoles];

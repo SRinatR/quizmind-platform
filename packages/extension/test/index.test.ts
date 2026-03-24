@@ -29,6 +29,22 @@ test('evaluateCompatibility covers minimum version, schema mismatch, capability 
   assert.equal(evaluateCompatibility(createHandshake({ schemaVersion: '1' }), policy).status, 'supported_with_warnings');
   assert.equal(evaluateCompatibility(createHandshake({ capabilities: [] }), policy).status, 'deprecated');
   assert.equal(evaluateCompatibility(createHandshake({ extensionVersion: '1.6.0' }), policy).status, 'supported');
+  assert.equal(
+    evaluateCompatibility(createHandshake({ extensionVersion: '1.6.0' }), {
+      ...policy,
+      resultStatus: 'deprecated',
+      reason: 'Forced deprecation during rollout.',
+    }).reason,
+    'Forced deprecation during rollout.',
+  );
+  assert.equal(
+    evaluateCompatibility(createHandshake({ extensionVersion: '1.6.0' }), {
+      ...policy,
+      resultStatus: 'deprecated',
+      reason: 'Forced deprecation during rollout.',
+    }).status,
+    'deprecated',
+  );
 });
 
 test('resolveFeatureFlags and resolveRemoteConfig apply targeting and priority order', () => {

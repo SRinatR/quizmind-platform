@@ -6,6 +6,28 @@ import { createLogEvent } from '@quizmind/logger';
 import { listQueueDefinitions } from '@quizmind/queue';
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
+  adminWebhookProviderFilters,
+  adminWebhookStatusFilters,
+  type AdminLogExportFormat,
+  type AdminLogExportRequest,
+  type AdminLogExportResult,
+  adminLogSeverityFilters,
+  adminLogStreamFilters,
+  type AdminQueueSummary,
+  type AdminLogEntry,
+  type AdminLogFilters,
+  type AdminLogsSnapshot,
+  type AdminWebhookEventSummary,
+  type AdminWebhookFilters,
+  type AdminWebhookRetryRequest,
+  type AdminWebhookRetryResult,
+  type AdminWebhooksSnapshot,
+  type BillingProvider,
+  type BillingWebhookJobPayload,
+  type CompatibilityRuleDefinition,
+  type CompatibilityRulePublishRequest,
+  type CompatibilityRulePublishResult,
+  type CompatibilityRulesSnapshot,
   type AdminUserDirectorySnapshot,
   type AuthLoginRequest,
   type ExtensionBootstrapRequest,
@@ -29,6 +51,8 @@ import {
   type SupportTicketQueueSnapshot,
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
+  type UsageExportRequest,
+  type UsageExportResult,
   type UsageEventIngestResult,
   type UsageEventPayload,
   type WorkspaceUsageSnapshot,
@@ -36,12 +60,18 @@ import {
 
 import {
   canEndSupportImpersonation,
+  canExportAuditLogs,
+  canExportUsage,
+  canReadAuditLogs,
   canReadFeatureFlags,
+  canReadJobs,
+  canManageCompatibilityRules,
   canReadSupportImpersonationSessions,
   canReadSupportTickets,
+  canReadUsage,
   canReadUsers,
+  canRetryJobs,
   canWriteFeatureFlags,
-  canReadWorkspace,
   canStartSupportImpersonation,
   canPublishRemoteConfig,
   canReadWorkspaceSubscription,
@@ -54,6 +84,8 @@ import {
   resolveWorkspaceSubscriptionSummary,
 } from './services/billing-service';
 import {
+  defaultCompatibilityPolicy,
+  mapExtensionCompatibilityRuleToDefinition,
   mapExtensionCompatibilityRuleToPolicy,
   resolveExtensionBootstrap,
 } from './services/extension-bootstrap-service';
@@ -100,8 +132,10 @@ import {
 } from './platform-data';
 import { UserRepository } from './auth/repositories/user.repository';
 import { SubscriptionRepository } from './billing/subscription.repository';
+import { BillingWebhookRepository, type BillingWebhookAdminRecord } from './billing/billing-webhook.repository';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
+import { AdminLogRepository } from './logs/admin-log.repository';
 import { QueueDispatchService } from './queue/queue-dispatch.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
@@ -109,8 +143,13 @@ import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-
 import { SupportTicketRepository } from './support/support-ticket.repository';
 import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
+import { compareSemver } from '@quizmind/extension';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
+const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
+const validAdminLogSeverityFilters = new Set<string>(adminLogSeverityFilters);
+const validAdminWebhookProviderFilters = new Set<string>(adminWebhookProviderFilters);
+const validAdminWebhookStatusFilters = new Set<string>(adminWebhookStatusFilters);
 
 @Injectable()
 export class PlatformService {
@@ -125,6 +164,10 @@ export class PlatformService {
     private readonly extensionCompatibilityRepository: ExtensionCompatibilityRepository,
     @Inject(FeatureFlagRepository)
     private readonly featureFlagRepository: FeatureFlagRepository,
+    @Inject(AdminLogRepository)
+    private readonly adminLogRepository: AdminLogRepository,
+    @Inject(BillingWebhookRepository)
+    private readonly billingWebhookRepository: BillingWebhookRepository,
     @Inject(RemoteConfigRepository)
     private readonly remoteConfigRepository: RemoteConfigRepository,
     @Inject(WorkspaceRepository)
@@ -398,7 +441,7 @@ export class PlatformService {
   getUsage(personaKey?: string, workspaceId?: string): WorkspaceUsageSnapshot {
     const persona = getPersona(personaKey);
     const workspace = getWorkspaceSummary(workspaceId ?? persona.preferredWorkspaceId);
-    const accessDecision = canReadWorkspace(persona.principal as SessionPrincipal, workspace.id);
+    const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
     const plan = getPlanForWorkspace(workspace.id);
     const currentPeriodStart = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
     const currentPeriodEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -483,7 +526,7 @@ export class PlatformService {
       throw new NotFoundException('Workspace not found or not accessible.');
     }
 
-    const accessDecision = canReadWorkspace(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const accessDecision = canReadUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -527,6 +570,253 @@ export class PlatformService {
         telemetry,
         activity,
       }),
+    };
+  }
+
+  exportUsage(personaKey?: string, request?: Partial<UsageExportRequest>): UsageExportResult {
+    const workspaceId = request?.workspaceId?.trim();
+
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required for usage export.');
+    }
+
+    const summary = this.getUsage(personaKey, workspaceId);
+
+    return this.buildUsageExportResult(summary, request);
+  }
+
+  async exportUsageForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<UsageExportRequest>,
+  ): Promise<UsageExportResult> {
+    const workspaceId = request?.workspaceId?.trim();
+
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required for usage export.');
+    }
+
+    const requestedWorkspace = session.workspaces.find((workspace) => workspace.id === workspaceId) ?? null;
+
+    if (!requestedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const accessDecision = canExportUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    return this.buildUsageExportResult(await this.getUsageForCurrentSession(session, requestedWorkspace.id), request);
+  }
+
+  exportAdminLogs(personaKey?: string, request?: Partial<AdminLogExportRequest>): AdminLogExportResult {
+    const snapshot = this.listAdminLogs(personaKey, request);
+    const persona = getPersona(personaKey);
+    const accessDecision = canExportAuditLogs(persona.principal, snapshot.filters.workspaceId);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    return this.buildAdminLogExportResult(snapshot, request);
+  }
+
+  async exportAdminLogsForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<AdminLogExportRequest>,
+  ): Promise<AdminLogExportResult> {
+    const resolvedWorkspaceId = request?.workspaceId?.trim() || session.workspaces[0]?.id;
+    const accessDecision = canExportAuditLogs(session.principal as SessionPrincipal, resolvedWorkspaceId);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    return this.buildAdminLogExportResult(
+      await this.listAdminLogsForCurrentSession(session, {
+        ...request,
+        ...(resolvedWorkspaceId ? { workspaceId: resolvedWorkspaceId } : {}),
+      }),
+      request,
+    );
+  }
+
+  listAdminWebhooks(personaKey?: string, filters?: Partial<AdminWebhookFilters>): AdminWebhooksSnapshot {
+    const persona = getPersona(personaKey);
+    const normalizedFilters = this.normalizeAdminWebhookFilters(filters);
+    const accessDecision = canReadJobs(persona.principal);
+    const retryDecision = canRetryJobs(persona.principal);
+    const baseItems = accessDecision.allowed ? this.buildFoundationWebhookEntries() : [];
+    const filtered = this.filterAdminWebhookEntries(baseItems, normalizedFilters);
+
+    return {
+      personaKey: persona.key,
+      accessDecision,
+      retryDecision,
+      filters: normalizedFilters,
+      items: filtered.items,
+      statusCounts: filtered.statusCounts,
+      queues: this.buildAdminQueueSummaries(),
+      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+    };
+  }
+
+  async listAdminWebhooksForCurrentSession(
+    session: CurrentSessionSnapshot,
+    filters?: Partial<AdminWebhookFilters>,
+  ): Promise<AdminWebhooksSnapshot> {
+    const accessDecision = canReadJobs(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const normalizedFilters = this.normalizeAdminWebhookFilters(filters);
+    const records = await this.billingWebhookRepository.listRecentEvents(Math.max(normalizedFilters.limit * 3, 24));
+    const filtered = this.filterAdminWebhookEntries(
+      records.map((record) => this.mapBillingWebhookRecordToAdminEntry(record)),
+      normalizedFilters,
+    );
+
+    return {
+      personaKey: 'connected-user',
+      accessDecision,
+      retryDecision: canRetryJobs(session.principal as SessionPrincipal),
+      filters: normalizedFilters,
+      items: filtered.items,
+      statusCounts: filtered.statusCounts,
+      queues: this.buildAdminQueueSummaries(),
+      permissions: session.permissions,
+    };
+  }
+
+  async retryAdminWebhookForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<AdminWebhookRetryRequest>,
+  ): Promise<AdminWebhookRetryResult> {
+    const accessDecision = canRetryJobs(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const webhookEventId = request?.webhookEventId?.trim();
+
+    if (!webhookEventId) {
+      throw new BadRequestException('webhookEventId is required.');
+    }
+
+    const webhookEvent = await this.billingWebhookRepository.findEventById(webhookEventId);
+
+    if (!webhookEvent) {
+      throw new NotFoundException('Webhook event not found.');
+    }
+
+    const provider = this.normalizeBillingProvider(webhookEvent.provider);
+
+    if (provider !== 'stripe') {
+      throw new BadRequestException('Only Stripe webhook retries are supported right now.');
+    }
+
+    if (webhookEvent.processedAt || webhookEvent.status === 'processed') {
+      throw new BadRequestException('Processed webhook events cannot be retried.');
+    }
+
+    if (webhookEvent.status !== 'failed') {
+      throw new BadRequestException('Only failed webhook events can be retried.');
+    }
+
+    await this.billingWebhookRepository.resetEventForRetry(webhookEvent.id);
+
+    const retriedAt = new Date().toISOString();
+    const queueJob = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>({
+      queue: 'billing-webhooks',
+      jobId: `billing-webhooks:retry:${webhookEvent.id}:${Date.now()}`,
+      dedupeKey: `retry:${provider}:${webhookEvent.externalEventId}:${Date.now()}`,
+      payload: {
+        provider,
+        webhookEventId: webhookEvent.id,
+        externalEventId: webhookEvent.externalEventId,
+        eventType: webhookEvent.eventType,
+        receivedAt: webhookEvent.receivedAt.toISOString(),
+      },
+    });
+
+    return {
+      webhookEventId: webhookEvent.id,
+      provider,
+      externalEventId: webhookEvent.externalEventId,
+      eventType: webhookEvent.eventType,
+      queue: queueJob.queue,
+      jobId: queueJob.id,
+      retriedAt,
+      status: 'received',
+    };
+  }
+
+  listAdminLogs(personaKey?: string, filters?: Partial<AdminLogFilters>): AdminLogsSnapshot {
+    const persona = getPersona(personaKey);
+    const normalizedFilters = this.normalizeAdminLogFilters(filters, filters?.workspaceId ?? persona.preferredWorkspaceId);
+    const accessDecision = canReadAuditLogs(persona.principal, normalizedFilters.workspaceId);
+    const permissions = listPrincipalPermissions(persona.principal, normalizedFilters.workspaceId);
+    const baseItems = accessDecision.allowed
+      ? this.buildFoundationAdminLogEntries(normalizedFilters.workspaceId)
+      : [];
+    const filtered = this.filterAdminLogEntries(baseItems, normalizedFilters);
+
+    return {
+      personaKey: persona.key,
+      accessDecision,
+      ...(normalizedFilters.workspaceId ? { workspace: getWorkspaceSummary(normalizedFilters.workspaceId) } : {}),
+      filters: normalizedFilters,
+      items: filtered.items,
+      streamCounts: filtered.streamCounts,
+      permissions,
+    };
+  }
+
+  async listAdminLogsForCurrentSession(
+    session: CurrentSessionSnapshot,
+    filters?: Partial<AdminLogFilters>,
+  ): Promise<AdminLogsSnapshot> {
+    const resolvedWorkspaceId = filters?.workspaceId?.trim() || session.workspaces[0]?.id;
+    const normalizedFilters = this.normalizeAdminLogFilters(filters, resolvedWorkspaceId);
+    const accessDecision = canReadAuditLogs(session.principal as SessionPrincipal, normalizedFilters.workspaceId);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    if (normalizedFilters.workspaceId) {
+      const workspaceVisible = session.workspaces.some((workspace) => workspace.id === normalizedFilters.workspaceId);
+
+      if (!workspaceVisible) {
+        throw new NotFoundException('Workspace not found or not accessible.');
+      }
+    }
+
+    const records = await this.adminLogRepository.listRecent({
+      workspaceId: normalizedFilters.workspaceId,
+      stream: normalizedFilters.stream,
+      severity: normalizedFilters.severity,
+      limit: normalizedFilters.limit,
+    });
+    const baseItems = this.mapConnectedAdminLogEntries(records);
+    const filtered = this.filterAdminLogEntries(baseItems, normalizedFilters);
+    const workspace =
+      normalizedFilters.workspaceId
+        ? session.workspaces.find((candidate) => candidate.id === normalizedFilters.workspaceId) ?? undefined
+        : undefined;
+
+    return {
+      personaKey: 'connected-user',
+      accessDecision,
+      ...(workspace ? { workspace } : {}),
+      filters: normalizedFilters,
+      items: filtered.items,
+      streamCounts: filtered.streamCounts,
+      permissions: session.permissions,
     };
   }
 
@@ -585,6 +875,90 @@ export class PlatformService {
       flags: flags.map(mapFeatureFlagRecordToDefinition),
       publishDecision: canPublishRemoteConfig(session.principal as SessionPrincipal),
       permissions: session.permissions,
+    };
+  }
+
+  listCompatibilityRules(personaKey?: string): CompatibilityRulesSnapshot {
+    const persona = getPersona(personaKey);
+    const publishDecision = canManageCompatibilityRules(persona.principal);
+
+    return {
+      personaKey: persona.key,
+      publishDecision,
+      items: this.buildFoundationCompatibilityRules(),
+      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+    };
+  }
+
+  async listCompatibilityRulesForCurrentSession(
+    session: CurrentSessionSnapshot,
+  ): Promise<CompatibilityRulesSnapshot> {
+    const accessDecision = canManageCompatibilityRules(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const rules = await this.extensionCompatibilityRepository.findRecent();
+
+    return {
+      personaKey: 'connected-user',
+      publishDecision: accessDecision,
+      items: rules.map(mapExtensionCompatibilityRuleToDefinition),
+      permissions: session.permissions,
+    };
+  }
+
+  publishCompatibilityRule(
+    request?: Partial<CompatibilityRulePublishRequest>,
+  ): CompatibilityRulePublishResult {
+    const normalized = this.normalizeCompatibilityRulePublishRequest(request);
+    const publishedAt = new Date().toISOString();
+    const requiredCapabilities = normalized.requiredCapabilities ?? [];
+
+    return {
+      rule: {
+        id: `compatibility-rule-${Date.now()}`,
+        minimumVersion: normalized.minimumVersion,
+        recommendedVersion: normalized.recommendedVersion,
+        supportedSchemaVersions: normalized.supportedSchemaVersions,
+        resultStatus: normalized.resultStatus,
+        ...(requiredCapabilities.length > 0
+          ? { requiredCapabilities }
+          : {}),
+        ...(typeof normalized.reason === 'string' && normalized.reason.length > 0
+          ? { reason: normalized.reason }
+          : {}),
+        createdAt: publishedAt,
+      },
+      publishedAt,
+    };
+  }
+
+  async publishCompatibilityRuleForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<CompatibilityRulePublishRequest>,
+  ): Promise<CompatibilityRulePublishResult> {
+    const accessDecision = canManageCompatibilityRules(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const normalized = this.normalizeCompatibilityRulePublishRequest(request);
+    const requiredCapabilities = normalized.requiredCapabilities ?? [];
+    const createdRule = await this.extensionCompatibilityRepository.create({
+      minimumVersion: normalized.minimumVersion,
+      recommendedVersion: normalized.recommendedVersion,
+      supportedSchemaVersions: normalized.supportedSchemaVersions,
+      requiredCapabilities: requiredCapabilities.length > 0 ? requiredCapabilities : null,
+      resultStatus: normalized.resultStatus,
+      reason: typeof normalized.reason === 'string' ? normalized.reason : null,
+    });
+
+    return {
+      rule: mapExtensionCompatibilityRuleToDefinition(createdRule),
+      publishedAt: createdRule.createdAt.toISOString(),
     };
   }
 
@@ -991,6 +1365,826 @@ export class PlatformService {
     ) {
       throw new BadRequestException('Feature flag rollout percentage must be an integer between 0 and 100.');
     }
+  }
+
+  private buildFoundationCompatibilityRules(): CompatibilityRuleDefinition[] {
+    const activeRule: CompatibilityRuleDefinition = {
+      id: 'foundation-compatibility-active',
+      minimumVersion: defaultCompatibilityPolicy.minimumVersion,
+      recommendedVersion: defaultCompatibilityPolicy.recommendedVersion,
+      supportedSchemaVersions: [...defaultCompatibilityPolicy.supportedSchemaVersions],
+      ...(defaultCompatibilityPolicy.requiredCapabilities
+        ? { requiredCapabilities: [...defaultCompatibilityPolicy.requiredCapabilities] }
+        : {}),
+      resultStatus: 'supported',
+      createdAt: '2026-03-24T08:00:00.000Z',
+    };
+
+    return [
+      activeRule,
+      {
+        ...activeRule,
+        id: 'foundation-compatibility-previous',
+        recommendedVersion: '1.5.0',
+        resultStatus: 'supported_with_warnings',
+        reason: 'Older extension builds are still allowed, but a refresh is recommended.',
+        createdAt: '2026-03-23T18:30:00.000Z',
+      },
+    ];
+  }
+
+  private normalizeCompatibilityRulePublishRequest(
+    request?: Partial<CompatibilityRulePublishRequest>,
+  ): CompatibilityRulePublishRequest {
+    const minimumVersion = request?.minimumVersion?.trim();
+    const recommendedVersion = request?.recommendedVersion?.trim();
+    const supportedSchemaVersions = Array.from(
+      new Set(
+        (request?.supportedSchemaVersions ?? [])
+          .map((version) => version.trim())
+          .filter((version) => version.length > 0),
+      ),
+    );
+    const requiredCapabilities = Array.from(
+      new Set(
+        (request?.requiredCapabilities ?? [])
+          .map((capability) => capability.trim())
+          .filter((capability) => capability.length > 0),
+      ),
+    );
+    const reason = request?.reason?.trim() || undefined;
+    const resultStatus = request?.resultStatus;
+
+    if (!minimumVersion) {
+      throw new BadRequestException('minimumVersion is required.');
+    }
+
+    if (!recommendedVersion) {
+      throw new BadRequestException('recommendedVersion is required.');
+    }
+
+    if (compareSemver(recommendedVersion, minimumVersion) < 0) {
+      throw new BadRequestException('recommendedVersion must be greater than or equal to minimumVersion.');
+    }
+
+    if (supportedSchemaVersions.length === 0) {
+      throw new BadRequestException('At least one supported schema version is required.');
+    }
+
+    if (
+      resultStatus !== 'supported' &&
+      resultStatus !== 'supported_with_warnings' &&
+      resultStatus !== 'deprecated' &&
+      resultStatus !== 'unsupported'
+    ) {
+      throw new BadRequestException('resultStatus must be a valid compatibility status.');
+    }
+
+    return {
+      minimumVersion,
+      recommendedVersion,
+      supportedSchemaVersions,
+      ...(requiredCapabilities.length > 0 ? { requiredCapabilities } : {}),
+      resultStatus,
+      ...(reason ? { reason } : {}),
+    };
+  }
+
+  private normalizeAdminWebhookFilters(filters?: Partial<AdminWebhookFilters>): AdminWebhookFilters {
+    const provider =
+      typeof filters?.provider === 'string' && validAdminWebhookProviderFilters.has(filters.provider)
+        ? filters.provider
+        : 'all';
+    const status =
+      typeof filters?.status === 'string' && validAdminWebhookStatusFilters.has(filters.status)
+        ? filters.status
+        : 'all';
+    const search = filters?.search?.trim() || undefined;
+    const limit =
+      typeof filters?.limit === 'number' && Number.isFinite(filters.limit)
+        ? Math.min(Math.max(Math.trunc(filters.limit), 8), 40)
+        : 12;
+
+    return {
+      provider,
+      status,
+      ...(search ? { search } : {}),
+      limit,
+    };
+  }
+
+  private buildAdminQueueSummaries(): AdminQueueSummary[] {
+    return listQueueDefinitions().map((definition) => ({
+      name: definition.name,
+      description: definition.description,
+      attempts: definition.attempts,
+      ...this.describeQueueProcessor(definition.name),
+    }));
+  }
+
+  private describeQueueProcessor(
+    queueName: AdminQueueSummary['name'],
+  ): Pick<AdminQueueSummary, 'processorState' | 'handler'> {
+    switch (queueName) {
+      case 'billing-webhooks':
+        return {
+          processorState: 'bound',
+          handler: 'processBillingWebhookJob',
+        };
+      case 'usage-events':
+        return {
+          processorState: 'bound',
+          handler: 'processUsageEventJob',
+        };
+      default:
+        return {
+          processorState: 'declared_only',
+        };
+    }
+  }
+
+  private buildFoundationWebhookEntries(): AdminWebhookEventSummary[] {
+    return [
+      {
+        id: 'webhook_foundation_failed',
+        provider: 'stripe',
+        externalEventId: 'evt_foundation_failed',
+        eventType: 'invoice.payment_failed',
+        status: 'failed',
+        queue: 'billing-webhooks',
+        retryable: true,
+        receivedAt: '2026-03-24T12:00:00.000Z',
+        providerCreatedAt: '2026-03-24T11:59:20.000Z',
+        processedAt: null,
+        lastError: 'Workspace billing context could not be resolved for the incoming customer.',
+      },
+      {
+        id: 'webhook_foundation_processed',
+        provider: 'stripe',
+        externalEventId: 'evt_foundation_processed',
+        eventType: 'customer.subscription.updated',
+        status: 'processed',
+        queue: 'billing-webhooks',
+        retryable: false,
+        receivedAt: '2026-03-24T11:25:00.000Z',
+        providerCreatedAt: '2026-03-24T11:24:44.000Z',
+        processedAt: '2026-03-24T11:25:04.000Z',
+      },
+      {
+        id: 'webhook_foundation_received',
+        provider: 'stripe',
+        externalEventId: 'evt_foundation_received',
+        eventType: 'checkout.session.completed',
+        status: 'received',
+        queue: 'billing-webhooks',
+        retryable: false,
+        receivedAt: '2026-03-24T11:15:00.000Z',
+        providerCreatedAt: '2026-03-24T11:14:53.000Z',
+        processedAt: null,
+      },
+    ];
+  }
+
+  private mapBillingWebhookRecordToAdminEntry(record: BillingWebhookAdminRecord): AdminWebhookEventSummary {
+    const status =
+      record.status === 'processed' ? 'processed' : record.status === 'failed' ? 'failed' : 'received';
+
+    return {
+      id: record.id,
+      provider: this.normalizeBillingProvider(record.provider),
+      externalEventId: record.externalEventId,
+      eventType: record.eventType,
+      status,
+      queue: 'billing-webhooks',
+      retryable: status === 'failed',
+      receivedAt: record.receivedAt.toISOString(),
+      providerCreatedAt: record.providerCreatedAt?.toISOString() ?? null,
+      processedAt: record.processedAt?.toISOString() ?? null,
+      lastError: record.lastError ?? null,
+    };
+  }
+
+  private normalizeBillingProvider(provider: string | null | undefined): BillingProvider {
+    return provider === 'manual' || provider === 'mock' ? provider : 'stripe';
+  }
+
+  private filterAdminWebhookEntries(items: AdminWebhookEventSummary[], filters: AdminWebhookFilters): {
+    items: AdminWebhookEventSummary[];
+    statusCounts: AdminWebhooksSnapshot['statusCounts'];
+  } {
+    const filteredItems = items.filter((item) => {
+      if (filters.provider !== 'all' && item.provider !== filters.provider) {
+        return false;
+      }
+
+      if (filters.status !== 'all' && item.status !== filters.status) {
+        return false;
+      }
+
+      if (!filters.search) {
+        return true;
+      }
+
+      return this.matchesAdminWebhookSearch(item, filters.search);
+    });
+    const statusCounts: AdminWebhooksSnapshot['statusCounts'] = {
+      received: filteredItems.filter((item) => item.status === 'received').length,
+      processed: filteredItems.filter((item) => item.status === 'processed').length,
+      failed: filteredItems.filter((item) => item.status === 'failed').length,
+    };
+
+    return {
+      items: filteredItems
+        .sort((left, right) => new Date(right.receivedAt).getTime() - new Date(left.receivedAt).getTime())
+        .slice(0, filters.limit),
+      statusCounts,
+    };
+  }
+
+  private matchesAdminWebhookSearch(item: AdminWebhookEventSummary, search: string): boolean {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [item.provider, item.externalEventId, item.eventType, item.status, item.queue, item.lastError]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedSearch);
+  }
+
+  private normalizeAdminLogFilters(
+    filters?: Partial<AdminLogFilters>,
+    defaultWorkspaceId?: string,
+  ): AdminLogFilters {
+    const workspaceId = filters?.workspaceId?.trim() || defaultWorkspaceId;
+    const stream =
+      typeof filters?.stream === 'string' && validAdminLogStreams.has(filters.stream) ? filters.stream : 'all';
+    const severity =
+      typeof filters?.severity === 'string' && validAdminLogSeverityFilters.has(filters.severity)
+        ? filters.severity
+        : 'all';
+    const search = filters?.search?.trim() || undefined;
+    const limit =
+      typeof filters?.limit === 'number' && Number.isFinite(filters.limit)
+        ? Math.min(Math.max(Math.trunc(filters.limit), 1), 50)
+        : 12;
+
+    return {
+      ...(workspaceId ? { workspaceId } : {}),
+      stream,
+      severity,
+      ...(search ? { search } : {}),
+      limit,
+    };
+  }
+
+  private buildFoundationAdminLogEntries(workspaceId?: string): AdminLogEntry[] {
+    const workspace = workspaceId ? getWorkspaceSummary(workspaceId) : undefined;
+    const platformAdmin = getPersona('platform-admin');
+    const supportAdmin = getPersona('support-admin');
+    const workspaceViewer = getPersona('workspace-viewer');
+
+    return [
+      {
+        id: `audit:${workspace?.id ?? 'platform'}:provider-policy`,
+        stream: 'audit',
+        eventType: 'ai_provider_policy.updated',
+        summary: 'Updated the AI provider policy and narrowed the allowed provider set for the selected scope.',
+        occurredAt: '2026-03-24T13:40:00.000Z',
+        severity: 'info',
+        status: 'success',
+        actor: {
+          id: platformAdmin.user.id,
+          email: platformAdmin.user.email,
+          displayName: platformAdmin.user.displayName,
+        },
+        ...(workspace
+          ? {
+              workspace: {
+                id: workspace.id,
+                slug: workspace.slug,
+                name: workspace.name,
+              },
+            }
+          : {}),
+        targetType: 'ai_provider_policy',
+        targetId: workspace ? `workspace:${workspace.id}` : 'global',
+        metadata: {
+          mode: 'platform_only',
+          providers: ['openrouter', 'openai'],
+        },
+      },
+      {
+        id: `activity:${workspace?.id ?? 'platform'}:usage-dashboard`,
+        stream: 'activity',
+        eventType: 'usage.dashboard_opened',
+        summary: 'Opened the usage explorer and reviewed the latest quota counters for the workspace.',
+        occurredAt: '2026-03-24T13:28:00.000Z',
+        actor: {
+          id: platformAdmin.user.id,
+          email: platformAdmin.user.email,
+          displayName: platformAdmin.user.displayName,
+        },
+        ...(workspace
+          ? {
+              workspace: {
+                id: workspace.id,
+                slug: workspace.slug,
+                name: workspace.name,
+              },
+            }
+          : {}),
+        metadata: {
+          route: '/app/usage',
+          source: 'dashboard',
+        },
+      },
+      {
+        id: `security:${workspace?.id ?? 'platform'}:auth-login-failed`,
+        stream: 'security',
+        eventType: 'auth.login_failed',
+        summary: 'Blocked a sign-in attempt after the submitted password did not match the stored account credentials.',
+        occurredAt: '2026-03-24T12:58:00.000Z',
+        severity: 'warn',
+        status: 'failure',
+        actor: {
+          id: workspaceViewer.user.id,
+          email: workspaceViewer.user.email,
+          displayName: workspaceViewer.user.displayName,
+        },
+        ...(workspace
+          ? {
+              workspace: {
+                id: workspace.id,
+                slug: workspace.slug,
+                name: workspace.name,
+              },
+            }
+          : {}),
+        targetType: 'auth_session',
+        targetId: workspaceViewer.user.id,
+        metadata: {
+          reason: 'invalid_password',
+        },
+      },
+      {
+        id: `domain:${workspace?.id ?? 'platform'}:subscription-changed`,
+        stream: 'domain',
+        eventType: 'billing.subscription_changed',
+        summary: 'Reconciled the workspace subscription after a provider status update moved the plan into active state.',
+        occurredAt: '2026-03-24T12:40:00.000Z',
+        ...(workspace
+          ? {
+              workspace: {
+                id: workspace.id,
+                slug: workspace.slug,
+                name: workspace.name,
+              },
+            }
+          : {}),
+        metadata: {
+          provider: 'stripe',
+          status: 'active',
+        },
+      },
+      {
+        id: `audit:${workspace?.id ?? 'platform'}:support-ticket`,
+        stream: 'audit',
+        eventType: 'support.ticket_workflow_updated',
+        summary: 'Assigned the support ticket, moved it into progress, and attached a handoff note for the next operator.',
+        occurredAt: '2026-03-24T12:12:00.000Z',
+        severity: 'info',
+        status: 'success',
+        actor: {
+          id: supportAdmin.user.id,
+          email: supportAdmin.user.email,
+          displayName: supportAdmin.user.displayName,
+        },
+        ...(workspace
+          ? {
+              workspace: {
+                id: workspace.id,
+                slug: workspace.slug,
+                name: workspace.name,
+              },
+            }
+          : {}),
+        targetType: 'support_ticket',
+        targetId: 'support-ticket-demo-1',
+        metadata: {
+          nextStatus: 'in_progress',
+        },
+      },
+    ];
+  }
+
+  private mapConnectedAdminLogEntries(
+    input: Awaited<ReturnType<AdminLogRepository['listRecent']>>,
+  ): AdminLogEntry[] {
+    const actorById = new Map(
+      input.actors.map((actor) => [
+        actor.id,
+        {
+          id: actor.id,
+          email: actor.email,
+          ...(actor.displayName ? { displayName: actor.displayName } : {}),
+        },
+      ]),
+    );
+
+    return [
+      ...input.audit.map((record) => {
+        const metadata = this.toAdminLogMetadata(record.metadataJson);
+        const severity = this.readAdminLogSeverity(metadata);
+        const status = this.readAdminLogStatus(metadata);
+
+        return {
+          id: `audit:${record.id}`,
+          stream: 'audit' as const,
+          eventType: record.action,
+          summary:
+            this.readAdminLogSummary(metadata) ??
+            `Audit event ${record.action} on ${record.targetType} ${record.targetId}.`,
+          occurredAt: record.createdAt.toISOString(),
+          ...(severity ? { severity } : {}),
+          ...(status ? { status } : {}),
+          ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
+          ...(record.workspace
+            ? {
+                workspace: {
+                  id: record.workspace.id,
+                  slug: record.workspace.slug,
+                  name: record.workspace.name,
+                },
+              }
+            : {}),
+          targetType: record.targetType,
+          targetId: record.targetId,
+          ...(metadata ? { metadata } : {}),
+        };
+      }),
+      ...input.activity.map((record) => {
+        const metadata = this.toAdminLogMetadata(record.metadataJson);
+
+        return {
+          id: `activity:${record.id}`,
+          stream: 'activity' as const,
+          eventType: record.eventType,
+          summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
+          occurredAt: record.createdAt.toISOString(),
+          ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
+          ...(record.workspace
+            ? {
+                workspace: {
+                  id: record.workspace.id,
+                  slug: record.workspace.slug,
+                  name: record.workspace.name,
+                },
+              }
+            : {}),
+          ...(metadata ? { metadata } : {}),
+        };
+      }),
+      ...input.security.map((record) => {
+        const metadata = this.toAdminLogMetadata(record.metadataJson);
+        const status = this.readAdminLogStatus(metadata);
+
+        return {
+          id: `security:${record.id}`,
+          stream: 'security' as const,
+          eventType: record.eventType,
+          summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
+          occurredAt: record.createdAt.toISOString(),
+          severity: record.severity,
+          ...(status ? { status } : {}),
+          ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
+          ...(record.workspace
+            ? {
+                workspace: {
+                  id: record.workspace.id,
+                  slug: record.workspace.slug,
+                  name: record.workspace.name,
+                },
+              }
+            : {}),
+          ...(metadata ? { metadata } : {}),
+        };
+      }),
+      ...input.domain.map((record) => {
+        const metadata = this.toAdminLogMetadata(record.payloadJson);
+
+        return {
+          id: `domain:${record.id}`,
+          stream: 'domain' as const,
+          eventType: record.eventType,
+          summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
+          occurredAt: record.createdAt.toISOString(),
+          ...(record.workspace
+            ? {
+                workspace: {
+                  id: record.workspace.id,
+                  slug: record.workspace.slug,
+                  name: record.workspace.name,
+                },
+              }
+            : {}),
+          ...(metadata ? { metadata } : {}),
+        };
+      }),
+    ].sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime());
+  }
+
+  private filterAdminLogEntries(items: AdminLogEntry[], filters: AdminLogFilters): {
+    items: AdminLogEntry[];
+    streamCounts: AdminLogsSnapshot['streamCounts'];
+  } {
+    const afterSearchAndSeverity = items.filter((item) => {
+      if (filters.severity !== 'all' && item.severity !== filters.severity) {
+        return false;
+      }
+
+      if (!filters.search) {
+        return true;
+      }
+
+      return this.matchesAdminLogSearch(item, filters.search);
+    });
+    const streamCounts: AdminLogsSnapshot['streamCounts'] = {
+      audit: afterSearchAndSeverity.filter((item) => item.stream === 'audit').length,
+      activity: afterSearchAndSeverity.filter((item) => item.stream === 'activity').length,
+      security: afterSearchAndSeverity.filter((item) => item.stream === 'security').length,
+      domain: afterSearchAndSeverity.filter((item) => item.stream === 'domain').length,
+    };
+    const filteredItems =
+      filters.stream === 'all'
+        ? afterSearchAndSeverity
+        : afterSearchAndSeverity.filter((item) => item.stream === filters.stream);
+
+    return {
+      items: filteredItems.slice(0, filters.limit),
+      streamCounts,
+    };
+  }
+
+  private matchesAdminLogSearch(item: AdminLogEntry, search: string): boolean {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return true;
+    }
+
+    return [
+      item.stream,
+      item.eventType,
+      item.summary,
+      item.severity,
+      item.status,
+      item.actor?.id,
+      item.actor?.email,
+      item.actor?.displayName,
+      item.workspace?.id,
+      item.workspace?.slug,
+      item.workspace?.name,
+      item.targetType,
+      item.targetId,
+      item.metadata ? JSON.stringify(item.metadata) : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+      .includes(normalizedSearch);
+  }
+
+  private toAdminLogMetadata(value: unknown): Record<string, unknown> | undefined {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return undefined;
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  private readAdminLogSummary(metadata?: Record<string, unknown>) {
+    return typeof metadata?.summary === 'string' && metadata.summary.trim().length > 0
+      ? metadata.summary.trim()
+      : undefined;
+  }
+
+  private readAdminLogSeverity(metadata?: Record<string, unknown>): AdminLogEntry['severity'] {
+    const severity = metadata?.severity;
+
+    return severity === 'debug' || severity === 'info' || severity === 'warn' || severity === 'error'
+      ? severity
+      : undefined;
+  }
+
+  private readAdminLogStatus(metadata?: Record<string, unknown>): AdminLogEntry['status'] {
+    const status = metadata?.status;
+
+    return status === 'success' || status === 'failure' ? status : undefined;
+  }
+
+  private summarizeMetadataPayload(metadata: Record<string, unknown> | undefined, fallback: string) {
+    if (!metadata) {
+      return fallback;
+    }
+
+    const entries = Object.entries(metadata)
+      .filter(([key, value]) => key !== 'summary' && ['string', 'number', 'boolean'].includes(typeof value))
+      .slice(0, 3)
+      .map(([key, value]) => `${key}=${String(value)}`);
+
+    return entries.length > 0 ? entries.join(' | ') : fallback;
+  }
+
+  private buildAdminLogExportResult(
+    snapshot: AdminLogsSnapshot,
+    request?: Partial<AdminLogExportRequest>,
+  ): AdminLogExportResult {
+    const format = this.normalizeAdminLogExportFormat(request?.format);
+    const exportedAt = new Date().toISOString();
+    const fileStem = `audit-logs-${snapshot.workspace?.slug ?? 'platform'}-${exportedAt.slice(0, 10)}`;
+
+    if (format === 'json') {
+      return {
+        ...(snapshot.workspace ? { workspaceId: snapshot.workspace.id } : {}),
+        format,
+        fileName: `${fileStem}.json`,
+        contentType: 'application/json',
+        exportedAt,
+        itemCount: snapshot.items.length,
+        content: JSON.stringify(
+          {
+            exportedAt,
+            workspace: snapshot.workspace ?? null,
+            filters: snapshot.filters,
+            streamCounts: snapshot.streamCounts,
+            items: snapshot.items,
+          },
+          null,
+          2,
+        ),
+      };
+    }
+
+    return {
+      ...(snapshot.workspace ? { workspaceId: snapshot.workspace.id } : {}),
+      format,
+      fileName: `${fileStem}.csv`,
+      contentType: 'text/csv; charset=utf-8',
+      exportedAt,
+      itemCount: snapshot.items.length,
+      content: this.serializeAdminLogsCsv(snapshot),
+    };
+  }
+
+  private normalizeAdminLogExportFormat(format?: AdminLogExportFormat): AdminLogExportFormat {
+    return format === 'csv' ? 'csv' : 'json';
+  }
+
+  private serializeAdminLogsCsv(snapshot: AdminLogsSnapshot): string {
+    const header =
+      'stream,eventType,summary,occurredAt,severity,status,workspaceId,workspaceSlug,workspaceName,actorId,actorEmail,actorDisplayName,targetType,targetId,metadata';
+    const rows = snapshot.items.map((item) =>
+      [
+        item.stream,
+        item.eventType,
+        item.summary,
+        item.occurredAt,
+        item.severity ?? '',
+        item.status ?? '',
+        item.workspace?.id ?? '',
+        item.workspace?.slug ?? '',
+        item.workspace?.name ?? '',
+        item.actor?.id ?? '',
+        item.actor?.email ?? '',
+        item.actor?.displayName ?? '',
+        item.targetType ?? '',
+        item.targetId ?? '',
+        item.metadata ? JSON.stringify(item.metadata) : '',
+      ]
+        .map((value) => this.escapeCsv(value))
+        .join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+
+  private buildUsageExportResult(
+    summary: WorkspaceUsageSnapshot,
+    request?: Partial<UsageExportRequest>,
+  ): UsageExportResult {
+    const format = request?.format === 'csv' ? 'csv' : 'json';
+    const scope = request?.scope ?? 'full';
+    const exportedAt = new Date().toISOString();
+
+    if (format === 'csv' && scope === 'full') {
+      throw new BadRequestException('CSV export requires a specific scope: quotas, installations, or events.');
+    }
+
+    const fileStem = `usage-${summary.workspace.slug}-${scope}-${exportedAt.slice(0, 10)}`;
+
+    if (format === 'json') {
+      const payload =
+        scope === 'quotas'
+          ? summary.quotas
+          : scope === 'installations'
+            ? summary.installations
+            : scope === 'events'
+              ? summary.recentEvents
+              : summary;
+
+      return {
+        workspaceId: summary.workspace.id,
+        format,
+        scope,
+        fileName: `${fileStem}.json`,
+        contentType: 'application/json',
+        exportedAt,
+        content: JSON.stringify(payload, null, 2),
+      };
+    }
+
+    return {
+      workspaceId: summary.workspace.id,
+      format,
+      scope,
+      fileName: `${fileStem}.csv`,
+      contentType: 'text/csv; charset=utf-8',
+      exportedAt,
+      content:
+        scope === 'quotas'
+          ? this.serializeUsageQuotasCsv(summary)
+          : scope === 'installations'
+            ? this.serializeUsageInstallationsCsv(summary)
+            : this.serializeUsageEventsCsv(summary),
+    };
+  }
+
+  private serializeUsageQuotasCsv(summary: WorkspaceUsageSnapshot): string {
+    const header = 'key,label,consumed,limit,remaining,periodStart,periodEnd,status';
+    const rows = summary.quotas.map((quota) =>
+      [
+        quota.key,
+        quota.label,
+        String(quota.consumed),
+        quota.limit === undefined ? '' : String(quota.limit),
+        quota.remaining === undefined ? '' : String(quota.remaining),
+        quota.periodStart,
+        quota.periodEnd,
+        quota.status,
+      ]
+        .map((value) => this.escapeCsv(value))
+        .join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+
+  private serializeUsageInstallationsCsv(summary: WorkspaceUsageSnapshot): string {
+    const header = 'installationId,browser,extensionVersion,schemaVersion,capabilities,lastSeenAt';
+    const rows = summary.installations.map((installation) =>
+      [
+        installation.installationId,
+        installation.browser,
+        installation.extensionVersion,
+        installation.schemaVersion,
+        installation.capabilities.join('|'),
+        installation.lastSeenAt ?? '',
+      ]
+        .map((value) => this.escapeCsv(value))
+        .join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+
+  private serializeUsageEventsCsv(summary: WorkspaceUsageSnapshot): string {
+    const header = 'id,source,eventType,severity,occurredAt,installationId,actorId,summary';
+    const rows = summary.recentEvents.map((event) =>
+      [
+        event.id,
+        event.source,
+        event.eventType,
+        event.severity ?? '',
+        event.occurredAt,
+        event.installationId ?? '',
+        event.actorId ?? '',
+        event.summary,
+      ]
+        .map((value) => this.escapeCsv(value))
+        .join(','),
+    );
+
+    return [header, ...rows].join('\n');
+  }
+
+  private escapeCsv(value: string): string {
+    const normalized = value.replaceAll('"', '""');
+
+    return /[",\n]/.test(normalized) ? `"${normalized}"` : normalized;
   }
 
   listSupportImpersonationSessions(personaKey?: string): SupportImpersonationHistorySnapshot {

@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
+
 import { ExtensionControlService } from '../src/extension/extension-control.service';
 import { type CurrentSessionSnapshot } from '../src/auth/auth.types';
 import { type ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
 import { type ExtensionInstallationRepository } from '../src/extension/extension-installation.repository';
 import { type ExtensionInstallationSessionRepository } from '../src/extension/extension-installation-session.repository';
 import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
+import { type AiProviderPolicyService } from '../src/providers/ai-provider-policy.service';
 import { type RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { type SubscriptionRepository } from '../src/billing/subscription.repository';
 import { type UsageRepository } from '../src/usage/usage.repository';
@@ -49,6 +52,19 @@ function createService() {
   const extensionCompatibilityRepository = {} as ExtensionCompatibilityRepository;
   const featureFlagRepository = {} as FeatureFlagRepository;
   const remoteConfigRepository = {} as RemoteConfigRepository;
+  const aiProviderPolicyService = {
+    resolvePolicyForWorkspace: async () => ({
+      scopeType: 'global',
+      scopeKey: 'global',
+      workspaceId: null,
+      updatedById: null,
+      createdAt: '2026-03-24T12:00:00.000Z',
+      updatedAt: '2026-03-24T12:00:00.000Z',
+      ...buildDefaultAiAccessPolicy({
+        defaultModel: 'openrouter/auto',
+      }),
+    }),
+  } as AiProviderPolicyService;
   const subscriptionRepository = {} as SubscriptionRepository;
   const usageRepository = {} as UsageRepository;
   const queueDispatchService = {} as QueueDispatchService;
@@ -58,6 +74,7 @@ function createService() {
     extensionCompatibilityRepository,
     featureFlagRepository,
     remoteConfigRepository,
+    aiProviderPolicyService,
     subscriptionRepository,
     usageRepository,
     queueDispatchService,
@@ -97,6 +114,7 @@ function createService() {
     extensionCompatibilityRepository,
     featureFlagRepository,
     remoteConfigRepository,
+    aiProviderPolicyService,
     subscriptionRepository,
     usageRepository,
     queueDispatchService,

@@ -42,11 +42,115 @@ export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   });
 }
 
+export function canReadAuditLogs(principal: SessionPrincipal, workspaceId?: string): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'audit_logs:read',
+    ...(workspaceId ? { workspaceId } : {}),
+  });
+}
+
+export function canExportAuditLogs(principal: SessionPrincipal, workspaceId?: string): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'audit_logs:export',
+    ...(workspaceId ? { workspaceId } : {}),
+  });
+}
+
+export function canReadJobs(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'jobs:read',
+  });
+}
+
+export function canRetryJobs(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'jobs:retry',
+  });
+}
+
 export function canReadWorkspace(principal: SessionPrincipal, workspaceId: string): AccessDecision {
   const context = buildAccessContext(principal);
 
   return evaluateAccess(context, {
     permission: 'workspaces:read',
+    workspaceId,
+  });
+}
+
+export function canReadProviderCredentials(
+  principal: SessionPrincipal,
+  workspaceId: string,
+): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'credentials:read',
+    workspaceId,
+  });
+}
+
+export function canWriteProviderCredentials(
+  principal: SessionPrincipal,
+  workspaceId: string,
+): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'credentials:write',
+    workspaceId,
+  });
+}
+
+export function canRotateProviderCredentials(
+  principal: SessionPrincipal,
+  workspaceId: string,
+): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'credentials:rotate',
+    workspaceId,
+  });
+}
+
+export function canManageAiProviders(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'ai_providers:manage',
+  });
+}
+
+export function canManageCompatibilityRules(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'compatibility_rules:manage',
+  });
+}
+
+export function canReadUsage(principal: SessionPrincipal, workspaceId: string): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'usage:read',
+    workspaceId,
+  });
+}
+
+export function canExportUsage(principal: SessionPrincipal, workspaceId: string): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'usage:export',
     workspaceId,
   });
 }

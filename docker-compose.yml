@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
+    pull_policy: always
     container_name: quizmind-postgres
     restart: unless-stopped
     environment:
@@ -19,6 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    pull_policy: always
     container_name: quizmind-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
@@ -49,7 +51,7 @@ services:
       QUIZMIND_RUNTIME_MODE: connected
       API_PORT: 4000
       API_URL: "http://localhost:${API_HOST_PORT:-4000}"
-      APP_URL: "http://localhost:${WEB_HOST_PORT:-3001}"
+      APP_URL: "http://localhost:${WEB_HOST_PORT:-3000}"
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/quizmind"
       REDIS_URL: "redis://redis:6379"
       JWT_SECRET: "${JWT_SECRET:-quizmind-local-jwt-secret}"
@@ -95,13 +97,13 @@ services:
       NODE_ENV: development
       API_INTERNAL_URL: "http://api:4000"
       NEXT_PUBLIC_API_URL: "http://localhost:${API_HOST_PORT:-4000}"
-      NEXT_PUBLIC_APP_URL: "http://localhost:${WEB_HOST_PORT:-3001}"
+      NEXT_PUBLIC_APP_URL: "http://localhost:${WEB_HOST_PORT:-3000}"
       DEFAULT_PERSONA: platform-admin
     depends_on:
       api:
         condition: service_healthy
     ports:
-      - "${WEB_HOST_PORT:-3001}:3000"
+      - "${WEB_HOST_PORT:-3000}:3000"
     healthcheck:
       test:
         [

@@ -1,4 +1,5 @@
 import {
+  type CompatibilityRuleDefinition,
   type ExtensionBootstrapPayload,
   type ExtensionBootstrapRequest,
   type FeatureFlagDefinition,
@@ -47,6 +48,25 @@ export function mapExtensionCompatibilityRuleToPolicy(
         : fallback.requiredCapabilities
           ? { requiredCapabilities: fallback.requiredCapabilities }
           : {}),
+    resultStatus: rule.resultStatus,
+    ...(rule.reason ? { reason: rule.reason } : {}),
+  };
+}
+
+export function mapExtensionCompatibilityRuleToDefinition(
+  rule: ExtensionCompatibilityRuleRecord,
+): CompatibilityRuleDefinition {
+  return {
+    id: rule.id,
+    minimumVersion: rule.minimumVersion,
+    recommendedVersion: rule.recommendedVersion,
+    supportedSchemaVersions: isStringArray(rule.supportedSchemaVersions) ? rule.supportedSchemaVersions : [],
+    ...(rule.requiredCapabilities && isStringArray(rule.requiredCapabilities)
+      ? { requiredCapabilities: rule.requiredCapabilities }
+      : {}),
+    resultStatus: rule.resultStatus,
+    ...(rule.reason ? { reason: rule.reason } : {}),
+    createdAt: rule.createdAt.toISOString(),
   };
 }
 

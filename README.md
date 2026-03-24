@@ -93,6 +93,7 @@ After migrating and seeding the database, the default demo auth credentials are:
   Redis on `localhost:6379`
 - Custom host ports can be provided through `.env.docker` based on `.env.docker.example`.
 - Full Docker runbook: `docs/docker-guide.md`
+- Site/platform/extension connection runbook: `docs/site-platform-extension-connection-runbook.md`
 
 ## Demo Personas
 
@@ -132,4 +133,5 @@ docs/
   billing-flow.md
   web-app-flow.md
   support-flow.md
+  site-platform-extension-connection-runbook.md
 ```

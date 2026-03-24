@@ -121,3 +121,22 @@ export const CredentialValidationStatus = {
 } as const
 
 export type CredentialValidationStatus = (typeof CredentialValidationStatus)[keyof typeof CredentialValidationStatus]
+
+
+export const AiProviderPolicyScopeType = {
+  global: 'global',
+  workspace: 'workspace'
+} as const
+
+export type AiProviderPolicyScopeType = (typeof AiProviderPolicyScopeType)[keyof typeof AiProviderPolicyScopeType]
+
+
+export const AiAccessPolicyMode = {
+  platform_only: 'platform_only',
+  user_key_optional: 'user_key_optional',
+  user_key_required: 'user_key_required',
+  admin_approved_user_key: 'admin_approved_user_key',
+  enterprise_managed: 'enterprise_managed'
+} as const
+
+export type AiAccessPolicyMode = (typeof AiAccessPolicyMode)[keyof typeof AiAccessPolicyMode]

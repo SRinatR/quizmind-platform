@@ -5,6 +5,22 @@ import { PrismaService } from '../database/prisma.service';
 
 export type BillingWebhookEventRecord = Prisma.WebhookEventGetPayload<{}>;
 
+const billingWebhookAdminSelect = {
+  id: true,
+  provider: true,
+  externalEventId: true,
+  eventType: true,
+  status: true,
+  providerCreatedAt: true,
+  processedAt: true,
+  lastError: true,
+  receivedAt: true,
+} as const;
+
+export type BillingWebhookAdminRecord = Prisma.WebhookEventGetPayload<{
+  select: typeof billingWebhookAdminSelect;
+}>;
+
 interface RecordReceivedWebhookEventInput {
   provider: string;
   externalEventId: string;
@@ -51,5 +67,34 @@ export class BillingWebhookRepository {
 
       throw error;
     }
+  }
+
+  findEventById(webhookEventId: string): Promise<BillingWebhookEventRecord | null> {
+    return this.prisma.webhookEvent.findUnique({
+      where: {
+        id: webhookEventId,
+      },
+    });
+  }
+
+  listRecentEvents(limit: number): Promise<BillingWebhookAdminRecord[]> {
+    return this.prisma.webhookEvent.findMany({
+      orderBy: [{ receivedAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      select: billingWebhookAdminSelect,
+    });
+  }
+
+  resetEventForRetry(webhookEventId: string): Promise<BillingWebhookEventRecord> {
+    return this.prisma.webhookEvent.update({
+      where: {
+        id: webhookEventId,
+      },
+      data: {
+        status: 'received',
+        processedAt: null,
+        lastError: null,
+      },
+    });
   }
 }

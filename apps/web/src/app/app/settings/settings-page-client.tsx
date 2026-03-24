@@ -6,15 +6,20 @@ import { useState, useTransition } from 'react';
 
 import {
   type AuthSessionsSnapshot,
+  type ProviderCatalogSnapshot,
+  type ProviderCredentialInventorySnapshot,
   type SessionSnapshot,
   type WorkspaceSubscriptionSnapshot,
 } from '../../../lib/api';
 import { type DashboardSection } from '../../../features/dashboard/sections';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { AiAccessClient } from './ai-access-client';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
   isConnectedSession: boolean;
+  providerCatalog: ProviderCatalogSnapshot | null;
+  providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
   session: SessionSnapshot;
   subscription: WorkspaceSubscriptionSnapshot | null;
   visibleSections: DashboardSection[];
@@ -34,6 +39,8 @@ interface LogoutAllRouteResponse {
 export function SettingsPageClient({
   authSessions,
   isConnectedSession,
+  providerCatalog,
+  providerCredentialInventory,
   session,
   subscription,
   visibleSections,
@@ -252,6 +259,18 @@ export function SettingsPageClient({
           </div>
         </article>
       </section>
+
+      <AiAccessClient
+        currentWorkspaceId={primaryWorkspace?.id}
+        isConnectedSession={isConnectedSession}
+        providerCatalog={providerCatalog}
+        providerCredentialInventory={providerCredentialInventory}
+        workspaceOptions={session.workspaces.map((workspace) => ({
+          id: workspace.id,
+          name: workspace.name,
+          role: workspace.role,
+        }))}
+      />
     </>
   );
 }

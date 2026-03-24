@@ -8,16 +8,20 @@ import { EmailVerificationRepository } from '../src/auth/repositories/email-veri
 import { PasswordResetRepository } from '../src/auth/repositories/password-reset.repository';
 import { SessionRepository } from '../src/auth/repositories/session.repository';
 import { UserRepository } from '../src/auth/repositories/user.repository';
+import { BillingWebhookRepository } from '../src/billing/billing-webhook.repository';
 import { SubscriptionRepository } from '../src/billing/subscription.repository';
 import { PrismaService } from '../src/database/prisma.service';
 import { ExtensionCompatibilityRepository } from '../src/extension/extension-compatibility.repository';
 import { FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
+import { AdminLogRepository } from '../src/logs/admin-log.repository';
 import { PlatformService } from '../src/platform.service';
+import { QueueDispatchService } from '../src/queue/queue-dispatch.service';
 import { RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { InfrastructureHealthService } from '../src/services/infrastructure-health-service';
 import { SupportImpersonationRepository } from '../src/support/support-impersonation.repository';
 import { SupportTicketPresetFavoriteRepository } from '../src/support/support-ticket-preset-favorite.repository';
 import { SupportTicketRepository } from '../src/support/support-ticket.repository';
+import { UsageRepository } from '../src/usage/usage.repository';
 import { WorkspaceRepository } from '../src/workspaces/workspace.repository';
 
 const DEFAULT_DATABASE_URL = 'postgresql://postgres:postgres@127.0.0.1:5432/quizmind';
@@ -88,10 +92,32 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
   const subscriptionRepository = new SubscriptionRepository(prismaService);
   const extensionCompatibilityRepository = new ExtensionCompatibilityRepository(prismaService);
   const featureFlagRepository = new FeatureFlagRepository(prismaService);
+  const adminLogRepository = new AdminLogRepository(prismaService);
+  const billingWebhookRepository = new BillingWebhookRepository(prismaService);
   const remoteConfigRepository = new RemoteConfigRepository(prismaService);
   const supportTicketRepository = new SupportTicketRepository(prismaService);
   const supportTicketPresetFavoriteRepository = new SupportTicketPresetFavoriteRepository(prismaService);
   const supportImpersonationRepository = new SupportImpersonationRepository(prismaService);
+  const usageRepository = new UsageRepository(prismaService);
+  const queueDispatchService = {
+    async dispatch<TPayload>(request: {
+      queue: string;
+      payload: TPayload;
+      dedupeKey?: string;
+      attempts?: number;
+      jobId?: string;
+      createdAt?: string;
+    }) {
+      return {
+        id: request.jobId ?? `${request.queue}:${request.dedupeKey ?? 'integration'}`,
+        queue: request.queue,
+        payload: request.payload,
+        dedupeKey: request.dedupeKey,
+        createdAt: request.createdAt ?? new Date().toISOString(),
+        attempts: request.attempts ?? 1,
+      };
+    },
+  } as QueueDispatchService;
   const authService = new AuthService(
     userRepository,
     sessionRepository,
@@ -106,12 +132,16 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     subscriptionRepository,
     extensionCompatibilityRepository,
     featureFlagRepository,
+    adminLogRepository,
+    billingWebhookRepository,
     remoteConfigRepository,
     workspaceRepository,
     userRepository,
     supportTicketRepository,
     supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
+    usageRepository,
+    queueDispatchService,
   );
   const env = {
     nodeEnv: 'test' as const,

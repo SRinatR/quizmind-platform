@@ -79,6 +79,7 @@ export const ModelName = {
   ExtensionInstallation: 'ExtensionInstallation',
   ExtensionInstallationSession: 'ExtensionInstallationSession',
   ProviderCredential: 'ProviderCredential',
+  AiProviderPolicy: 'AiProviderPolicy',
   ExtensionTelemetry: 'ExtensionTelemetry',
   AuditLog: 'AuditLog',
   ActivityLog: 'ActivityLog',
@@ -523,6 +524,31 @@ export const ProviderCredentialScalarFieldEnum = {
 } as const
 
 export type ProviderCredentialScalarFieldEnum = (typeof ProviderCredentialScalarFieldEnum)[keyof typeof ProviderCredentialScalarFieldEnum]
+
+
+export const AiProviderPolicyScalarFieldEnum = {
+  id: 'id',
+  scopeKey: 'scopeKey',
+  scopeType: 'scopeType',
+  workspaceId: 'workspaceId',
+  mode: 'mode',
+  allowPlatformManaged: 'allowPlatformManaged',
+  allowBringYourOwnKey: 'allowBringYourOwnKey',
+  allowDirectProviderMode: 'allowDirectProviderMode',
+  allowWorkspaceSharedCredentials: 'allowWorkspaceSharedCredentials',
+  requireAdminApproval: 'requireAdminApproval',
+  allowVisionOnUserKeys: 'allowVisionOnUserKeys',
+  providersJson: 'providersJson',
+  allowedModelTagsJson: 'allowedModelTagsJson',
+  defaultProvider: 'defaultProvider',
+  defaultModel: 'defaultModel',
+  reason: 'reason',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AiProviderPolicyScalarFieldEnum = (typeof AiProviderPolicyScalarFieldEnum)[keyof typeof AiProviderPolicyScalarFieldEnum]
 
 
 export const ExtensionTelemetryScalarFieldEnum = {
