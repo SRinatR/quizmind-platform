@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { type TestContext } from 'node:test';
 
-import { PrismaClient } from '@quizmind/database';
+import { createPrismaClientOptions, PrismaClient } from '@quizmind/database';
 
 import { AuthService } from '../src/auth/auth.service';
 import { EmailVerificationRepository } from '../src/auth/repositories/email-verification.repository';
@@ -65,14 +65,7 @@ export interface IntegrationHarness {
 
 export async function createIntegrationHarness(t: TestContext): Promise<IntegrationHarness | null> {
   const databaseUrl = process.env.QUIZMIND_TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl,
-      },
-    },
-    log: ['error'],
-  });
+  const prisma = new PrismaClient(createPrismaClientOptions(databaseUrl, ['error']));
 
   try {
     await prisma.$connect();

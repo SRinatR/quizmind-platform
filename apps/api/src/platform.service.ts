@@ -11,6 +11,8 @@ import {
   type ExtensionBootstrapRequest,
   type FeatureFlagUpdateRequest,
   type FeatureFlagUpdateResult,
+  type RemoteConfigActivateVersionRequest,
+  type RemoteConfigActivateVersionResult,
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
   type RemoteConfigSnapshot,
@@ -27,6 +29,7 @@ import {
   type SupportTicketQueueSnapshot,
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
+  type UsageEventIngestResult,
   type UsageEventPayload,
   type WorkspaceUsageSnapshot,
 } from '@quizmind/contracts';
@@ -57,6 +60,7 @@ import {
 import { InfrastructureHealthService } from './services/infrastructure-health-service';
 import {
   mapRemoteConfigLayerRecordToDefinition,
+  mapRemoteConfigVersionRecordToSummary,
   previewRemoteConfig,
   publishRemoteConfigVersion,
 } from './services/remote-config-service';
@@ -260,6 +264,65 @@ export class PlatformService {
       personaKey: persona.key,
       items: getAccessibleWorkspaces(persona),
     };
+  }
+
+  private buildFoundationRemoteConfigVersions(
+    activeLayers: RemoteConfigSnapshot['activeLayers'],
+    workspaceId?: string,
+  ): RemoteConfigSnapshot['versions'] {
+    const actor = getPersona('platform-admin');
+    const workspaceLabel = workspaceId ? `workspace-${workspaceId}` : 'global';
+
+    return [
+      {
+        id: `foundation-${workspaceLabel}-active`,
+        versionLabel: workspaceId ? `${workspaceId}-active` : 'foundation-default',
+        workspaceId,
+        isActive: true,
+        publishedAt: '2026-03-24T08:00:00.000Z',
+        publishedBy: {
+          id: actor.user.id,
+          email: actor.user.email,
+          ...(actor.user.displayName ? { displayName: actor.user.displayName } : {}),
+        },
+        layers: activeLayers,
+      },
+      {
+        id: `foundation-${workspaceLabel}-previous`,
+        versionLabel: workspaceId ? `${workspaceId}-previous` : 'foundation-previous',
+        workspaceId,
+        isActive: false,
+        publishedAt: '2026-03-23T18:30:00.000Z',
+        publishedBy: {
+          id: actor.user.id,
+          email: actor.user.email,
+          ...(actor.user.displayName ? { displayName: actor.user.displayName } : {}),
+        },
+        layers: activeLayers.length > 1 ? activeLayers.slice(0, activeLayers.length - 1) : activeLayers,
+      },
+    ];
+  }
+
+  private resolveFoundationRemoteConfigVersion(versionId: string): RemoteConfigSnapshot['versions'][number] | null {
+    const activeLayers = getFoundationOverview().remoteConfigLayers;
+    const globalMatch = this.buildFoundationRemoteConfigVersions(activeLayers).find((version) => version.id === versionId);
+
+    if (globalMatch) {
+      return globalMatch;
+    }
+
+    const workspaceMatch = /^foundation-workspace-(.+)-(active|previous)$/.exec(versionId);
+
+    if (!workspaceMatch) {
+      return null;
+    }
+
+    const workspaceId = workspaceMatch[1];
+
+    return (
+      this.buildFoundationRemoteConfigVersions(activeLayers, workspaceId).find((version) => version.id === versionId) ??
+      null
+    );
   }
 
   async listWorkspacesForCurrentSession(session: CurrentSessionSnapshot) {
@@ -621,6 +684,7 @@ export class PlatformService {
       personaKey: persona.key,
       publishDecision: canPublishRemoteConfig(persona.principal),
       activeLayers,
+      versions: this.buildFoundationRemoteConfigVersions(activeLayers, resolvedWorkspaceId),
       previewContext,
       preview: previewRemoteConfig({
         layers: activeLayers,
@@ -641,12 +705,14 @@ export class PlatformService {
     }
 
     const resolvedWorkspaceId = workspaceId?.trim() || session.workspaces[0]?.id;
-    const subscription = resolvedWorkspaceId
-      ? await this.subscriptionRepository.findCurrentByWorkspaceId(resolvedWorkspaceId)
-      : null;
-    const activeLayers = (
-      await this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId)
-    ).map(mapRemoteConfigLayerRecordToDefinition);
+    const [subscription, activeLayerRecords, recentVersions] = await Promise.all([
+      resolvedWorkspaceId
+        ? this.subscriptionRepository.findCurrentByWorkspaceId(resolvedWorkspaceId)
+        : Promise.resolve(null),
+      this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId),
+      this.remoteConfigRepository.findRecentVersions(resolvedWorkspaceId),
+    ]);
+    const activeLayers = activeLayerRecords.map(mapRemoteConfigLayerRecordToDefinition);
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
       planCode: subscription?.plan.code ?? 'pro',
@@ -659,6 +725,7 @@ export class PlatformService {
       personaKey: 'connected-user',
       publishDecision: accessDecision,
       activeLayers,
+      versions: recentVersions.map(mapRemoteConfigVersionRecordToSummary),
       previewContext,
       preview: previewRemoteConfig({
         layers: activeLayers,
@@ -743,6 +810,58 @@ export class PlatformService {
     }
   }
 
+  activateRemoteConfigVersion(
+    request?: Partial<RemoteConfigActivateVersionRequest>,
+  ): RemoteConfigActivateVersionResult {
+    const versionId = request?.versionId?.trim();
+
+    if (!versionId) {
+      throw new BadRequestException('Remote config version is required.');
+    }
+
+    const version = this.resolveFoundationRemoteConfigVersion(versionId);
+
+    if (!version) {
+      throw new NotFoundException('Remote config version not found.');
+    }
+
+    return {
+      version: {
+        ...version,
+        isActive: true,
+      },
+      activatedAt: new Date().toISOString(),
+    };
+  }
+
+  async activateRemoteConfigVersionForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<RemoteConfigActivateVersionRequest>,
+  ): Promise<RemoteConfigActivateVersionResult> {
+    const accessDecision = canPublishRemoteConfig(session.principal as SessionPrincipal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const versionId = request?.versionId?.trim();
+
+    if (!versionId) {
+      throw new BadRequestException('Remote config version is required.');
+    }
+
+    const activatedVersion = await this.remoteConfigRepository.activateVersion(versionId);
+
+    if (!activatedVersion) {
+      throw new NotFoundException('Remote config version not found.');
+    }
+
+    return {
+      version: mapRemoteConfigVersionRecordToSummary(activatedVersion),
+      activatedAt: new Date().toISOString(),
+    };
+  }
+
   async bootstrapExtension(request?: Partial<ExtensionBootstrapRequest>) {
     const fallbackPersona = getPersona('platform-admin');
     const bootstrapRequest: ExtensionBootstrapRequest = {
@@ -789,7 +908,7 @@ export class PlatformService {
     );
   }
 
-  async ingestUsageEvent(event?: Partial<UsageEventPayload>) {
+  async ingestUsageEvent(event?: Partial<UsageEventPayload>): Promise<UsageEventIngestResult> {
     const usageEvent: UsageEventPayload = {
       installationId: event?.installationId ?? 'inst_local_browser',
       workspaceId: event?.workspaceId ?? 'ws_alpha',
@@ -807,26 +926,39 @@ export class PlatformService {
       dedupeKey: `${usageEvent.installationId}:${usageEvent.occurredAt}`,
     });
 
+    const logEvent = createLogEvent({
+      eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
+      eventType: 'extension.usage_queued',
+      actorId: usageEvent.installationId,
+      actorType: 'system',
+      workspaceId: usageEvent.workspaceId,
+      targetType: 'extension_usage_event',
+      targetId: usageEvent.installationId,
+      occurredAt: usageEvent.occurredAt,
+      category: 'extension',
+      severity: 'info',
+      status: 'success',
+      metadata: usageEvent.payload,
+    });
+
     return {
       queued: true,
       queue: queueJob.queue,
-      job: queueJob,
+      job: {
+        id: queueJob.id,
+        queue: queueJob.queue,
+        dedupeKey: queueJob.dedupeKey,
+        createdAt: queueJob.createdAt,
+        attempts: queueJob.attempts,
+      },
       handler: 'worker.process-usage-event',
-      logEvent: createLogEvent({
-        eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
-        eventType: 'extension.usage_queued',
-        actorId: usageEvent.installationId,
-        actorType: 'system',
-        workspaceId: usageEvent.workspaceId,
-        targetType: 'extension_usage_event',
-        targetId: usageEvent.installationId,
-        occurredAt: usageEvent.occurredAt,
-        category: 'extension',
-        severity: 'info',
-        status: 'success',
-        metadata: usageEvent.payload,
-        }),
-      };
+      logEvent: {
+        eventId: logEvent.eventId,
+        eventType: logEvent.eventType,
+        occurredAt: logEvent.occurredAt,
+        status: logEvent.status ?? 'success',
+      },
+    };
   }
 
   private mapNormalizedFeatureFlag(normalized: NormalizedFeatureFlagUpdate) {

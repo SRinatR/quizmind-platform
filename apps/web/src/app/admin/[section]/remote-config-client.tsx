@@ -4,9 +4,11 @@ import { resolveRemoteConfig } from '@quizmind/extension';
 import {
   type PrimitiveValue,
   remoteConfigScopes,
+  type RemoteConfigActivateVersionResult,
   type RemoteConfigContext,
   type RemoteConfigLayer,
   type RemoteConfigPublishResponse,
+  type RemoteConfigVersionSummary,
 } from '@quizmind/contracts';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
@@ -32,6 +34,14 @@ interface RemoteConfigClientProps {
 interface RouteResponse {
   ok: boolean;
   data?: RemoteConfigPublishResponse;
+  error?: {
+    message?: string;
+  };
+}
+
+interface ActivateRouteResponse {
+  ok: boolean;
+  data?: RemoteConfigActivateVersionResult;
   error?: {
     message?: string;
   };
@@ -249,6 +259,59 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
 
   function handleRemoveLayer(id: string) {
     setLayers((current) => current.filter((layer) => layer.id !== id));
+  }
+
+  function handleLoadVersion(version: RemoteConfigVersionSummary) {
+    setLayers(version.layers.map(createEditableLayer));
+    setNextDraftIndex(version.layers.length + 1);
+    setVersionLabel(`${version.versionLabel}-draft`);
+    setPreviewContext((current) => ({
+      ...current,
+      workspaceId: version.workspaceId ?? current.workspaceId,
+    }));
+    setErrorMessage(null);
+    setStatusMessage(`Loaded ${version.versionLabel} into the draft editor.`);
+  }
+
+  async function handleActivateVersion(version: RemoteConfigVersionSummary) {
+    if (!isConnectedSession) {
+      setErrorMessage('Sign in with a connected platform admin account to activate a remote config version.');
+      setStatusMessage(null);
+      return;
+    }
+
+    setErrorMessage(null);
+    setStatusMessage(`Activating remote config version ${version.versionLabel}...`);
+
+    try {
+      const response = await fetch('/api/admin/remote-config/activate', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          versionId: version.id,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as ActivateRouteResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        setStatusMessage(null);
+        setErrorMessage(payload?.error?.message ?? 'Unable to activate the selected remote config version.');
+        return;
+      }
+
+      setStatusMessage(
+        `Activated ${payload.data.version.versionLabel}. Refreshing control-plane snapshot...`,
+      );
+
+      startRefresh(() => {
+        router.refresh();
+      });
+    } catch {
+      setStatusMessage(null);
+      setErrorMessage('Unable to reach the remote config activation route right now.');
+    }
   }
 
   async function handlePublish() {
@@ -508,6 +571,52 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="panel">
+        <span className="micro-label">History</span>
+        <h2>Published versions</h2>
+        {initialState.versions.length > 0 ? (
+          <div className="list-stack">
+            {initialState.versions.map((version) => (
+              <article className="list-item" key={version.id}>
+                <div className="billing-section-header">
+                  <div>
+                    <strong>{version.versionLabel}</strong>
+                    <p>
+                      Published {formatUtcDateTime(version.publishedAt)} by{' '}
+                      {version.publishedBy?.displayName ?? version.publishedBy?.email ?? 'Unknown operator'}
+                    </p>
+                  </div>
+                  <div className="tag-row">
+                    <span className={version.isActive ? 'tag' : 'tag warn'}>
+                      {version.isActive ? 'active' : 'inactive'}
+                    </span>
+                    <span className="tag">{version.workspaceId ? `workspace ${version.workspaceId}` : 'global'}</span>
+                    <span className="tag">
+                      {version.layers.length} layer{version.layers.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+                <div className="admin-user-actions">
+                  <button className="btn-ghost" onClick={() => handleLoadVersion(version)} type="button">
+                    Load into draft
+                  </button>
+                  <button
+                    className="btn-primary"
+                    disabled={!isConnectedSession || version.isActive}
+                    onClick={() => void handleActivateVersion(version)}
+                    type="button"
+                  >
+                    Activate version
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p>No published versions are available for this workspace context yet.</p>
+        )}
       </section>
     </div>
   );

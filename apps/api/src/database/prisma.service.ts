@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
-import { PrismaClient } from '@quizmind/database';
+import { createPrismaClientOptions, PrismaClient } from '@quizmind/database';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -9,14 +9,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   constructor() {
     const env = loadApiEnv();
 
-    super({
-      datasources: {
-        db: {
-          url: env.databaseUrl,
-        },
-      },
-      log: env.nodeEnv === 'development' ? ['warn', 'error'] : ['error'],
-    });
+    super(createPrismaClientOptions(env.databaseUrl, env.nodeEnv === 'development' ? ['warn', 'error'] : ['error']));
   }
 
   async onModuleInit() {

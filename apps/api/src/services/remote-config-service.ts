@@ -1,5 +1,6 @@
 import {
   type PrimitiveValue,
+  type RemoteConfigVersionSummary,
   type RemoteConfigPreviewRequest,
   type RemoteConfigPublishRequest,
   type RemoteConfigPublishResult,
@@ -9,7 +10,10 @@ import {
 import { createLogEvent } from '@quizmind/logger';
 import { resolveRemoteConfig } from '@quizmind/extension';
 
-import { type ActiveRemoteConfigLayerRecord } from '../remote-config/remote-config.repository';
+import {
+  type ActiveRemoteConfigLayerRecord,
+  type RemoteConfigVersionRecord,
+} from '../remote-config/remote-config.repository';
 
 export function previewRemoteConfig(
   request: RemoteConfigPreviewRequest,
@@ -68,6 +72,33 @@ export function mapRemoteConfigLayerRecordToDefinition(record: ActiveRemoteConfi
     priority: record.priority,
     ...(isConditionsRecord(record.conditionsJson) ? { conditions: record.conditionsJson } : {}),
     values: isRemoteConfigValueRecord(record.valuesJson) ? record.valuesJson : {},
+  };
+}
+
+export function mapRemoteConfigVersionRecordToSummary(
+  record: RemoteConfigVersionRecord,
+): RemoteConfigVersionSummary {
+  return {
+    id: record.id,
+    versionLabel: record.versionLabel,
+    workspaceId: record.workspaceId ?? undefined,
+    isActive: record.isActive,
+    publishedAt: record.createdAt.toISOString(),
+    ...(record.publishedBy
+      ? {
+          publishedBy: {
+            id: record.publishedBy.id,
+            email: record.publishedBy.email,
+            ...(record.publishedBy.displayName ? { displayName: record.publishedBy.displayName } : {}),
+          },
+        }
+      : {}),
+    layers: record.layers.map((layer) =>
+      mapRemoteConfigLayerRecordToDefinition({
+        ...layer,
+        remoteConfigVersion: record,
+      } as ActiveRemoteConfigLayerRecord),
+    ),
   };
 }
 

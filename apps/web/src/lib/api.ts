@@ -3,6 +3,7 @@ import {
   type AuthSessionsPayload,
   type AccessDecision,
   type AdminUserDirectorySnapshot,
+  type BillingAdminPlansPayload,
   type BillingCheckoutResult,
   type BillingInvoicesPayload,
   type BillingPlansPayload,
@@ -20,6 +21,8 @@ import {
   type SupportTicketQueueFilters,
   type SupportTicketQueueSnapshot,
   type SubscriptionSummary,
+  type UsageEventIngestResult,
+  type UsageEventPayload,
   type WorkspaceUsageSnapshot,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
@@ -123,11 +126,13 @@ export type SupportTicketsSnapshot = SupportTicketQueueSnapshot;
 export type AdminUsersSnapshot = AdminUserDirectorySnapshot;
 export type AuthSessionsSnapshot = AuthSessionsPayload;
 export type BillingPlansSnapshot = BillingPlansPayload;
+export type AdminBillingPlansSnapshot = BillingAdminPlansPayload;
 export type BillingInvoicesSnapshot = BillingInvoicesPayload;
 export type BillingCheckoutSnapshot = BillingCheckoutResult;
 export type BillingPortalSnapshot = BillingPortalResult;
 export type BillingSubscriptionMutationSnapshot = BillingSubscriptionMutationResult;
 export type UsageSummarySnapshot = WorkspaceUsageSnapshot;
+export type UsageEventIngestSnapshot = UsageEventIngestResult;
 export type RemoteConfigStateSnapshot = RemoteConfigSnapshot;
 export type RemoteConfigPublishStateSnapshot = RemoteConfigPublishResponse;
 export type ExtensionBootstrapSnapshot = ExtensionBootstrapPayload;
@@ -279,6 +284,14 @@ export async function getBillingPlans() {
   return readApiData<BillingPlansSnapshot>('/billing/plans');
 }
 
+export async function getAdminPlans(accessToken?: string | null) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return readApiData<AdminBillingPlansSnapshot>('/admin/plans', withAccessToken(undefined, accessToken));
+}
+
 export async function getBillingInvoices(workspaceId: string, accessToken?: string | null) {
   const path = withQuery('/billing/invoices', {
     workspaceId,
@@ -325,6 +338,17 @@ export async function simulateExtensionBootstrap(
 ) {
   return writeApiData<ExtensionBootstrapSnapshot>(
     '/extension/bootstrap',
+    request,
+    withAccessToken(undefined, accessToken),
+  );
+}
+
+export async function ingestUsageEvent(
+  request: UsageEventPayload,
+  accessToken?: string | null,
+) {
+  return writeApiData<UsageEventIngestSnapshot>(
+    '/extension/usage-events',
     request,
     withAccessToken(undefined, accessToken),
   );

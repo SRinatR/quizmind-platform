@@ -26,6 +26,14 @@ export function canWriteFeatureFlags(principal: SessionPrincipal): AccessDecisio
   });
 }
 
+export function canManagePlans(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'plans:manage',
+  });
+}
+
 export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
 

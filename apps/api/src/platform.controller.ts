@@ -5,6 +5,7 @@ import { type ApiSuccess } from '@quizmind/contracts';
 import {
   type ExtensionBootstrapRequest,
   type FeatureFlagUpdateRequest,
+  type RemoteConfigActivateVersionRequest,
   type RemoteConfigPublishRequest,
   type SupportImpersonationEndRequest,
   type SupportImpersonationRequest,
@@ -158,6 +159,20 @@ export class PlatformController {
     }
 
     return ok(await this.platformService.publishRemoteConfigForCurrentSession(session, request));
+  }
+
+  @Post('admin/remote-config/activate')
+  async activateRemoteConfigVersion(
+    @Body() request?: Partial<RemoteConfigActivateVersionRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.activateRemoteConfigVersion(request));
+    }
+
+    return ok(await this.platformService.activateRemoteConfigVersionForCurrentSession(session, request));
   }
 
   @Post('extension/bootstrap')

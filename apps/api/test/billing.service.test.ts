@@ -50,6 +50,17 @@ function createCurrentSession(): CurrentSessionSnapshot {
   };
 }
 
+function createAdminSession(): CurrentSessionSnapshot {
+  return {
+    ...createCurrentSession(),
+    principal: {
+      ...createCurrentSession().principal,
+      systemRoles: ['platform_admin'],
+    },
+    permissions: ['plans:manage', 'subscriptions:read', 'subscriptions:update'],
+  };
+}
+
 function createPlanCatalogRecord(): BillingPlanCatalogRecord {
   return {
     id: 'plan_pro',
@@ -176,15 +187,24 @@ function createBillingService() {
     }),
   } as unknown as BillingWebhookRepository;
   const billingRepository = {
+    listAllPlans: async () => [],
     listActivePlans: async () => [],
     listInvoicesByWorkspaceId: async () => [],
     findInvoiceExportContext: async () => null,
+    findPlanByCode: async () => null,
     findActivePlanByCode: async () => null,
     findWorkspaceBillingContext: async () => null,
+    replacePlanCatalogEntry: async () => null,
     updateWorkspaceStripeCustomerId: async () => undefined,
     updateSubscriptionLifecycle: async () => undefined,
   } as unknown as BillingRepository;
-  const service = new BillingService(billingWebhookRepository, billingRepository);
+  const queueDispatchService = {
+    dispatch: async (input: { queue: string; dedupeKey?: string }) => ({
+      id: `${input.queue}:${input.dedupeKey ?? 'job'}`,
+      queue: input.queue,
+    }),
+  };
+  const service = new BillingService(billingWebhookRepository, billingRepository, queueDispatchService as any);
 
   service['env'] = {
     nodeEnv: 'test',
@@ -210,7 +230,7 @@ function createBillingService() {
     authRateLimitMaxRequests: 10,
   };
 
-  return { service, billingWebhookRepository, billingRepository };
+  return { service, billingWebhookRepository, billingRepository, queueDispatchService };
 }
 
 function createJsonResponse(payload: Record<string, unknown>, status = 200): Response {
@@ -233,6 +253,138 @@ test('BillingService.listPlans maps the connected billing catalog from Prisma re
   assert.equal(result.plans[0]?.plan.code, 'pro');
   assert.equal(result.plans[0]?.prices[0]?.amount, 900);
   assert.equal(result.plans[0]?.prices[0]?.stripePriceId, 'price_pro_monthly');
+});
+
+test('BillingService.listAdminPlans returns the full billing catalog for plan managers', async () => {
+  const { service, billingRepository } = createBillingService();
+
+  billingRepository.listAllPlans = async () => [
+    createPlanCatalogRecord(),
+    {
+      ...createPlanCatalogRecord(),
+      id: 'plan_legacy',
+      code: 'legacy',
+      name: 'Legacy',
+      isActive: false,
+    },
+  ];
+
+  const result = await service.listAdminPlans(createAdminSession());
+
+  assert.equal(result.plans.length, 2);
+  assert.equal(result.plans[0]?.plan.code, 'pro');
+  assert.equal(result.plans[1]?.isActive, false);
+});
+
+test('BillingService.updatePlanCatalogEntry persists active state, prices, and entitlements for plan managers', async () => {
+  const { service, billingRepository } = createBillingService();
+  let capturedInput: any = null;
+
+  billingRepository.findPlanByCode = async () => createPlanCatalogRecord();
+  billingRepository.replacePlanCatalogEntry = async (input) => {
+    capturedInput = input;
+
+    return {
+      ...createPlanCatalogRecord(),
+      name: input.name,
+      description: input.description,
+      isActive: input.isActive,
+      updatedAt: new Date('2026-03-24T13:15:00.000Z'),
+      entitlements: input.entitlements.map((entitlement, index) => ({
+        id: `ent_${index + 1}`,
+        planId: 'plan_pro',
+        key: entitlement.key,
+        enabled: entitlement.enabled,
+        limitValue: entitlement.limitValue,
+        createdAt: new Date('2026-03-24T13:15:00.000Z'),
+        updatedAt: new Date('2026-03-24T13:15:00.000Z'),
+      })),
+      prices: input.prices.map((price, index) => ({
+        id: `price_${index + 1}`,
+        planId: 'plan_pro',
+        intervalCode: price.intervalCode,
+        currency: price.currency,
+        amount: price.amount,
+        isDefault: price.isDefault,
+        stripePriceId: price.stripePriceId,
+        createdAt: new Date('2026-03-24T13:15:00.000Z'),
+      })),
+    };
+  };
+
+  const result = await service.updatePlanCatalogEntry(createAdminSession(), {
+    planCode: 'pro',
+    name: 'Pro Plus',
+    description: 'Expanded limits, analytics, and control-plane access.',
+    isActive: false,
+    prices: [
+      {
+        interval: 'monthly',
+        currency: 'USD',
+        amount: 1900,
+        isDefault: true,
+        stripePriceId: 'price_pro_plus_monthly',
+      },
+      {
+        interval: 'yearly',
+        currency: 'usd',
+        amount: 19000,
+        isDefault: false,
+        stripePriceId: 'price_pro_plus_yearly',
+      },
+    ],
+    entitlements: [
+      {
+        key: 'feature.remote_config',
+        enabled: true,
+      },
+      {
+        key: 'limit.requests_per_day',
+        enabled: true,
+        limit: 1500,
+      },
+    ],
+  });
+
+  assert.deepEqual(capturedInput, {
+    planCode: 'pro',
+    name: 'Pro Plus',
+    description: 'Expanded limits, analytics, and control-plane access.',
+    isActive: false,
+    entitlements: [
+      {
+        key: 'feature.remote_config',
+        enabled: true,
+        limitValue: null,
+      },
+      {
+        key: 'limit.requests_per_day',
+        enabled: true,
+        limitValue: 1500,
+      },
+    ],
+    prices: [
+      {
+        intervalCode: 'monthly',
+        currency: 'usd',
+        amount: 1900,
+        isDefault: true,
+        stripePriceId: 'price_pro_plus_monthly',
+      },
+      {
+        intervalCode: 'yearly',
+        currency: 'usd',
+        amount: 19000,
+        isDefault: false,
+        stripePriceId: 'price_pro_plus_yearly',
+      },
+    ],
+  });
+  assert.equal(result.plan.plan.name, 'Pro Plus');
+  assert.equal(result.plan.isActive, false);
+  assert.equal(result.plan.prices[0]?.amount, 1900);
+  assert.equal(result.plan.plan.entitlements[1]?.limit, 1500);
+  assert.equal(result.updatedAt, '2026-03-24T13:15:00.000Z');
 });
 
 test('BillingService.listInvoices returns workspace invoices with derived statuses', async () => {

@@ -1,24 +1,40 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import {
-  type ExtensionBootstrapRequest,
   type ExtensionBootstrapPayload,
+  type ExtensionBootstrapRequest,
+  type UsageEventIngestResult,
+  type UsageEventPayload,
 } from '@quizmind/contracts';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+
+import { formatUtcDateTime } from '../../../lib/datetime';
+import { type UsageSummarySnapshot } from '../../../lib/api';
 
 interface ExtensionControlClientProps {
   initialRequest: ExtensionBootstrapRequest;
   initialResult: ExtensionBootstrapPayload | null;
+  initialUsageEvent: UsageEventPayload;
   planOptions: string[];
+  usageSummary: UsageSummarySnapshot | null;
   workspaceOptions: Array<{
     id: string;
     name: string;
   }>;
 }
 
-interface RouteResponse {
+interface BootstrapRouteResponse {
   ok: boolean;
   data?: ExtensionBootstrapPayload;
+  error?: {
+    message?: string;
+  };
+}
+
+interface UsageRouteResponse {
+  ok: boolean;
+  data?: UsageEventIngestResult;
   error?: {
     message?: string;
   };
@@ -35,12 +51,44 @@ function parseCapabilities(value: string) {
     .filter(Boolean);
 }
 
+function formatQuotaValue(consumed: number, limit?: number) {
+  return typeof limit === 'number' ? `${consumed}/${limit}` : `${consumed}`;
+}
+
+function formatWindow(start?: string, end?: string) {
+  if (!start || !end) {
+    return 'Current window unavailable';
+  }
+
+  return `${formatUtcDateTime(start)} - ${formatUtcDateTime(end)}`;
+}
+
+function parseUsagePayload(value: string): Record<string, unknown> {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error('Payload must be valid JSON.');
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Payload must be a JSON object.');
+  }
+
+  return parsed as Record<string, unknown>;
+}
+
 export function ExtensionControlClient({
   initialRequest,
   initialResult,
+  initialUsageEvent,
   planOptions,
+  usageSummary,
   workspaceOptions,
 }: ExtensionControlClientProps) {
+  const router = useRouter();
+  const [isRefreshingSnapshot, startRefresh] = useTransition();
   const [formState, setFormState] = useState({
     installationId: initialRequest.installationId,
     userId: initialRequest.userId,
@@ -58,6 +106,19 @@ export function ExtensionControlClient({
     'Adjust the bootstrap request, run the simulation, and inspect the exact compatibility, flag, and remote-config output the extension would receive.',
   );
   const [isSimulating, setIsSimulating] = useState(false);
+  const [usageFormState, setUsageFormState] = useState({
+    installationId: initialUsageEvent.installationId,
+    workspaceId: initialUsageEvent.workspaceId ?? '',
+    eventType: initialUsageEvent.eventType,
+    occurredAt: initialUsageEvent.occurredAt,
+    payload: stringifyJson(initialUsageEvent.payload),
+  });
+  const [usageStatusMessage, setUsageStatusMessage] = useState<string | null>(
+    'Queue a telemetry event to exercise the worker pipeline and refresh the workspace usage snapshot.',
+  );
+  const [usageErrorMessage, setUsageErrorMessage] = useState<string | null>(null);
+  const [lastQueuedEvent, setLastQueuedEvent] = useState<UsageEventIngestResult | null>(null);
+  const [isQueueingUsageEvent, setIsQueueingUsageEvent] = useState(false);
 
   async function handleSimulate() {
     const capabilities = parseCapabilities(formState.capabilities);
@@ -99,7 +160,7 @@ export function ExtensionControlClient({
           ...(formState.planCode.trim() ? { planCode: formState.planCode.trim() } : {}),
         } satisfies ExtensionBootstrapRequest),
       });
-      const payload = (await response.json().catch(() => null)) as RouteResponse | null;
+      const payload = (await response.json().catch(() => null)) as BootstrapRouteResponse | null;
 
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSimulating(false);
@@ -115,6 +176,75 @@ export function ExtensionControlClient({
       setIsSimulating(false);
       setStatusMessage(null);
       setErrorMessage('Unable to reach the extension bootstrap simulation route right now.');
+    }
+  }
+
+  async function handleQueueUsageEvent() {
+    if (!usageFormState.installationId.trim() || !usageFormState.eventType.trim() || !usageFormState.occurredAt.trim()) {
+      setUsageStatusMessage(null);
+      setUsageErrorMessage('installationId, eventType, and occurredAt are required.');
+      return;
+    }
+
+    const occurredAt = new Date(usageFormState.occurredAt.trim());
+
+    if (Number.isNaN(occurredAt.getTime())) {
+      setUsageStatusMessage(null);
+      setUsageErrorMessage('occurredAt must be a valid ISO datetime string.');
+      return;
+    }
+
+    let parsedPayload: Record<string, unknown>;
+
+    try {
+      parsedPayload = parseUsagePayload(usageFormState.payload);
+    } catch (error) {
+      setUsageStatusMessage(null);
+      setUsageErrorMessage(error instanceof Error ? error.message : 'Payload must be a JSON object.');
+      return;
+    }
+
+    setIsQueueingUsageEvent(true);
+    setUsageErrorMessage(null);
+    setUsageStatusMessage(`Queueing ${usageFormState.eventType.trim()} for ${usageFormState.installationId.trim()}...`);
+
+    try {
+      const response = await fetch('/api/admin/extension/usage-events', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          installationId: usageFormState.installationId.trim(),
+          eventType: usageFormState.eventType.trim(),
+          occurredAt: occurredAt.toISOString(),
+          payload: parsedPayload,
+          ...(usageFormState.workspaceId.trim() ? { workspaceId: usageFormState.workspaceId.trim() } : {}),
+        } satisfies UsageEventPayload),
+      });
+      const payload = (await response.json().catch(() => null)) as UsageRouteResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        setIsQueueingUsageEvent(false);
+        setUsageStatusMessage(null);
+        setUsageErrorMessage(payload?.error?.message ?? 'Unable to queue usage event right now.');
+        return;
+      }
+
+      setLastQueuedEvent(payload.data);
+      setUsageFormState((current) => ({
+        ...current,
+        occurredAt: new Date().toISOString(),
+      }));
+      setIsQueueingUsageEvent(false);
+      setUsageStatusMessage(`Queued ${payload.data.logEvent.eventType} at ${formatUtcDateTime(payload.data.job.createdAt)}.`);
+      startRefresh(() => {
+        router.refresh();
+      });
+    } catch {
+      setIsQueueingUsageEvent(false);
+      setUsageStatusMessage(null);
+      setUsageErrorMessage('Unable to reach the usage event ingest route right now.');
     }
   }
 
@@ -312,6 +442,174 @@ export function ExtensionControlClient({
           </div>
         </section>
       ) : null}
+
+      {usageStatusMessage ? <p className="admin-inline-status">{usageStatusMessage}</p> : null}
+      {usageErrorMessage ? <p className="admin-inline-error">{usageErrorMessage}</p> : null}
+
+      <section className="split-grid">
+        <article className="panel">
+          <span className="micro-label">Telemetry</span>
+          <h2>Queue usage event</h2>
+          <div className="admin-ticket-editor">
+            <label className="admin-ticket-field">
+              <span className="micro-label">Installation ID</span>
+              <input
+                onChange={(event) =>
+                  setUsageFormState((current) => ({
+                    ...current,
+                    installationId: event.target.value,
+                  }))
+                }
+                value={usageFormState.installationId}
+              />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">Workspace</span>
+              <select
+                onChange={(event) =>
+                  setUsageFormState((current) => ({
+                    ...current,
+                    workspaceId: event.target.value,
+                  }))
+                }
+                value={usageFormState.workspaceId}
+              >
+                <option value="">No workspace binding</option>
+                {workspaceOptions.map((workspace) => (
+                  <option key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">Event type</span>
+              <input
+                onChange={(event) =>
+                  setUsageFormState((current) => ({
+                    ...current,
+                    eventType: event.target.value,
+                  }))
+                }
+                value={usageFormState.eventType}
+              />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">Occurred at</span>
+              <input
+                onChange={(event) =>
+                  setUsageFormState((current) => ({
+                    ...current,
+                    occurredAt: event.target.value,
+                  }))
+                }
+                value={usageFormState.occurredAt}
+              />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">Payload JSON</span>
+              <textarea
+                onChange={(event) =>
+                  setUsageFormState((current) => ({
+                    ...current,
+                    payload: event.target.value,
+                  }))
+                }
+                rows={8}
+                value={usageFormState.payload}
+              />
+            </label>
+          </div>
+          <div className="admin-user-actions">
+            <button
+              className="btn-primary"
+              disabled={isQueueingUsageEvent}
+              onClick={() => void handleQueueUsageEvent()}
+              type="button"
+            >
+              {isQueueingUsageEvent ? 'Queueing...' : 'Queue usage event'}
+            </button>
+            <button
+              className="btn-ghost"
+              disabled={isRefreshingSnapshot}
+              onClick={() =>
+                startRefresh(() => {
+                  router.refresh();
+                })
+              }
+              type="button"
+            >
+              {isRefreshingSnapshot ? 'Refreshing...' : 'Refresh snapshot'}
+            </button>
+          </div>
+
+          {lastQueuedEvent ? (
+            <div className="admin-support-result">
+              <span className="micro-label">Last queued job</span>
+              <p>
+                {lastQueuedEvent.logEvent.eventType} to {lastQueuedEvent.job.queue} / {lastQueuedEvent.job.id}
+              </p>
+              <p>
+                Created {formatUtcDateTime(lastQueuedEvent.job.createdAt)}
+                {lastQueuedEvent.job.dedupeKey ? ` | dedupe ${lastQueuedEvent.job.dedupeKey}` : ''}
+              </p>
+            </div>
+          ) : null}
+        </article>
+
+        <article className="panel">
+          <span className="micro-label">Workspace snapshot</span>
+          <h2>Current usage state</h2>
+          {usageSummary ? (
+            <div className="list-stack">
+              <div className="list-item">
+                <strong>Workspace</strong>
+                <p>{usageSummary.workspace.name}</p>
+                <span className="list-muted">
+                  {usageSummary.planCode} | {usageSummary.subscriptionStatus}
+                </span>
+              </div>
+              <div className="list-item">
+                <strong>Current window</strong>
+                <p>{formatWindow(usageSummary.currentPeriodStart, usageSummary.currentPeriodEnd)}</p>
+              </div>
+              <div className="list-item">
+                <strong>Installations</strong>
+                <p>{usageSummary.installations.length}</p>
+                <span className="list-muted">
+                  {usageSummary.installations[0]
+                    ? `${usageSummary.installations[0].installationId} last seen ${formatUtcDateTime(usageSummary.installations[0].lastSeenAt)}`
+                    : 'No installations reported yet.'}
+                </span>
+              </div>
+              {usageSummary.quotas.slice(0, 3).map((quota) => (
+                <div className="list-item" key={quota.key}>
+                  <strong>{quota.label}</strong>
+                  <p>
+                    {formatQuotaValue(quota.consumed, quota.limit)} | {quota.status}
+                  </p>
+                  <span className="list-muted">{formatWindow(quota.periodStart, quota.periodEnd)}</span>
+                </div>
+              ))}
+              <div className="list-item">
+                <strong>Recent activity</strong>
+                <p>{usageSummary.recentEvents[0]?.summary ?? 'No recent telemetry or dashboard activity yet.'}</p>
+                <span className="list-muted">
+                  {usageSummary.recentEvents[0]
+                    ? `${usageSummary.recentEvents[0].eventType} | ${formatUtcDateTime(usageSummary.recentEvents[0].occurredAt)}`
+                    : 'Queue an event to exercise the worker pipeline.'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span className="micro-label">No usage snapshot</span>
+              <h2>Usage summary is unavailable for this workspace.</h2>
+              <p>Open the control plane with a workspace-bound admin session to inspect quotas and recent telemetry.</p>
+            </div>
+          )}
+        </article>
+      </section>
     </div>
   );
 }

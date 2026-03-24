@@ -1,6 +1,13 @@
-import { EventSeverity, PrismaClient, SubscriptionStatus, SystemRole, WorkspaceRole } from '@prisma/client';
+import {
+  EventSeverity,
+  PrismaClient,
+  SubscriptionStatus,
+  SystemRole,
+  WorkspaceRole,
+  createPrismaClientOptions,
+} from '../src';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient(createPrismaClientOptions(process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/quizmind'));
 const demoPasswordHash = '$2b$12$PHJXSUJWEvesXLnQh90hv.tvljJ4FN/GTqhqHoVFNtmRzGvsaMzVi';
 
 async function seed() {

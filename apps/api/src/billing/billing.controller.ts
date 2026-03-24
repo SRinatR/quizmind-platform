@@ -15,6 +15,7 @@ import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import {
   type ApiSuccess,
+  type BillingAdminPlanUpdateRequest,
   type BillingCheckoutRequest,
   type BillingSubscriptionMutationRequest,
 } from '@quizmind/contracts';
@@ -48,6 +49,21 @@ export class BillingController {
   @Get('billing/plans')
   async listPlans() {
     return ok(await this.billingService.listPlans());
+  }
+
+  @Get('admin/plans')
+  async listAdminPlans(@Headers('authorization') authorization?: string) {
+    return ok(await this.billingService.listAdminPlans(await this.requireConnectedSession(authorization)));
+  }
+
+  @Post('admin/plans/update')
+  async updatePlanCatalogEntry(
+    @Body() request?: Partial<BillingAdminPlanUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.billingService.updatePlanCatalogEntry(await this.requireConnectedSession(authorization), request),
+    );
   }
 
   @Post('billing/checkout')

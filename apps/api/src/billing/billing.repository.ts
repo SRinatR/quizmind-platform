@@ -33,17 +33,30 @@ export interface BillingPlanCatalogRecord {
   code: string;
   name: string;
   description: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
   entitlements: Array<{
+    id: string;
+    planId: string;
     key: string;
     enabled: boolean;
     limitValue: number | null;
+    createdAt: Date;
+    updatedAt: Date;
   }>;
   prices: Array<{
+    id: string;
+    planId: string;
     intervalCode: string;
     currency: string;
     amount: number;
     isDefault: boolean;
     stripePriceId: string | null;
+    createdAt: Date;
+  }>;
+  subscriptions?: Array<{
+    id: string;
   }>;
 }
 
@@ -89,6 +102,15 @@ export interface BillingInvoiceExportRecord {
 export class BillingRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  async listAllPlans(): Promise<BillingPlanCatalogRecord[]> {
+    const records = await this.prisma.plan.findMany({
+      include: billingPlanCatalogInclude,
+      orderBy: [{ createdAt: 'asc' }],
+    });
+
+    return records as unknown as BillingPlanCatalogRecord[];
+  }
+
   async listActivePlans(): Promise<BillingPlanCatalogRecord[]> {
     const records = await this.prisma.plan.findMany({
       where: {
@@ -111,6 +133,107 @@ export class BillingRepository {
     });
 
     return record as BillingPlanCatalogRecord | null;
+  }
+
+  async findPlanByCode(planCode: string): Promise<BillingPlanCatalogRecord | null> {
+    const record = await this.prisma.plan.findUnique({
+      where: {
+        code: planCode,
+      },
+      include: billingPlanCatalogInclude,
+    });
+
+    return record as BillingPlanCatalogRecord | null;
+  }
+
+  async replacePlanCatalogEntry(input: {
+    planCode: string;
+    name: string;
+    description: string;
+    isActive: boolean;
+    entitlements: Array<{
+      key: string;
+      enabled: boolean;
+      limitValue: number | null;
+    }>;
+    prices: Array<{
+      intervalCode: string;
+      currency: string;
+      amount: number;
+      isDefault: boolean;
+      stripePriceId: string | null;
+    }>;
+  }): Promise<BillingPlanCatalogRecord | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.plan.findUnique({
+        where: {
+          code: input.planCode,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      await tx.plan.update({
+        where: {
+          id: existing.id,
+        },
+        data: {
+          name: input.name,
+          description: input.description,
+          isActive: input.isActive,
+        },
+      });
+
+      await tx.planPrice.deleteMany({
+        where: {
+          planId: existing.id,
+        },
+      });
+
+      if (input.prices.length > 0) {
+        await tx.planPrice.createMany({
+          data: input.prices.map((price) => ({
+            planId: existing.id,
+            intervalCode: price.intervalCode,
+            currency: price.currency,
+            amount: price.amount,
+            isDefault: price.isDefault,
+            stripePriceId: price.stripePriceId,
+          })),
+        });
+      }
+
+      await tx.planEntitlement.deleteMany({
+        where: {
+          planId: existing.id,
+        },
+      });
+
+      if (input.entitlements.length > 0) {
+        await tx.planEntitlement.createMany({
+          data: input.entitlements.map((entitlement) => ({
+            planId: existing.id,
+            key: entitlement.key,
+            enabled: entitlement.enabled,
+            limitValue: entitlement.limitValue,
+          })),
+        });
+      }
+
+      const record = await tx.plan.findUnique({
+        where: {
+          id: existing.id,
+        },
+        include: billingPlanCatalogInclude,
+      });
+
+      return record as BillingPlanCatalogRecord | null;
+    });
   }
 
   async findWorkspaceBillingContext(workspaceId: string): Promise<BillingWorkspaceContextRecord | null> {

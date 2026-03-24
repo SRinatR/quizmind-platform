@@ -10,6 +10,11 @@ import {
 import { verifyStripeWebhookSignature } from '@quizmind/billing';
 import { loadApiEnv } from '@quizmind/config';
 import {
+  type BillingAdminPlanEntitlementInput,
+  type BillingAdminPlanPriceInput,
+  type BillingAdminPlansPayload,
+  type BillingAdminPlanUpdateRequest,
+  type BillingAdminPlanUpdateResult,
   type BillingCheckoutRequest,
   type BillingCheckoutResult,
   type BillingInterval,
@@ -28,8 +33,12 @@ import { Prisma } from '@quizmind/database';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { QueueDispatchService } from '../queue/queue-dispatch.service';
-import { canReadWorkspaceSubscription, canUpdateWorkspaceSubscription } from '../services/access-service';
-import { mapPlanCatalogRecordToEntry } from '../services/billing-service';
+import {
+  canManagePlans,
+  canReadWorkspaceSubscription,
+  canUpdateWorkspaceSubscription,
+} from '../services/access-service';
+import { mapAdminPlanCatalogRecordToSnapshot, mapPlanCatalogRecordToEntry } from '../services/billing-service';
 import { BillingRepository, type BillingInvoiceRecord, type BillingWorkspaceContextRecord } from './billing.repository';
 import { BillingWebhookRepository } from './billing-webhook.repository';
 import { mockBillingPlans } from './mock-plan-catalog';
@@ -70,6 +79,100 @@ function parseBillingInterval(value: BillingCheckoutRequest['interval'] | undefi
   }
 
   throw new BadRequestException('interval must be either "monthly" or "yearly".');
+}
+
+function readNonEmptyString(value: string | undefined, fieldName: string): string {
+  const normalized = value?.trim();
+
+  if (!normalized) {
+    throw new BadRequestException(`${fieldName} is required.`);
+  }
+
+  return normalized;
+}
+
+function normalizePlanPriceInputs(
+  value: BillingAdminPlanUpdateRequest['prices'] | undefined,
+  fallback: BillingAdminPlanPriceInput[],
+): BillingAdminPlanPriceInput[] {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  const seenKeys = new Set<string>();
+  let defaultCount = 0;
+  const normalized = value.map((price, index) => {
+    const interval = parseBillingInterval(price?.interval);
+    const currency = readNonEmptyString(price?.currency?.toLowerCase(), `prices[${index}].currency`);
+    const amount = price?.amount;
+
+    if (!Number.isInteger(amount) || amount < 0) {
+      throw new BadRequestException(`prices[${index}].amount must be a non-negative integer.`);
+    }
+
+    if (!/^[a-z]{3}$/i.test(currency)) {
+      throw new BadRequestException(`prices[${index}].currency must be a 3-letter currency code.`);
+    }
+
+    const key = `${interval}:${currency}`;
+
+    if (seenKeys.has(key)) {
+      throw new BadRequestException(`Duplicate plan price for ${interval}/${currency}.`);
+    }
+
+    seenKeys.add(key);
+
+    if (price?.isDefault) {
+      defaultCount += 1;
+    }
+
+    return {
+      interval,
+      currency,
+      amount,
+      isDefault: price?.isDefault ?? false,
+      stripePriceId: normalizeOptionalString(price?.stripePriceId) ?? null,
+    };
+  });
+
+  if (normalized.length > 0 && defaultCount !== 1) {
+    throw new BadRequestException('Exactly one default plan price is required when prices are configured.');
+  }
+
+  return normalized;
+}
+
+function normalizePlanEntitlementInputs(
+  value: BillingAdminPlanUpdateRequest['entitlements'] | undefined,
+  fallback: BillingAdminPlanEntitlementInput[],
+): BillingAdminPlanEntitlementInput[] {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  const seenKeys = new Set<string>();
+
+  return value.map((entitlement, index) => {
+    const key = readNonEmptyString(entitlement?.key, `entitlements[${index}].key`);
+    const enabled = entitlement?.enabled ?? false;
+    const limit = entitlement?.limit;
+
+    if (seenKeys.has(key)) {
+      throw new BadRequestException(`Duplicate entitlement key "${key}".`);
+    }
+
+    if (limit !== undefined && limit !== null && (!Number.isInteger(limit) || limit < 0)) {
+      throw new BadRequestException(`entitlements[${index}].limit must be a non-negative integer.`);
+    }
+
+    seenKeys.add(key);
+
+    return {
+      key,
+      enabled,
+      ...(limit === undefined ? {} : { limit }),
+    };
+  });
 }
 
 function resolveAppRedirectUrl(input: {
@@ -139,6 +242,99 @@ export class BillingService {
 
     return {
       plans: plans.map(mapPlanCatalogRecordToEntry),
+    };
+  }
+
+  async listAdminPlans(session: CurrentSessionSnapshot): Promise<BillingAdminPlansPayload> {
+    const accessDecision = canManagePlans(session.principal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const plans = await this.billingRepository.listAllPlans();
+
+    return {
+      plans: plans.map(mapAdminPlanCatalogRecordToSnapshot),
+    };
+  }
+
+  async updatePlanCatalogEntry(
+    session: CurrentSessionSnapshot,
+    request?: Partial<BillingAdminPlanUpdateRequest>,
+  ): Promise<BillingAdminPlanUpdateResult> {
+    const accessDecision = canManagePlans(session.principal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const planCode = readRequiredString(request?.planCode, 'planCode').toLowerCase();
+    const existing = await this.billingRepository.findPlanByCode(planCode);
+
+    if (!existing) {
+      throw new NotFoundException(`Plan "${planCode}" was not found.`);
+    }
+
+    const normalizedName = request?.name === undefined ? existing.name : readNonEmptyString(request.name, 'name');
+    const normalizedDescription =
+      request?.description === undefined
+        ? existing.description
+        : readNonEmptyString(request.description, 'description');
+    const normalizedPrices = normalizePlanPriceInputs(
+      request?.prices,
+      existing.prices.map((price) => ({
+        interval: price.intervalCode === 'yearly' ? 'yearly' : 'monthly',
+        currency: price.currency,
+        amount: price.amount,
+        isDefault: price.isDefault,
+        stripePriceId: price.stripePriceId,
+      })),
+    );
+    const normalizedEntitlements = normalizePlanEntitlementInputs(
+      request?.entitlements,
+      existing.entitlements.map((entitlement) => ({
+        key: entitlement.key,
+        enabled: entitlement.enabled,
+        ...(entitlement.limitValue === null ? {} : { limit: entitlement.limitValue }),
+      })),
+    );
+    let updatedRecord;
+
+    try {
+      updatedRecord = await this.billingRepository.replacePlanCatalogEntry({
+        planCode,
+        name: normalizedName,
+        description: normalizedDescription,
+        isActive: request?.isActive ?? existing.isActive,
+        entitlements: normalizedEntitlements.map((entitlement) => ({
+          key: entitlement.key,
+          enabled: entitlement.enabled,
+          limitValue: entitlement.limit ?? null,
+        })),
+        prices: normalizedPrices.map((price) => ({
+          intervalCode: price.interval,
+          currency: price.currency,
+          amount: price.amount,
+          isDefault: price.isDefault,
+          stripePriceId: price.stripePriceId ?? null,
+        })),
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('A plan price row conflicts with an existing unique Stripe price mapping.');
+      }
+
+      throw error;
+    }
+
+    if (!updatedRecord) {
+      throw new NotFoundException(`Plan "${planCode}" was not found.`);
+    }
+
+    return {
+      plan: mapAdminPlanCatalogRecordToSnapshot(updatedRecord),
+      updatedAt: updatedRecord.updatedAt.toISOString(),
     };
   }
 

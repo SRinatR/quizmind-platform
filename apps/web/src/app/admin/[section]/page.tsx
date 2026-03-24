@@ -1,22 +1,29 @@
 import { buildAccessContext } from '@quizmind/auth';
-import { type ExtensionBootstrapRequest, type SupportTicketQueueFilters } from '@quizmind/contracts';
+import {
+  type ExtensionBootstrapRequest,
+  type SupportTicketQueueFilters,
+  type UsageEventPayload,
+} from '@quizmind/contracts';
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAdminUsers,
+  getAdminPlans,
   getBillingPlans,
   getFeatureFlags,
   getRemoteConfigState,
   getSession,
   getSupportImpersonationSessions,
   getSupportTickets,
+  getUsageSummary,
   resolvePersona,
   simulateExtensionBootstrap,
 } from '../../../lib/api';
 import { getVisibleAdminSections } from '../../../features/navigation/visibility';
 import { ExtensionControlClient } from './extension-control-client';
 import { FeatureFlagsClient } from './feature-flags-client';
+import { PlansClient } from './plans-client';
 import { RemoteConfigClient } from './remote-config-client';
 import { SupportSessionsClient } from './support-sessions-client';
 import { SupportTicketsClient } from './support-tickets-client';
@@ -74,6 +81,23 @@ function createInitialExtensionBootstrapRequest(input: {
   };
 }
 
+function createInitialUsageEvent(input: {
+  installationId: string;
+  workspaceId?: string;
+}): UsageEventPayload {
+  return {
+    installationId: input.installationId,
+    workspaceId: input.workspaceId,
+    eventType: 'extension.quiz_answer_requested',
+    occurredAt: new Date().toISOString(),
+    payload: {
+      questionType: 'multiple_choice',
+      surface: 'content_script',
+      answerMode: 'instant',
+    },
+  };
+}
+
 export default async function AdminSectionPage({ params, searchParams }: AdminSectionPageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
@@ -98,20 +122,35 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         workspaceId: sessionWorkspaceId,
       })
     : null;
-  const [featureFlags, billingPlans, adminUsers, remoteConfigState, supportImpersonationSessions, supportTickets] =
+  const [
+    featureFlags,
+    billingPlans,
+    adminPlans,
+    adminUsers,
+    remoteConfigState,
+    supportImpersonationSessions,
+    supportTickets,
+    usageSummary,
+  ] =
     await Promise.all([
       getFeatureFlags(persona, accessToken),
       getBillingPlans(),
+      getAdminPlans(accessToken),
       getAdminUsers(persona, accessToken),
       getRemoteConfigState(persona, sessionWorkspaceId, accessToken),
       getSupportImpersonationSessions(persona, accessToken),
       getSupportTickets(persona, accessToken, supportTicketFilters),
+      resolvedParams.section === 'extension-control' && sessionWorkspaceId
+        ? getUsageSummary(persona, sessionWorkspaceId, accessToken)
+        : Promise.resolve(null),
     ]);
   const extensionBootstrap =
     resolvedParams.section === 'extension-control' && extensionBootstrapRequest
       ? await simulateExtensionBootstrap(extensionBootstrapRequest, accessToken)
       : null;
   const isConnectedSession = session?.personaKey === 'connected-user';
+  const canEditFeatureFlags = Boolean(isConnectedSession && session?.permissions.includes('feature_flags:write'));
+  const canManagePlans = Boolean(isConnectedSession && session?.permissions.includes('plans:manage'));
   const sessionLabel = session?.user.displayName || session?.user.email;
   const canManageSupportSessions = Boolean(isConnectedSession && session?.permissions.includes('support:impersonate'));
   const context = session ? buildAccessContext(session.principal) : null;
@@ -226,8 +265,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 <h2>{section.title}</h2>
                 <p>{section.description}</p>
                 <div className="tag-row">
-                  <span className={featureFlags?.publishDecision.allowed ? 'tag' : 'tag warn'}>
-                    {featureFlags?.publishDecision.allowed ? 'control-plane access' : 'read-only'}
+                  <span className={canEditFeatureFlags ? 'tag' : 'tag warn'}>
+                    {canEditFeatureFlags ? 'write access' : 'read-only'}
                   </span>
                   <span className="tag">
                     {featureFlags?.flags.length ?? 0} defined
@@ -255,6 +294,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </article>
             </section>
             <FeatureFlagsClient
+              canEdit={canEditFeatureFlags}
               flags={featureFlags?.flags ?? []}
               initialPreviewContext={{
                 planCode: remoteConfigState?.previewContext.planCode,
@@ -262,6 +302,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 userId: session.user.id,
                 workspaceId: sessionWorkspaceId,
               }}
+              planOptions={Array.from(new Set((billingPlans?.plans ?? []).map((entry) => entry.plan.code)))}
             />
           </>
         ) : section.id === 'extension-control' ? (
@@ -304,7 +345,12 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             <ExtensionControlClient
               initialRequest={extensionBootstrapRequest!}
               initialResult={extensionBootstrap}
+              initialUsageEvent={createInitialUsageEvent({
+                installationId: extensionBootstrapRequest!.installationId,
+                workspaceId: sessionWorkspaceId,
+              })}
               planOptions={Array.from(new Set((billingPlans?.plans ?? []).map((entry) => entry.plan.code)))}
+              usageSummary={usageSummary}
               workspaceOptions={session.workspaces.map((workspace) => ({
                 id: workspace.id,
                 name: workspace.name,
@@ -368,8 +414,11 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 <p>{section.description}</p>
                 <div className="tag-row">
                   <span className="tag">
-                    {billingPlans?.plans.length ?? 0} published
-                    {(billingPlans?.plans.length ?? 0) === 1 ? ' plan' : ' plans'}
+                    {adminPlans?.plans.length ?? 0} visible
+                    {(adminPlans?.plans.length ?? 0) === 1 ? ' plan' : ' plans'}
+                  </span>
+                  <span className={canManagePlans ? 'tag' : 'tag warn'}>
+                    {canManagePlans ? 'write access' : 'read-only'}
                   </span>
                 </div>
               </article>
@@ -395,52 +444,16 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
 
             <section className="panel">
               <span className="micro-label">Catalog</span>
-              <h2>Published plans and entitlements</h2>
-              <div className="admin-plan-grid">
-                {(billingPlans?.plans ?? []).map((entry) => (
-                  <article className="admin-plan-card" key={entry.plan.id}>
-                    <div className="billing-section-header">
-                      <div>
-                        <span className="micro-label">Plan</span>
-                        <h3>{entry.plan.name}</h3>
-                      </div>
-                      <span className="tag">{entry.plan.code}</span>
-                    </div>
-                    <p>{entry.plan.description}</p>
-                    <div className="list-stack">
-                      <div className="list-item">
-                        <strong>Prices</strong>
-                        <p>
-                          {entry.prices.length > 0
-                            ? entry.prices
-                                .map((price) => {
-                                  const amount = new Intl.NumberFormat('en-US', {
-                                    style: 'currency',
-                                    currency: price.currency.toUpperCase(),
-                                  }).format(price.amount / 100);
-
-                                  return `${amount} ${price.interval}${price.isDefault ? ' default' : ''}`;
-                                })
-                                .join(' | ')
-                            : 'No prices configured for this plan.'}
-                        </p>
-                      </div>
-                      <div className="list-item">
-                        <strong>Entitlements</strong>
-                        <p>
-                          {entry.plan.entitlements
-                            .map((entitlement) =>
-                              entitlement.limit !== undefined
-                                ? `${entitlement.key} (${entitlement.enabled ? 'on' : 'off'}, limit ${entitlement.limit})`
-                                : `${entitlement.key} (${entitlement.enabled ? 'on' : 'off'})`,
-                            )
-                            .join(' | ')}
-                        </p>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <h2>Catalog editor</h2>
+              {adminPlans ? (
+                <PlansClient
+                  canManagePlans={canManagePlans}
+                  currentPlanCode={remoteConfigState?.previewContext.planCode}
+                  plans={adminPlans.plans}
+                />
+              ) : (
+                <p>No admin billing catalog is available for this environment.</p>
+              )}
             </section>
           </>
         ) : (

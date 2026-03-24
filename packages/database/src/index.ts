@@ -1,4 +1,24 @@
-export { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Prisma, PrismaClient } from './generated/prisma/client';
+
+export * from './generated/prisma/client';
+export * from './generated/prisma/enums';
+export { Prisma, PrismaClient } from './generated/prisma/client';
+
+type PrismaAdapterFactory = NonNullable<Prisma.PrismaClientOptions['adapter']>;
+
+export function createPrismaClientOptions(
+  databaseUrl: string,
+  log?: Prisma.PrismaClientOptions['log'],
+): {
+  adapter: PrismaAdapterFactory;
+  log?: Prisma.PrismaClientOptions['log'];
+} {
+  return {
+    adapter: new PrismaPg({ connectionString: databaseUrl }),
+    ...(log ? { log } : {}),
+  };
+}
 
 export const databaseSchemas = {
   auth: ['users', 'accounts', 'sessions', 'email_verifications', 'password_resets', 'mfa_methods'],

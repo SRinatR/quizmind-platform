@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { PrismaClient } from '@quizmind/database';
+import { createPrismaClientOptions, PrismaClient } from '@quizmind/database';
 import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
 import { queueNames } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
@@ -59,14 +59,9 @@ async function bootstrap() {
 
   if (env.runtimeMode === 'connected') {
     try {
-      prisma = new PrismaClient({
-        datasources: {
-          db: {
-            url: env.databaseUrl,
-          },
-        },
-        log: env.nodeEnv === 'development' ? ['warn', 'error'] : ['error'],
-      });
+      prisma = new PrismaClient(
+        createPrismaClientOptions(env.databaseUrl, env.nodeEnv === 'development' ? ['warn', 'error'] : ['error']),
+      );
       await prisma.$connect();
       redisConnection = new IORedis(env.redisUrl, {
         enableReadyCheck: false,

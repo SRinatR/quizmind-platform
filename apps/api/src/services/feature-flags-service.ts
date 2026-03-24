@@ -83,7 +83,7 @@ export function normalizeFeatureFlagUpdate(
 }
 
 export function mapFeatureFlagRecordToDefinition(record: FeatureFlagRecord): FeatureFlagDefinition {
-  const enabledOverrides = record.overrides.filter((override) => override.enabled);
+  const enabledOverrides = (record.overrides ?? []).filter((override) => override.enabled);
   const allowUsers = uniqueStrings(enabledOverrides.map((override) => override.userId));
   const allowWorkspaces = uniqueStrings(enabledOverrides.map((override) => override.workspaceId));
   const allowRoles = parseAllowedRoles(record.allowRolesJson);

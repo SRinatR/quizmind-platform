@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@quizmind/database';
+import { type FeatureFlagStatus } from '@quizmind/contracts';
 
 import { PrismaService } from '../database/prisma.service';
 
@@ -14,7 +15,7 @@ export type FeatureFlagRecord = Prisma.FeatureFlagGetPayload<{
 export interface ReplaceFeatureFlagDefinitionInput {
   key: string;
   description: string;
-  status: Prisma.$Enums.FeatureFlagStatus;
+  status: FeatureFlagStatus;
   enabled: boolean;
   rolloutPercentage?: number | null;
   minimumExtensionVersion?: string | null;

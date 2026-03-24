@@ -143,6 +143,18 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/admin/plans',
+    summary: 'Return the full billing plan catalog, including inactive plans, prices, and entitlements for admin control-plane management.',
+    permission: 'plans:manage',
+  },
+  {
+    method: 'POST',
+    path: '/admin/plans/update',
+    summary: 'Update a billing plan catalog entry, including active state, prices, and entitlements.',
+    permission: 'plans:manage',
+  },
+  {
+    method: 'GET',
     path: '/admin/feature-flags',
     summary: 'List feature flags and rollout state.',
     permission: 'feature_flags:read',
@@ -163,6 +175,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'POST',
     path: '/admin/remote-config/publish',
     summary: 'Publish a remote config version.',
+    permission: 'remote_config:publish',
+  },
+  {
+    method: 'POST',
+    path: '/admin/remote-config/activate',
+    summary: 'Activate a previously published remote config version for rollback or re-promotion.',
     permission: 'remote_config:publish',
   },
   {

@@ -1,5 +1,6 @@
 import { buildSubscriptionSummary, type SubscriptionSnapshot } from '@quizmind/billing';
 import {
+  type BillingAdminPlanSnapshot,
   type BillingPlanCatalogEntry,
   type BillingPlanPrice,
   type PlanDefinition,
@@ -58,6 +59,17 @@ export function mapPlanCatalogRecordToEntry(record: BillingPlanCatalogRecord): B
       isDefault: price.isDefault,
       stripePriceId: price.stripePriceId,
     })),
+  };
+}
+
+export function mapAdminPlanCatalogRecordToSnapshot(record: BillingPlanCatalogRecord): BillingAdminPlanSnapshot {
+  const entry = mapPlanCatalogRecordToEntry(record);
+
+  return {
+    ...entry,
+    isActive: record.isActive,
+    createdAt: record.createdAt.toISOString(),
+    updatedAt: record.updatedAt.toISOString(),
   };
 }
 

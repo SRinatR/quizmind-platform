@@ -5,6 +5,13 @@ import { type RemoteConfigLayer as RemoteConfigLayerDefinition } from '@quizmind
 import { PrismaService } from '../database/prisma.service';
 
 const remoteConfigVersionInclude = {
+  publishedBy: {
+    select: {
+      id: true,
+      email: true,
+      displayName: true,
+    },
+  },
   layers: {
     orderBy: [{ priority: 'asc' }, { createdAt: 'asc' }],
   },
@@ -48,6 +55,19 @@ export class RemoteConfigRepository {
     });
   }
 
+  findRecentVersions(workspaceId?: string, limit = 12): Promise<RemoteConfigVersionRecord[]> {
+    const workspacePredicates = workspaceId ? [{ workspaceId: null }, { workspaceId }] : [{ workspaceId: null }];
+
+    return this.prisma.remoteConfigVersion.findMany({
+      where: {
+        OR: workspacePredicates,
+      },
+      include: remoteConfigVersionInclude,
+      orderBy: [{ createdAt: 'desc' }],
+      take: limit,
+    });
+  }
+
   async publishVersion(input: PublishRemoteConfigVersionInput): Promise<RemoteConfigVersionRecord> {
     return this.prisma.$transaction(async (transaction) => {
       await transaction.remoteConfigVersion.updateMany({
@@ -74,6 +94,44 @@ export class RemoteConfigRepository {
               valuesJson: layer.values as Prisma.InputJsonValue,
             })),
           },
+        },
+        include: remoteConfigVersionInclude,
+      });
+    });
+  }
+
+  async activateVersion(versionId: string): Promise<RemoteConfigVersionRecord | null> {
+    return this.prisma.$transaction(async (transaction) => {
+      const existing = await transaction.remoteConfigVersion.findUnique({
+        where: {
+          id: versionId,
+        },
+        select: {
+          id: true,
+          workspaceId: true,
+        },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      await transaction.remoteConfigVersion.updateMany({
+        where: {
+          workspaceId: existing.workspaceId,
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
+      return transaction.remoteConfigVersion.update({
+        where: {
+          id: existing.id,
+        },
+        data: {
+          isActive: true,
         },
         include: remoteConfigVersionInclude,
       });

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import { PlatformService } from '../src/platform.service';
 import { type CurrentSessionSnapshot } from '../src/auth/auth.types';
@@ -420,6 +420,7 @@ test('PlatformService.updateFeatureFlagForCurrentSession persists rollout target
       allowPlans: ['business'],
       allowUsers: ['user_2'],
       allowWorkspaces: ['ws_2'],
+      minimumExtensionVersion: undefined,
     },
     updatedAt: '2026-03-24T10:15:00.000Z',
   });
@@ -493,6 +494,87 @@ test('PlatformService.publishRemoteConfigForCurrentSession persists a connected 
     aiProvider: 'openai',
     answerStyle: 'detailed',
   });
+});
+
+test('PlatformService.activateRemoteConfigVersionForCurrentSession reactivates a persisted version for admins', async () => {
+  const { service, remoteConfigRepository } = createPlatformService();
+
+  remoteConfigRepository.activateVersion = async (versionId) =>
+    ({
+      id: versionId,
+      workspaceId: 'ws_1',
+      publishedById: 'user_1',
+      versionLabel: 'rollback-target',
+      isActive: true,
+      createdAt: new Date('2026-03-23T10:15:00.000Z'),
+      publishedBy: {
+        id: 'user_1',
+        email: 'owner@quizmind.dev',
+        displayName: 'Workspace Owner',
+      },
+      layers: [
+        {
+          id: 'layer_1',
+          remoteConfigVersionId: versionId,
+          scope: 'global',
+          priority: 10,
+          conditionsJson: null,
+          valuesJson: {
+            aiProvider: 'openai',
+          },
+          createdAt: new Date('2026-03-23T10:15:00.000Z'),
+        },
+      ],
+    }) as any;
+
+  const result = await service.activateRemoteConfigVersionForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        systemRoles: ['platform_admin'],
+      },
+      permissions: ['remote_config:publish'],
+    },
+    {
+      versionId: 'rcv_rollback',
+    },
+  );
+
+  assert.equal(result.version.id, 'rcv_rollback');
+  assert.equal(result.version.versionLabel, 'rollback-target');
+  assert.equal(result.version.workspaceId, 'ws_1');
+  assert.equal(result.version.isActive, true);
+  assert.equal(result.version.layers.length, 1);
+  assert.ok(Number.isFinite(Date.parse(result.activatedAt)));
+});
+
+test('PlatformService.activateRemoteConfigVersionForCurrentSession rejects missing versions', async () => {
+  const { service, remoteConfigRepository } = createPlatformService();
+
+  remoteConfigRepository.activateVersion = async () => null;
+
+  await assert.rejects(
+    () =>
+      service.activateRemoteConfigVersionForCurrentSession(
+        {
+          ...createConnectedSessionSnapshot(),
+          principal: {
+            ...createConnectedSessionSnapshot().principal,
+            systemRoles: ['platform_admin'],
+          },
+          permissions: ['remote_config:publish'],
+        },
+        {
+          versionId: 'missing-version',
+        },
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof NotFoundException);
+      assert.match((error as Error).message, /Remote config version not found/i);
+      return true;
+    },
+  );
 });
 
 test('PlatformService.bootstrapExtensionForConnectedRuntime uses persisted flags, active config layers, and subscription plan', async () => {

@@ -388,6 +388,44 @@ export interface BillingPlansPayload {
   plans: BillingPlanCatalogEntry[];
 }
 
+export interface BillingAdminPlanSnapshot extends BillingPlanCatalogEntry {
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingAdminPlansPayload {
+  plans: BillingAdminPlanSnapshot[];
+}
+
+export interface BillingAdminPlanEntitlementInput {
+  key: string;
+  enabled: boolean;
+  limit?: number | null;
+}
+
+export interface BillingAdminPlanPriceInput {
+  interval: BillingInterval;
+  currency: string;
+  amount: number;
+  isDefault: boolean;
+  stripePriceId?: string | null;
+}
+
+export interface BillingAdminPlanUpdateRequest {
+  planCode: string;
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+  entitlements?: BillingAdminPlanEntitlementInput[];
+  prices?: BillingAdminPlanPriceInput[];
+}
+
+export interface BillingAdminPlanUpdateResult {
+  plan: BillingAdminPlanSnapshot;
+  updatedAt: string;
+}
+
 export interface BillingCheckoutRequest {
   workspaceId: string;
   planCode: string;
@@ -481,6 +519,25 @@ export interface UsageEventPayload {
   payload: Record<string, unknown>;
 }
 
+export interface UsageEventIngestResult {
+  queued: boolean;
+  queue: PlatformQueue;
+  job: {
+    id: string;
+    queue: PlatformQueue;
+    dedupeKey?: string;
+    createdAt: string;
+    attempts?: number;
+  };
+  handler: string;
+  logEvent: {
+    eventId: string;
+    eventType: string;
+    occurredAt: string;
+    status: string;
+  };
+}
+
 export type UsageMetricStatus = 'healthy' | 'warning' | 'exceeded';
 export type UsageEventSource = 'telemetry' | 'activity';
 export type UsageEventSeverity = 'debug' | 'info' | 'warn' | 'error';
@@ -563,10 +620,25 @@ export interface RemoteConfigPublishResult {
   workspaceId?: string;
 }
 
+export interface RemoteConfigVersionSummary {
+  id: string;
+  versionLabel: string;
+  workspaceId?: string;
+  isActive: boolean;
+  publishedAt: string;
+  publishedBy?: {
+    id: string;
+    email: string;
+    displayName?: string;
+  };
+  layers: RemoteConfigLayer[];
+}
+
 export interface RemoteConfigSnapshot {
   personaKey: string;
   publishDecision: AccessDecision;
   activeLayers: RemoteConfigLayer[];
+  versions: RemoteConfigVersionSummary[];
   previewContext: RemoteConfigContext;
   preview: ResolvedRemoteConfig;
   permissions: string[];
@@ -580,6 +652,15 @@ export interface RemoteConfigPublishResponse {
 export interface RemoteConfigPreviewRequest {
   layers: RemoteConfigLayer[];
   context: RemoteConfigContext;
+}
+
+export interface RemoteConfigActivateVersionRequest {
+  versionId: string;
+}
+
+export interface RemoteConfigActivateVersionResult {
+  version: RemoteConfigVersionSummary;
+  activatedAt: string;
 }
 
 

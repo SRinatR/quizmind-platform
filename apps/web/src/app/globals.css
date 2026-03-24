@@ -1364,6 +1364,27 @@ a {
   background: rgba(255, 255, 255, 0.62);
 }
 
+.admin-feature-flag-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-feature-flag-actions button[disabled] {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.admin-inline-feedback {
+  margin: 0;
+  color: #216b44;
+  line-height: 1.6;
+}
+
+.admin-inline-feedback--error {
+  color: #8a3c19;
+}
+
 .admin-extension-preview pre {
   margin: 0;
   padding: 14px 16px;

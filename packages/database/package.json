@@ -15,11 +15,12 @@
     "lint": "node scripts/prisma-validate.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
-    "@prisma/client": "^6.19.2",
-    "prisma": "^6.19.2"
+    "prisma": "^7.5.0"
   }
 }
