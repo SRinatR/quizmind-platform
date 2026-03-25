@@ -13,7 +13,8 @@ const fieldAliases = {
   buildId: ['buildId', 'build_id'],
   workspaceId: ['workspaceId', 'workspace_id'],
   environment: ['environment', 'env'],
-  targetOrigin: ['targetOrigin', 'target_origin', 'relayOrigin', 'relayUrl'],
+  targetOrigin: ['targetOrigin', 'target_origin', 'relayOrigin'],
+  relayUrl: ['relayUrl', 'relayURL'],
   requestId: ['requestId', 'request_id', 'bridgeRequestId'],
 } as const;
 
@@ -23,6 +24,8 @@ export interface BridgeConnectDiagnostics {
   missingFields: Array<'installationId' | 'extensionVersion' | 'schemaVersion' | 'capabilities' | 'browser'>;
   receivedParams: string[];
   acceptedAliases: Partial<Record<BridgeFieldName, string>>;
+  resolvedTargetOrigin?: string;
+  resolvedTargetOriginSource?: 'relayUrl' | 'targetOrigin';
 }
 
 export interface ParsedBridgeConnectRequest {
@@ -39,6 +42,28 @@ export interface BridgeConnectParseOptions {
 function normalizeTrimmed(value: string | undefined): string | undefined {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeOrigin(value?: string): string | undefined {
+  const normalized = normalizeTrimmed(value);
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (normalized.startsWith('chrome-extension://') || normalized.startsWith('moz-extension://')) {
+    try {
+      return new URL(normalized).origin;
+    } catch {
+      return undefined;
+    }
+  }
+
+  try {
+    return new URL(normalized).origin;
+  } catch {
+    return undefined;
+  }
 }
 
 function readFirstValue(params: URLSearchParams, aliases: readonly string[]): { value?: string; alias?: string } {
@@ -128,6 +153,7 @@ export function parseBridgeConnectRequest(
   const workspaceId = readFirstValue(params, fieldAliases.workspaceId);
   const environment = readFirstValue(params, fieldAliases.environment);
   const targetOrigin = readFirstValue(params, fieldAliases.targetOrigin);
+  const relayUrl = readFirstValue(params, fieldAliases.relayUrl);
   const requestId = readFirstValue(params, fieldAliases.requestId);
   const capabilityValues = readAllValues(params, fieldAliases.capabilities);
 
@@ -201,7 +227,10 @@ export function parseBridgeConnectRequest(
         }
       : null;
 
-  const resolvedTargetOrigin = normalizeTrimmed(targetOrigin.value);
+  const relayOrigin = normalizeOrigin(relayUrl.value);
+  const explicitTargetOrigin = normalizeOrigin(targetOrigin.value);
+  const resolvedTargetOrigin = relayOrigin ?? explicitTargetOrigin;
+  const resolvedTargetOriginSource = relayOrigin ? 'relayUrl' : explicitTargetOrigin ? 'targetOrigin' : undefined;
 
   return {
     initialRequest,
@@ -211,6 +240,8 @@ export function parseBridgeConnectRequest(
       missingFields,
       receivedParams: Array.from(new Set(Array.from(params.keys()))).sort(),
       acceptedAliases,
+      resolvedTargetOrigin,
+      resolvedTargetOriginSource,
     },
   };
 }

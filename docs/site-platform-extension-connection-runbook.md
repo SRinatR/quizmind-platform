@@ -203,7 +203,8 @@ Optional query fields:
 - `workspaceId`
 - `environment`
 - `requestId`
-- `targetOrigin` (or `relayUrl`, which is normalized to origin)
+- `relayUrl` (preferred; bridge derives receiver origin from this)
+- `targetOrigin` (fallback only when `relayUrl` is unavailable)
 
 Compatibility aliases accepted for migration only (official names remain canonical):
 
@@ -217,6 +218,7 @@ Hash parsing:
 
 - Server-side page parsing uses query params.
 - Client-side bridge code merges URL query + hash params and retries parse for compatibility with extension flows that put handshake values in `location.hash`.
+- Receiver origin precedence for `postMessage`: `relayUrl` origin first, then `targetOrigin`.
 
 Current web bridge implementation:
 

@@ -363,6 +363,12 @@ export function ExtensionConnectClient({
         {Object.keys(resolvedDiagnostics.acceptedAliases).length > 0 ? (
           <p>Accepted legacy aliases: <span className="monospace">{JSON.stringify(resolvedDiagnostics.acceptedAliases)}</span></p>
         ) : null}
+        {resolvedDiagnostics.resolvedTargetOrigin ? (
+          <p>
+            Receiver origin source: <span className="monospace">{resolvedDiagnostics.resolvedTargetOriginSource ?? 'unknown'}</span>
+            {' '}| Receiver origin: <span className="monospace">{resolvedDiagnostics.resolvedTargetOrigin}</span>
+          </p>
+        ) : null}
       </div>
     </div>
   );
