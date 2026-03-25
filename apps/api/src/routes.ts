@@ -169,6 +169,31 @@ export const apiRoutes: ApiRouteDefinition[] = [
     summary: 'Ingest extension telemetry using an installation-authenticated session.',
   },
   {
+    method: 'POST',
+    path: '/extension/ai/chat',
+    summary: 'Run extension chat through the server-side managed provider runtime using installation auth.',
+  },
+  {
+    method: 'GET',
+    path: '/extension/ai/models',
+    summary: 'Return provider + model catalog for extension runtime model-picker surfaces.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/answer',
+    summary: 'Resolve a quiz answer through server-side provider routing and managed credentials.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/screenshot',
+    summary: 'Process screenshot-answer requests in the server-side AI mediation path.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/multicheck',
+    summary: 'Run multicheck validation via installation-authenticated server-side provider execution.',
+  },
+  {
     method: 'GET',
     path: '/providers/catalog',
     summary: 'Return the AI provider registry and model catalog available to the control plane.',

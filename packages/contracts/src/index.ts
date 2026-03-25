@@ -913,6 +913,43 @@ export interface ExtensionInstallationDisconnectResult {
   requiresReconnect: boolean;
 }
 
+export interface ExtensionAiRuntimeRequest {
+  installationId: string;
+  prompt: string;
+  operation?: 'chat' | 'answer' | 'screenshot' | 'multicheck';
+  context?: Record<string, unknown>;
+  requestedProvider?: AiProvider;
+  requestedModel?: string;
+}
+
+export interface ExtensionAiRuntimeProviderSelection {
+  provider: AiProvider;
+  model: string;
+  credentialOwnerType: CredentialOwnerType | 'platform_default';
+  policyScope: string;
+}
+
+export interface ExtensionAiRuntimeUsageRecord {
+  accepted: boolean;
+  code: UsageDecisionCode;
+  quotaKey?: string;
+  message?: string;
+}
+
+export interface ExtensionAiRuntimeResponse {
+  installationId: string;
+  requestId: string;
+  operation: 'chat' | 'answer' | 'screenshot' | 'multicheck';
+  answer: string;
+  providerSelection: ExtensionAiRuntimeProviderSelection;
+  usage: ExtensionAiRuntimeUsageRecord;
+  metadata: {
+    simulated: boolean;
+    latencyMs: number;
+    processedAt: string;
+  };
+}
+
 export interface AdminExtensionFleetFilters {
   workspaceId: string;
   compatibility: AdminExtensionCompatibilityFilter;

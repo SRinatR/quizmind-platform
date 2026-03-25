@@ -149,6 +149,23 @@ Recommended current capability set:
 
 Only advertise capabilities that really exist in the extension runtime.
 
+## Final Official Extension Contract (Platform Source of Truth)
+
+Use this as the single integration contract.
+
+- Auth/bind start route: `GET /app/extension/connect` on the site app domain.
+- Bridge transport events: `quizmind.extension.bind_result` and `quizmind.extension.bind_error`.
+- Bind API (web bridge -> API): `POST /extension/installations/bind`.
+- Managed bootstrap API: `POST /extension/bootstrap/v2`.
+- Managed usage API: `POST /extension/usage-events/v2`.
+- Managed runtime AI APIs: `POST /extension/ai/chat|answer|screenshot|multicheck`.
+- Managed model catalog API: `GET /extension/ai/models`.
+
+Steady-state auth model:
+
+- Extension runtime uses only installation bearer tokens.
+- Raw site user bearer tokens are never the steady-state extension runtime auth model.
+
 ## Bind Flow
 
 The bind flow exists because the extension cannot safely own the site session cookies.
@@ -394,6 +411,97 @@ Recommended extension strategy:
 4. if refresh fails because of network error, keep last known bootstrap temporarily
 5. if refresh fails with `401`, clear installation token and trigger reconnect UX
 
+## Runtime AI Flow (`/extension/ai/*`)
+
+All runtime AI operations are installation-authenticated and backend mediated.
+
+### Catalog endpoint
+
+```http
+GET /extension/ai/models
+```
+
+Response payload is the same `ProviderCatalogPayload` shape returned by `GET /providers/catalog`.
+
+### Runtime endpoints
+
+```http
+POST /extension/ai/chat
+POST /extension/ai/answer
+POST /extension/ai/screenshot
+POST /extension/ai/multicheck
+Authorization: Bearer <installation_token>
+Content-Type: application/json
+```
+
+Request body (`ExtensionAiRuntimeRequest`):
+
+```json
+{
+  "installationId": "inst_123",
+  "prompt": "Solve: 6x = 24",
+  "operation": "answer",
+  "requestedProvider": "openrouter",
+  "requestedModel": "openrouter/auto",
+  "context": {
+    "questionType": "algebra"
+  }
+}
+```
+
+Contract rules:
+
+- `installationId` is required and must match the token-bound installation.
+- `prompt` is required.
+- `operation` is optional, but if present must match the endpoint operation.
+- `requestedProvider` and `requestedModel` are hints; backend policy still decides final provider/model.
+- Runtime provider execution currently has a live OpenAI path; other providers currently return a simulated backend response while preserving server-side credential handling.
+
+Success response (`ApiSuccess<ExtensionAiRuntimeResponse>`):
+
+```json
+{
+  "ok": true,
+  "data": {
+    "installationId": "inst_123",
+    "requestId": "req_123",
+    "operation": "answer",
+    "answer": "x = 4",
+    "providerSelection": {
+      "provider": "openrouter",
+      "model": "openrouter/auto",
+      "credentialOwnerType": "workspace",
+      "policyScope": "workspace:ws_123"
+    },
+    "usage": {
+      "accepted": true,
+      "code": "accepted"
+    },
+    "metadata": {
+      "simulated": false,
+      "latencyMs": 180,
+      "processedAt": "2026-03-25T10:00:00.000Z"
+    }
+  }
+}
+```
+
+Runtime error semantics:
+
+- `400 Bad Request`
+  - missing prompt
+  - installation id mismatch
+  - operation/endpoint mismatch
+- `401 Unauthorized`
+  - missing installation bearer token
+  - invalid/expired/revoked installation session
+- `5xx`
+  - provider/network/server errors
+
+Reconnect rule:
+
+- On any runtime `401`, clear installation token and restart the bind flow via the bridge page.
+
 ## Usage Telemetry Flow
 
 ### Usage request
@@ -626,10 +734,11 @@ The integration is complete only when all of the following are true:
 4. Extension receives installation token, not raw site token.
 5. Extension can call `/extension/bootstrap/v2`.
 6. Extension can call `/extension/usage-events/v2`.
-7. Dashboard and extension reflect the same workspace binding.
-8. Unsupported compatibility produces visible extension warning and safe disable behavior.
-9. Expired token triggers reconnect flow.
-10. Temporary backend outage falls back to last known bootstrap instead of hard crash.
+7. Extension can call `/extension/ai/chat` (or `/extension/ai/answer`, `/extension/ai/screenshot`, `/extension/ai/multicheck`) with installation auth.
+8. Dashboard and extension reflect the same workspace binding.
+9. Unsupported compatibility produces visible extension warning and safe disable behavior.
+10. Expired token triggers reconnect flow.
+11. Temporary backend outage falls back to last known bootstrap instead of hard crash.
 
 ## Manual Test Script
 
@@ -643,8 +752,9 @@ Use this manual verification sequence:
 6. Restart browser and confirm `installationId` persists.
 7. Trigger bootstrap refresh and confirm success.
 8. Send one usage event and confirm platform accepts it.
-9. Expire or clear the installation token and confirm reconnect prompt appears.
-10. Simulate API outage and confirm extension falls back safely.
+9. Send one AI runtime request to `/extension/ai/answer` and confirm provider selection metadata is returned without any raw provider secret.
+10. Expire or clear the installation token and confirm reconnect prompt appears.
+11. Simulate API outage and confirm extension falls back safely.
 
 ## Short Implementation Brief
 
@@ -658,7 +768,8 @@ If you need a compact version to paste to the extension developer:
 6. Cache only `installationId`, token, expiry, and last known bootstrap.
 7. Respect `compatibility`, `featureFlags`, `remoteConfig`, `entitlements`, `quotaHints`, `aiAccessPolicy`, `deprecationMessages`, and `killSwitches`.
 8. On `401`, clear token and prompt reconnect.
-9. On network failure, fall back to last known bootstrap.
+9. Route extension AI operations through `/extension/ai/*` endpoints using the installation token only.
+10. On network failure, fall back to last known bootstrap.
 
 ## Repo References
 
