@@ -14,6 +14,8 @@ import { UserRepository } from './auth/repositories/user.repository';
 import { SubscriptionRepository } from './billing/subscription.repository';
 import { PrismaService } from './database/prisma.service';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
+import { ExtensionAiRuntimeController } from './extension/extension-ai-runtime.controller';
+import { ExtensionAiRuntimeService } from './extension/extension-ai-runtime.service';
 import { ExtensionControlController } from './extension/extension-control.controller';
 import { ExtensionControlService } from './extension/extension-control.service';
 import { ExtensionInstallationRepository } from './extension/extension-installation.repository';
@@ -40,7 +42,14 @@ import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
-  controllers: [AuthController, BillingController, PlatformController, ExtensionControlController, ProviderCredentialController],
+  controllers: [
+    AuthController,
+    BillingController,
+    PlatformController,
+    ExtensionControlController,
+    ExtensionAiRuntimeController,
+    ProviderCredentialController,
+  ],
   providers: [
     AuthService,
     BillingRepository,
@@ -48,6 +57,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     BillingWebhookRepository,
     EmailVerificationRepository,
     ExtensionCompatibilityRepository,
+    ExtensionAiRuntimeService,
     ExtensionControlService,
     ExtensionInstallationRepository,
     ExtensionInstallationSessionRepository,

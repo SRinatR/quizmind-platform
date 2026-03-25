@@ -22,8 +22,17 @@ const providerCredentialSelect = {
   updatedAt: true,
 } satisfies Prisma.ProviderCredentialSelect;
 
+const runtimeProviderCredentialSelect = {
+  ...providerCredentialSelect,
+  encryptedSecretJson: true,
+} satisfies Prisma.ProviderCredentialSelect;
+
 export type ProviderCredentialRecord = Prisma.ProviderCredentialGetPayload<{
   select: typeof providerCredentialSelect;
+}>;
+
+export type RuntimeProviderCredentialRecord = Prisma.ProviderCredentialGetPayload<{
+  select: typeof runtimeProviderCredentialSelect;
 }>;
 
 interface ProviderCredentialLogInput {
@@ -161,6 +170,78 @@ export class ProviderCredentialRepository {
       },
       select: providerCredentialSelect,
     });
+  }
+
+  async resolveRuntimeCredential(input: {
+    userId: string;
+    workspaceId?: string | null;
+    provider?: string;
+  }): Promise<RuntimeProviderCredentialRecord | null> {
+    const scopes: Prisma.ProviderCredentialWhereInput[] = [
+      {
+        ownerType: 'user',
+        userId: input.userId,
+        ...(input.workspaceId
+          ? {
+              OR: [{ workspaceId: input.workspaceId }, { workspaceId: null }],
+            }
+          : {
+              workspaceId: null,
+            }),
+      },
+    ];
+
+    if (input.workspaceId) {
+      scopes.push({
+        ownerType: 'workspace',
+        workspaceId: input.workspaceId,
+      });
+    }
+
+    scopes.push({
+      ownerType: 'platform',
+    });
+
+    const predicate: Prisma.ProviderCredentialWhereInput = {
+      validationStatus: 'valid',
+      revokedAt: null,
+      disabledAt: null,
+      OR: scopes,
+      ...(input.provider
+        ? {
+            provider: input.provider,
+          }
+        : {}),
+    };
+
+    const records = await this.prisma.providerCredential.findMany({
+      where: predicate,
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      select: runtimeProviderCredentialSelect,
+    });
+
+    const userRecord = records.find(
+      (record) =>
+        record.ownerType === 'user' &&
+        record.userId === input.userId &&
+        (!input.workspaceId || record.workspaceId === input.workspaceId || record.workspaceId === null),
+    );
+
+    if (userRecord) {
+      return userRecord;
+    }
+
+    if (input.workspaceId) {
+      const workspaceRecord = records.find(
+        (record) => record.ownerType === 'workspace' && record.workspaceId === input.workspaceId,
+      );
+
+      if (workspaceRecord) {
+        return workspaceRecord;
+      }
+    }
+
+    return records.find((record) => record.ownerType === 'platform') ?? null;
   }
 
   async createWithLogs(input: CreateProviderCredentialInput): Promise<ProviderCredentialRecord> {
