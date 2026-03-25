@@ -1,113 +1,28 @@
 import Link from 'next/link';
-import {
-  type CompatibilityHandshake,
-  type ExtensionInstallationBindRequest,
-} from '@quizmind/contracts';
-
 import { AuthShell } from '../../../auth/auth-shell';
-import { readSearchParam } from '../../../auth/search-params';
 import { getSession } from '../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
 import { ExtensionConnectClient } from './extension-connect-client';
+import { parseBridgeConnectRequest, toSearchParams } from './bridge-connect-contract';
 
 interface ExtensionConnectPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
-
-function readTrimmedSearchParam(value: string | string[] | undefined): string | undefined {
-  const normalized = readSearchParam(value)?.trim();
-
-  return normalized ? normalized : undefined;
-}
-
-function readStringListSearchParam(value: string | string[] | undefined): string[] {
-  const rawValues = Array.isArray(value) ? value : value ? [value] : [];
-
-  return Array.from(
-    new Set(
-      rawValues
-        .flatMap((item) => item.split(','))
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0),
-    ),
-  );
-}
-
-function readBrowserSearchParam(value: string | string[] | undefined): CompatibilityHandshake['browser'] | undefined {
-  const normalized = readTrimmedSearchParam(value);
-
-  if (!normalized || !validBrowsers.has(normalized as CompatibilityHandshake['browser'])) {
-    return undefined;
-  }
-
-  return normalized as CompatibilityHandshake['browser'];
-}
 
 function buildCurrentPath(searchParams?: Record<string, string | string[] | undefined>) {
-  const params = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(searchParams ?? {})) {
-    if (Array.isArray(value)) {
-      value.forEach((entry) => {
-        if (entry) {
-          params.append(key, entry);
-        }
-      });
-      continue;
-    }
-
-    if (value) {
-      params.set(key, value);
-    }
-  }
-
+  const params = toSearchParams(searchParams);
   return params.size > 0 ? `/app/extension/connect?${params.toString()}` : '/app/extension/connect';
 }
 
 export default async function ExtensionConnectPage({ searchParams }: ExtensionConnectPageProps) {
   const resolvedSearchParams = await searchParams;
-  const installationId = readTrimmedSearchParam(resolvedSearchParams?.installationId);
-  const workspaceId = readTrimmedSearchParam(resolvedSearchParams?.workspaceId);
-  const extensionVersion = readTrimmedSearchParam(resolvedSearchParams?.extensionVersion);
-  const buildId = readTrimmedSearchParam(resolvedSearchParams?.buildId);
-  const schemaVersion = readTrimmedSearchParam(resolvedSearchParams?.schemaVersion);
-  const browser = readBrowserSearchParam(resolvedSearchParams?.browser);
-  const environment =
-    readTrimmedSearchParam(resolvedSearchParams?.environment) ??
-    (process.env.NODE_ENV === 'production' ? 'production' : 'development');
-  const targetOrigin = readTrimmedSearchParam(resolvedSearchParams?.targetOrigin);
-  const requestId = readTrimmedSearchParam(resolvedSearchParams?.requestId);
-  const capabilities = Array.from(
-    new Set([
-      ...readStringListSearchParam(resolvedSearchParams?.capabilities),
-      ...readStringListSearchParam(resolvedSearchParams?.capability),
-    ]),
-  );
-
-  const missingFields = [
-    ...(!installationId ? ['installationId'] : []),
-    ...(!extensionVersion ? ['extensionVersion'] : []),
-    ...(!schemaVersion ? ['schemaVersion'] : []),
-    ...(capabilities.length === 0 ? ['capabilities'] : []),
-    ...(!browser ? ['browser'] : []),
-  ];
-  const initialRequest: ExtensionInstallationBindRequest | null =
-    missingFields.length === 0 && installationId && extensionVersion && schemaVersion && browser
-      ? {
-          installationId,
-          environment,
-          handshake: {
-            extensionVersion,
-            schemaVersion,
-            capabilities,
-            browser,
-            ...(buildId ? { buildId } : {}),
-          },
-          ...(workspaceId ? { workspaceId } : {}),
-        }
-      : null;
+  const searchParamsList = toSearchParams(resolvedSearchParams);
+  const parsedConnectRequest = parseBridgeConnectRequest(searchParamsList, {
+    defaultEnvironment: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+  });
+  const { initialRequest, targetOrigin, requestId, diagnostics } = parsedConnectRequest;
+  const { missingFields } = diagnostics;
 
   const accessToken = await getAccessTokenFromCookies();
   const session = accessToken ? await getSession('platform-admin', accessToken) : null;
@@ -146,7 +61,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
         <ExtensionConnectClient
           currentUserLabel={session.user.displayName || session.user.email}
           initialRequest={initialRequest}
-          missingFields={missingFields}
+          diagnostics={diagnostics}
           requestId={requestId}
           targetOrigin={targetOrigin}
           workspaces={session.workspaces}
@@ -163,19 +78,19 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           <div className="auth-session-card">
             <strong>Incoming handshake</strong>
             <p>
-              Installation: <span className="monospace">{installationId ?? 'missing'}</span>
+              Installation: <span className="monospace">{initialRequest?.installationId ?? 'missing'}</span>
             </p>
             <p>
-              Version: <span className="monospace">{extensionVersion ?? 'missing'}</span>
-              {' '}| Schema: <span className="monospace">{schemaVersion ?? 'missing'}</span>
+              Version: <span className="monospace">{initialRequest?.handshake.extensionVersion ?? 'missing'}</span>
+              {' '}| Schema: <span className="monospace">{initialRequest?.handshake.schemaVersion ?? 'missing'}</span>
             </p>
             <div className="tag-row">
-              {capabilities.map((capability) => (
+              {(initialRequest?.handshake.capabilities ?? []).map((capability) => (
                 <span className="tag" key={capability}>
                   {capability}
                 </span>
               ))}
-              {browser ? <span className="tag warn">{browser}</span> : null}
+              {initialRequest?.handshake.browser ? <span className="tag warn">{initialRequest.handshake.browser}</span> : null}
             </div>
           </div>
 
@@ -183,7 +98,8 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
             <div className="auth-highlight">
               <span className="micro-label">Missing parameters</span>
               <strong>The extension did not open the bridge with a full handshake.</strong>
-              <p>{missingFields.join(', ')}</p>
+              <p>Missing: {missingFields.join(', ')}</p>
+              <p>Received query params: {diagnostics.receivedParams.join(', ') || 'none'}</p>
             </div>
           ) : null}
 

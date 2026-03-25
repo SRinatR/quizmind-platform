@@ -187,6 +187,42 @@ The bind flow exists because the extension cannot safely own the site session co
 http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local
 ```
 
+### Bridge query contract (current parser behavior)
+
+Official required query fields for `/app/extension/connect`:
+
+- `installationId`
+- `extensionVersion`
+- `schemaVersion`
+- `capabilities` (repeated, comma-delimited, or JSON array string)
+- `browser` (`chrome | edge | brave | other`)
+
+Optional query fields:
+
+- `buildId`
+- `workspaceId`
+- `environment`
+- `requestId`
+- `relayUrl` (preferred; bridge derives receiver origin from this)
+- `targetOrigin` (fallback only when `relayUrl` is unavailable)
+- `platformOrigin` (diagnostic hint only; receiver targeting does not trust this value)
+
+Compatibility aliases accepted for migration only (official names remain canonical):
+
+- `installation_id`, `installId` -> `installationId`
+- `extension_version`, `extVersion`, `version` -> `extensionVersion`
+- `schema_version`, `schema` -> `schemaVersion`
+- `capability`, `capabilities[]` -> `capabilities`
+- `browserName`, `browser_name` -> `browser`
+
+Hash parsing:
+
+- Server-side page parsing uses query params.
+- Client-side bridge code merges URL query + hash params and retries parse for compatibility with extension flows that put handshake values in `location.hash`.
+- Receiver origin precedence for `postMessage`: `relayUrl` origin first, then `targetOrigin`.
+- Sender origin is always the actual page origin (`window.location.origin`), not query input.
+
+
 Recommended web files to build around this:
 
 - `apps/web/src/app/app/extension/connect/page.tsx`
