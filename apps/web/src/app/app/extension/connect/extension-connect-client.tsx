@@ -6,12 +6,16 @@ import {
   type ExtensionInstallationBindResult,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
+import {
+  type BridgeConnectDiagnostics,
+  parseBridgeConnectRequest,
+} from './bridge-connect-contract';
 import { useEffect, useRef, useState } from 'react';
 
 interface ExtensionConnectClientProps {
   currentUserLabel: string;
   initialRequest: ExtensionInstallationBindRequest | null;
-  missingFields: string[];
+  diagnostics: BridgeConnectDiagnostics;
   requestId?: string;
   targetOrigin?: string;
   workspaces: WorkspaceSummary[];
@@ -54,7 +58,7 @@ function maskToken(value: string): string {
 export function ExtensionConnectClient({
   currentUserLabel,
   initialRequest,
-  missingFields,
+  diagnostics,
   requestId,
   targetOrigin,
   workspaces,
@@ -64,7 +68,7 @@ export function ExtensionConnectClient({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(
-    missingFields.length > 0
+    diagnostics.missingFields.length > 0
       ? null
       : initialRequest?.workspaceId || workspaces.length <= 1
         ? 'Preparing secure extension bind...'
@@ -72,12 +76,14 @@ export function ExtensionConnectClient({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bindResult, setBindResult] = useState<ExtensionInstallationBindResult | null>(null);
+  const [resolvedRequest, setResolvedRequest] = useState<ExtensionInstallationBindRequest | null>(initialRequest);
+  const [resolvedDiagnostics, setResolvedDiagnostics] = useState<BridgeConnectDiagnostics>(diagnostics);
   const autoBindAttemptedRef = useRef(false);
   const postedInitialErrorRef = useRef(false);
   const bridgeRequestIdRef = useRef<string>(requestId?.trim() || `bind_${Date.now()}`);
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
 
-  const canConnect = Boolean(initialRequest) && missingFields.length === 0 && !isSubmitting;
+  const canConnect = Boolean(resolvedRequest) && resolvedDiagnostics.missingFields.length === 0 && !isSubmitting;
 
   function postBridgeMessage(message: Record<string, unknown>) {
     const bridgeTarget = window.opener ?? (window.parent !== window ? window.parent : null);
@@ -92,8 +98,8 @@ export function ExtensionConnectClient({
   }
 
   async function handleConnect() {
-    if (!initialRequest) {
-      const message = `Missing required bridge parameters: ${missingFields.join(', ')}.`;
+    if (!resolvedRequest) {
+      const message = `Missing required bridge parameters: ${resolvedDiagnostics.missingFields.join(', ')}.`;
       setErrorMessage(message);
       setStatusMessage(null);
 
@@ -119,7 +125,7 @@ export function ExtensionConnectClient({
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          ...initialRequest,
+          ...resolvedRequest,
           ...(selectedWorkspaceId ? { workspaceId: selectedWorkspaceId } : {}),
         } satisfies ExtensionInstallationBindRequest),
       });
@@ -178,13 +184,42 @@ export function ExtensionConnectClient({
     }
   }
 
+
   useEffect(() => {
-    if (initialRequest || postedInitialErrorRef.current || missingFields.length === 0) {
+    if (resolvedRequest && resolvedDiagnostics.missingFields.length === 0) {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const mergedParams = new URLSearchParams(url.search);
+    const hash = url.hash.startsWith('#') ? url.hash.slice(1) : '';
+
+    if (hash) {
+      const hashParams = new URLSearchParams(hash);
+      for (const [key, value] of hashParams.entries()) {
+        if (!mergedParams.has(key)) {
+          mergedParams.append(key, value);
+        }
+      }
+    }
+
+    const merged = parseBridgeConnectRequest(mergedParams, {
+      defaultEnvironment: initialRequest?.environment ?? 'development',
+    });
+
+    if (merged.diagnostics.missingFields.length < resolvedDiagnostics.missingFields.length) {
+      setResolvedRequest(merged.initialRequest);
+      setResolvedDiagnostics(merged.diagnostics);
+    }
+  }, [initialRequest, resolvedDiagnostics.missingFields.length, resolvedRequest]);
+
+  useEffect(() => {
+    if (resolvedRequest || postedInitialErrorRef.current || resolvedDiagnostics.missingFields.length === 0) {
       return;
     }
 
     postedInitialErrorRef.current = true;
-    const message = `Missing required bridge parameters: ${missingFields.join(', ')}.`;
+    const message = `Missing required bridge parameters: ${resolvedDiagnostics.missingFields.join(', ')}.`;
     setErrorMessage(message);
 
     postBridgeMessage({
@@ -195,20 +230,20 @@ export function ExtensionConnectClient({
         message,
       },
     });
-  }, [initialRequest, missingFields]);
+  }, [resolvedRequest, resolvedDiagnostics.missingFields]);
 
   useEffect(() => {
-    if (autoBindAttemptedRef.current || !initialRequest || missingFields.length > 0) {
+    if (autoBindAttemptedRef.current || !resolvedRequest || resolvedDiagnostics.missingFields.length > 0) {
       return;
     }
 
-    if (!initialRequest.workspaceId && workspaces.length > 1) {
+    if (!resolvedRequest.workspaceId && workspaces.length > 1) {
       return;
     }
 
     autoBindAttemptedRef.current = true;
     void handleConnect();
-  }, [initialRequest, missingFields, workspaces.length]);
+  }, [resolvedRequest, resolvedDiagnostics.missingFields, workspaces.length]);
 
   return (
     <div className="auth-form-shell">
@@ -222,21 +257,21 @@ export function ExtensionConnectClient({
       <div className="auth-session-card">
         <strong>Runtime handshake</strong>
         <p>
-          Installation: <span className="monospace">{initialRequest?.installationId ?? 'missing'}</span>
+          Installation: <span className="monospace">{resolvedRequest?.installationId ?? 'missing'}</span>
         </p>
         <p>
-          Version: <span className="monospace">{initialRequest?.handshake.extensionVersion ?? 'missing'}</span>
-          {' '}| Schema: <span className="monospace">{initialRequest?.handshake.schemaVersion ?? 'missing'}</span>
-          {' '}| Browser: <span className="monospace">{initialRequest?.handshake.browser ?? 'missing'}</span>
+          Version: <span className="monospace">{resolvedRequest?.handshake.extensionVersion ?? 'missing'}</span>
+          {' '}| Schema: <span className="monospace">{resolvedRequest?.handshake.schemaVersion ?? 'missing'}</span>
+          {' '}| Browser: <span className="monospace">{resolvedRequest?.handshake.browser ?? 'missing'}</span>
         </p>
         <div className="tag-row">
-          {(initialRequest?.handshake.capabilities ?? []).map((capability) => (
+          {(resolvedRequest?.handshake.capabilities ?? []).map((capability) => (
             <span className="tag" key={capability}>
               {capability}
             </span>
           ))}
-          {initialRequest?.handshake.buildId ? (
-            <span className="tag warn">build {initialRequest.handshake.buildId}</span>
+          {resolvedRequest?.handshake.buildId ? (
+            <span className="tag warn">build {resolvedRequest.handshake.buildId}</span>
           ) : null}
         </div>
       </div>
@@ -265,11 +300,12 @@ export function ExtensionConnectClient({
         </div>
       ) : null}
 
-      {missingFields.length > 0 ? (
+      {resolvedDiagnostics.missingFields.length > 0 ? (
         <div className="auth-highlight">
           <span className="micro-label">Missing parameters</span>
           <strong>The extension did not open the bridge with a full handshake.</strong>
-          <p>{missingFields.join(', ')}</p>
+          <p>Missing: {resolvedDiagnostics.missingFields.join(', ')}</p>
+          <p>Received query/hash params: {resolvedDiagnostics.receivedParams.join(', ') || 'none'}</p>
         </div>
       ) : null}
 
@@ -324,6 +360,9 @@ export function ExtensionConnectClient({
           Request id: <span className="monospace">{bridgeRequestIdRef.current}</span>
           {' '}| Target origin: <span className="monospace">{resolvedTargetOrigin}</span>
         </p>
+        {Object.keys(resolvedDiagnostics.acceptedAliases).length > 0 ? (
+          <p>Accepted legacy aliases: <span className="monospace">{JSON.stringify(resolvedDiagnostics.acceptedAliases)}</span></p>
+        ) : null}
       </div>
     </div>
   );
