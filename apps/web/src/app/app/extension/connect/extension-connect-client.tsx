@@ -82,6 +82,16 @@ export function ExtensionConnectClient({
   const postedInitialErrorRef = useRef(false);
   const bridgeRequestIdRef = useRef<string>(requestId?.trim() || `bind_${Date.now()}`);
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
+  const actualPageOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const platformOriginMismatch =
+    resolvedDiagnostics.platformOrigin &&
+    actualPageOrigin &&
+    resolvedDiagnostics.platformOrigin !== actualPageOrigin
+      ? {
+          expected: resolvedDiagnostics.platformOrigin,
+          actual: actualPageOrigin,
+        }
+      : null;
 
   const canConnect = Boolean(resolvedRequest) && resolvedDiagnostics.missingFields.length === 0 && !isSubmitting;
 
@@ -106,6 +116,7 @@ export function ExtensionConnectClient({
       postBridgeMessage({
         type: 'quizmind.extension.bind_error',
         requestId: bridgeRequestIdRef.current,
+        bridgeOrigin: actualPageOrigin,
         error: {
           code: 'missing_bridge_params',
           message,
@@ -140,6 +151,7 @@ export function ExtensionConnectClient({
         postBridgeMessage({
           type: 'quizmind.extension.bind_error',
           requestId: bridgeRequestIdRef.current,
+          bridgeOrigin: actualPageOrigin,
           error: {
             code: response.status === 401 ? 'auth_required' : 'bind_failed',
             message,
@@ -159,6 +171,7 @@ export function ExtensionConnectClient({
       postBridgeMessage({
         type: 'quizmind.extension.bind_result',
         requestId: bridgeRequestIdRef.current,
+        bridgeOrigin: actualPageOrigin,
         payload: payload.data,
       });
 
@@ -176,6 +189,7 @@ export function ExtensionConnectClient({
       postBridgeMessage({
         type: 'quizmind.extension.bind_error',
         requestId: bridgeRequestIdRef.current,
+        bridgeOrigin: actualPageOrigin,
         error: {
           code: 'bridge_request_failed',
           message,
@@ -225,6 +239,7 @@ export function ExtensionConnectClient({
     postBridgeMessage({
       type: 'quizmind.extension.bind_error',
       requestId: bridgeRequestIdRef.current,
+      bridgeOrigin: actualPageOrigin,
       error: {
         code: 'missing_bridge_params',
         message,
@@ -367,6 +382,12 @@ export function ExtensionConnectClient({
           <p>
             Receiver origin source: <span className="monospace">{resolvedDiagnostics.resolvedTargetOriginSource ?? 'unknown'}</span>
             {' '}| Receiver origin: <span className="monospace">{resolvedDiagnostics.resolvedTargetOrigin}</span>
+          </p>
+        ) : null}
+        {platformOriginMismatch ? (
+          <p>
+            Platform origin mismatch: expected <span className="monospace">{platformOriginMismatch.expected}</span>
+            {' '}but page origin is <span className="monospace">{platformOriginMismatch.actual}</span>
           </p>
         ) : null}
       </div>

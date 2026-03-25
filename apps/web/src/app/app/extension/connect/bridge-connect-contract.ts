@@ -15,6 +15,7 @@ const fieldAliases = {
   environment: ['environment', 'env'],
   targetOrigin: ['targetOrigin', 'target_origin', 'relayOrigin'],
   relayUrl: ['relayUrl', 'relayURL'],
+  platformOrigin: ['platformOrigin', 'platform_origin'],
   requestId: ['requestId', 'request_id', 'bridgeRequestId'],
 } as const;
 
@@ -26,6 +27,7 @@ export interface BridgeConnectDiagnostics {
   acceptedAliases: Partial<Record<BridgeFieldName, string>>;
   resolvedTargetOrigin?: string;
   resolvedTargetOriginSource?: 'relayUrl' | 'targetOrigin';
+  platformOrigin?: string;
 }
 
 export interface ParsedBridgeConnectRequest {
@@ -53,9 +55,11 @@ function normalizeOrigin(value?: string): string | undefined {
 
   if (normalized.startsWith('chrome-extension://') || normalized.startsWith('moz-extension://')) {
     try {
-      return new URL(normalized).origin;
+      const parsed = new URL(normalized);
+      return parsed.host ? `${parsed.protocol}//${parsed.host}` : undefined;
     } catch {
-      return undefined;
+      const match = normalized.match(/^(chrome-extension|moz-extension):\/\/([^/?#]+)/);
+      return match ? `${match[1]}://${match[2]}` : undefined;
     }
   }
 
@@ -154,6 +158,7 @@ export function parseBridgeConnectRequest(
   const environment = readFirstValue(params, fieldAliases.environment);
   const targetOrigin = readFirstValue(params, fieldAliases.targetOrigin);
   const relayUrl = readFirstValue(params, fieldAliases.relayUrl);
+  const platformOrigin = readFirstValue(params, fieldAliases.platformOrigin);
   const requestId = readFirstValue(params, fieldAliases.requestId);
   const capabilityValues = readAllValues(params, fieldAliases.capabilities);
 
@@ -229,6 +234,7 @@ export function parseBridgeConnectRequest(
 
   const relayOrigin = normalizeOrigin(relayUrl.value);
   const explicitTargetOrigin = normalizeOrigin(targetOrigin.value);
+  const normalizedPlatformOrigin = normalizeOrigin(platformOrigin.value);
   const resolvedTargetOrigin = relayOrigin ?? explicitTargetOrigin;
   const resolvedTargetOriginSource = relayOrigin ? 'relayUrl' : explicitTargetOrigin ? 'targetOrigin' : undefined;
 
@@ -242,6 +248,7 @@ export function parseBridgeConnectRequest(
       acceptedAliases,
       resolvedTargetOrigin,
       resolvedTargetOriginSource,
+      platformOrigin: normalizedPlatformOrigin,
     },
   };
 }
