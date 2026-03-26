@@ -411,7 +411,7 @@ This bridge is now the main integration entrypoint between the signed-in site se
 2. Add one-time bind code fallback (`/api/extension/bind/redeem`) if `postMessage` is not enough
 3. Add token rotation and revocation UX (`POST /extension/installations/rotate-session` + dashboard controls)
 4. Add installation disconnect flow
-5. Add audit events for bind, refresh failure, revoke, reconnect
+5. Add audit events for bind, refresh failure, revoke, reconnect (persisted to audit/security/domain streams)
 
 ## Recommended Extension Modules
 

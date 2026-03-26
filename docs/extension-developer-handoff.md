@@ -610,6 +610,10 @@ Responsibilities:
 - network failure
   - API temporarily unavailable
 
+Lifecycle observability:
+
+- platform persists audit/security/domain events for bind, reconnect, token rotation/revoke, and refresh failures
+
 ### Extension behavior by error type
 
 - `400`

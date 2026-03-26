@@ -166,6 +166,7 @@ test('ExtensionControlService.bindInstallationForCurrentSession issues an instal
     usageRepository,
   } = createService();
 
+  extensionInstallationRepository.findByInstallationId = async () => null as any;
   extensionInstallationRepository.upsertBoundInstallation = async (input) =>
     ({
       id: 'inst_record_1',
