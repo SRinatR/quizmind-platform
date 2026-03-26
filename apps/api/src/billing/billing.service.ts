@@ -62,6 +62,13 @@ interface StripeWebhookEvent {
   };
 }
 
+interface YookassaWebhookEvent {
+  id: string;
+  type: string;
+  createdAt?: Date;
+  payload: Record<string, unknown>;
+}
+
 function readRequiredString(value: string | undefined, fieldName: string): string {
   const normalizedValue = value?.trim();
 
@@ -74,6 +81,16 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
 
 function normalizeOptionalString(value: string | null | undefined): string | undefined {
   return value?.trim() ? value.trim() : undefined;
+}
+
+function parseIsoDate(value: string | undefined): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+
+  return Number.isFinite(parsed.getTime()) ? parsed : undefined;
 }
 
 function parseBillingInterval(value: BillingCheckoutRequest['interval'] | undefined): BillingInterval {
@@ -258,6 +275,10 @@ function deriveInvoiceStatus(record: BillingInvoiceRecord, now = new Date()): st
   }
 
   return 'open';
+}
+
+function isHostedPageBillingProvider(provider: BillingProvider): boolean {
+  return provider === 'manual' || provider === 'yookassa' || provider === 'paddle';
 }
 
 function resolveProviderPriceId(input: {
@@ -450,7 +471,7 @@ export class BillingService {
 
     const provider = (invoice.provider as BillingProvider | null) ?? 'stripe';
 
-    if (provider === 'manual') {
+    if (isHostedPageBillingProvider(provider)) {
       const providerInvoiceId = invoice.providerInvoiceId ?? invoice.externalId ?? invoice.id;
 
       return {
@@ -461,7 +482,7 @@ export class BillingService {
         externalId: invoice.externalId ?? providerInvoiceId,
         redirectUrl: resolveAppRedirectUrl({
           appUrl: this.env.appUrl,
-          fallbackPath: `/app/billing?workspaceId=${invoice.workspaceId}&invoiceId=${invoice.id}&provider=manual`,
+          fallbackPath: `/app/billing?workspaceId=${invoice.workspaceId}&invoiceId=${invoice.id}&provider=${provider}`,
         }),
         format: 'hosted_page',
       };
@@ -524,8 +545,9 @@ export class BillingService {
       fallbackPriceId: `${plan.code}:${interval}:${price.currency}`,
     });
 
-    if (provider === 'manual') {
-      const providerCustomerId = workspace.providerCustomerId ?? `manual:${workspace.id}`;
+    if (isHostedPageBillingProvider(provider)) {
+      const providerCustomerId =
+        (workspace.billingProvider === provider ? workspace.providerCustomerId : null) ?? `${provider}:${workspace.id}`;
 
       await this.billingRepository.updateWorkspaceProviderCustomerId({
         workspaceId: workspace.id,
@@ -542,11 +564,14 @@ export class BillingService {
         providerPriceId,
         customerId: providerCustomerId,
         stripePriceId: price.stripePriceId ?? providerPriceId,
-        sessionId: `manual:${workspace.id}:${Date.now()}`,
+        sessionId: `${provider}:${workspace.id}:${Date.now()}`,
         redirectUrl: resolveAppRedirectUrl({
           appUrl: this.env.appUrl,
           requestedPath: request?.successPath,
-          fallbackPath: `/app/billing?workspaceId=${workspace.id}&provider=manual&checkout=contact_sales`,
+          fallbackPath:
+            provider === 'manual'
+              ? `/app/billing?workspaceId=${workspace.id}&provider=manual&checkout=contact_sales`
+              : `/app/billing?workspaceId=${workspace.id}&provider=${provider}&checkout=created`,
         }),
       };
     }
@@ -616,24 +641,25 @@ export class BillingService {
       normalizeOptionalString(workspace.providerCustomerId) ??
       normalizeOptionalString(workspace.subscriptions[0]?.providerCustomerId);
 
-    if (provider === 'manual') {
-      const manualCustomerId = providerCustomerId ?? `manual:${workspace.id}`;
+    if (isHostedPageBillingProvider(provider)) {
+      const hostedCustomerId =
+        (workspace.billingProvider === provider ? providerCustomerId : undefined) ?? `${provider}:${workspace.id}`;
 
       await this.billingRepository.updateWorkspaceProviderCustomerId({
         workspaceId: workspace.id,
         provider,
-        providerCustomerId: manualCustomerId,
+        providerCustomerId: hostedCustomerId,
       });
 
       return {
         workspaceId: workspace.id,
         provider,
-        providerCustomerId: manualCustomerId,
-        customerId: manualCustomerId,
+        providerCustomerId: hostedCustomerId,
+        customerId: hostedCustomerId,
         redirectUrl: resolveAppRedirectUrl({
           appUrl: this.env.appUrl,
           requestedPath: request?.returnPath,
-          fallbackPath: `/app/billing?workspaceId=${workspace.id}&provider=manual`,
+          fallbackPath: `/app/billing?workspaceId=${workspace.id}&provider=${provider}`,
         }),
       };
     }
@@ -697,7 +723,7 @@ export class BillingService {
       };
     }
 
-    if (provider === 'manual') {
+    if (provider !== 'stripe') {
       await this.billingRepository.updateSubscriptionLifecycle(currentSubscription.id, {
         provider,
         cancelAtPeriodEnd: true,
@@ -793,7 +819,7 @@ export class BillingService {
       };
     }
 
-    if (provider === 'manual') {
+    if (provider !== 'stripe') {
       await this.billingRepository.updateSubscriptionLifecycle(currentSubscription.id, {
         provider,
         cancelAtPeriodEnd: false,
@@ -927,6 +953,57 @@ export class BillingService {
       accepted: true,
       duplicate: false,
       provider: 'stripe',
+      eventId: event.id,
+      eventType: event.type,
+      receivedAt: persistedEvent.record.receivedAt.toISOString(),
+      queue: job.queue,
+      jobId: job.id,
+    };
+  }
+
+  async ingestYookassaWebhook(rawBody?: Buffer | null): Promise<BillingWebhookIngestResult> {
+    this.assertYookassaWebhookReady();
+
+    if (!rawBody || rawBody.length === 0) {
+      throw new BadRequestException('Missing raw YooKassa webhook payload.');
+    }
+
+    const event = this.parseYookassaWebhookEvent(rawBody);
+    const persistedEvent = await this.billingWebhookRepository.recordReceivedEvent({
+      provider: 'yookassa',
+      externalEventId: event.id,
+      eventType: event.type,
+      payloadJson: event.payload as Prisma.InputJsonValue,
+      providerCreatedAt: event.createdAt,
+    });
+
+    if (persistedEvent.duplicate) {
+      return {
+        accepted: true,
+        duplicate: true,
+        provider: 'yookassa',
+        eventId: event.id,
+        eventType: event.type,
+        receivedAt: persistedEvent.record.receivedAt.toISOString(),
+      };
+    }
+
+    const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>({
+      queue: 'billing-webhooks',
+      dedupeKey: `yookassa:${event.id}`,
+      payload: {
+        provider: 'yookassa',
+        webhookEventId: persistedEvent.record.id,
+        externalEventId: event.id,
+        eventType: event.type,
+        receivedAt: persistedEvent.record.receivedAt.toISOString(),
+      },
+    });
+
+    return {
+      accepted: true,
+      duplicate: false,
+      provider: 'yookassa',
       eventId: event.id,
       eventType: event.type,
       receivedAt: persistedEvent.record.receivedAt.toISOString(),
@@ -1090,10 +1167,6 @@ export class BillingService {
       throw new ServiceUnavailableException('Stripe billing mutations require QUIZMIND_RUNTIME_MODE=connected.');
     }
 
-    if (this.env.billingProvider !== 'stripe') {
-      throw new ServiceUnavailableException('Stripe billing mutations require BILLING_PROVIDER=stripe.');
-    }
-
     if (!this.env.stripeSecretKey?.trim()) {
       throw new ServiceUnavailableException('Stripe billing mutations require STRIPE_SECRET_KEY.');
     }
@@ -1102,10 +1175,6 @@ export class BillingService {
   private assertStripeInvoiceExportReady(): void {
     if (this.env.runtimeMode !== 'connected') {
       throw new ServiceUnavailableException('Billing invoice exports require QUIZMIND_RUNTIME_MODE=connected.');
-    }
-
-    if (this.env.billingProvider !== 'stripe') {
-      throw new ServiceUnavailableException('Billing invoice exports require BILLING_PROVIDER=stripe.');
     }
 
     if (!this.env.stripeSecretKey?.trim()) {
@@ -1118,12 +1187,14 @@ export class BillingService {
       throw new ServiceUnavailableException('Stripe webhooks require QUIZMIND_RUNTIME_MODE=connected.');
     }
 
-    if (this.env.billingProvider !== 'stripe') {
-      throw new ServiceUnavailableException('Stripe webhooks require BILLING_PROVIDER=stripe.');
-    }
-
     if (!this.env.stripeWebhookSecret?.trim()) {
       throw new ServiceUnavailableException('Stripe webhooks require STRIPE_WEBHOOK_SECRET.');
+    }
+  }
+
+  private assertYookassaWebhookReady(): void {
+    if (this.env.runtimeMode !== 'connected') {
+      throw new ServiceUnavailableException('YooKassa webhooks require QUIZMIND_RUNTIME_MODE=connected.');
     }
   }
 
@@ -1151,6 +1222,52 @@ export class BillingService {
       type: event.type,
       ...(typeof event.created === 'number' ? { created: event.created } : {}),
       ...(event.data && typeof event.data === 'object' ? { data: event.data } : {}),
+    };
+  }
+
+  private parseYookassaWebhookEvent(rawBody: Buffer): YookassaWebhookEvent {
+    let payload: unknown;
+
+    try {
+      payload = JSON.parse(rawBody.toString('utf8'));
+    } catch {
+      throw new BadRequestException('YooKassa webhook payload must be valid JSON.');
+    }
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new BadRequestException('YooKassa webhook payload must be an object.');
+    }
+
+    const envelope = payload as Record<string, unknown>;
+    const type = typeof envelope.event === 'string' ? envelope.event.trim() : '';
+    const objectValue =
+      envelope.object && typeof envelope.object === 'object' && !Array.isArray(envelope.object)
+        ? (envelope.object as Record<string, unknown>)
+        : undefined;
+    const objectId = typeof objectValue?.id === 'string' ? objectValue.id.trim() : '';
+    const envelopeId = typeof envelope.id === 'string' ? envelope.id.trim() : '';
+    const id = objectId || envelopeId;
+    const createdAt = parseIsoDate(
+      typeof objectValue?.created_at === 'string'
+        ? objectValue.created_at
+        : typeof envelope.created_at === 'string'
+          ? envelope.created_at
+          : undefined,
+    );
+
+    if (!type) {
+      throw new BadRequestException('YooKassa webhook payload is missing event type.');
+    }
+
+    if (!id) {
+      throw new BadRequestException('YooKassa webhook payload is missing event id.');
+    }
+
+    return {
+      id,
+      type,
+      ...(createdAt ? { createdAt } : {}),
+      payload: envelope,
     };
   }
 }

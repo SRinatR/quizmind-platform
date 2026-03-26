@@ -1,47 +1,29 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 
 import { SiteShell } from '../../components/site-shell';
-
-const marketingContent = {
-  faq: {
-    eyebrow: 'FAQ',
-    title: 'Common foundation questions',
-    description: 'Short answers about why the platform was split into web, api, worker, and shared domain packages.',
-    bullets: [
-      'The web app serves both customer and admin experiences.',
-      'The API owns auth, billing, compatibility, remote config, and support primitives.',
-      'The worker isolates queue-driven side effects and scheduled jobs.',
-    ],
-  },
-  features: {
-    eyebrow: 'Features',
-    title: 'Control-plane capabilities from day one',
-    description: 'Auth, entitlements, compatibility policy, remote config, and logging are all part of the base scaffold.',
-    bullets: [
-      'RBAC + ABAC aware route visibility.',
-      'Subscription and entitlement resolution.',
-      'Support impersonation with audit and security logs.',
-    ],
-  },
-  pricing: {
-    eyebrow: 'Pricing',
-    title: 'Plans designed around entitlements',
-    description: 'The billing engine already models free and pro plans, limit-based entitlements, and override hooks.',
-    bullets: [
-      'Plan definition drives access and usage limits.',
-      'Overrides let support or sales unlock temporary capabilities.',
-      'The same plan data feeds web UI and API responses.',
-    ],
-  },
-} as const;
+import { publicPageContent, type PublicItemStatus } from '../../content/public-pages';
 
 interface MarketingPageProps {
   params: Promise<{ slug: string }>;
 }
 
+function getStatusLabel(status: PublicItemStatus): string {
+  switch (status) {
+    case 'live':
+      return 'Live';
+    case 'in_development':
+      return 'In development';
+    case 'planned':
+      return 'Planned';
+    default:
+      return 'Unknown';
+  }
+}
+
 export default async function MarketingPage({ params }: MarketingPageProps) {
   const { slug } = await params;
-  const page = marketingContent[slug as keyof typeof marketingContent];
+  const page = publicPageContent[slug as keyof typeof publicPageContent];
 
   if (!page) {
     notFound();
@@ -63,6 +45,23 @@ export default async function MarketingPage({ params }: MarketingPageProps) {
           {page.bullets.map((bullet) => (
             <div className="list-item" key={bullet}>
               <p>{bullet}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="panel">
+        <span className="micro-label">Modules</span>
+        <h2>Current status</h2>
+        <div className="list-stack">
+          {page.items.map((item) => (
+            <div className="list-item" key={`${item.title}:${item.status}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center' }}>
+                <h3 style={{ margin: 0 }}>{item.title}</h3>
+                <span className="status-pill">{getStatusLabel(item.status)}</span>
+              </div>
+              <p>{item.summary}</p>
+              {item.updatedAt ? <p className="micro-label">Updated: {item.updatedAt}</p> : null}
+              {item.href ? <Link href={item.href}>Open related page</Link> : null}
             </div>
           ))}
         </div>

@@ -8,6 +8,7 @@ export const apiModules = [
   'feature-flags',
   'remote-config',
   'extension-compatibility',
+  'ai',
   'usage',
   'audit',
   'support',

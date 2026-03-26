@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 
+import { AiProxyController } from './ai/ai-proxy.controller';
+import { AiProxyRepository } from './ai/ai-proxy.repository';
+import { AiProxyService } from './ai/ai-proxy.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { BillingController } from './billing/billing.controller';
@@ -16,6 +19,7 @@ import { PrismaService } from './database/prisma.service';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import { ExtensionControlController } from './extension/extension-control.controller';
 import { ExtensionControlService } from './extension/extension-control.service';
+import { ExtensionEventRepository } from './extension/extension-event.repository';
 import { ExtensionInstallationRepository } from './extension/extension-installation.repository';
 import { ExtensionInstallationSessionRepository } from './extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
@@ -40,8 +44,17 @@ import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
-  controllers: [AuthController, BillingController, PlatformController, ExtensionControlController, ProviderCredentialController],
+  controllers: [
+    AuthController,
+    BillingController,
+    PlatformController,
+    ExtensionControlController,
+    ProviderCredentialController,
+    AiProxyController,
+  ],
   providers: [
+    AiProxyRepository,
+    AiProxyService,
     AuthService,
     BillingRepository,
     BillingService,
@@ -49,6 +62,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     EmailVerificationRepository,
     ExtensionCompatibilityRepository,
     ExtensionControlService,
+    ExtensionEventRepository,
     ExtensionInstallationRepository,
     ExtensionInstallationSessionRepository,
     FeatureFlagRepository,

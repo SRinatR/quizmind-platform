@@ -44,6 +44,10 @@ test('billing provider resolver prefers manual only when explicitly requested', 
   assert.equal(resolveBillingProvider({ requestedProvider: 'manual' }), 'manual');
   assert.equal(resolveBillingProvider({ requestedProvider: 'mock' }), 'mock');
   assert.equal(resolveBillingProvider({ currency: 'usd' }), 'stripe');
+  assert.equal(resolveBillingProvider({ requestedProvider: 'yookassa' }), 'yookassa');
+  assert.equal(resolveBillingProvider({ requestedProvider: 'paddle' }), 'paddle');
+  assert.equal(resolveBillingProvider({ currency: 'rub' }), 'yookassa');
+  assert.equal(resolveBillingProvider({ currency: 'eur' }), 'paddle');
 });
 
 test('provider secret validation enforces provider-specific key shapes', () => {

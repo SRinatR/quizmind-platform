@@ -2,7 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type ExtensionInstallationDisconnectResult, type ExtensionInstallationInventorySnapshot } from '@quizmind/contracts';
+import {
+  type ExtensionInstallationDisconnectResult,
+  type ExtensionInstallationInventorySnapshot,
+  type ExtensionInstallationRotateSessionResult,
+} from '@quizmind/contracts';
 import { useState, useTransition } from 'react';
 
 interface InstallationsPageClientProps {
@@ -12,6 +16,14 @@ interface InstallationsPageClientProps {
 interface DisconnectRouteResponse {
   ok: boolean;
   data?: ExtensionInstallationDisconnectResult;
+  error?: {
+    message?: string;
+  };
+}
+
+interface RotateSessionRouteResponse {
+  ok: boolean;
+  data?: ExtensionInstallationRotateSessionResult;
   error?: {
     message?: string;
   };
@@ -37,6 +49,9 @@ function formatCompatibilityTone(status: string) {
 export function InstallationsPageClient({ snapshot }: InstallationsPageClientProps) {
   const router = useRouter();
   const [pendingInstallationId, setPendingInstallationId] = useState<string | null>(null);
+  const [pendingRotationInstallationId, setPendingRotationInstallationId] = useState<string | null>(null);
+  const [rotatedSession, setRotatedSession] = useState<ExtensionInstallationRotateSessionResult | null>(null);
+  const [copiedRotatedToken, setCopiedRotatedToken] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -82,6 +97,60 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     } catch {
       setPendingInstallationId(null);
       setErrorMessage('Unable to disconnect the installation right now.');
+    }
+  }
+
+  async function handleRotateSession(installationId: string) {
+    setPendingRotationInstallationId(installationId);
+    setStatusMessage(null);
+    setErrorMessage(null);
+    setRotatedSession(null);
+    setCopiedRotatedToken(false);
+
+    try {
+      const response = await fetch('/api/extension/installations/rotate-session', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          installationId,
+          workspaceId: snapshot.workspace.id,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as RotateSessionRouteResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        setPendingRotationInstallationId(null);
+        setErrorMessage(payload?.error?.message ?? 'Unable to rotate the installation session right now.');
+        return;
+      }
+
+      setPendingRotationInstallationId(null);
+      setRotatedSession(payload.data);
+      setStatusMessage(
+        `${payload.data.installationId} rotated. Revoked ${payload.data.revokedSessionCount} active installation session${payload.data.revokedSessionCount === 1 ? '' : 's'}.`,
+      );
+
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setPendingRotationInstallationId(null);
+      setErrorMessage('Unable to rotate the installation session right now.');
+    }
+  }
+
+  async function handleCopyRotatedToken() {
+    if (!rotatedSession?.session.token) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(rotatedSession.session.token);
+      setCopiedRotatedToken(true);
+    } catch {
+      setErrorMessage('Unable to copy the rotated token right now.');
     }
   }
 
@@ -136,12 +205,31 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         </p>
         {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
         {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+        {rotatedSession ? (
+          <div className="auth-highlight">
+            <span className="micro-label">Rotated token</span>
+            <strong>New installation session issued for {rotatedSession.installationId}</strong>
+            <p>
+              Token: <span className="monospace">{rotatedSession.session.token}</span>
+            </p>
+            <p>
+              Expires: <span className="monospace">{formatDateTime(rotatedSession.session.expiresAt)}</span>
+              {' '}| Refresh after: <span className="monospace">{rotatedSession.session.refreshAfterSeconds}s</span>
+            </p>
+            <button className="btn-ghost" onClick={() => void handleCopyRotatedToken()} type="button">
+              {copiedRotatedToken ? 'Token copied' : 'Copy rotated token'}
+            </button>
+          </div>
+        ) : null}
         <div className="list-stack">
           {snapshot.items.map((installation) => {
             const disconnectDisabled =
               !snapshot.disconnectDecision.allowed ||
               installation.activeSessionCount === 0 ||
               pendingInstallationId === installation.installationId;
+            const rotateDisabled =
+              !snapshot.disconnectDecision.allowed ||
+              pendingRotationInstallationId === installation.installationId;
 
             return (
               <div className="list-item" key={installation.installationId}>
@@ -171,6 +259,14 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                   ))}
                 </div>
                 <div className="link-row">
+                  <button
+                    className="btn-ghost"
+                    disabled={rotateDisabled}
+                    onClick={() => void handleRotateSession(installation.installationId)}
+                    type="button"
+                  >
+                    {pendingRotationInstallationId === installation.installationId ? 'Rotating...' : 'Rotate token'}
+                  </button>
                   <button
                     className="btn-ghost"
                     disabled={disconnectDisabled}

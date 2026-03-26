@@ -66,7 +66,7 @@ export const platformQueues = [
   'config-publish',
   'audit-exports',
 ] as const;
-export const billingProviders = ['mock', 'stripe', 'manual'] as const;
+export const billingProviders = ['mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
 export const billingIntervals = ['monthly', 'yearly'] as const;
 export const aiProviders = ['openai', 'anthropic', 'openrouter', 'internal'] as const;
 export const credentialOwnerTypes = ['platform', 'workspace', 'user'] as const;
@@ -89,7 +89,7 @@ export const adminLogStreamFilters = ['all', 'audit', 'activity', 'security', 'd
 export const adminLogSeverityFilters = ['all', 'debug', 'info', 'warn', 'error'] as const;
 export const adminLogExportFormats = ['json', 'csv'] as const;
 export const adminWebhookStatusFilters = ['all', 'received', 'processed', 'failed'] as const;
-export const adminWebhookProviderFilters = ['all', 'mock', 'stripe', 'manual'] as const;
+export const adminWebhookProviderFilters = ['all', 'mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
 export const adminQueueProcessorStates = ['bound', 'declared_only'] as const;
 export const adminExtensionConnectionFilters = ['all', 'connected', 'reconnect_required'] as const;
 export const adminExtensionCompatibilityFilters = [
@@ -913,6 +913,19 @@ export interface ExtensionInstallationDisconnectResult {
   requiresReconnect: boolean;
 }
 
+export interface ExtensionInstallationRotateSessionRequest {
+  installationId: string;
+  workspaceId?: string;
+}
+
+export interface ExtensionInstallationRotateSessionResult {
+  installationId: string;
+  workspaceId?: string;
+  revokedSessionCount: number;
+  rotatedAt: string;
+  session: ExtensionInstallationTokenSession;
+}
+
 export interface AdminExtensionFleetFilters {
   workspaceId: string;
   compatibility: AdminExtensionCompatibilityFilter;
@@ -1241,6 +1254,52 @@ export interface ProviderCredentialMutationResult {
 export interface ProviderCredentialRevokeResult {
   credentialId: string;
   revokedAt: string;
+}
+
+export type AiProxyMessageRole = 'system' | 'user' | 'assistant' | 'tool';
+
+export interface AiProxyMessage {
+  role: AiProxyMessageRole;
+  content: string;
+  name?: string;
+}
+
+export interface AiProxyRequest {
+  workspaceId?: string;
+  provider?: AiProvider;
+  model: string;
+  messages: AiProxyMessage[];
+  useOwnKey?: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  stream?: boolean;
+}
+
+export interface AiProxyTokenUsage {
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+}
+
+export interface AiProxyQuotaSnapshot {
+  key: string;
+  consumed: number;
+  limit?: number;
+  remaining?: number;
+  periodStart: string;
+  periodEnd: string;
+  decremented: boolean;
+}
+
+export interface AiProxyResult {
+  requestId: string;
+  workspaceId: string;
+  provider: AiProvider;
+  model: string;
+  keySource: 'platform' | 'user';
+  usage?: AiProxyTokenUsage;
+  quota?: AiProxyQuotaSnapshot;
+  response: Record<string, unknown>;
 }
 
 

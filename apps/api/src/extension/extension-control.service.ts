@@ -9,7 +9,7 @@ import {
 import { createOpaqueToken, hashOpaqueToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { buildExtensionBootstrapV2, evaluateCompatibility } from '@quizmind/extension';
-import { createLogEvent } from '@quizmind/logger';
+import { createAuditLogEvent, createLogEvent, createSecurityLogEvent } from '@quizmind/logger';
 import { buildQuotaHint } from '@quizmind/usage';
 import {
   type CompatibilityHandshake,
@@ -21,6 +21,8 @@ import {
   type ExtensionInstallationBindResult,
   type ExtensionInstallationInventoryItem,
   type ExtensionInstallationInventorySnapshot,
+  type ExtensionInstallationRotateSessionRequest,
+  type ExtensionInstallationRotateSessionResult,
   type UsageEventIngestResult,
   type UsageEventPayload,
 } from '@quizmind/contracts';
@@ -47,6 +49,7 @@ import { mapRemoteConfigLayerRecordToDefinition } from '../services/remote-confi
 import { buildUsageQuotas } from '../services/usage-service';
 import { UsageRepository } from '../usage/usage.repository';
 import { ExtensionCompatibilityRepository } from './extension-compatibility.repository';
+import { ExtensionEventRepository } from './extension-event.repository';
 import {
   ExtensionInstallationRepository,
   type ExtensionInstallationRecord,
@@ -94,6 +97,8 @@ export class ExtensionControlService {
     private readonly extensionInstallationSessionRepository: ExtensionInstallationSessionRepository,
     @Inject(ExtensionCompatibilityRepository)
     private readonly extensionCompatibilityRepository: ExtensionCompatibilityRepository,
+    @Inject(ExtensionEventRepository)
+    private readonly extensionEventRepository: ExtensionEventRepository,
     @Inject(FeatureFlagRepository)
     private readonly featureFlagRepository: FeatureFlagRepository,
     @Inject(RemoteConfigRepository)
@@ -114,6 +119,9 @@ export class ExtensionControlService {
   ): Promise<ExtensionInstallationBindResult> {
     const normalizedRequest = this.normalizeBindRequest(session, request);
     const occurredAt = new Date();
+    const existingInstallation = await this.extensionInstallationRepository.findByInstallationId(
+      normalizedRequest.installationId,
+    );
     const installation = await this.extensionInstallationRepository.upsertBoundInstallation({
       userId: session.user.id,
       ...(normalizedRequest.workspaceId ? { workspaceId: normalizedRequest.workspaceId } : {}),
@@ -132,8 +140,7 @@ export class ExtensionControlService {
       issuedAt: occurredAt.toISOString(),
       refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
     });
-
-    return {
+    const result: ExtensionInstallationBindResult = {
       installation: {
         installationId: installation.installationId,
         ...(installation.workspaceId ? { workspaceId: installation.workspaceId } : {}),
@@ -153,6 +160,48 @@ export class ExtensionControlService {
       },
       bootstrap,
     };
+
+    await this.recordLifecycleEventSafely({
+      workspaceId: installation.workspaceId ?? undefined,
+      actorId: session.user.id,
+      targetType: 'extension_installation',
+      targetId: installation.installationId,
+      auditEventType: existingInstallation
+        ? 'extension.installation_reconnected'
+        : 'extension.installation_bound',
+      securityEventType: existingInstallation
+        ? 'extension.installation_session_reissued'
+        : 'extension.installation_session_issued',
+      securitySeverity: 'info',
+      status: 'success',
+      summary: existingInstallation
+        ? 'reconnected an extension installation session'
+        : 'bound a new extension installation session',
+      metadata: {
+        installationId: installation.installationId,
+        workspaceId: installation.workspaceId ?? null,
+        browser: installation.browser,
+        extensionVersion: installation.extensionVersion,
+        schemaVersion: installation.schemaVersion,
+        capabilities: normalizeCapabilities(installation.capabilitiesJson),
+        sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+        refreshAfterSeconds: result.session.refreshAfterSeconds,
+        previousWorkspaceId: existingInstallation?.workspaceId ?? null,
+        previousUserId: existingInstallation?.userId ?? null,
+      },
+      domainEventType: existingInstallation
+        ? 'extension.installation_reconnected'
+        : 'extension.installation_bound',
+      domainPayload: {
+        installationId: installation.installationId,
+        workspaceId: installation.workspaceId ?? null,
+        actorId: session.user.id,
+        sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+      },
+      occurredAt,
+    });
+
+    return result;
   }
 
   async resolveInstallationSession(accessToken: string): Promise<ExtensionInstallationSessionRecord> {
@@ -160,6 +209,24 @@ export class ExtensionControlService {
     const tokenRecord = await this.extensionInstallationSessionRepository.findActiveByTokenHash(tokenHash);
 
     if (!tokenRecord) {
+      await this.recordLifecycleEventSafely({
+        targetType: 'extension_installation_session',
+        targetId: tokenHash.slice(0, 16),
+        auditEventType: 'extension.installation_session_refresh_failed',
+        securityEventType: 'extension.installation_session_refresh_failed',
+        securitySeverity: 'warn',
+        status: 'failure',
+        summary: 'extension installation session refresh failed due to invalid or expired token',
+        metadata: {
+          reason: 'invalid_or_expired_token',
+          tokenHashPrefix: tokenHash.slice(0, 16),
+        },
+        domainEventType: 'extension.installation_session_refresh_failed',
+        domainPayload: {
+          reason: 'invalid_or_expired_token',
+          tokenHashPrefix: tokenHash.slice(0, 16),
+        },
+      });
       throw new UnauthorizedException('Installation session is invalid or expired.');
     }
 
@@ -340,12 +407,104 @@ export class ExtensionControlService {
       disconnectedAt,
     );
 
+    await this.recordLifecycleEventSafely({
+      workspaceId: installation.workspaceId ?? undefined,
+      actorId: session.user.id,
+      targetType: 'extension_installation',
+      targetId: installation.installationId,
+      auditEventType: 'extension.installation_disconnected',
+      securityEventType: 'extension.installation_session_revoked',
+      securitySeverity: 'info',
+      status: 'success',
+      summary: 'disconnected an extension installation and revoked active sessions',
+      metadata: {
+        installationId: installation.installationId,
+        workspaceId: installation.workspaceId ?? null,
+        revokedSessionCount,
+        requiresReconnect: true,
+      },
+      domainEventType: 'extension.installation_disconnected',
+      domainPayload: {
+        installationId: installation.installationId,
+        workspaceId: installation.workspaceId ?? null,
+        actorId: session.user.id,
+        revokedSessionCount,
+      },
+      occurredAt: disconnectedAt,
+    });
+
     return {
       installationId: installation.installationId,
       workspaceId: installation.workspaceId ?? undefined,
       revokedSessionCount,
       disconnectedAt: disconnectedAt.toISOString(),
       requiresReconnect: true,
+    };
+  }
+
+  async rotateInstallationSessionForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<ExtensionInstallationRotateSessionRequest>,
+  ): Promise<ExtensionInstallationRotateSessionResult> {
+    const installationId = readRequiredString(request?.installationId, 'installationId');
+    const requestedWorkspace = this.resolveRequestedWorkspace(session, request?.workspaceId);
+    const accessDecision = canWriteExtensionInstallations(session.principal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
+
+    if (!installation || installation.workspaceId !== requestedWorkspace.id) {
+      throw new NotFoundException('Extension installation not found for workspace.');
+    }
+
+    const rotatedAt = new Date();
+    const revokedSessionCount = await this.extensionInstallationSessionRepository.revokeActiveByInstallationId(
+      installation.id,
+      rotatedAt,
+    );
+    const { sessionToken, tokenRecord } = await this.issueInstallationSession(installation, installation.userId);
+
+    await this.recordLifecycleEventSafely({
+      workspaceId: installation.workspaceId ?? undefined,
+      actorId: session.user.id,
+      targetType: 'extension_installation',
+      targetId: installation.installationId,
+      auditEventType: 'extension.installation_session_rotated',
+      securityEventType: 'extension.installation_session_rotated',
+      securitySeverity: 'info',
+      status: 'success',
+      summary: 'rotated an extension installation session token',
+      metadata: {
+        installationId: installation.installationId,
+        workspaceId: installation.workspaceId ?? null,
+        revokedSessionCount,
+        sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      },
+      domainEventType: 'extension.installation_session_rotated',
+      domainPayload: {
+        installationId: installation.installationId,
+        workspaceId: installation.workspaceId ?? null,
+        actorId: session.user.id,
+        revokedSessionCount,
+        sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+      },
+      occurredAt: rotatedAt,
+    });
+
+    return {
+      installationId: installation.installationId,
+      workspaceId: installation.workspaceId ?? undefined,
+      revokedSessionCount,
+      rotatedAt: rotatedAt.toISOString(),
+      session: {
+        token: sessionToken,
+        expiresAt: tokenRecord.expiresAt.toISOString(),
+        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      },
     };
   }
 
@@ -519,6 +678,72 @@ export class ExtensionControlService {
       browser,
       ...(handshake?.buildId?.trim() ? { buildId: handshake.buildId.trim() } : {}),
     };
+  }
+
+  private async recordLifecycleEventSafely(input: {
+    workspaceId?: string;
+    actorId?: string;
+    targetType: string;
+    targetId: string;
+    auditEventType: string;
+    securityEventType: string;
+    securitySeverity: 'debug' | 'info' | 'warn' | 'error';
+    status: 'success' | 'failure';
+    summary: string;
+    metadata?: Record<string, unknown>;
+    domainEventType: string;
+    domainPayload: Record<string, unknown>;
+    occurredAt?: Date;
+  }): Promise<void> {
+    const occurredAt = input.occurredAt ?? new Date();
+    const actorType = input.actorId ? 'user' : 'system';
+    const baseMetadata = {
+      summary: input.summary,
+      ...(input.metadata ?? {}),
+    };
+    const auditLog = createAuditLogEvent({
+      eventId: `audit:${input.auditEventType}:${input.targetId}:${occurredAt.getTime()}`,
+      eventType: input.auditEventType,
+      actorId: input.actorId ?? 'system',
+      actorType,
+      workspaceId: input.workspaceId,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      occurredAt: occurredAt.toISOString(),
+      severity: input.securitySeverity === 'error' ? 'error' : 'info',
+      status: input.status,
+      metadata: baseMetadata,
+    });
+    const securityLog = createSecurityLogEvent({
+      eventId: `security:${input.securityEventType}:${input.targetId}:${occurredAt.getTime()}`,
+      eventType: input.securityEventType,
+      actorId: input.actorId ?? 'system',
+      actorType,
+      workspaceId: input.workspaceId,
+      targetType: input.targetType,
+      targetId: input.targetId,
+      occurredAt: occurredAt.toISOString(),
+      severity: input.securitySeverity,
+      status: input.status,
+      metadata: baseMetadata,
+    });
+
+    try {
+      await this.extensionEventRepository.recordLifecycleEvent({
+        workspaceId: input.workspaceId ?? null,
+        occurredAt,
+        auditLog,
+        securityLog,
+        domainEventType: input.domainEventType,
+        domainPayload: {
+          summary: input.summary,
+          ...input.domainPayload,
+          occurredAt: occurredAt.toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to persist extension lifecycle log event.', error);
+    }
   }
 
   private async issueInstallationSession(

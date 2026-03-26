@@ -396,3 +396,45 @@ test('processBillingWebhookJob marks the webhook as failed when required billing
 
   assert.match(String(persistedFailureMessage), /Unable to resolve workspace/);
 });
+
+test('processBillingWebhookJob safely ignores unsupported billing providers', async () => {
+  let processedWebhookId: string | null = null;
+  const repository = createBaseRepository({
+    async findWebhookEventById() {
+      return {
+        id: 'wh_yookassa',
+        provider: 'yookassa',
+        externalEventId: 'yk_evt_1',
+        eventType: 'payment.succeeded',
+        payloadJson: {
+          event: 'payment.succeeded',
+          object: {
+            id: 'payment_1',
+          },
+        },
+        status: 'received',
+        receivedAt: new Date('2026-03-24T12:00:00.000Z'),
+        processedAt: null,
+      };
+    },
+    async markWebhookEventProcessed(webhookEventId) {
+      processedWebhookId = webhookEventId;
+    },
+  });
+
+  const result = await processBillingWebhookJob(
+    {
+      provider: 'yookassa',
+      webhookEventId: 'wh_yookassa',
+      externalEventId: 'yk_evt_1',
+      eventType: 'payment.succeeded',
+      receivedAt: '2026-03-24T12:00:00.000Z',
+    },
+    repository,
+  );
+
+  assert.equal(result.processed, true);
+  assert.equal(result.webhookEventId, 'wh_yookassa');
+  assert.equal(processedWebhookId, 'wh_yookassa');
+  assert.equal(result.logEvent.eventType, 'billing.webhook_ignored');
+});

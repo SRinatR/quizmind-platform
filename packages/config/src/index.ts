@@ -66,10 +66,19 @@ export interface ApiEnv extends PlatformEnv {
   jwtAudience: string;
   emailProvider: 'noop' | 'resend';
   emailFrom: string;
-  billingProvider: 'mock' | 'stripe' | 'manual';
+  billingProvider: 'mock' | 'stripe' | 'manual' | 'yookassa' | 'paddle';
   resendApiKey?: string;
   stripeSecretKey?: string;
   stripeWebhookSecret?: string;
+  yookassaShopId?: string;
+  yookassaSecretKey?: string;
+  yookassaWebhookSecret?: string;
+  paddleApiKey?: string;
+  paddleWebhookSecret?: string;
+  openRouterApiUrl: string;
+  openRouterApiKey?: string;
+  openRouterAppName: string;
+  openRouterTimeoutMs: number;
   rateLimitWindowMs: number;
   rateLimitMaxRequests: number;
   authRateLimitWindowMs: number;
@@ -145,6 +154,14 @@ function resolveBillingProvider(source: EnvSource): ApiEnv['billingProvider'] {
     return 'manual';
   }
 
+  if (source.BILLING_PROVIDER === 'yookassa') {
+    return 'yookassa';
+  }
+
+  if (source.BILLING_PROVIDER === 'paddle') {
+    return 'paddle';
+  }
+
   return source.BILLING_PROVIDER === 'stripe' ? 'stripe' : 'mock';
 }
 
@@ -168,6 +185,15 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     resendApiKey: source.RESEND_API_KEY,
     stripeSecretKey: source.STRIPE_SECRET_KEY,
     stripeWebhookSecret: source.STRIPE_WEBHOOK_SECRET,
+    yookassaShopId: source.YOOKASSA_SHOP_ID,
+    yookassaSecretKey: source.YOOKASSA_SECRET_KEY,
+    yookassaWebhookSecret: source.YOOKASSA_WEBHOOK_SECRET,
+    paddleApiKey: source.PADDLE_API_KEY,
+    paddleWebhookSecret: source.PADDLE_WEBHOOK_SECRET,
+    openRouterApiUrl: source.OPENROUTER_API_URL ?? 'https://openrouter.ai/api/v1',
+    openRouterApiKey: source.OPENROUTER_API_KEY,
+    openRouterAppName: source.OPENROUTER_APP_NAME ?? 'QuizMind Platform',
+    openRouterTimeoutMs: readNumberEnv(source, 'OPENROUTER_TIMEOUT_MS', 45000),
     rateLimitWindowMs: readNumberEnv(source, 'RATE_LIMIT_WINDOW_MS', 60_000),
     rateLimitMaxRequests: readNumberEnv(source, 'RATE_LIMIT_MAX_REQUESTS', 120),
     authRateLimitWindowMs: readNumberEnv(source, 'AUTH_RATE_LIMIT_WINDOW_MS', 900_000),
@@ -265,6 +291,19 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
     issues.push({ key: 'JWT_AUDIENCE', message: 'JWT_AUDIENCE must be a valid absolute URL.' });
   }
 
+  if (isBlank(env.openRouterApiUrl)) {
+    issues.push({ key: 'OPENROUTER_API_URL', message: 'OPENROUTER_API_URL must be defined.' });
+  } else if (!isValidUrl(env.openRouterApiUrl)) {
+    issues.push({ key: 'OPENROUTER_API_URL', message: 'OPENROUTER_API_URL must be a valid absolute URL.' });
+  }
+
+  if (!Number.isInteger(env.openRouterTimeoutMs) || env.openRouterTimeoutMs < 1_000) {
+    issues.push({
+      key: 'OPENROUTER_TIMEOUT_MS',
+      message: 'OPENROUTER_TIMEOUT_MS must be an integer of at least 1000 milliseconds.',
+    });
+  }
+
   if (env.corsAllowedOrigins.length === 0) {
     issues.push({ key: 'CORS_ALLOWED_ORIGINS', message: 'At least one CORS origin must be configured.' });
   }
@@ -327,19 +366,49 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
       issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required in production.' });
     }
 
-    if (!['stripe', 'manual'].includes(env.billingProvider)) {
+    if (!['stripe', 'manual', 'yookassa', 'paddle'].includes(env.billingProvider)) {
       issues.push({
         key: 'BILLING_PROVIDER',
-        message: 'BILLING_PROVIDER must be set to "stripe" or "manual" in production.',
+        message: 'BILLING_PROVIDER must be set to "stripe", "manual", "yookassa", or "paddle" in production.',
       });
     }
 
-    if (isBlank(env.stripeSecretKey)) {
-      issues.push({ key: 'STRIPE_SECRET_KEY', message: 'STRIPE_SECRET_KEY is required in production.' });
+    if (env.billingProvider === 'stripe') {
+      if (isBlank(env.stripeSecretKey)) {
+        issues.push({ key: 'STRIPE_SECRET_KEY', message: 'STRIPE_SECRET_KEY is required in production for Stripe.' });
+      }
+
+      if (isBlank(env.stripeWebhookSecret)) {
+        issues.push({
+          key: 'STRIPE_WEBHOOK_SECRET',
+          message: 'STRIPE_WEBHOOK_SECRET is required in production for Stripe.',
+        });
+      }
     }
 
-    if (isBlank(env.stripeWebhookSecret)) {
-      issues.push({ key: 'STRIPE_WEBHOOK_SECRET', message: 'STRIPE_WEBHOOK_SECRET is required in production.' });
+    if (env.billingProvider === 'yookassa') {
+      if (isBlank(env.yookassaShopId)) {
+        issues.push({
+          key: 'YOOKASSA_SHOP_ID',
+          message: 'YOOKASSA_SHOP_ID is required in production for YooKassa.',
+        });
+      }
+
+      if (isBlank(env.yookassaSecretKey)) {
+        issues.push({
+          key: 'YOOKASSA_SECRET_KEY',
+          message: 'YOOKASSA_SECRET_KEY is required in production for YooKassa.',
+        });
+      }
+    }
+
+    if (env.billingProvider === 'paddle') {
+      if (isBlank(env.paddleApiKey)) {
+        issues.push({
+          key: 'PADDLE_API_KEY',
+          message: 'PADDLE_API_KEY is required in production for Paddle.',
+        });
+      }
     }
 
     if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {

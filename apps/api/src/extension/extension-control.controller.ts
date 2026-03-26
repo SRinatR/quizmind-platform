@@ -6,6 +6,7 @@ import {
   type ExtensionBootstrapRequestV2,
   type ExtensionInstallationDisconnectRequest,
   type ExtensionInstallationBindRequest,
+  type ExtensionInstallationRotateSessionRequest,
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
@@ -64,6 +65,19 @@ export class ExtensionControlController {
   ) {
     return ok(
       await this.extensionControlService.disconnectInstallationForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        request,
+      ),
+    );
+  }
+
+  @Post('extension/installations/rotate-session')
+  async rotateInstallationSession(
+    @Body() request?: Partial<ExtensionInstallationRotateSessionRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.extensionControlService.rotateInstallationSessionForCurrentSession(
         await this.requireConnectedSession(authorization),
         request,
       ),

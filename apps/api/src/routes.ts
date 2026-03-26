@@ -133,6 +133,11 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
+    path: '/billing/webhooks/yookassa',
+    summary: 'Persist and enqueue YooKassa billing webhook deliveries.',
+  },
+  {
+    method: 'POST',
     path: '/extension/bootstrap',
     summary: 'Resolve compatibility, feature flags, and remote config for an extension installation.',
   },
@@ -146,6 +151,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'POST',
     path: '/extension/installations/disconnect',
     summary: 'Revoke active installation sessions for a workspace installation so the extension must reconnect.',
+    permission: 'installations:write',
+  },
+  {
+    method: 'POST',
+    path: '/extension/installations/rotate-session',
+    summary: 'Rotate the active installation session token for a workspace installation and revoke previous sessions.',
     permission: 'installations:write',
   },
   {
@@ -167,6 +178,11 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'POST',
     path: '/extension/usage-events/v2',
     summary: 'Ingest extension telemetry using an installation-authenticated session.',
+  },
+  {
+    method: 'POST',
+    path: '/ai/proxy',
+    summary: 'Proxy AI chat-completion requests with policy, quota, and BYOK enforcement.',
   },
   {
     method: 'GET',

@@ -128,6 +128,11 @@ export class BillingController {
     return ok(await this.billingService.ingestStripeWebhook(signatureHeader, request.rawBody));
   }
 
+  @Post('billing/webhooks/yookassa')
+  async ingestYookassaWebhook(@Req() request: StripeWebhookRequest) {
+    return ok(await this.billingService.ingestYookassaWebhook(request.rawBody));
+  }
+
   private async requireConnectedSession(authorization?: string): Promise<CurrentSessionSnapshot> {
     if (this.env.runtimeMode !== 'connected') {
       throw new ServiceUnavailableException('Billing endpoints require QUIZMIND_RUNTIME_MODE=connected.');

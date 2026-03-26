@@ -862,10 +862,6 @@ export class PlatformService {
 
     const provider = this.normalizeBillingProvider(webhookEvent.provider);
 
-    if (provider !== 'stripe') {
-      throw new BadRequestException('Only Stripe webhook retries are supported right now.');
-    }
-
     if (webhookEvent.processedAt || webhookEvent.status === 'processed') {
       throw new BadRequestException('Processed webhook events cannot be retried.');
     }
@@ -2007,7 +2003,16 @@ export class PlatformService {
   }
 
   private normalizeBillingProvider(provider: string | null | undefined): BillingProvider {
-    return provider === 'manual' || provider === 'mock' ? provider : 'stripe';
+    if (
+      provider === 'manual' ||
+      provider === 'mock' ||
+      provider === 'yookassa' ||
+      provider === 'paddle'
+    ) {
+      return provider;
+    }
+
+    return 'stripe';
   }
 
   private filterAdminWebhookEntries(items: AdminWebhookEventSummary[], filters: AdminWebhookFilters): {

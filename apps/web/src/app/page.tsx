@@ -10,6 +10,8 @@ export default function HomePage() {
           <div className="lp-nav-links">
             <Link href="/features">Features</Link>
             <Link href="/pricing">Pricing</Link>
+            <Link href="/docs">Docs</Link>
+            <Link href="/blog">Blog</Link>
             <Link href="/faq">FAQ</Link>
           </div>
           <div className="lp-nav-actions">
@@ -203,6 +205,10 @@ export default function HomePage() {
           <div className="lp-footer-links">
             <Link href="/features">Features</Link>
             <Link href="/pricing">Pricing</Link>
+            <Link href="/docs">Docs</Link>
+            <Link href="/blog">Blog</Link>
+            <Link href="/changelog">Changelog</Link>
+            <Link href="/roadmap">Roadmap</Link>
             <Link href="/faq">FAQ</Link>
             <Link href="/auth/login">Sign in</Link>
             <Link href="/app?persona=platform-admin">Dashboard</Link>

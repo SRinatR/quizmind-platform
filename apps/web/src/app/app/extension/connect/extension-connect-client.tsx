@@ -12,6 +12,7 @@ interface ExtensionConnectClientProps {
   currentUserLabel: string;
   initialRequest: ExtensionInstallationBindRequest | null;
   missingFields: string[];
+  bridgeNonce?: string;
   requestId?: string;
   targetOrigin?: string;
   workspaces: WorkspaceSummary[];
@@ -20,27 +21,65 @@ interface ExtensionConnectClientProps {
 interface BindRouteResponse {
   ok: boolean;
   data?: ExtensionInstallationBindResult;
+  fallbackCode?: {
+    code: string;
+    expiresAt: string;
+    ttlSeconds: number;
+    redeemPath: string;
+  };
   error?: {
     message?: string;
   };
 }
 
-function normalizeTargetOrigin(value?: string): string {
+function normalizeTargetOrigin(value?: string): string | null {
   const normalized = value?.trim();
 
   if (!normalized) {
-    return '*';
-  }
-
-  if (normalized.startsWith('chrome-extension://') || normalized.startsWith('moz-extension://')) {
-    return normalized;
+    return null;
   }
 
   try {
-    return new URL(normalized).origin;
+    const parsed = new URL(normalized);
+
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return parsed.origin;
+    }
+
+    if (parsed.protocol === 'chrome-extension:' || parsed.protocol === 'moz-extension:') {
+      return `${parsed.protocol}//${parsed.host}`;
+    }
+
+    return null;
   } catch {
-    return '*';
+    return null;
   }
+}
+
+function normalizeBridgeNonce(value?: string): string | null {
+  const normalized = value?.trim();
+
+  if (!normalized || normalized.length < 8 || normalized.length > 128) {
+    return null;
+  }
+
+  return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : null;
+}
+
+function resolveBridgeTarget(): Window | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  if (window.opener && !window.opener.closed) {
+    return window.opener;
+  }
+
+  if (window.parent !== window) {
+    return window.parent;
+  }
+
+  return null;
 }
 
 function maskToken(value: string): string {
@@ -55,6 +94,7 @@ export function ExtensionConnectClient({
   currentUserLabel,
   initialRequest,
   missingFields,
+  bridgeNonce,
   requestId,
   targetOrigin,
   workspaces,
@@ -72,21 +112,38 @@ export function ExtensionConnectClient({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bindResult, setBindResult] = useState<ExtensionInstallationBindResult | null>(null);
+  const [fallbackCode, setFallbackCode] = useState<BindRouteResponse['fallbackCode'] | null>(null);
+  const [fallbackCodeCopied, setFallbackCodeCopied] = useState(false);
+  const [hasBridgeTarget, setHasBridgeTarget] = useState(false);
   const autoBindAttemptedRef = useRef(false);
   const postedInitialErrorRef = useRef(false);
   const bridgeRequestIdRef = useRef<string>(requestId?.trim() || `bind_${Date.now()}`);
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
+  const resolvedBridgeNonce = normalizeBridgeNonce(bridgeNonce);
+  const bridgeSecurityIssue =
+    hasBridgeTarget && !resolvedTargetOrigin
+      ? 'Secure bridge requires a valid targetOrigin query parameter.'
+      : hasBridgeTarget && !resolvedBridgeNonce
+        ? 'Secure bridge requires a valid bridgeNonce query parameter.'
+        : null;
 
-  const canConnect = Boolean(initialRequest) && missingFields.length === 0 && !isSubmitting;
+  const canConnect =
+    Boolean(initialRequest) && missingFields.length === 0 && !isSubmitting && !bridgeSecurityIssue;
 
   function postBridgeMessage(message: Record<string, unknown>) {
-    const bridgeTarget = window.opener ?? (window.parent !== window ? window.parent : null);
+    const bridgeTarget = resolveBridgeTarget();
 
-    if (!bridgeTarget) {
+    if (!bridgeTarget || !resolvedTargetOrigin || !resolvedBridgeNonce) {
       return false;
     }
 
-    bridgeTarget.postMessage(message, resolvedTargetOrigin);
+    bridgeTarget.postMessage(
+      {
+        ...message,
+        bridgeNonce: resolvedBridgeNonce,
+      },
+      resolvedTargetOrigin,
+    );
 
     return true;
   }
@@ -108,16 +165,35 @@ export function ExtensionConnectClient({
       return;
     }
 
+    if (bridgeSecurityIssue) {
+      setErrorMessage(bridgeSecurityIssue);
+      setStatusMessage(null);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
+    setFallbackCode(null);
+    setFallbackCodeCopied(false);
     setStatusMessage('Binding installation through the signed-in site session...');
 
     try {
+      const bindHeaders: Record<string, string> = {
+        'content-type': 'application/json',
+        'x-quizmind-bind-request-id': bridgeRequestIdRef.current,
+      };
+
+      if (resolvedBridgeNonce) {
+        bindHeaders['x-quizmind-bridge-nonce'] = resolvedBridgeNonce;
+      }
+
+      if (resolvedTargetOrigin) {
+        bindHeaders['x-quizmind-target-origin'] = resolvedTargetOrigin;
+      }
+
       const response = await fetch('/api/extension/bind', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: bindHeaders,
         body: JSON.stringify({
           ...initialRequest,
           ...(selectedWorkspaceId ? { workspaceId: selectedWorkspaceId } : {}),
@@ -143,6 +219,7 @@ export function ExtensionConnectClient({
       }
 
       setBindResult(payload.data);
+      setFallbackCode(payload.fallbackCode ?? null);
       setIsSubmitting(false);
       setStatusMessage(
         window.opener
@@ -150,13 +227,24 @@ export function ExtensionConnectClient({
           : 'Extension connected. You can return to the extension now.',
       );
 
-      postBridgeMessage({
+      const deliveredToBridge = postBridgeMessage({
         type: 'quizmind.extension.bind_result',
         requestId: bridgeRequestIdRef.current,
         payload: payload.data,
       });
 
-      if (window.opener) {
+      if (hasBridgeTarget && !deliveredToBridge) {
+        if (payload.fallbackCode) {
+          setStatusMessage('Secure bridge delivery failed. Use the one-time bind code fallback before it expires.');
+          setErrorMessage('postMessage handoff did not complete. Redeem the one-time bind code in the extension.');
+        } else {
+          setStatusMessage('Installation connected on site, but secure bridge delivery did not complete.');
+          setErrorMessage('Reopen the bridge from the extension with a valid targetOrigin and bridgeNonce.');
+        }
+        return;
+      }
+
+      if (window.opener && deliveredToBridge) {
         window.setTimeout(() => {
           window.close();
         }, 900);
@@ -175,6 +263,19 @@ export function ExtensionConnectClient({
           message,
         },
       });
+    }
+  }
+
+  async function handleCopyFallbackCode() {
+    if (!fallbackCode?.code) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(fallbackCode.code);
+      setFallbackCodeCopied(true);
+    } catch {
+      setErrorMessage('Unable to copy the fallback bind code. Copy it manually.');
     }
   }
 
@@ -198,7 +299,20 @@ export function ExtensionConnectClient({
   }, [initialRequest, missingFields]);
 
   useEffect(() => {
-    if (autoBindAttemptedRef.current || !initialRequest || missingFields.length > 0) {
+    setHasBridgeTarget(Boolean(resolveBridgeTarget()));
+  }, []);
+
+  useEffect(() => {
+    if (!bridgeSecurityIssue) {
+      return;
+    }
+
+    setStatusMessage(null);
+    setErrorMessage(bridgeSecurityIssue);
+  }, [bridgeSecurityIssue]);
+
+  useEffect(() => {
+    if (autoBindAttemptedRef.current || !initialRequest || missingFields.length > 0 || bridgeSecurityIssue) {
       return;
     }
 
@@ -208,7 +322,7 @@ export function ExtensionConnectClient({
 
     autoBindAttemptedRef.current = true;
     void handleConnect();
-  }, [initialRequest, missingFields, workspaces.length]);
+  }, [bridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
 
   return (
     <div className="auth-form-shell">
@@ -273,6 +387,14 @@ export function ExtensionConnectClient({
         </div>
       ) : null}
 
+      {bridgeSecurityIssue ? (
+        <div className="auth-highlight">
+          <span className="micro-label">Bridge security</span>
+          <strong>Secure bridge parameters are missing or invalid.</strong>
+          <p>{bridgeSecurityIssue}</p>
+        </div>
+      ) : null}
+
       <div className="auth-form-actions">
         <button className="btn-primary" disabled={!canConnect} onClick={() => void handleConnect()} type="button">
           {isSubmitting ? 'Connecting...' : bindResult ? 'Reconnect installation' : 'Connect extension'}
@@ -317,12 +439,35 @@ export function ExtensionConnectClient({
         </div>
       ) : null}
 
+      {fallbackCode ? (
+        <div className="auth-highlight">
+          <span className="micro-label">Manual fallback</span>
+          <strong>One-time bind code</strong>
+          <p>
+            Code: <span className="monospace">{fallbackCode.code}</span>
+          </p>
+          <p>
+            Expires: <span className="monospace">{fallbackCode.expiresAt}</span>
+            {' '}| TTL: <span className="monospace">{fallbackCode.ttlSeconds}s</span>
+          </p>
+          <p>
+            Redeem endpoint: <span className="monospace">{fallbackCode.redeemPath}</span>
+          </p>
+          <button className="btn-ghost" onClick={() => void handleCopyFallbackCode()} type="button">
+            {fallbackCodeCopied ? 'Code copied' : 'Copy bind code'}
+          </button>
+        </div>
+      ) : null}
+
       <div className="auth-highlight">
         <span className="micro-label">Bridge transport</span>
         <strong>Result channel: `window.postMessage`</strong>
         <p>
           Request id: <span className="monospace">{bridgeRequestIdRef.current}</span>
-          {' '}| Target origin: <span className="monospace">{resolvedTargetOrigin}</span>
+          {' '}| Target origin: <span className="monospace">{resolvedTargetOrigin ?? 'missing/invalid'}</span>
+        </p>
+        <p>
+          Nonce: <span className="monospace">{resolvedBridgeNonce ?? 'missing/invalid'}</span>
         </p>
       </div>
     </div>

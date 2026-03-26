@@ -78,6 +78,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
     readTrimmedSearchParam(resolvedSearchParams?.environment) ??
     (process.env.NODE_ENV === 'production' ? 'production' : 'development');
   const targetOrigin = readTrimmedSearchParam(resolvedSearchParams?.targetOrigin);
+  const bridgeNonce = readTrimmedSearchParam(resolvedSearchParams?.bridgeNonce);
   const requestId = readTrimmedSearchParam(resolvedSearchParams?.requestId);
   const capabilities = Array.from(
     new Set([
@@ -147,6 +148,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           currentUserLabel={session.user.displayName || session.user.email}
           initialRequest={initialRequest}
           missingFields={missingFields}
+          bridgeNonce={bridgeNonce}
           requestId={requestId}
           targetOrigin={targetOrigin}
           workspaces={session.workspaces}

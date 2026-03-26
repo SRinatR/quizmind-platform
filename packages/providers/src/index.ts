@@ -199,8 +199,28 @@ export function resolveBillingProvider(input: {
     return 'mock';
   }
 
+  if (input.requestedProvider === 'yookassa') {
+    return 'yookassa';
+  }
+
+  if (input.requestedProvider === 'paddle') {
+    return 'paddle';
+  }
+
+  if (input.workspaceRegion === 'RU' || input.workspaceRegion === 'KZ' || input.workspaceRegion === 'UZ') {
+    return 'yookassa';
+  }
+
   if (input.currency?.toLowerCase() === 'invoice') {
     return 'manual';
+  }
+
+  if (input.currency?.toLowerCase() === 'rub') {
+    return 'yookassa';
+  }
+
+  if (input.currency?.toLowerCase() === 'eur') {
+    return 'paddle';
   }
 
   return 'stripe';

@@ -7,11 +7,26 @@ import {
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
+import {
+  issueBindFallbackCode,
+  normalizeBridgeOrigin,
+} from '../../../../lib/extension-bind-code-store';
 
 interface RouteErrorPayload {
   ok: false;
   error: {
     message: string;
+  };
+}
+
+interface RouteSuccessPayload {
+  ok: true;
+  data: ExtensionInstallationBindResult;
+  fallbackCode: {
+    code: string;
+    expiresAt: string;
+    ttlSeconds: number;
+    redeemPath: string;
   };
 }
 
@@ -70,6 +85,11 @@ export async function POST(request: Request) {
   const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
   const environment = typeof body?.environment === 'string' ? body.environment.trim() : '';
   const handshake = normalizeHandshake(body?.handshake);
+  const requestId = request.headers.get('x-quizmind-bind-request-id')?.trim() || undefined;
+  const bridgeNonce = request.headers.get('x-quizmind-bridge-nonce')?.trim() || undefined;
+  const targetOrigin = normalizeBridgeOrigin(
+    request.headers.get('x-quizmind-target-origin')?.trim() || undefined,
+  );
 
   if (!installationId || !environment || !handshake) {
     return badRequest('installationId, environment, and a valid handshake are required.');
@@ -106,10 +126,19 @@ export async function POST(request: Request) {
     return badRequest(fallbackMessage ?? 'Unable to bind the extension installation right now.', response.status || 500);
   }
 
-  return NextResponse.json(
+  const fallbackCode = issueBindFallbackCode({
+    installationId,
+    requestId,
+    bridgeNonce,
+    targetOrigin,
+    result: payload.data,
+  });
+
+  return NextResponse.json<RouteSuccessPayload>(
     {
       ok: true,
       data: payload.data,
+      fallbackCode,
     },
     {
       status: response.status,

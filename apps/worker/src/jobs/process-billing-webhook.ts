@@ -638,6 +638,37 @@ export async function processBillingWebhookJob(
     };
   }
 
+  if (webhook.provider !== 'stripe') {
+    const processedAt = new Date();
+
+    await repository.markWebhookEventProcessed(webhook.id, processedAt);
+
+    return {
+      processed: true,
+      webhookEventId: webhook.id,
+      externalEventId: webhook.externalEventId,
+      eventType: webhook.eventType,
+      logEvent: createLogEvent({
+        eventId: `billing-webhook:${webhook.id}:ignored`,
+        eventType: 'billing.webhook_ignored',
+        actorId: webhook.provider,
+        actorType: 'system',
+        targetType: 'billing_webhook',
+        targetId: webhook.externalEventId,
+        occurredAt: processedAt.toISOString(),
+        category: 'domain',
+        severity: 'warn',
+        status: 'success',
+        metadata: {
+          webhookEventId: webhook.id,
+          reason: 'unsupported_provider',
+          provider: webhook.provider,
+          providerEventType: webhook.eventType,
+        },
+      }),
+    };
+  }
+
   try {
     const event = parseStripeWebhookEvent(webhook.payloadJson);
     const mutationResult: BillingWebhookMutationResult =

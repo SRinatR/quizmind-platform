@@ -1,6 +1,7 @@
 import { buildSubscriptionSummary, type SubscriptionSnapshot } from '@quizmind/billing';
 import {
   type BillingAdminPlanSnapshot,
+  type BillingProvider,
   type BillingPlanCatalogEntry,
   type BillingPlanPrice,
   type PlanDefinition,
@@ -58,7 +59,7 @@ export function mapPlanCatalogRecordToEntry(record: BillingPlanCatalogRecord): B
       amount: price.amount,
       isDefault: price.isDefault,
       providerMappings: (price.providerMappings ?? []).map((mapping) => ({
-        provider: mapping.provider as 'mock' | 'stripe' | 'manual',
+        provider: mapping.provider as BillingProvider,
         providerPriceId: mapping.providerPriceId,
         isActive: mapping.isActive,
       })),

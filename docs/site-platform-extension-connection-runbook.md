@@ -25,6 +25,7 @@ The current repo already has the core control-plane endpoints:
 - `GET /extension/installations`
 - `POST /extension/installations/bind`
 - `POST /extension/installations/disconnect`
+- `POST /extension/installations/rotate-session`
 - `POST /extension/bootstrap/v2`
 - `POST /extension/usage-events/v2`
 
@@ -184,14 +185,21 @@ Recommended extension action:
 - open a web page such as:
 
 ```text
-http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local
+http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&requestId=bind_123&bridgeNonce=<nonce>
 ```
+
+Required for hardened bridge exchange:
+
+- `targetOrigin`: strict receiver origin for `window.postMessage`
+- `requestId`: correlation id for bind request/response pairing
+- `bridgeNonce`: nonce echoed by the bridge in every outbound envelope
 
 Current web bridge implementation:
 
 - `apps/web/src/app/app/extension/connect/page.tsx`
 - `apps/web/src/app/app/extension/connect/extension-connect-client.tsx`
 - `apps/web/src/app/api/extension/bind/route.ts`
+- `apps/web/src/app/api/extension/bind/redeem/route.ts`
 
 Bridge page responsibilities:
 
@@ -230,6 +238,26 @@ Recommended payload returned from the bridge to the extension:
   "bootstrap": {
     "...": "initial managed-client payload"
   }
+}
+```
+
+One-time bind code fallback (when `postMessage` handoff fails):
+
+- bridge now returns `fallbackCode` with short TTL and redeem path
+- extension can redeem once through:
+- current implementation stores fallback codes in web-process memory; use a shared store for multi-instance production runtime
+
+```http
+POST /api/extension/bind/redeem
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "<fallback_code>",
+  "installationId": "inst_123",
+  "requestId": "bind_123",
+  "bridgeNonce": "<nonce>"
 }
 ```
 
@@ -334,6 +362,7 @@ Existing useful endpoints:
 - `GET /usage/summary`
 - `GET /extension/installations`
 - `POST /extension/installations/disconnect`
+- `POST /extension/installations/rotate-session`
 - `GET /admin/installations`
 - `GET /providers/credentials`
 - `GET /admin/compatibility`
@@ -378,9 +407,9 @@ This bridge is now the main integration entrypoint between the signed-in site se
 
 ### Phase E. Production Hardening
 
-1. Add bridge nonce and origin validation
-2. Add one-time bind code if `postMessage` is not enough
-3. Add token rotation and revocation UX
+1. Enforce bridge nonce and origin validation (`targetOrigin` + `bridgeNonce`, no `*` fallback)
+2. Add one-time bind code fallback (`/api/extension/bind/redeem`) if `postMessage` is not enough
+3. Add token rotation and revocation UX (`POST /extension/installations/rotate-session` + dashboard controls)
 4. Add installation disconnect flow
 5. Add audit events for bind, refresh failure, revoke, reconnect
 

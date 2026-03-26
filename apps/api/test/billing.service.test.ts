@@ -224,6 +224,7 @@ function createBillingService() {
     findWorkspaceBillingContext: async () => null,
     replacePlanCatalogEntry: async () => null,
     updateWorkspaceStripeCustomerId: async () => undefined,
+    updateWorkspaceProviderCustomerId: async () => undefined,
     updateSubscriptionLifecycle: async () => undefined,
   } as unknown as BillingRepository;
   const queueDispatchService = {
@@ -255,6 +256,15 @@ function createBillingService() {
     billingProvider: 'stripe',
     stripeSecretKey: 'sk_test_secret',
     stripeWebhookSecret: 'whsec_test_secret',
+    yookassaShopId: 'test-shop-id',
+    yookassaSecretKey: 'test-yookassa-secret',
+    yookassaWebhookSecret: 'test-yookassa-webhook-secret',
+    paddleApiKey: 'test-paddle-key',
+    paddleWebhookSecret: 'test-paddle-webhook-secret',
+    openRouterApiUrl: 'https://openrouter.ai/api/v1',
+    openRouterApiKey: 'sk-or-test_123456789',
+    openRouterAppName: 'QuizMind Test',
+    openRouterTimeoutMs: 30000,
     rateLimitWindowMs: 60000,
     rateLimitMaxRequests: 120,
     authRateLimitWindowMs: 900000,
@@ -558,6 +568,48 @@ test('BillingService.createCheckoutSession creates a Stripe customer when needed
   }
 });
 
+test('BillingService.createCheckoutSession supports YooKassa as a hosted-provider checkout flow', async () => {
+  const { service, billingRepository } = createBillingService();
+  const session = createCurrentSession();
+  let providerCustomerUpdate: Record<string, unknown> | null = null;
+
+  billingRepository.findWorkspaceBillingContext = async () =>
+    createWorkspaceContext({
+      billingProvider: 'yookassa',
+      providerCustomerId: 'yookassa:ws_1',
+      subscriptions: [
+        {
+          ...createWorkspaceContext().subscriptions[0],
+          provider: 'yookassa',
+          providerCustomerId: 'yookassa:ws_1',
+        },
+      ],
+    });
+  billingRepository.findActivePlanByCode = async () => createPlanCatalogRecord();
+  billingRepository.updateWorkspaceProviderCustomerId = async (input) => {
+    providerCustomerUpdate = input as unknown as Record<string, unknown>;
+  };
+
+  const result = await service.createCheckoutSession(session, {
+    workspaceId: 'ws_1',
+    planCode: 'pro',
+    interval: 'monthly',
+    provider: 'yookassa',
+  });
+
+  assert.equal(result.provider, 'yookassa');
+  assert.equal(result.providerCustomerId, 'yookassa:ws_1');
+  assert.equal(result.customerId, 'yookassa:ws_1');
+  assert.equal(result.providerPriceId, 'pro:monthly:usd');
+  assert.match(result.sessionId, /^yookassa:ws_1:/);
+  assert.match(result.redirectUrl, /provider=yookassa/);
+  assert.deepEqual(providerCustomerUpdate, {
+    workspaceId: 'ws_1',
+    provider: 'yookassa',
+    providerCustomerId: 'yookassa:ws_1',
+  });
+});
+
 test('BillingService.cancelSubscription updates Stripe and persists cancelAtPeriodEnd locally', async () => {
   const { service, billingRepository } = createBillingService();
   const session = createCurrentSession();
@@ -853,4 +905,54 @@ test('BillingService.ingestStripeWebhook rejects invalid Stripe signatures', asy
       return true;
     },
   );
+});
+
+test('BillingService.ingestYookassaWebhook persists a webhook event and queues processing', async () => {
+  const { service, billingWebhookRepository } = createBillingService();
+  let persistedInput: Record<string, unknown> | null = null;
+  const payload = Buffer.from(
+    JSON.stringify({
+      event: 'payment.succeeded',
+      object: {
+        id: 'yk_payment_123',
+        created_at: '2026-03-24T12:00:00.000Z',
+      },
+    }),
+    'utf8',
+  );
+
+  billingWebhookRepository.recordReceivedEvent = async (input: Record<string, unknown>) => {
+    persistedInput = input;
+
+    return {
+      duplicate: false,
+      record: {
+        id: 'webhook_yk_1',
+        provider: 'yookassa',
+        externalEventId: 'yk_payment_123',
+        eventType: 'payment.succeeded',
+        status: 'received',
+        payloadJson: input.payloadJson,
+        providerCreatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        processedAt: null,
+        lastError: null,
+        createdAt: new Date('2026-03-24T12:00:01.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:01.000Z'),
+        receivedAt: new Date('2026-03-24T12:00:01.000Z'),
+      },
+    };
+  };
+
+  const result = await service.ingestYookassaWebhook(payload);
+
+  assert.equal(result.accepted, true);
+  assert.equal(result.duplicate, false);
+  assert.equal(result.provider, 'yookassa');
+  assert.equal(result.eventId, 'yk_payment_123');
+  assert.equal(result.eventType, 'payment.succeeded');
+  assert.equal(result.queue, 'billing-webhooks');
+  assert.equal(result.jobId, 'billing-webhooks:yookassa:yk_payment_123');
+  assert.equal(persistedInput?.provider, 'yookassa');
+  assert.equal(persistedInput?.externalEventId, 'yk_payment_123');
+  assert.equal(persistedInput?.eventType, 'payment.succeeded');
 });

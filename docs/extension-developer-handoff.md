@@ -34,6 +34,7 @@ Available platform endpoints:
 - `GET /extension/installations`
 - `POST /extension/installations/bind`
 - `POST /extension/installations/disconnect`
+- `POST /extension/installations/rotate-session`
 - `POST /extension/bootstrap/v2`
 - `POST /extension/usage-events/v2`
 
@@ -167,14 +168,21 @@ The bind flow exists because the extension cannot safely own the site session co
 ### Recommended bridge URL
 
 ```text
-http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local
+http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&requestId=bind_123&bridgeNonce=<nonce>
 ```
+
+Required hardening query params:
+
+- `targetOrigin`: exact extension origin that should receive `postMessage`
+- `requestId`: caller correlation id for response matching
+- `bridgeNonce`: single-use nonce echoed by the bridge in every message envelope
 
 Recommended web files to build around this:
 
 - `apps/web/src/app/app/extension/connect/page.tsx`
 - `apps/web/src/app/app/extension/connect/extension-connect-client.tsx`
 - `apps/web/src/app/api/extension/bind/route.ts`
+- `apps/web/src/app/api/extension/bind/redeem/route.ts`
 
 ### Bind request
 
@@ -298,9 +306,30 @@ Recommended error envelope:
 Bridge security requirements:
 
 - validate `origin` on both sides
-- include `requestId` or nonce
+- include both `requestId` and `bridgeNonce`
 - do not broadcast to `*` when a strict target origin is known
 - close the bridge window after success or terminal failure
+
+### One-time bind code fallback
+
+If `window.postMessage` delivery fails, the bridge can return a temporary `fallbackCode` payload.
+Current fallback code storage is in-memory in the web runtime; switch to a shared store for multi-instance production deploys.
+
+Redeem once through:
+
+```http
+POST /api/extension/bind/redeem
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "<fallback_code>",
+  "installationId": "inst_123",
+  "requestId": "bind_123",
+  "bridgeNonce": "<nonce>"
+}
+```
 
 ## Bootstrap Flow
 
