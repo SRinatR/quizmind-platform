@@ -127,6 +127,7 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     sessionRepository,
     emailVerificationRepository,
     passwordResetRepository,
+    queueDispatchService,
   );
   const platformService = new PlatformService(
     {

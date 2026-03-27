@@ -39,6 +39,19 @@ test('buildQueueDedupeKey derives stable keys for billing and usage queue payloa
     'inst_123:2026-03-27T00:00:01.000Z:extension.quiz_answer_requested',
   );
   assert.equal(
+    buildQueueDedupeKey('quota-resets', {
+      workspaceId: 'ws_123',
+      key: 'limit.requests_per_day',
+      consumed: 42,
+      periodStart: '2026-03-26T00:00:00.000Z',
+      periodEnd: '2026-03-27T00:00:00.000Z',
+      nextPeriodStart: '2026-03-27T00:00:00.000Z',
+      nextPeriodEnd: '2026-03-28T00:00:00.000Z',
+      requestedAt: '2026-03-27T00:00:00.000Z',
+    }),
+    'ws_123:limit.requests_per_day:2026-03-27T00:00:00.000Z',
+  );
+  assert.equal(
     buildQueueDedupeKey('config-publish', {
       versionLabel: 'spring-rollout-v3',
       appliedLayerCount: 3,

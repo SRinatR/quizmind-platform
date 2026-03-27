@@ -27,7 +27,23 @@ function createAuthService() {
   const sessionRepository = {} as SessionRepository;
   const emailVerificationRepository = {} as EmailVerificationRepository;
   const passwordResetRepository = {} as PasswordResetRepository;
-  const service = new AuthService(userRepository, sessionRepository, emailVerificationRepository, passwordResetRepository);
+  const queueDispatchCalls: Array<Record<string, unknown>> = [];
+  const queueDispatchService = {
+    dispatch: async (request: Record<string, unknown>) => {
+      queueDispatchCalls.push(request);
+      return {
+        id: String(request.jobId ?? `${String(request.queue)}:${String(request.dedupeKey ?? 'test')}`),
+        queue: request.queue,
+      };
+    },
+  } as any;
+  const service = new AuthService(
+    userRepository,
+    sessionRepository,
+    emailVerificationRepository,
+    passwordResetRepository,
+    queueDispatchService,
+  );
 
   service['env'] = {
     nodeEnv: 'test',
@@ -53,7 +69,7 @@ function createAuthService() {
 
   service['logSecurityEvent'] = () => {};
 
-  return { service, sessionRepository, userRepository, passwordResetRepository };
+  return { service, sessionRepository, userRepository, passwordResetRepository, queueDispatchCalls };
 }
 
 test('AuthService.getCurrentSession keeps the mock-compatible session shape in connected mode', async () => {
@@ -177,7 +193,7 @@ test('AuthService.listSessions returns active sessions and marks the current ses
 });
 
 test('AuthService.requestPasswordReset persists a password reset token and responds with a generic accepted payload', async () => {
-  const { service, userRepository, passwordResetRepository } = createAuthService();
+  const { service, userRepository, passwordResetRepository, queueDispatchCalls } = createAuthService();
   let invalidatedUserId: string | null = null;
   let createdReset: Record<string, unknown> | null = null;
 
@@ -220,6 +236,10 @@ test('AuthService.requestPasswordReset persists a password reset token and respo
   assert.equal(invalidatedUserId, 'user_1');
   assert.equal(createdReset?.userId, 'user_1');
   assert.equal(typeof createdReset?.tokenHash, 'string');
+  assert.equal(queueDispatchCalls.length, 1);
+  assert.equal(queueDispatchCalls[0]?.queue, 'emails');
+  assert.equal((queueDispatchCalls[0]?.payload as Record<string, unknown>)?.templateKey, 'auth.password-reset');
+  assert.equal((queueDispatchCalls[0]?.payload as Record<string, unknown>)?.to, 'owner@quizmind.dev');
 });
 
 test('AuthService.resetPassword consumes the token, rotates sessions, and issues a fresh auth session', async () => {

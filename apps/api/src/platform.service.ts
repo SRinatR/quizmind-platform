@@ -46,6 +46,7 @@ import {
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
   type RemoteConfigSnapshot,
+  type QuotaResetJobPayload,
   supportTicketQueuePresets,
   type SupportImpersonationEndRequest,
   type SupportImpersonationEndResult,
@@ -841,8 +842,7 @@ export class PlatformService {
       subscription: mapSubscriptionRecordToSnapshot(subscription),
       overrides: mapEntitlementOverrides(subscription.workspace.entitlementOverrides),
     });
-
-    return {
+    const usageSnapshot: WorkspaceUsageSnapshot = {
       workspace: requestedWorkspace,
       accessDecision,
       planCode: summary.planCode,
@@ -863,6 +863,9 @@ export class PlatformService {
         aiRequests,
       }),
     };
+    await this.enqueueQuotaResetsForExpiredUsageQuotas(usageSnapshot);
+
+    return usageSnapshot;
   }
 
   listUsageHistory(
@@ -1006,6 +1009,56 @@ export class PlatformService {
       .filter((item) => (filters.installationId ? item.installationId === filters.installationId : true))
       .filter((item) => (filters.actorId ? item.actorId === filters.actorId : true))
       .slice(0, filters.limit);
+  }
+
+  private async enqueueQuotaResetsForExpiredUsageQuotas(summary: WorkspaceUsageSnapshot): Promise<void> {
+    const requestedAt = new Date().toISOString();
+    const dispatches: Array<Promise<unknown>> = [];
+
+    for (const quota of summary.quotas) {
+      if (quota.key === 'limit.seats') {
+        continue;
+      }
+
+      const periodStart = new Date(quota.periodStart);
+      const periodEnd = new Date(quota.periodEnd);
+
+      if (!Number.isFinite(periodStart.getTime()) || !Number.isFinite(periodEnd.getTime())) {
+        continue;
+      }
+
+      if (periodEnd.getTime() > Date.now()) {
+        continue;
+      }
+
+      const currentWindowMs = periodEnd.getTime() - periodStart.getTime();
+      const windowDurationMs = currentWindowMs > 0 ? currentWindowMs : 24 * 60 * 60 * 1000;
+      const queuePayload: QuotaResetJobPayload = {
+        workspaceId: summary.workspace.id,
+        key: quota.key,
+        consumed: quota.consumed,
+        periodStart: quota.periodStart,
+        periodEnd: quota.periodEnd,
+        nextPeriodStart: periodEnd.toISOString(),
+        nextPeriodEnd: new Date(periodEnd.getTime() + windowDurationMs).toISOString(),
+        requestedAt,
+      };
+
+      dispatches.push(
+        this.queueDispatchService.dispatch(
+          createQueueDispatchRequest({
+            queue: 'quota-resets',
+            payload: queuePayload,
+          }),
+        ),
+      );
+    }
+
+    if (dispatches.length === 0) {
+      return;
+    }
+
+    await Promise.all(dispatches);
   }
 
   exportUsage(personaKey?: string, request?: Partial<UsageExportRequest>): UsageExportResult {

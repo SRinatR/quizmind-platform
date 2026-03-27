@@ -165,6 +165,11 @@ export function buildQueueDedupeKey<TQueue extends PlatformQueue>(
     return `${usagePayload.installationId}:${usagePayload.occurredAt}:${usagePayload.eventType}`;
   }
 
+  if (queue === 'quota-resets') {
+    const quotaPayload = payload as QueuePayloadFor<'quota-resets'>;
+    return `${quotaPayload.workspaceId}:${quotaPayload.key}:${quotaPayload.nextPeriodStart}`;
+  }
+
   if (queue === 'config-publish') {
     const configPayload = payload as QueuePayloadFor<'config-publish'>;
     return `${configPayload.workspaceId ?? 'global'}:${configPayload.versionLabel}:${configPayload.publishedAt}`;

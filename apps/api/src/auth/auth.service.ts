@@ -35,10 +35,12 @@ import {
   type AuthSessionPayload,
   type AuthSessionsPayload,
   type AuthVerifyEmailResult,
+  type EmailQueueJobPayload,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { createSecurityLogEvent } from '@quizmind/logger';
 import { passwordResetTemplate, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
+import { createQueueDispatchRequest } from '@quizmind/queue';
 
 import { type AuthSessionRecord, SessionRepository } from './repositories/session.repository';
 import { type AuthUserRecord, UserRepository } from './repositories/user.repository';
@@ -46,6 +48,7 @@ import { EmailVerificationRepository } from './repositories/email-verification.r
 import { PasswordResetRepository } from './repositories/password-reset.repository';
 import { type CurrentSessionSnapshot, type RequestSessionMetadata } from './auth.types';
 import { createApiEmailAdapter } from '../email/email-adapter';
+import { QueueDispatchService } from '../queue/queue-dispatch.service';
 
 interface SessionIssueResult {
   payload: AuthSessionPayload;
@@ -66,6 +69,8 @@ export class AuthService {
     private readonly emailVerificationRepository: EmailVerificationRepository,
     @Inject(PasswordResetRepository)
     private readonly passwordResetRepository: PasswordResetRepository,
+    @Inject(QueueDispatchService)
+    private readonly queueDispatchService: QueueDispatchService,
   ) {}
 
   async register(request: AuthRegisterRequest, metadata: RequestSessionMetadata = {}): Promise<AuthExchangePayload> {
@@ -213,6 +218,17 @@ export class AuthService {
         expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
       },
     );
+    await this.enqueueEmailDeliveryJob({
+      to: user.email,
+      templateKey: 'auth.password-reset',
+      variables: {
+        productName: 'QuizMind',
+        displayName: user.displayName ?? undefined,
+        resetUrl: `${this.env.appUrl}/auth/reset-password?token=${resetToken}`,
+        expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+      },
+      requestedByUserId: user.id,
+    });
 
     this.logSecurityEvent('auth.password_reset_requested', user.id, {
       email,
@@ -492,12 +508,47 @@ export class AuthService {
         supportEmail: 'support@quizmind.dev',
       },
     );
+    await this.enqueueEmailDeliveryJob({
+      to: user.email,
+      templateKey: 'auth.verify-email',
+      variables: {
+        productName: 'QuizMind',
+        displayName: user.displayName ?? undefined,
+        verifyUrl: `${this.env.appUrl}/auth/verify?token=${verificationToken}`,
+        supportEmail: 'support@quizmind.dev',
+      },
+      requestedByUserId: user.id,
+    });
 
     return {
       required: true,
       delivery,
       emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
     };
+  }
+
+  private async enqueueEmailDeliveryJob(input: {
+    to: string;
+    templateKey: string;
+    variables: Record<string, unknown>;
+    workspaceId?: string;
+    requestedByUserId?: string;
+  }): Promise<void> {
+    const queuePayload: EmailQueueJobPayload = {
+      to: input.to,
+      templateKey: input.templateKey,
+      variables: input.variables,
+      requestedAt: new Date().toISOString(),
+      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
+      ...(input.requestedByUserId ? { requestedByUserId: input.requestedByUserId } : {}),
+    };
+
+    await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'emails',
+        payload: queuePayload,
+      }),
+    );
   }
 
   private async verifyBearerToken(accessToken: string) {

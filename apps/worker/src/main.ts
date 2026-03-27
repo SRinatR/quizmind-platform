@@ -122,6 +122,13 @@ async function bootstrap() {
           'quota-resets',
           async (job) => {
             const result = processQuotaResetJob(job.data as QuotaResetJobPayload);
+            await usageProcessingRepository.saveQuotaCounter({
+              workspaceId: result.nextCounter.workspaceId,
+              key: result.nextCounter.key,
+              consumed: result.nextCounter.consumed,
+              periodStart: new Date(result.nextCounter.periodStart),
+              periodEnd: new Date(result.nextCounter.periodEnd),
+            });
 
             console.log(JSON.stringify(result.logEvent));
             return result;

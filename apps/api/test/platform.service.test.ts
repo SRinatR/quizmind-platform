@@ -1205,7 +1205,8 @@ test('PlatformService.getSubscriptionForCurrentSession reads a persisted subscri
 });
 
 test('PlatformService.getUsageForCurrentSession maps persisted usage counters and telemetry snapshots', async () => {
-  const { service, subscriptionRepository, usageRepository } = createPlatformService();
+  const { service, subscriptionRepository, usageRepository, queueDispatchService } = createPlatformService();
+  const queueDispatchRequests: any[] = [];
 
   subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
   usageRepository.listInstallationsByWorkspaceId = async () =>
@@ -1280,6 +1281,18 @@ test('PlatformService.getUsageForCurrentSession maps persisted usage counters an
         occurredAt: new Date('2026-03-24T12:00:00.000Z'),
       },
     ] as any;
+  queueDispatchService.dispatch = async (request: any) => {
+    queueDispatchRequests.push(request);
+
+    return {
+      id: request.jobId ?? `${request.queue}:${request.dedupeKey ?? 'test'}`,
+      queue: request.queue,
+      payload: request.payload,
+      dedupeKey: request.dedupeKey,
+      createdAt: request.createdAt ?? '2026-03-24T12:30:00.000Z',
+      attempts: request.attempts ?? 1,
+    } as any;
+  };
 
   const result = await service.getUsageForCurrentSession(createConnectedSessionSnapshot(), 'ws_1');
 
@@ -1294,6 +1307,22 @@ test('PlatformService.getUsageForCurrentSession maps persisted usage counters an
   assert.equal(result.recentEvents[0]?.eventType, 'ai.proxy.completed');
   assert.equal(result.recentEvents[0]?.source, 'ai');
   assert.equal(result.recentEvents[0]?.actorId, 'user_1');
+  assert.equal(queueDispatchRequests.length, 1);
+  assert.deepEqual(queueDispatchRequests[0], {
+    queue: 'quota-resets',
+    payload: {
+      workspaceId: 'ws_1',
+      key: 'limit.requests_per_day',
+      consumed: 126,
+      periodStart: '2026-03-24T00:00:00.000Z',
+      periodEnd: '2026-03-25T00:00:00.000Z',
+      nextPeriodStart: '2026-03-25T00:00:00.000Z',
+      nextPeriodEnd: '2026-03-26T00:00:00.000Z',
+      requestedAt: (queueDispatchRequests[0]?.payload as Record<string, unknown>)?.requestedAt,
+    },
+    dedupeKey: 'ws_1:limit.requests_per_day:2026-03-25T00:00:00.000Z',
+    attempts: 3,
+  });
 });
 
 test('PlatformService.getUsageForCurrentSession denies principals without usage:read', async () => {
@@ -1474,7 +1503,7 @@ test('PlatformService.listUsageHistoryForCurrentSession rejects incompatible sou
 
 test('PlatformService.exportUsageForCurrentSession exports scoped usage data for principals with usage:export', async () => {
   const { service, subscriptionRepository, usageRepository, queueDispatchService } = createPlatformService();
-  let capturedQueueRequest: any = null;
+  const queueDispatchRequests: any[] = [];
 
   subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
   usageRepository.listInstallationsByWorkspaceId = async () =>
@@ -1528,7 +1557,7 @@ test('PlatformService.exportUsageForCurrentSession exports scoped usage data for
       },
     ] as any;
   queueDispatchService.dispatch = async (request: any) => {
-    capturedQueueRequest = request;
+    queueDispatchRequests.push(request);
 
     return {
       id: 'audit-exports:test-job',
@@ -1550,7 +1579,11 @@ test('PlatformService.exportUsageForCurrentSession exports scoped usage data for
   assert.equal(result.scope, 'events');
   assert.match(result.fileName, /^usage-demo-workspace-events-/);
   assert.match(result.content, /extension\.quiz_answer_requested/);
-  assert.deepEqual(capturedQueueRequest, {
+  assert.equal(queueDispatchRequests.length, 2);
+  const auditExportQueueRequest = queueDispatchRequests.find((request) => request.queue === 'audit-exports');
+  const quotaResetQueueRequest = queueDispatchRequests.find((request) => request.queue === 'quota-resets');
+
+  assert.deepEqual(auditExportQueueRequest, {
     queue: 'audit-exports',
     payload: {
       exportType: 'usage',
@@ -1563,6 +1596,21 @@ test('PlatformService.exportUsageForCurrentSession exports scoped usage data for
       requestedByUserId: 'user_1',
     },
     attempts: 2,
+  });
+  assert.deepEqual(quotaResetQueueRequest, {
+    queue: 'quota-resets',
+    payload: {
+      workspaceId: 'ws_1',
+      key: 'limit.requests_per_day',
+      consumed: 126,
+      periodStart: '2026-03-24T00:00:00.000Z',
+      periodEnd: '2026-03-25T00:00:00.000Z',
+      nextPeriodStart: '2026-03-25T00:00:00.000Z',
+      nextPeriodEnd: '2026-03-26T00:00:00.000Z',
+      requestedAt: (quotaResetQueueRequest?.payload as Record<string, unknown>)?.requestedAt,
+    },
+    dedupeKey: 'ws_1:limit.requests_per_day:2026-03-25T00:00:00.000Z',
+    attempts: 3,
   });
 });
 
