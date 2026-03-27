@@ -1,26 +1,36 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { createNoopEmailAdapter } from '@quizmind/email';
+
 import { processAuditExportJob } from '../src/jobs/process-audit-export';
 import { processEmailJob } from '../src/jobs/process-email';
 import { processEntitlementRefreshJob } from '../src/jobs/process-entitlement-refresh';
 import { processQuotaResetJob } from '../src/jobs/process-quota-reset';
 
-test('processEmailJob emits delivery logs for transactional email queue work', () => {
-  const result = processEmailJob({
-    to: 'owner@quizmind.dev',
-    templateKey: 'auth.verify-email',
-    variables: {
-      productName: 'QuizMind',
+test('processEmailJob emits delivery logs for transactional email queue work', async () => {
+  const result = await processEmailJob(
+    {
+      to: 'owner@quizmind.dev',
+      templateKey: 'auth.verify-email',
+      variables: {
+        productName: 'QuizMind',
+        displayName: 'Owner',
+        verifyUrl: 'http://localhost:3000/auth/verify?token=test-token',
+        supportEmail: 'support@quizmind.dev',
+      },
+      requestedAt: '2026-03-27T12:00:00.000Z',
+      workspaceId: 'ws_1',
+      requestedByUserId: 'user_1',
     },
-    requestedAt: '2026-03-27T12:00:00.000Z',
-    workspaceId: 'ws_1',
-    requestedByUserId: 'user_1',
-  });
+    createNoopEmailAdapter(),
+  );
 
   assert.equal(result.delivered, true);
   assert.equal(result.logEvent.eventType, 'email.delivered');
   assert.equal(result.logEvent.targetId, 'owner@quizmind.dev');
+  assert.equal(result.provider, 'noop');
+  assert.equal(result.messageId, 'noop:auth.verify-email:owner@quizmind.dev');
 });
 
 test('processQuotaResetJob resets counters for the next billing window', () => {

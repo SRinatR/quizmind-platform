@@ -96,6 +96,9 @@ export interface WebEnv {
 
 export interface WorkerEnv extends PlatformEnv {
   heartbeatIntervalMs: number;
+  emailProvider: 'noop' | 'resend';
+  emailFrom: string;
+  resendApiKey?: string;
   s3Bucket?: string;
   s3Endpoint?: string;
 }
@@ -220,6 +223,9 @@ export function loadWorkerEnv(source: EnvSource = process.env): WorkerEnv {
   return {
     ...platformEnv,
     heartbeatIntervalMs: readNumberEnv(source, 'WORKER_HEARTBEAT_MS', 30000),
+    emailProvider: resolveEmailProvider(source),
+    emailFrom: source.EMAIL_FROM ?? 'noreply@quizmind.local',
+    resendApiKey: source.RESEND_API_KEY,
     s3Bucket: source.S3_BUCKET,
     s3Endpoint: source.S3_ENDPOINT,
   };
@@ -452,6 +458,23 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
 
   if (!isBlank(env.s3Endpoint) && isBlank(env.s3Bucket)) {
     issues.push({ key: 'S3_BUCKET', message: 'S3_BUCKET is required when S3_ENDPOINT is set.' });
+  }
+
+  if (env.emailProvider === 'resend' && isBlank(env.resendApiKey)) {
+    issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required when EMAIL_PROVIDER=resend.' });
+  }
+
+  if (env.nodeEnv === 'production') {
+    if (env.emailProvider !== 'resend') {
+      issues.push({
+        key: 'EMAIL_PROVIDER',
+        message: 'EMAIL_PROVIDER must be set to "resend" in production so email queue jobs are delivered.',
+      });
+    }
+
+    if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
+      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production.' });
+    }
   }
 
   return issues;

@@ -9,20 +9,84 @@ import {
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
 } from '@quizmind/contracts';
+import { createNoopEmailAdapter } from '@quizmind/email';
 import { queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
-import { Queue, Worker } from 'bullmq';
+import { type Job, Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
+import { createWorkerEmailAdapter } from './email/email-adapter';
 import { processAuditExportJob } from './jobs/process-audit-export';
 import { processBillingWebhookJob } from './jobs/process-billing-webhook';
+import {
+  buildEmailJobFailedDomainEvent,
+  buildEmailJobProcessedDomainEvent,
+  type EmailJobDomainEventInput,
+  type EmailQueueJobContext,
+} from './jobs/email-job-domain-event';
 import { processEmailJob } from './jobs/process-email';
 import { processEntitlementRefreshJob } from './jobs/process-entitlement-refresh';
 import { processQuotaResetJob } from './jobs/process-quota-reset';
 import { processUsageEvent, processUsageEventJob } from './jobs/process-usage-event';
 import { propagateRemoteConfigPublish } from './jobs/publish-remote-config';
 import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
+import { WorkerDomainEventRepository } from './repositories/domain-event.repository';
 import { WorkerUsageProcessingRepository } from './repositories/usage-processing.repository';
+
+function resolveEmailQueueJobContext(job: Job<EmailQueueJobPayload>): EmailQueueJobContext {
+  return {
+    queueName: job.queueName || 'emails',
+    queueJobId: typeof job.id === 'number' || typeof job.id === 'string' ? String(job.id) : 'unknown',
+    attemptNumber: job.attemptsMade + 1,
+    processedAt: new Date().toISOString(),
+  };
+}
+
+function readErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error;
+  }
+
+  return 'Unknown error';
+}
+
+async function persistEmailDomainEvent(
+  repository: WorkerDomainEventRepository,
+  domainEvent: EmailJobDomainEventInput,
+  queueContext: EmailQueueJobContext,
+) {
+  try {
+    await repository.create(domainEvent);
+  } catch (error) {
+    console.log(
+      JSON.stringify(
+        createLogEvent({
+          eventId: `worker:email-domain-event:persist-failed:${queueContext.queueJobId}:${Date.now()}`,
+          eventType: 'platform.worker_domain_event_persist_failed',
+          actorId: 'worker',
+          actorType: 'system',
+          targetType: 'queue_job',
+          targetId: queueContext.queueJobId,
+          occurredAt: new Date().toISOString(),
+          category: 'system',
+          severity: 'warn',
+          status: 'failure',
+          metadata: {
+            queue: queueContext.queueName,
+            queueAttempt: queueContext.attemptNumber,
+            domainEventType: domainEvent.eventType,
+            workspaceId: domainEvent.workspaceId,
+            message: readErrorMessage(error),
+          },
+        }),
+      ),
+    );
+  }
+}
 
 async function bootstrap() {
   const env = loadWorkerEnv();
@@ -62,6 +126,7 @@ async function bootstrap() {
 
   if (env.runtimeMode === 'connected') {
     try {
+      const emailAdapter = createWorkerEmailAdapter(env);
       prisma = new PrismaClient(
         createPrismaClientOptions(env.databaseUrl, env.nodeEnv === 'development' ? ['warn', 'error'] : ['error']),
       );
@@ -81,6 +146,7 @@ async function bootstrap() {
       );
       const billingWebhookRepository = new WorkerBillingProcessingRepository(prisma);
       const usageProcessingRepository = new WorkerUsageProcessingRepository(prisma);
+      const domainEventRepository = new WorkerDomainEventRepository(prisma);
       const queueWorkers = [
         new Worker(
           'billing-webhooks',
@@ -109,10 +175,47 @@ async function bootstrap() {
         new Worker(
           'emails',
           async (job) => {
-            const result = processEmailJob(job.data as EmailQueueJobPayload);
+            const payload = job.data as EmailQueueJobPayload;
+            const queueContext = resolveEmailQueueJobContext(job as Job<EmailQueueJobPayload>);
 
-            console.log(JSON.stringify(result.logEvent));
-            return result;
+            try {
+              const result = await processEmailJob(payload, emailAdapter);
+              const processedEvent = buildEmailJobProcessedDomainEvent(payload, result, queueContext);
+
+              await persistEmailDomainEvent(domainEventRepository, processedEvent, queueContext);
+              console.log(JSON.stringify(result.logEvent));
+
+              return result;
+            } catch (error) {
+              const failedEvent = buildEmailJobFailedDomainEvent(payload, error, queueContext);
+
+              await persistEmailDomainEvent(domainEventRepository, failedEvent, queueContext);
+              console.log(
+                JSON.stringify(
+                  createLogEvent({
+                    eventId: `email:failed:${queueContext.queueJobId}:${Date.now()}`,
+                    eventType: 'email.delivery_failed',
+                    actorId: payload.requestedByUserId ?? 'system',
+                    actorType: payload.requestedByUserId ? 'user' : 'system',
+                    workspaceId: payload.workspaceId,
+                    targetType: 'email',
+                    targetId: payload.to,
+                    occurredAt: queueContext.processedAt,
+                    category: 'system',
+                    severity: 'error',
+                    status: 'failure',
+                    metadata: {
+                      queue: queueContext.queueName,
+                      queueJobId: queueContext.queueJobId,
+                      queueAttempt: queueContext.attemptNumber,
+                      templateKey: payload.templateKey,
+                      message: readErrorMessage(error),
+                    },
+                  }),
+                ),
+              );
+              throw error;
+            }
           },
           {
             connection: redisConnectionOptions,
@@ -271,16 +374,22 @@ async function runDryRun() {
     actorId: 'user_platform_admin',
     workspaceId: 'ws_alpha',
   });
-  const emailResult = processEmailJob({
-    to: 'owner@quizmind.dev',
-    templateKey: 'auth.verify-email',
-    variables: {
-      displayName: 'QuizMind Owner',
+  const emailResult = await processEmailJob(
+    {
+      to: 'owner@quizmind.dev',
+      templateKey: 'auth.verify-email',
+      variables: {
+        displayName: 'QuizMind Owner',
+        productName: 'QuizMind',
+        verifyUrl: 'http://localhost:3000/auth/verify?token=dry-run-token',
+        supportEmail: 'support@quizmind.dev',
+      },
+      requestedAt: new Date().toISOString(),
+      workspaceId: 'ws_alpha',
+      requestedByUserId: 'user_platform_admin',
     },
-    requestedAt: new Date().toISOString(),
-    workspaceId: 'ws_alpha',
-    requestedByUserId: 'user_platform_admin',
-  });
+    createNoopEmailAdapter('worker-dry-run'),
+  );
   const quotaResetResult = processQuotaResetJob(
     {
       workspaceId: 'ws_alpha',

@@ -34,6 +34,7 @@ function createAuthService() {
       return {
         id: String(request.jobId ?? `${String(request.queue)}:${String(request.dedupeKey ?? 'test')}`),
         queue: request.queue,
+        createdAt: '2026-03-24T12:00:00.000Z',
       };
     },
   } as any;

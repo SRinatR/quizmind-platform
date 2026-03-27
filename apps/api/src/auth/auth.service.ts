@@ -30,6 +30,7 @@ import {
   type AuthLogoutResult,
   type AuthRefreshRequest,
   type AuthRegisterRequest,
+  type AuthEmailVerificationStatus,
   type AuthResetPasswordRequest,
   type AuthResetPasswordResult,
   type AuthSessionPayload,
@@ -39,7 +40,12 @@ import {
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { createSecurityLogEvent } from '@quizmind/logger';
-import { passwordResetTemplate, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
+import {
+  passwordResetTemplate,
+  sendTemplatedEmail,
+  type EmailTemplate,
+  verifyEmailTemplate,
+} from '@quizmind/email';
 import { createQueueDispatchRequest } from '@quizmind/queue';
 
 import { type AuthSessionRecord, SessionRepository } from './repositories/session.repository';
@@ -207,17 +213,6 @@ export class AuthService {
       tokenHash: resetTokenHash,
       expiresAt,
     });
-    await sendTemplatedEmail(
-      this.emailAdapter,
-      passwordResetTemplate,
-      user.email,
-      {
-        productName: 'QuizMind',
-        displayName: user.displayName ?? undefined,
-        resetUrl: `${this.env.appUrl}/auth/reset-password?token=${resetToken}`,
-        expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
-      },
-    );
     await this.enqueueEmailDeliveryJob({
       to: user.email,
       templateKey: 'auth.password-reset',
@@ -227,6 +222,7 @@ export class AuthService {
         resetUrl: `${this.env.appUrl}/auth/reset-password?token=${resetToken}`,
         expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
       },
+      fallbackTemplate: passwordResetTemplate,
       requestedByUserId: user.id,
     });
 
@@ -497,18 +493,7 @@ export class AuthService {
       expiresAt,
     });
 
-    const delivery = await sendTemplatedEmail(
-      this.emailAdapter,
-      verifyEmailTemplate,
-      user.email,
-      {
-        productName: 'QuizMind',
-        displayName: user.displayName ?? undefined,
-        verifyUrl: `${this.env.appUrl}/auth/verify?token=${verificationToken}`,
-        supportEmail: 'support@quizmind.dev',
-      },
-    );
-    await this.enqueueEmailDeliveryJob({
+    const delivery = await this.enqueueEmailDeliveryJob({
       to: user.email,
       templateKey: 'auth.verify-email',
       variables: {
@@ -517,6 +502,7 @@ export class AuthService {
         verifyUrl: `${this.env.appUrl}/auth/verify?token=${verificationToken}`,
         supportEmail: 'support@quizmind.dev',
       },
+      fallbackTemplate: verifyEmailTemplate,
       requestedByUserId: user.id,
     });
 
@@ -529,11 +515,12 @@ export class AuthService {
 
   private async enqueueEmailDeliveryJob(input: {
     to: string;
-    templateKey: string;
+    templateKey: EmailQueueJobPayload['templateKey'];
     variables: Record<string, unknown>;
+    fallbackTemplate: EmailTemplate<any>;
     workspaceId?: string;
     requestedByUserId?: string;
-  }): Promise<void> {
+  }): Promise<NonNullable<AuthEmailVerificationStatus['delivery']>> {
     const queuePayload: EmailQueueJobPayload = {
       to: input.to,
       templateKey: input.templateKey,
@@ -543,12 +530,33 @@ export class AuthService {
       ...(input.requestedByUserId ? { requestedByUserId: input.requestedByUserId } : {}),
     };
 
-    await this.queueDispatchService.dispatch(
-      createQueueDispatchRequest({
-        queue: 'emails',
-        payload: queuePayload,
-      }),
-    );
+    try {
+      const queueJob = await this.queueDispatchService.dispatch(
+        createQueueDispatchRequest({
+          queue: 'emails',
+          payload: queuePayload,
+        }),
+      );
+
+      return {
+        provider: 'queue',
+        messageId: queueJob.id,
+        acceptedAt: queueJob.createdAt,
+      };
+    } catch {
+      const fallbackDelivery = await sendTemplatedEmail(
+        this.emailAdapter,
+        input.fallbackTemplate,
+        input.to,
+        input.variables,
+      );
+
+      return {
+        provider: fallbackDelivery.provider,
+        messageId: fallbackDelivery.messageId,
+        acceptedAt: fallbackDelivery.acceptedAt,
+      };
+    }
   }
 
   private async verifyBearerToken(accessToken: string) {

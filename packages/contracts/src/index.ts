@@ -1065,9 +1065,12 @@ export interface UsageExportResult {
   content: string;
 }
 
+export const emailQueueTemplateKeys = ['auth.verify-email', 'auth.password-reset', 'workspace.invitation'] as const;
+export type EmailQueueTemplateKey = (typeof emailQueueTemplateKeys)[number];
+
 export interface EmailQueueJobPayload {
   to: string;
-  templateKey: string;
+  templateKey: EmailQueueTemplateKey;
   variables: Record<string, unknown>;
   requestedAt: string;
   workspaceId?: string;

@@ -55,7 +55,8 @@ test('Prisma-backed register persists the user, session, and email verification 
   assert.equal(result.session.user.displayName, 'Integration User');
   assert.ok(result.session.accessToken.length > 20);
   assert.equal(result.emailVerification.required, true);
-  assert.equal(result.emailVerification.delivery?.provider, 'noop');
+  assert.equal(result.emailVerification.delivery?.provider, 'queue');
+  assert.match(result.emailVerification.delivery?.messageId ?? '', /^emails:/);
   assert.equal(user.displayName, 'Integration User');
   assert.equal(user.emailVerifiedAt ?? null, null);
   assert.equal(sessions.length, 1);
