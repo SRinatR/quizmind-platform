@@ -7,6 +7,13 @@ import {
   type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { useEffect, useRef, useState } from 'react';
+import {
+  normalizeBridgeMode,
+  normalizeBridgeNonce,
+  normalizeRelayUrl,
+  normalizeTargetOrigin,
+  resolveBridgeIssues,
+} from './connect-bridge';
 
 interface ExtensionConnectClientProps {
   currentUserLabel: string;
@@ -14,6 +21,7 @@ interface ExtensionConnectClientProps {
   missingFields: string[];
   bridgeNonce?: string;
   bridgeMode?: string;
+  platformOriginWarning?: string | null;
   relayUrl?: string;
   requestId?: string;
   targetOrigin?: string;
@@ -32,72 +40,6 @@ interface BindRouteResponse {
   error?: {
     message?: string;
   };
-}
-
-function normalizeTargetOrigin(value?: string): string | null {
-  const normalized = value?.trim();
-
-  if (!normalized) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(normalized);
-
-    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
-      return parsed.origin;
-    }
-
-    if (parsed.protocol === 'chrome-extension:' || parsed.protocol === 'moz-extension:') {
-      return `${parsed.protocol}//${parsed.host}`;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function normalizeBridgeNonce(value?: string): string | null {
-  const normalized = value?.trim();
-
-  if (!normalized || normalized.length < 8 || normalized.length > 128) {
-    return null;
-  }
-
-  return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : null;
-}
-
-function normalizeBridgeMode(value?: string): 'bind_result' | 'fallback_code' {
-  const normalized = value?.trim().toLowerCase();
-
-  return normalized === 'fallback_code' ? 'fallback_code' : 'bind_result';
-}
-
-function normalizeRelayUrl(value?: string, expectedTargetOrigin?: string | null): string | null {
-  const normalized = value?.trim();
-
-  if (!normalized) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(normalized);
-
-    if (parsed.protocol !== 'chrome-extension:' && parsed.protocol !== 'moz-extension:') {
-      return null;
-    }
-
-    const relayOrigin = `${parsed.protocol}//${parsed.host}`;
-
-    if (expectedTargetOrigin && relayOrigin !== expectedTargetOrigin) {
-      return null;
-    }
-
-    return parsed.toString();
-  } catch {
-    return null;
-  }
 }
 
 function encodeBase64UrlJson(value: unknown): string {
@@ -160,6 +102,7 @@ export function ExtensionConnectClient({
   missingFields,
   bridgeNonce,
   bridgeMode,
+  platformOriginWarning,
   relayUrl,
   requestId,
   targetOrigin,
@@ -192,15 +135,25 @@ export function ExtensionConnectClient({
     bridgeModePreference === 'fallback_code' && resolvedBridgeNonce && resolvedTargetOrigin
       ? 'fallback_code'
       : 'bind_result';
-  const bridgeSecurityIssue =
-    hasBridgeTarget && !resolvedTargetOrigin
-      ? 'Secure bridge requires a valid targetOrigin query parameter.'
-      : hasBridgeTarget && !resolvedBridgeNonce
-        ? 'Secure bridge requires a valid bridgeNonce query parameter.'
-        : null;
+  const { bridgeSecurityIssue, bridgeReturnChannelIssue } = resolveBridgeIssues({
+    hasBridgeTarget,
+    rawRelayUrl: relayUrl,
+    resolvedRelayUrl,
+    resolvedTargetOrigin,
+    resolvedBridgeNonce,
+  });
 
   const canConnect =
-    Boolean(initialRequest) && missingFields.length === 0 && !isSubmitting && !bridgeSecurityIssue;
+    Boolean(initialRequest) &&
+    missingFields.length === 0 &&
+    !isSubmitting &&
+    !bridgeSecurityIssue &&
+    !bridgeReturnChannelIssue;
+  const resultChannelLabel = hasBridgeTarget
+    ? 'window.postMessage'
+    : resolvedRelayUrl
+      ? 'relay.redirect'
+      : 'unavailable';
 
   function postBridgeMessage(message: Record<string, unknown>) {
     const bridgeTarget = resolveBridgeTarget();
@@ -239,6 +192,12 @@ export function ExtensionConnectClient({
 
     if (bridgeSecurityIssue) {
       setErrorMessage(bridgeSecurityIssue);
+      setStatusMessage(null);
+      return;
+    }
+
+    if (bridgeReturnChannelIssue) {
+      setErrorMessage(bridgeReturnChannelIssue);
       setStatusMessage(null);
       return;
     }
@@ -318,7 +277,7 @@ export function ExtensionConnectClient({
             ? 'Extension connected. Returning the installation session to the opener...'
             : resolvedRelayUrl
               ? 'Extension connected. Returning the installation session through extension relay...'
-              : 'Extension connected. You can return to the extension now.',
+              : 'Installation bound on site, but automatic return to extension is unavailable.',
       );
 
       const deliveredToBridge = postBridgeMessage(bridgeEnvelope);
@@ -346,6 +305,13 @@ export function ExtensionConnectClient({
           setStatusMessage('Installation connected on site, but secure bridge delivery did not complete.');
           setErrorMessage('Reopen the bridge from the extension with a valid targetOrigin and bridgeNonce.');
         }
+        return;
+      }
+
+      if (!hasBridgeTarget && !resolvedRelayUrl) {
+        setErrorMessage(
+          'Site bind succeeded, but extension return channel is missing. Reopen bridge from extension popup/window or provide relayUrl.',
+        );
         return;
       }
 
@@ -417,7 +383,22 @@ export function ExtensionConnectClient({
   }, [bridgeSecurityIssue]);
 
   useEffect(() => {
-    if (autoBindAttemptedRef.current || !initialRequest || missingFields.length > 0 || bridgeSecurityIssue) {
+    if (!bridgeReturnChannelIssue) {
+      return;
+    }
+
+    setStatusMessage(null);
+    setErrorMessage(bridgeReturnChannelIssue);
+  }, [bridgeReturnChannelIssue]);
+
+  useEffect(() => {
+    if (
+      autoBindAttemptedRef.current ||
+      !initialRequest ||
+      missingFields.length > 0 ||
+      bridgeSecurityIssue ||
+      bridgeReturnChannelIssue
+    ) {
       return;
     }
 
@@ -427,7 +408,7 @@ export function ExtensionConnectClient({
 
     autoBindAttemptedRef.current = true;
     void handleConnect();
-  }, [bridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
+  }, [bridgeReturnChannelIssue, bridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
 
   return (
     <div className="auth-form-shell">
@@ -500,6 +481,22 @@ export function ExtensionConnectClient({
         </div>
       ) : null}
 
+      {platformOriginWarning ? (
+        <div className="auth-highlight">
+          <span className="micro-label">Bridge origin</span>
+          <strong>Bridge launch origin mismatch detected.</strong>
+          <p>{platformOriginWarning}</p>
+        </div>
+      ) : null}
+
+      {bridgeReturnChannelIssue ? (
+        <div className="auth-highlight">
+          <span className="micro-label">Return channel</span>
+          <strong>Automatic return to extension is not available in this tab context.</strong>
+          <p>{bridgeReturnChannelIssue}</p>
+        </div>
+      ) : null}
+
       <div className="auth-form-actions">
         <button className="btn-primary" disabled={!canConnect} onClick={() => void handleConnect()} type="button">
           {isSubmitting ? 'Connecting...' : bindResult ? 'Reconnect installation' : 'Connect extension'}
@@ -566,7 +563,9 @@ export function ExtensionConnectClient({
 
       <div className="auth-highlight">
         <span className="micro-label">Bridge transport</span>
-        <strong>Result channel: `window.postMessage`</strong>
+        <strong>
+          Result channel: <span className="monospace">{resultChannelLabel}</span>
+        </strong>
         <p>
           Request id: <span className="monospace">{bridgeRequestIdRef.current}</span>
           {' '}| Target origin: <span className="monospace">{resolvedTargetOrigin ?? 'missing/invalid'}</span>

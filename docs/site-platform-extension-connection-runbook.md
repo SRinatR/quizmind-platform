@@ -198,15 +198,22 @@ Recommended extension action:
 - open a web page such as:
 
 ```text
-http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&requestId=bind_123&bridgeNonce=<nonce>&bridgeMode=fallback_code
+http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&relayUrl=chrome-extension://<extension-id>/relay.html&requestId=bind_123&bridgeNonce=<nonce>&bridgeMode=fallback_code
 ```
 
 Required for hardened bridge exchange:
 
 - `targetOrigin`: strict receiver origin for `window.postMessage`
+- `relayUrl`: extension relay callback URL; must have the same extension origin as `targetOrigin`
 - `requestId`: correlation id for bind request/response pairing
 - `bridgeNonce`: nonce echoed by the bridge in every outbound envelope
 - `bridgeMode`: optional bridge response mode (`fallback_code` is recommended for auto-redeem fallback)
+
+Fail-closed behavior in the site bridge:
+
+- bind is blocked when no automatic return channel exists (no opener/parent and no valid `relayUrl`)
+- bind is blocked when secure bridge headers are incomplete for return delivery (`targetOrigin` or `bridgeNonce` missing)
+- bind is blocked when `relayUrl` origin does not match `targetOrigin`
 
 Current web bridge implementation:
 
@@ -480,6 +487,10 @@ Current implementation status:
 - extension bridge page now accepts both CSV and JSON-array `capabilities` query payloads and normalizes malformed bracket/quote wrappers from external launchers
 - extension bridge unauthenticated auth intent now honors `mode=signup` vs `mode=login` and routes to register/login with `next` preservation
 - extension bridge can now return bind envelopes through extension relay navigation when `relayUrl` is present and opener/parent messaging is unavailable
+- extension bridge now fails closed when secure return prerequisites are broken:
+  - blocks bind when neither opener/parent nor valid `relayUrl` is present
+  - blocks bind when secure headers are incomplete for return delivery (`targetOrigin`/`bridgeNonce`)
+  - blocks bind when `relayUrl` origin does not match `targetOrigin`
 - API runtime now uses distributed Redis-backed rate limiting in connected mode:
   - global guard keeps per-route/per-identity limits consistent across multiple API instances
   - rate-limit identity now relies on trusted request/socket IP data instead of raw spoofable forwarded headers

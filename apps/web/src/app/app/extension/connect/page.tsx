@@ -33,6 +33,26 @@ function readBrowserSearchParam(value: string | string[] | undefined): Compatibi
   return normalized as CompatibilityHandshake['browser'];
 }
 
+function normalizeHttpOrigin(value: string | undefined): string | undefined {
+  const normalized = value?.trim();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return undefined;
+    }
+
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+}
+
 function buildCurrentPath(searchParams?: Record<string, string | string[] | undefined>) {
   const params = new URLSearchParams();
 
@@ -70,6 +90,12 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
   const requestId = readTrimmedSearchParam(resolvedSearchParams?.requestId);
   const bridgeMode = readTrimmedSearchParam(resolvedSearchParams?.bridgeMode);
   const relayUrl = readTrimmedSearchParam(resolvedSearchParams?.relayUrl);
+  const platformOrigin = normalizeHttpOrigin(readTrimmedSearchParam(resolvedSearchParams?.platformOrigin));
+  const configuredPlatformOrigin = normalizeHttpOrigin(process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL);
+  const platformOriginWarning =
+    platformOrigin && configuredPlatformOrigin && platformOrigin !== configuredPlatformOrigin
+      ? `Bridge URL declares platformOrigin=${platformOrigin}, but the site is configured as ${configuredPlatformOrigin}. Keep one environment origin for extension launch and auth redirect.`
+      : null;
   const authMode = resolveAuthMode(resolvedSearchParams?.mode);
   const capabilities = Array.from(
     new Set([
@@ -146,6 +172,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           missingFields={missingFields}
           bridgeNonce={bridgeNonce}
           bridgeMode={bridgeMode}
+          platformOriginWarning={platformOriginWarning}
           relayUrl={relayUrl}
           requestId={requestId}
           targetOrigin={targetOrigin}
@@ -184,6 +211,14 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
               <span className="micro-label">Missing parameters</span>
               <strong>The extension did not open the bridge with a full handshake.</strong>
               <p>{missingFields.join(', ')}</p>
+            </div>
+          ) : null}
+
+          {platformOriginWarning ? (
+            <div className="auth-highlight">
+              <span className="micro-label">Bridge origin</span>
+              <strong>Bridge launch origin mismatch detected.</strong>
+              <p>{platformOriginWarning}</p>
             </div>
           ) : null}
 
