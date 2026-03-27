@@ -263,3 +263,10 @@ export function buildExtensionBootstrapV2(input: {
     issuedAt: input.issuedAt ?? new Date().toISOString(),
   };
 }
+
+export * from './platform-auth';
+export * from './platform-bootstrap';
+export * from './platform-runtime';
+export * from './platform-state';
+export * from './platform-telemetry';
+export * from './platform-ui';

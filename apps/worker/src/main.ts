@@ -2,15 +2,25 @@ import 'dotenv/config';
 
 import { createPrismaClientOptions, PrismaClient } from '@quizmind/database';
 import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
-import { queueNames } from '@quizmind/queue';
+import {
+  type AuditExportJobPayload,
+  type EmailQueueJobPayload,
+  type EntitlementRefreshJobPayload,
+  type QuotaResetJobPayload,
+  type RemoteConfigPublishResult,
+} from '@quizmind/contracts';
+import { queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
 import { createLogEvent } from '@quizmind/logger';
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
+import { processAuditExportJob } from './jobs/process-audit-export';
 import { processBillingWebhookJob } from './jobs/process-billing-webhook';
+import { processEmailJob } from './jobs/process-email';
+import { processEntitlementRefreshJob } from './jobs/process-entitlement-refresh';
+import { processQuotaResetJob } from './jobs/process-quota-reset';
 import { processUsageEvent, processUsageEventJob } from './jobs/process-usage-event';
 import { propagateRemoteConfigPublish } from './jobs/publish-remote-config';
-import { resetQuotaCounter } from './jobs/reset-quota-counter';
 import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
 import { WorkerUsageProcessingRepository } from './repositories/usage-processing.repository';
 
@@ -22,14 +32,7 @@ async function bootstrap() {
     throw new Error(`Invalid worker environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
   }
   const startedAt = new Date().toISOString();
-  const redisUrl = new URL(env.redisUrl);
-  const redisConnectionOptions = {
-    db: redisUrl.pathname ? Number(redisUrl.pathname.slice(1) || '0') : undefined,
-    host: redisUrl.hostname,
-    password: redisUrl.password || undefined,
-    port: Number(redisUrl.port || 6379),
-    username: redisUrl.username || undefined,
-  };
+  const redisConnectionOptions = resolveRedisConnectionOptions(env.redisUrl);
 
   console.log(
     JSON.stringify(
@@ -95,6 +98,66 @@ async function bootstrap() {
           'usage-events',
           async (job) => {
             const result = await processUsageEventJob(job.data, usageProcessingRepository);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'emails',
+          async (job) => {
+            const result = processEmailJob(job.data as EmailQueueJobPayload);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'quota-resets',
+          async (job) => {
+            const result = processQuotaResetJob(job.data as QuotaResetJobPayload);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'entitlement-refresh',
+          async (job) => {
+            const result = processEntitlementRefreshJob(job.data as EntitlementRefreshJobPayload);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'config-publish',
+          async (job) => {
+            const result = propagateRemoteConfigPublish(job.data as RemoteConfigPublishResult);
+
+            console.log(JSON.stringify(result.logEvent));
+            return result;
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'audit-exports',
+          async (job) => {
+            const result = processAuditExportJob(job.data as AuditExportJobPayload);
 
             console.log(JSON.stringify(result.logEvent));
             return result;
@@ -201,17 +264,47 @@ async function runDryRun() {
     actorId: 'user_platform_admin',
     workspaceId: 'ws_alpha',
   });
-  const quotaResetResult = resetQuotaCounter(
+  const emailResult = processEmailJob({
+    to: 'owner@quizmind.dev',
+    templateKey: 'auth.verify-email',
+    variables: {
+      displayName: 'QuizMind Owner',
+    },
+    requestedAt: new Date().toISOString(),
+    workspaceId: 'ws_alpha',
+    requestedByUserId: 'user_platform_admin',
+  });
+  const quotaResetResult = processQuotaResetJob(
     {
       workspaceId: 'ws_alpha',
       key: 'limit.requests_per_day',
       consumed: 99,
       periodStart: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       periodEnd: new Date().toISOString(),
+      nextPeriodStart: new Date().toISOString(),
+      nextPeriodEnd: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      requestedAt: new Date().toISOString(),
     },
-    new Date().toISOString(),
-    new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   );
+  const entitlementRefreshResult = processEntitlementRefreshJob({
+    workspaceId: 'ws_alpha',
+    subscriptionId: 'sub_local_record',
+    previousStatus: 'active',
+    nextStatus: 'active',
+    reason: 'manual',
+    requestedAt: new Date().toISOString(),
+    requestedByUserId: 'user_platform_admin',
+  });
+  const auditExportResult = processAuditExportJob({
+    exportType: 'usage',
+    workspaceId: 'ws_alpha',
+    format: 'json',
+    scope: 'events',
+    fileName: 'usage-ws_alpha-events-2026-03-27.json',
+    contentType: 'application/json',
+    exportedAt: new Date().toISOString(),
+    requestedByUserId: 'user_platform_admin',
+  });
   const webhookReceivedAt = new Date();
   const billingResult = await processBillingWebhookJob(
     {
@@ -317,7 +410,10 @@ async function runDryRun() {
 
   console.log(JSON.stringify(usageResult.logEvent));
   console.log(JSON.stringify(publishResult.logEvent));
+  console.log(JSON.stringify(emailResult.logEvent));
   console.log(JSON.stringify(quotaResetResult.logEvent));
+  console.log(JSON.stringify(entitlementRefreshResult.logEvent));
+  console.log(JSON.stringify(auditExportResult.logEvent));
   console.log(JSON.stringify(billingResult.logEvent));
 }
 

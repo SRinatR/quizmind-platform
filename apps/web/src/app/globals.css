@@ -1676,6 +1676,43 @@ a {
   align-items: center;
 }
 
+.settings-profile-form {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-profile-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.settings-profile-field {
+  display: grid;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.settings-profile-field input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.settings-profile-field input:focus {
+  outline: none;
+  border-color: rgba(184, 92, 56, 0.42);
+  box-shadow: 0 0 0 4px rgba(184, 92, 56, 0.12);
+  transform: translateY(-1px);
+}
+
 .settings-session-list {
   display: grid;
   gap: 12px;
@@ -1695,6 +1732,205 @@ a {
 .settings-session-row strong {
   display: block;
   margin-bottom: 4px;
+}
+
+.history-filter-form {
+  display: grid;
+  gap: 14px;
+}
+
+.history-filter-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.history-filter-field {
+  display: grid;
+  gap: 8px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.history-filter-field input,
+.history-filter-field select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.history-filter-field input:focus,
+.history-filter-field select:focus {
+  outline: none;
+  border-color: rgba(184, 92, 56, 0.42);
+  box-shadow: 0 0 0 4px rgba(184, 92, 56, 0.12);
+  transform: translateY(-1px);
+}
+
+.history-filter-field input:disabled,
+.history-filter-field select:disabled {
+  opacity: 0.66;
+  cursor: not-allowed;
+  background: rgba(31, 41, 51, 0.05);
+}
+
+.history-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.history-event-list {
+  display: grid;
+  gap: 12px;
+}
+
+.content-library {
+  display: grid;
+  gap: 12px;
+}
+
+.content-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.content-card h3 {
+  margin: 0;
+}
+
+.content-card p {
+  margin: 0;
+}
+
+.content-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.content-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.article-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.article-header {
+  display: grid;
+  gap: 10px;
+}
+
+.article-header p {
+  margin: 0;
+}
+
+.article-prose {
+  display: grid;
+  gap: 12px;
+}
+
+.article-section {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.article-section h3 {
+  margin: 0;
+}
+
+.article-section p {
+  margin: 0;
+}
+
+.public-feed {
+  display: grid;
+  gap: 14px;
+}
+
+.public-feed-item {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.public-feed-item h3 {
+  margin: 0;
+}
+
+.public-feed-item p {
+  margin: 0;
+}
+
+.public-feed-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.roadmap-board {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.roadmap-column {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.roadmap-column-copy {
+  margin: 0;
+  color: var(--muted);
+}
+
+.roadmap-column-items {
+  display: grid;
+  gap: 12px;
+}
+
+.roadmap-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.roadmap-card h3 {
+  margin: 0;
+}
+
+.roadmap-card p {
+  margin: 0;
 }
 
 @media (max-width: 900px) {

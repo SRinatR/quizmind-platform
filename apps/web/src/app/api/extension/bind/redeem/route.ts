@@ -52,7 +52,7 @@ export async function OPTIONS(request: Request) {
 export async function POST(request: Request) {
   const requestOrigin = request.headers.get('origin') ?? undefined;
   const body = (await request.json().catch(() => null)) as RedeemBindCodeBody | null;
-  const result = redeemBindFallbackCode({
+  const result = await redeemBindFallbackCode({
     code: typeof body?.code === 'string' ? body.code : undefined,
     installationId: typeof body?.installationId === 'string' ? body.installationId : undefined,
     requestId: typeof body?.requestId === 'string' ? body.requestId : undefined,

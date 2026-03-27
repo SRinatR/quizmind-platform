@@ -131,7 +131,7 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
 
           <section className="panel">
             <span className="micro-label">Activity</span>
-            <h2>Recent telemetry and dashboard activity</h2>
+            <h2>Recent telemetry, dashboard activity, and AI proxy requests</h2>
             <div className="list-stack">
               {usage.recentEvents.map((event) => (
                 <div className="list-item" key={event.id}>
@@ -152,6 +152,9 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
               </Link>
               <Link className="btn-ghost" href="/app/installations">
                 Open installations
+              </Link>
+              <Link className="btn-ghost" href="/app/history">
+                Open history
               </Link>
               <Link className="btn-ghost" href="/app/billing">
                 Open billing

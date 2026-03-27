@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { type FormEvent, useState, useTransition } from 'react';
 
 import {
   type AuthSessionsSnapshot,
   type ProviderCatalogSnapshot,
   type ProviderCredentialInventorySnapshot,
   type SessionSnapshot,
+  type UserProfileSnapshot,
   type WorkspaceSubscriptionSnapshot,
 } from '../../../lib/api';
 import { type DashboardSection } from '../../../features/dashboard/sections';
@@ -22,6 +23,7 @@ interface SettingsPageClientProps {
   providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
   session: SessionSnapshot;
   subscription: WorkspaceSubscriptionSnapshot | null;
+  userProfile: UserProfileSnapshot | null;
   visibleSections: DashboardSection[];
 }
 
@@ -36,6 +38,20 @@ interface LogoutAllRouteResponse {
   };
 }
 
+interface UserProfileRouteResponse {
+  ok: boolean;
+  data?: UserProfileSnapshot;
+  error?: {
+    message?: string;
+  };
+}
+
+function normalizeProfileInput(value: string): string | null {
+  const normalized = value.trim();
+
+  return normalized.length > 0 ? normalized : null;
+}
+
 export function SettingsPageClient({
   authSessions,
   isConnectedSession,
@@ -43,11 +59,20 @@ export function SettingsPageClient({
   providerCredentialInventory,
   session,
   subscription,
+  userProfile,
   visibleSections,
 }: SettingsPageClientProps) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [profileState, setProfileState] = useState<UserProfileSnapshot | null>(userProfile);
+  const [profileDraft, setProfileDraft] = useState({
+    displayName: userProfile?.displayName ?? session.user.displayName ?? '',
+    avatarUrl: userProfile?.avatarUrl ?? '',
+    locale: userProfile?.locale ?? '',
+    timezone: userProfile?.timezone ?? '',
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [sessionItems, setSessionItems] = useState(authSessions?.items ?? []);
   const [isRevokingEverywhere, setIsRevokingEverywhere] = useState(false);
   const [, startNavigation] = useTransition();
@@ -57,6 +82,59 @@ export function SettingsPageClient({
   const currentSessionCount = sessionItems.length;
   const currentSession = sessionItems.find((item) => item.current) ?? null;
   const isVerified = Boolean(session.user.emailVerifiedAt);
+  const currentDisplayName = profileState?.displayName || session.user.displayName || 'Connected account';
+  const currentEmail = profileState?.email ?? session.user.email;
+
+  async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage(null);
+
+    if (!isConnectedSession) {
+      setStatusMessage(null);
+      setErrorMessage('Connected session required to update profile settings.');
+      return;
+    }
+
+    setStatusMessage('Saving profile settings...');
+    setIsSavingProfile(true);
+
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          displayName: normalizeProfileInput(profileDraft.displayName),
+          avatarUrl: normalizeProfileInput(profileDraft.avatarUrl),
+          locale: normalizeProfileInput(profileDraft.locale),
+          timezone: normalizeProfileInput(profileDraft.timezone),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as UserProfileRouteResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        setStatusMessage(null);
+        setErrorMessage(payload?.error?.message ?? 'Unable to update profile settings right now.');
+        setIsSavingProfile(false);
+        return;
+      }
+
+      setProfileState(payload.data);
+      setProfileDraft({
+        displayName: payload.data.displayName ?? '',
+        avatarUrl: payload.data.avatarUrl ?? '',
+        locale: payload.data.locale ?? '',
+        timezone: payload.data.timezone ?? '',
+      });
+      setStatusMessage('Profile settings updated.');
+      setIsSavingProfile(false);
+    } catch {
+      setStatusMessage(null);
+      setErrorMessage('Unable to reach the profile settings route right now.');
+      setIsSavingProfile(false);
+    }
+  }
 
   async function handleLogoutAll() {
     setErrorMessage(null);
@@ -122,8 +200,8 @@ export function SettingsPageClient({
         <article className="panel settings-card">
           <span className="micro-label">Account</span>
           <div className="settings-card-copy">
-            <h2>{session.user.displayName || 'Connected account'}</h2>
-            <p>{session.user.email}</p>
+            <h2>{currentDisplayName}</h2>
+            <p>{currentEmail}</p>
           </div>
           <div className="tag-row">
             <span className={isVerified ? 'tag' : 'tag warn'}>{isVerified ? 'email verified' : 'verification pending'}</span>
@@ -134,10 +212,70 @@ export function SettingsPageClient({
             ))}
             {session.principal.systemRoles.length === 0 ? <span className="tag warn">workspace-only account</span> : null}
           </div>
+          <form className="settings-profile-form" onSubmit={(event) => void handleProfileSave(event)}>
+            <div className="settings-profile-grid">
+              <label className="settings-profile-field">
+                <span>Display name</span>
+                <input
+                  name="displayName"
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))}
+                  placeholder="Workspace owner"
+                  type="text"
+                  value={profileDraft.displayName}
+                />
+              </label>
+              <label className="settings-profile-field">
+                <span>Avatar URL</span>
+                <input
+                  name="avatarUrl"
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, avatarUrl: event.target.value }))}
+                  placeholder="https://cdn.quizmind.dev/avatar.png"
+                  type="url"
+                  value={profileDraft.avatarUrl}
+                />
+              </label>
+              <label className="settings-profile-field">
+                <span>Locale</span>
+                <input
+                  name="locale"
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, locale: event.target.value }))}
+                  placeholder="en-US"
+                  type="text"
+                  value={profileDraft.locale}
+                />
+              </label>
+              <label className="settings-profile-field">
+                <span>Timezone</span>
+                <input
+                  name="timezone"
+                  onChange={(event) => setProfileDraft((current) => ({ ...current, timezone: event.target.value }))}
+                  placeholder="UTC"
+                  type="text"
+                  value={profileDraft.timezone}
+                />
+              </label>
+            </div>
+            <div className="settings-inline-actions">
+              <button className="btn-primary" disabled={!isConnectedSession || isSavingProfile} type="submit">
+                {isSavingProfile ? 'Saving profile...' : 'Save profile'}
+              </button>
+              <span className="list-muted">
+                {isConnectedSession
+                  ? 'Leave optional fields blank to clear them.'
+                  : 'Connected session required for profile updates.'}
+              </span>
+            </div>
+          </form>
           <div className="mini-list">
             <div className="list-item">
               <strong>Current session persona</strong>
               <p>{session.personaLabel}</p>
+            </div>
+            <div className="list-item">
+              <strong>Locale and timezone</strong>
+              <p>
+                {(profileState?.locale ?? 'not set')} | {(profileState?.timezone ?? 'not set')}
+              </p>
             </div>
             <div className="list-item">
               <strong>Workspace memberships</strong>
@@ -255,6 +393,9 @@ export function SettingsPageClient({
             </Link>
             <Link className="btn-ghost" href="/app/usage">
               Usage
+            </Link>
+            <Link className="btn-ghost" href="/app/history">
+              History
             </Link>
           </div>
         </article>

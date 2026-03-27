@@ -227,11 +227,19 @@ function createBillingService() {
     updateWorkspaceProviderCustomerId: async () => undefined,
     updateSubscriptionLifecycle: async () => undefined,
   } as unknown as BillingRepository;
+  const queueDispatchCalls: Array<Record<string, unknown>> = [];
   const queueDispatchService = {
-    dispatch: async (input: { queue: string; dedupeKey?: string }) => ({
-      id: `${input.queue}:${input.dedupeKey ?? 'job'}`,
-      queue: input.queue,
-    }),
+    dispatch: async (input: { queue: string; dedupeKey?: string; payload?: unknown; attempts?: number }) => {
+      queueDispatchCalls.push(input as Record<string, unknown>);
+
+      return {
+        id: `${input.queue}:${input.dedupeKey ?? 'job'}`,
+        queue: input.queue,
+        payload: input.payload,
+        dedupeKey: input.dedupeKey,
+        attempts: input.attempts ?? 1,
+      };
+    },
   };
   const service = new BillingService(billingWebhookRepository, billingRepository, queueDispatchService as any);
 
@@ -271,7 +279,7 @@ function createBillingService() {
     authRateLimitMaxRequests: 10,
   };
 
-  return { service, billingWebhookRepository, billingRepository, queueDispatchService };
+  return { service, billingWebhookRepository, billingRepository, queueDispatchService, queueDispatchCalls };
 }
 
 function createJsonResponse(payload: Record<string, unknown>, status = 200): Response {
@@ -611,7 +619,7 @@ test('BillingService.createCheckoutSession supports YooKassa as a hosted-provide
 });
 
 test('BillingService.cancelSubscription updates Stripe and persists cancelAtPeriodEnd locally', async () => {
-  const { service, billingRepository } = createBillingService();
+  const { service, billingRepository, queueDispatchCalls } = createBillingService();
   const session = createCurrentSession();
   const originalFetch = globalThis.fetch;
   let updatedLifecycleInput: Record<string, unknown> | null = null;
@@ -678,13 +686,25 @@ test('BillingService.cancelSubscription updates Stripe and persists cancelAtPeri
     assert.equal(updatedLifecycleInput?.stripePriceId, 'price_pro_monthly');
     assert.equal(updatedLifecycleInput?.stripeCustomerId, 'cus_existing');
     assert.equal(persistedWorkspaceCustomerId, null);
+    assert.equal(queueDispatchCalls.length, 1);
+    assert.equal(queueDispatchCalls[0]?.queue, 'entitlement-refresh');
+    assert.deepEqual(queueDispatchCalls[0]?.payload, {
+      workspaceId: 'ws_1',
+      subscriptionId: 'sub_local_1',
+      previousStatus: 'active',
+      nextStatus: 'active',
+      reason: 'subscription_canceled',
+      requestedAt: (queueDispatchCalls[0]?.payload as Record<string, unknown>)?.requestedAt,
+      requestedByUserId: 'user_1',
+    });
+    assert.equal(queueDispatchCalls[0]?.attempts, 5);
   } finally {
     globalThis.fetch = originalFetch;
   }
 });
 
 test('BillingService.resumeSubscription updates Stripe and clears cancelAtPeriodEnd locally', async () => {
-  const { service, billingRepository } = createBillingService();
+  const { service, billingRepository, queueDispatchCalls } = createBillingService();
   const session = createCurrentSession();
   const originalFetch = globalThis.fetch;
   let updatedLifecycleInput: Record<string, unknown> | null = null;
@@ -743,6 +763,18 @@ test('BillingService.resumeSubscription updates Stripe and clears cancelAtPeriod
     assert.equal(result.status, 'active');
     assert.equal(updatedLifecycleInput?.cancelAtPeriodEnd, false);
     assert.equal(updatedLifecycleInput?.status, 'active');
+    assert.equal(queueDispatchCalls.length, 1);
+    assert.equal(queueDispatchCalls[0]?.queue, 'entitlement-refresh');
+    assert.deepEqual(queueDispatchCalls[0]?.payload, {
+      workspaceId: 'ws_1',
+      subscriptionId: 'sub_local_1',
+      previousStatus: 'active',
+      nextStatus: 'active',
+      reason: 'subscription_resumed',
+      requestedAt: (queueDispatchCalls[0]?.payload as Record<string, unknown>)?.requestedAt,
+      requestedByUserId: 'user_1',
+    });
+    assert.equal(queueDispatchCalls[0]?.attempts, 5);
   } finally {
     globalThis.fetch = originalFetch;
   }

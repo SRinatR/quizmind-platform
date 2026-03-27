@@ -10,6 +10,7 @@ import { createOpaqueToken, hashOpaqueToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { buildExtensionBootstrapV2, evaluateCompatibility } from '@quizmind/extension';
 import { createAuditLogEvent, createLogEvent, createSecurityLogEvent } from '@quizmind/logger';
+import { createQueueDispatchRequest } from '@quizmind/queue';
 import { buildQuotaHint } from '@quizmind/usage';
 import {
   type CompatibilityHandshake,
@@ -286,11 +287,12 @@ export class ExtensionControlService {
       },
     };
 
-    const queueJob = await this.queueDispatchService.dispatch({
-      queue: 'usage-events',
-      payload: usageEvent,
-      dedupeKey: `${usageEvent.installationId}:${usageEvent.occurredAt}`,
-    });
+    const queueJob = await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'usage-events',
+        payload: usageEvent,
+      }),
+    );
     const logEvent = createLogEvent({
       eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
       eventType: 'extension.usage_queued',

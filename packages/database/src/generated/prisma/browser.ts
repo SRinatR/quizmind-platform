@@ -118,6 +118,11 @@ export type EntitlementOverride = Prisma.EntitlementOverrideModel
  */
 export type QuotaCounter = Prisma.QuotaCounterModel
 /**
+ * Model AiRequest
+ * 
+ */
+export type AiRequest = Prisma.AiRequestModel
+/**
  * Model FeatureFlag
  * 
  */

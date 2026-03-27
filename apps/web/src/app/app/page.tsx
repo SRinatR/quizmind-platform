@@ -158,6 +158,9 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
                     <Link className="btn-ghost" href="/app/usage">
                       Open usage
                     </Link>
+                    <Link className="btn-ghost" href="/app/history">
+                      Open history
+                    </Link>
                     <Link className="btn-ghost" href="/app/installations">
                       Open installations
                     </Link>

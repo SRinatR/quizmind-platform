@@ -10,9 +10,15 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
-import { type AiProxyRequest, type AiProxyResult, type AiProvider } from '@quizmind/contracts';
+import {
+  type AiModelsCatalogPayload,
+  type AiProxyQuotaSnapshot,
+  type AiProxyRequest,
+  type AiProxyResult,
+  type AiProvider,
+} from '@quizmind/contracts';
 import { type Prisma } from '@quizmind/database';
-import { providerRegistry } from '@quizmind/providers';
+import { getProviderCatalog, listAvailableModelsForPlan, providerRegistry } from '@quizmind/providers';
 import { decryptSecret, type EncryptedSecretEnvelope } from '@quizmind/secrets';
 import { addUtcDays, evaluateUsageDecision, startOfUtcDay } from '@quizmind/usage';
 
@@ -30,6 +36,70 @@ const knownProviders = new Set<AiProvider>(providerRegistry.map((provider) => pr
 const supportedMessageRoles = new Set(['system', 'user', 'assistant', 'tool']);
 
 type OpenRouterResponsePayload = Record<string, unknown>;
+type AiProxyUsage = {
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+};
+
+interface NormalizedProxyRequest {
+  workspaceId?: string;
+  provider?: AiProvider;
+  model: string;
+  messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+  useOwnKey: boolean;
+  temperature?: number;
+  maxTokens?: number;
+  stream: boolean;
+}
+
+interface PreparedProxyInvocation {
+  session: CurrentSessionSnapshot;
+  request: NormalizedProxyRequest;
+  workspaceId: string;
+  provider: AiProvider;
+  keySource: 'platform' | 'user';
+  apiKey: string;
+  requestId: string;
+  occurredAt: Date;
+  quotaLimit?: number;
+  quotaCounter: AiProxyQuotaCounterRecord;
+}
+
+interface OpenRouterStreamInvocationResult {
+  stream: ReadableStream<Uint8Array>;
+  contentType: string;
+  abort: () => void;
+}
+
+interface OpenRouterStreamInspection {
+  usage?: AiProxyUsage;
+  responseId?: string;
+  model?: string;
+}
+
+export interface AiProxyStreamCompletion {
+  requestId: string;
+  workspaceId: string;
+  provider: AiProvider;
+  model: string;
+  keySource: 'platform' | 'user';
+  usage?: AiProxyUsage;
+  responseId?: string;
+  quota: AiProxyQuotaSnapshot;
+}
+
+export interface AiProxyStreamResult {
+  requestId: string;
+  workspaceId: string;
+  provider: AiProvider;
+  model: string;
+  keySource: 'platform' | 'user';
+  contentType: string;
+  stream: ReadableStream<Uint8Array>;
+  completion: Promise<AiProxyStreamCompletion>;
+  abort: () => void;
+}
 
 function readRequiredString(value: string | undefined, fieldName: string): string {
   const normalized = value?.trim();
@@ -203,6 +273,43 @@ function trimTrailingSlash(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
+function createRequestAbortSignal(input: {
+  timeoutMs: number;
+  abortController?: AbortController;
+}): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(input.timeoutMs);
+
+  if (!input.abortController) {
+    return timeoutSignal;
+  }
+
+  const abortSignalStatics = AbortSignal as typeof AbortSignal & {
+    any?: (signals: AbortSignal[]) => AbortSignal;
+  };
+
+  if (typeof abortSignalStatics.any === 'function') {
+    return abortSignalStatics.any([input.abortController.signal, timeoutSignal]);
+  }
+
+  const fallbackController = new AbortController();
+  const abortFromSignal = (signal: AbortSignal) => {
+    if (!fallbackController.signal.aborted) {
+      fallbackController.abort(signal.reason);
+    }
+  };
+
+  for (const signal of [input.abortController.signal, timeoutSignal]) {
+    if (signal.aborted) {
+      abortFromSignal(signal);
+      break;
+    }
+
+    signal.addEventListener('abort', () => abortFromSignal(signal), { once: true });
+  }
+
+  return fallbackController.signal;
+}
+
 @Injectable()
 export class AiProxyService {
   private readonly env = loadApiEnv();
@@ -218,6 +325,144 @@ export class AiProxyService {
     session: CurrentSessionSnapshot,
     request?: Partial<AiProxyRequest>,
   ): Promise<AiProxyResult> {
+    const invocation = await this.prepareProxyInvocation(session, request);
+
+    if (invocation.request.stream) {
+      throw new BadRequestException('Use stream=true only when handling an SSE response transport.');
+    }
+
+    try {
+      const upstreamResponse = await this.invokeOpenRouter({
+        apiKey: invocation.apiKey,
+        model: invocation.request.model,
+        messages: invocation.request.messages,
+        temperature: invocation.request.temperature,
+        maxTokens: invocation.request.maxTokens,
+      });
+      const usage = extractUsage(upstreamResponse);
+      const quotaSnapshot = await this.recordProxyCompletion({
+        invocation,
+        usage,
+        responseId: typeof upstreamResponse.id === 'string' ? upstreamResponse.id : undefined,
+      });
+
+      return {
+        requestId: invocation.requestId,
+        workspaceId: invocation.workspaceId,
+        provider: invocation.provider,
+        model: typeof upstreamResponse.model === 'string' ? upstreamResponse.model : invocation.request.model,
+        keySource: invocation.keySource,
+        ...(usage ? { usage } : {}),
+        quota: quotaSnapshot,
+        response: upstreamResponse,
+      };
+    } catch (error) {
+      await this.recordProxyFailureSafely({
+        invocation,
+        status: 'error',
+        errorCode: this.resolveProxyFailureCode(error),
+        errorMessage: this.resolveProxyFailureMessage(error),
+      });
+
+      throw error;
+    }
+  }
+
+  async listModelsForCurrentSession(
+    session: CurrentSessionSnapshot,
+    workspaceId?: string,
+  ): Promise<AiModelsCatalogPayload> {
+    const workspace = this.resolveWorkspace(session, workspaceId?.trim() || undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
+    const resolvedPlanCode = (await this.aiProxyRepository.findWorkspacePlanCode(workspace.id)) ?? 'free';
+    const planCode = resolvedPlanCode.trim().toLowerCase() || 'free';
+    const allowedModelTags = Array.from(
+      new Set(
+        (policy.allowedModelTags ?? [])
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0),
+      ),
+    );
+    const catalog = getProviderCatalog();
+    const providers = catalog.providers.filter((entry) => policy.providers.includes(entry.provider));
+    const planModels = listAvailableModelsForPlan(planCode).filter((entry) => policy.providers.includes(entry.provider));
+    const models =
+      allowedModelTags.length > 0
+        ? planModels.filter((entry) => entry.capabilityTags.some((tag) => allowedModelTags.includes(tag)))
+        : planModels;
+    const defaultProvider =
+      policy.defaultProvider && providers.some((entry) => entry.provider === policy.defaultProvider)
+        ? policy.defaultProvider
+        : providers[0]?.provider;
+    const defaultModel =
+      typeof policy.defaultModel === 'string' &&
+      models.some((entry) => entry.modelId === policy.defaultModel)
+        ? policy.defaultModel
+        : models[0]?.modelId;
+
+    return {
+      workspaceId: workspace.id,
+      planCode,
+      providers,
+      models,
+      ...(defaultProvider ? { defaultProvider } : {}),
+      ...(defaultModel ? { defaultModel } : {}),
+      ...(allowedModelTags.length > 0 ? { allowedModelTags } : {}),
+    };
+  }
+
+  async proxyStreamForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<AiProxyRequest>,
+  ): Promise<AiProxyStreamResult> {
+    const invocation = await this.prepareProxyInvocation(session, request);
+
+    if (!invocation.request.stream) {
+      throw new BadRequestException('stream=true is required for streaming AI proxy responses.');
+    }
+
+    try {
+      const upstream = await this.invokeOpenRouterStream({
+        apiKey: invocation.apiKey,
+        model: invocation.request.model,
+        messages: invocation.request.messages,
+        temperature: invocation.request.temperature,
+        maxTokens: invocation.request.maxTokens,
+      });
+      const [clientStream, inspectionStream] = upstream.stream.tee();
+      const completion = this.consumeOpenRouterStream({
+        invocation,
+        stream: inspectionStream,
+        fallbackModel: invocation.request.model,
+      });
+
+      return {
+        requestId: invocation.requestId,
+        workspaceId: invocation.workspaceId,
+        provider: invocation.provider,
+        model: invocation.request.model,
+        keySource: invocation.keySource,
+        contentType: upstream.contentType,
+        stream: clientStream,
+        completion,
+        abort: upstream.abort,
+      };
+    } catch (error) {
+      await this.recordProxyFailureSafely({
+        invocation,
+        status: 'error',
+        errorCode: this.resolveProxyFailureCode(error),
+        errorMessage: this.resolveProxyFailureMessage(error),
+      });
+
+      throw error;
+    }
+  }
+
+  private async prepareProxyInvocation(
+    session: CurrentSessionSnapshot,
+    request?: Partial<AiProxyRequest>,
+  ): Promise<PreparedProxyInvocation> {
     const normalizedRequest = this.normalizeRequest(request);
     const workspace = this.resolveWorkspace(session, normalizedRequest.workspaceId);
     const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
@@ -267,6 +512,19 @@ export class AiProxyService {
             policy,
           });
 
+    const invocation: PreparedProxyInvocation = {
+      session,
+      request: normalizedRequest,
+      workspaceId: workspace.id,
+      provider,
+      keySource,
+      apiKey,
+      requestId,
+      occurredAt,
+      quotaLimit,
+      quotaCounter,
+    };
+
     if (keySource === 'platform') {
       const usageDecision = evaluateUsageDecision({
         consumed: quotaCounter.consumed,
@@ -275,64 +533,23 @@ export class AiProxyService {
       });
 
       if (!usageDecision.accepted) {
+        await this.recordProxyFailureSafely({
+          invocation,
+          status: 'quota_exceeded',
+          errorCode: 'quota_exhausted',
+          errorMessage: usageDecision.message ?? 'Workspace quota has been exhausted.',
+        });
+
         throw new ForbiddenException(usageDecision.message ?? 'Workspace quota has been exhausted.');
       }
     }
 
-    const upstreamResponse = await this.invokeOpenRouter({
-      apiKey,
-      model: normalizedRequest.model,
-      messages: normalizedRequest.messages,
-      temperature: normalizedRequest.temperature,
-      maxTokens: normalizedRequest.maxTokens,
-    });
-    const usage = extractUsage(upstreamResponse);
-    const nextCounter = await this.aiProxyRepository.recordProxyEvent({
-      workspaceId: workspace.id,
-      userId: session.user.id,
-      requestId,
-      provider,
-      model: normalizedRequest.model,
-      keySource,
-      messageCount: normalizedRequest.messages.length,
-      usage,
-      responseId: typeof upstreamResponse.id === 'string' ? upstreamResponse.id : undefined,
-      quotaKey: aiRequestsQuotaKey,
-      periodStart: quotaCounter.periodStart,
-      periodEnd: quotaCounter.periodEnd,
-      consumeQuota: keySource === 'platform',
-      occurredAt,
-    });
-    const consumed = keySource === 'platform' ? (nextCounter?.consumed ?? quotaCounter.consumed + 1) : quotaCounter.consumed;
-    const remaining = typeof quotaLimit === 'number' ? Math.max(quotaLimit - consumed, 0) : undefined;
-
-    return {
-      requestId,
-      workspaceId: workspace.id,
-      provider,
-      model: typeof upstreamResponse.model === 'string' ? upstreamResponse.model : normalizedRequest.model,
-      keySource,
-      ...(usage ? { usage } : {}),
-      quota: {
-        key: aiRequestsQuotaKey,
-        consumed,
-        ...(typeof quotaLimit === 'number' ? { limit: quotaLimit } : {}),
-        ...(typeof remaining === 'number' ? { remaining } : {}),
-        periodStart: quotaCounter.periodStart.toISOString(),
-        periodEnd: quotaCounter.periodEnd.toISOString(),
-        decremented: keySource === 'platform',
-      },
-      response: upstreamResponse,
-    };
+    return invocation;
   }
 
-  private normalizeRequest(request?: Partial<AiProxyRequest>) {
+  private normalizeRequest(request?: Partial<AiProxyRequest>): NormalizedProxyRequest {
     if (!request) {
       throw new BadRequestException('Request body is required.');
-    }
-
-    if (request.stream === true) {
-      throw new BadRequestException('Streaming AI proxy responses are not implemented yet. Use stream=false.');
     }
 
     const workspaceId = request.workspaceId?.trim() || undefined;
@@ -358,6 +575,7 @@ export class AiProxyService {
       useOwnKey: request.useOwnKey === true,
       ...(typeof temperature === 'number' ? { temperature } : {}),
       ...(typeof maxTokens === 'number' ? { maxTokens } : {}),
+      stream: request.stream === true,
     };
   }
 
@@ -466,7 +684,9 @@ export class AiProxyService {
         'X-Title': this.env.openRouterAppName,
       },
       body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(this.env.openRouterTimeoutMs),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.openRouterTimeoutMs,
+      }),
     });
     const rawResponseText = await response.text();
     const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
@@ -484,6 +704,306 @@ export class AiProxyService {
     }
 
     return payload as OpenRouterResponsePayload;
+  }
+
+  private async invokeOpenRouterStream(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterStreamInvocationResult> {
+    const endpoint = `${trimTrailingSlash(this.env.openRouterApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: input.model,
+      messages: input.messages,
+      stream: true,
+      stream_options: {
+        include_usage: true,
+      },
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const abortController = new AbortController();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': this.env.appUrl,
+        'X-Title': this.env.openRouterAppName,
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.openRouterTimeoutMs,
+        abortController,
+      }),
+    });
+
+    if (!response.ok) {
+      const rawResponseText = await response.text();
+      const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      throw new BadGatewayException(
+        `OpenRouter request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new BadGatewayException('OpenRouter returned an empty streaming payload.');
+    }
+
+    return {
+      stream: response.body,
+      contentType: response.headers.get('content-type')?.trim() || 'text/event-stream; charset=utf-8',
+      abort: () => {
+        if (!abortController.signal.aborted) {
+          abortController.abort('stream-aborted');
+        }
+      },
+    };
+  }
+
+  private async consumeOpenRouterStream(input: {
+    invocation: PreparedProxyInvocation;
+    stream: ReadableStream<Uint8Array>;
+    fallbackModel: string;
+  }): Promise<AiProxyStreamCompletion> {
+    try {
+      const inspection = await this.inspectOpenRouterSseStream(input.stream);
+      const quota = await this.recordProxyCompletion({
+        invocation: input.invocation,
+        usage: inspection.usage,
+        responseId: inspection.responseId,
+      });
+
+      return {
+        requestId: input.invocation.requestId,
+        workspaceId: input.invocation.workspaceId,
+        provider: input.invocation.provider,
+        model: inspection.model ?? input.fallbackModel,
+        keySource: input.invocation.keySource,
+        ...(inspection.usage ? { usage: inspection.usage } : {}),
+        ...(inspection.responseId ? { responseId: inspection.responseId } : {}),
+        quota,
+      };
+    } catch (error) {
+      await this.recordProxyFailureSafely({
+        invocation: input.invocation,
+        status: 'error',
+        errorCode: this.resolveProxyFailureCode(error),
+        errorMessage: this.resolveProxyFailureMessage(error),
+      });
+
+      throw error;
+    }
+  }
+
+  private async inspectOpenRouterSseStream(stream: ReadableStream<Uint8Array>): Promise<OpenRouterStreamInspection> {
+    const inspection: OpenRouterStreamInspection = {};
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    for await (const chunk of this.readStreamChunks(stream)) {
+      buffer += decoder.decode(chunk, { stream: true }).replace(/\r\n/g, '\n');
+
+      let separatorIndex = buffer.indexOf('\n\n');
+
+      while (separatorIndex >= 0) {
+        const eventBlock = buffer.slice(0, separatorIndex);
+        buffer = buffer.slice(separatorIndex + 2);
+        this.inspectSseEventBlock(eventBlock, inspection);
+        separatorIndex = buffer.indexOf('\n\n');
+      }
+    }
+
+    buffer += decoder.decode().replace(/\r\n/g, '\n');
+
+    if (buffer.trim().length > 0) {
+      this.inspectSseEventBlock(buffer, inspection);
+    }
+
+    return inspection;
+  }
+
+  private inspectSseEventBlock(rawEvent: string, inspection: OpenRouterStreamInspection) {
+    const dataLines = rawEvent
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('data:'))
+      .map((line) => line.slice(5).trim());
+
+    if (dataLines.length === 0) {
+      return;
+    }
+
+    const eventPayload = dataLines.join('\n');
+
+    if (!eventPayload || eventPayload === '[DONE]') {
+      return;
+    }
+
+    const parsedPayload = this.tryParseJson(eventPayload);
+
+    if (!parsedPayload || typeof parsedPayload !== 'object' || Array.isArray(parsedPayload)) {
+      return;
+    }
+
+    const payload = parsedPayload as OpenRouterResponsePayload;
+
+    if (typeof payload.id === 'string' && payload.id.trim().length > 0) {
+      inspection.responseId = payload.id.trim();
+    }
+
+    if (typeof payload.model === 'string' && payload.model.trim().length > 0) {
+      inspection.model = payload.model.trim();
+    }
+
+    const usage = extractUsage(payload);
+
+    if (usage) {
+      inspection.usage = usage;
+    }
+  }
+
+  private async *readStreamChunks(stream: ReadableStream<Uint8Array>): AsyncGenerator<Uint8Array> {
+    const reader = stream.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        if (value) {
+          yield value;
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  private async recordProxyCompletion(input: {
+    invocation: PreparedProxyInvocation;
+    usage?: AiProxyUsage;
+    responseId?: string;
+  }): Promise<AiProxyQuotaSnapshot> {
+    const nextCounter = await this.aiProxyRepository.recordProxyEvent({
+      workspaceId: input.invocation.workspaceId,
+      userId: input.invocation.session.user.id,
+      requestId: input.invocation.requestId,
+      provider: input.invocation.provider,
+      model: input.invocation.request.model,
+      keySource: input.invocation.keySource,
+      messageCount: input.invocation.request.messages.length,
+      usage: input.usage,
+      responseId: input.responseId,
+      quotaKey: aiRequestsQuotaKey,
+      periodStart: input.invocation.quotaCounter.periodStart,
+      periodEnd: input.invocation.quotaCounter.periodEnd,
+      consumeQuota: input.invocation.keySource === 'platform',
+      occurredAt: input.invocation.occurredAt,
+      durationMs: this.resolveDurationMs(input.invocation.occurredAt),
+    });
+
+    return this.buildQuotaSnapshot({
+      invocation: input.invocation,
+      nextCounter,
+    });
+  }
+
+  private async recordProxyFailureSafely(input: {
+    invocation: PreparedProxyInvocation;
+    status: 'error' | 'quota_exceeded';
+    errorCode: string;
+    errorMessage?: string;
+  }) {
+    try {
+      await this.aiProxyRepository.recordProxyFailure({
+        workspaceId: input.invocation.workspaceId,
+        userId: input.invocation.session.user.id,
+        requestId: input.invocation.requestId,
+        provider: input.invocation.provider,
+        model: input.invocation.request.model,
+        keySource: input.invocation.keySource,
+        messageCount: input.invocation.request.messages.length,
+        status: input.status,
+        errorCode: input.errorCode,
+        ...(input.errorMessage ? { errorMessage: input.errorMessage } : {}),
+        occurredAt: input.invocation.occurredAt,
+        durationMs: this.resolveDurationMs(input.invocation.occurredAt),
+      });
+    } catch (error) {
+      console.error('[ai-proxy] Failed to persist proxy failure event.', error);
+    }
+  }
+
+  private resolveProxyFailureCode(error: unknown): string {
+    if (error instanceof BadGatewayException) {
+      return 'upstream_bad_gateway';
+    }
+
+    if (error instanceof ServiceUnavailableException) {
+      return 'upstream_unavailable';
+    }
+
+    if (error instanceof ForbiddenException) {
+      return 'forbidden';
+    }
+
+    if (error instanceof NotFoundException) {
+      return 'not_found';
+    }
+
+    if (error instanceof BadRequestException) {
+      return 'bad_request';
+    }
+
+    return 'proxy_error';
+  }
+
+  private resolveProxyFailureMessage(error: unknown): string | undefined {
+    if (error instanceof Error) {
+      return error.message.trim().slice(0, 512) || undefined;
+    }
+
+    return undefined;
+  }
+
+  private resolveDurationMs(startedAt: Date): number {
+    const elapsedMs = Date.now() - startedAt.getTime();
+
+    if (!Number.isFinite(elapsedMs) || elapsedMs < 0) {
+      return 0;
+    }
+
+    return Math.trunc(elapsedMs);
+  }
+
+  private buildQuotaSnapshot(input: {
+    invocation: PreparedProxyInvocation;
+    nextCounter: AiProxyQuotaCounterRecord | null;
+  }): AiProxyQuotaSnapshot {
+    const consumed =
+      input.invocation.keySource === 'platform'
+        ? (input.nextCounter?.consumed ?? input.invocation.quotaCounter.consumed + 1)
+        : input.invocation.quotaCounter.consumed;
+    const remaining =
+      typeof input.invocation.quotaLimit === 'number' ? Math.max(input.invocation.quotaLimit - consumed, 0) : undefined;
+
+    return {
+      key: aiRequestsQuotaKey,
+      consumed,
+      ...(typeof input.invocation.quotaLimit === 'number' ? { limit: input.invocation.quotaLimit } : {}),
+      ...(typeof remaining === 'number' ? { remaining } : {}),
+      periodStart: input.invocation.quotaCounter.periodStart.toISOString(),
+      periodEnd: input.invocation.quotaCounter.periodEnd.toISOString(),
+      decremented: input.invocation.keySource === 'platform',
+    };
   }
 
   private tryParseJson(value: string): unknown {

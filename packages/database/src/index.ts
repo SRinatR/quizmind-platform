@@ -43,6 +43,6 @@ export const databaseSchemas = {
     'provider_credentials',
     'ai_provider_policies',
   ],
-  observability: ['audit_logs', 'activity_logs', 'domain_events', 'security_events'],
+  observability: ['audit_logs', 'activity_logs', 'domain_events', 'security_events', 'ai_requests'],
   support: ['support_tickets', 'support_impersonation_sessions'],
 } as const;

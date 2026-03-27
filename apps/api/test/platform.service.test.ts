@@ -37,8 +37,26 @@ function createPlatformService() {
   const supportTicketRepository = {} as SupportTicketRepository;
   const supportTicketPresetFavoriteRepository = {} as SupportTicketPresetFavoriteRepository;
   const supportImpersonationRepository = {} as SupportImpersonationRepository;
-  const usageRepository = {} as UsageRepository;
-  const queueDispatchService = {} as QueueDispatchService;
+  const usageRepository: Partial<UsageRepository> = {
+    listInstallationsByWorkspaceId: async () => [] as any,
+    listQuotaCountersByWorkspaceId: async () => [] as any,
+    listRecentTelemetryByWorkspaceId: async () => [] as any,
+    listTelemetryHistoryByWorkspaceId: async () => [] as any,
+    listRecentActivityByWorkspaceId: async () => [] as any,
+    listActivityHistoryByWorkspaceId: async () => [] as any,
+    listRecentAiRequestsByWorkspaceId: async () => [] as any,
+    listAiRequestHistoryByWorkspaceId: async () => [] as any,
+  };
+  const queueDispatchService = {
+    dispatch: async (request: any) => ({
+      id: request.jobId ?? `${request.queue}:${request.dedupeKey ?? 'test'}`,
+      queue: request.queue,
+      payload: request.payload,
+      dedupeKey: request.dedupeKey,
+      createdAt: request.createdAt ?? '2026-03-23T12:30:00.000Z',
+      attempts: request.attempts ?? 1,
+    }),
+  } as QueueDispatchService;
   const service = new PlatformService(
     infrastructureHealthService,
     subscriptionRepository,
@@ -54,7 +72,7 @@ function createPlatformService() {
     supportTicketRepository,
     supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
-    usageRepository,
+    usageRepository as UsageRepository,
     queueDispatchService,
   );
 
@@ -73,7 +91,7 @@ function createPlatformService() {
     supportTicketRepository,
     supportTicketPresetFavoriteRepository,
     supportImpersonationRepository,
-    usageRepository,
+    usageRepository: usageRepository as UsageRepository,
     queueDispatchService,
   };
 }
@@ -251,6 +269,37 @@ function createUsageSubscriptionRecord() {
   } as any;
 }
 
+function createConnectedUserRecord(overrides?: Record<string, unknown>) {
+  return {
+    id: 'user_1',
+    email: 'owner@quizmind.dev',
+    passwordHash: '$argon2id$v=19$m=65536,t=3,p=4$hash',
+    emailVerifiedAt: new Date('2026-03-23T08:00:00.000Z'),
+    displayName: 'Workspace Owner',
+    avatarUrl: 'https://cdn.quizmind.dev/avatar.png',
+    locale: 'en-US',
+    timezone: 'UTC',
+    suspendedAt: null,
+    suspendReason: null,
+    lastLoginAt: new Date('2026-03-24T08:00:00.000Z'),
+    createdAt: new Date('2026-03-20T08:00:00.000Z'),
+    updatedAt: new Date('2026-03-24T08:00:00.000Z'),
+    systemRoleAssignments: [],
+    memberships: [
+      {
+        workspaceId: 'ws_1',
+        role: 'workspace_owner',
+        workspace: {
+          id: 'ws_1',
+          slug: 'demo-workspace',
+          name: 'Demo Workspace',
+        },
+      },
+    ],
+    ...(overrides ?? {}),
+  } as any;
+}
+
 test('PlatformService.listWorkspacesForCurrentSession maps Prisma records into workspace summaries', async () => {
   const { service, workspaceRepository } = createPlatformService();
 
@@ -287,6 +336,137 @@ test('PlatformService.listWorkspacesForCurrentSession maps Prisma records into w
       role: 'workspace_viewer',
     },
   ]);
+});
+
+test('PlatformService.getWorkspaceForCurrentSession returns connected workspace details', async () => {
+  const { service, workspaceRepository } = createPlatformService();
+  let capturedWorkspaceId: string | undefined;
+
+  workspaceRepository.findById = async (workspaceId: string) => {
+    capturedWorkspaceId = workspaceId;
+
+    return {
+      id: 'ws_1',
+      slug: 'demo-workspace',
+      name: 'Demo Workspace',
+      memberships: [
+        {
+          userId: 'user_1',
+          role: 'workspace_owner',
+        },
+      ],
+    } as any;
+  };
+
+  const result = await service.getWorkspaceForCurrentSession(createConnectedSessionSnapshot(), 'ws_1');
+
+  assert.equal(capturedWorkspaceId, 'ws_1');
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.workspace.slug, 'demo-workspace');
+  assert.equal(result.workspace.name, 'Demo Workspace');
+  assert.equal(result.workspace.role, 'workspace_owner');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.deepEqual(result.permissions, ['workspaces:read', 'subscriptions:read']);
+});
+
+test('PlatformService.getWorkspaceForCurrentSession hides workspaces that are not in the current session', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () => service.getWorkspaceForCurrentSession(createConnectedSessionSnapshot(), 'ws_2'),
+    (error: unknown) => {
+      assert.ok(error instanceof NotFoundException);
+      assert.match((error as Error).message, /Workspace not found or not accessible/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.getWorkspaceForCurrentSession returns not found when the workspace no longer exists', async () => {
+  const { service, workspaceRepository } = createPlatformService();
+
+  workspaceRepository.findById = async () => null;
+
+  await assert.rejects(
+    () => service.getWorkspaceForCurrentSession(createConnectedSessionSnapshot(), 'ws_1'),
+    (error: unknown) => {
+      assert.ok(error instanceof NotFoundException);
+      assert.match((error as Error).message, /Workspace not found or not accessible/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.getUserProfileForCurrentSession returns the persisted user profile', async () => {
+  const { service, userRepository } = createPlatformService();
+
+  userRepository.findById = async () => createConnectedUserRecord();
+
+  const result = await service.getUserProfileForCurrentSession(createConnectedSessionSnapshot());
+
+  assert.equal(result.id, 'user_1');
+  assert.equal(result.email, 'owner@quizmind.dev');
+  assert.equal(result.displayName, 'Workspace Owner');
+  assert.equal(result.avatarUrl, 'https://cdn.quizmind.dev/avatar.png');
+  assert.equal(result.locale, 'en-US');
+  assert.equal(result.timezone, 'UTC');
+  assert.equal(result.createdAt, '2026-03-20T08:00:00.000Z');
+});
+
+test('PlatformService.updateUserProfileForCurrentSession normalizes and persists profile fields', async () => {
+  const { service, userRepository } = createPlatformService();
+  let capturedUserId: string | undefined;
+  let capturedData: unknown;
+
+  userRepository.findById = async () => createConnectedUserRecord();
+  userRepository.update = async (userId: string, data: any) => {
+    capturedUserId = userId;
+    capturedData = data;
+
+    return createConnectedUserRecord({
+      displayName: data.displayName ?? null,
+      avatarUrl: data.avatarUrl ?? null,
+      locale: data.locale ?? null,
+      timezone: data.timezone ?? null,
+      updatedAt: new Date('2026-03-25T10:00:00.000Z'),
+    });
+  };
+
+  const result = await service.updateUserProfileForCurrentSession(createConnectedSessionSnapshot(), {
+    displayName: '  New Owner Name  ',
+    avatarUrl: 'https://cdn.quizmind.dev/new-avatar.png',
+    locale: 'en-us',
+    timezone: 'Asia/Tashkent',
+  });
+
+  assert.equal(capturedUserId, 'user_1');
+  assert.deepEqual(capturedData, {
+    displayName: 'New Owner Name',
+    avatarUrl: 'https://cdn.quizmind.dev/new-avatar.png',
+    locale: 'en-US',
+    timezone: 'Asia/Tashkent',
+  });
+  assert.equal(result.displayName, 'New Owner Name');
+  assert.equal(result.locale, 'en-US');
+  assert.equal(result.timezone, 'Asia/Tashkent');
+  assert.equal(result.updatedAt, '2026-03-25T10:00:00.000Z');
+});
+
+test('PlatformService.updateUserProfileForCurrentSession validates timezone values', async () => {
+  const { service, userRepository } = createPlatformService();
+  userRepository.findById = async () => createConnectedUserRecord();
+
+  await assert.rejects(
+    () =>
+      service.updateUserProfileForCurrentSession(createConnectedSessionSnapshot(), {
+        timezone: 'Mars/Olympus',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof BadRequestException);
+      assert.match((error as Error).message, /timezone must be a valid IANA timezone name/);
+      return true;
+    },
+  );
 });
 
 test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into admin directory entries', async () => {
@@ -509,7 +689,8 @@ test('PlatformService.listAdminLogsForCurrentSession denies principals without a
 });
 
 test('PlatformService.exportAdminLogsForCurrentSession exports filtered admin logs as JSON', async () => {
-  const { service, adminLogRepository } = createPlatformService();
+  const { service, adminLogRepository, queueDispatchService } = createPlatformService();
+  let capturedQueueRequest: any = null;
 
   adminLogRepository.listRecent = async () =>
     ({
@@ -545,6 +726,17 @@ test('PlatformService.exportAdminLogsForCurrentSession exports filtered admin lo
         },
       ],
     }) as any;
+  queueDispatchService.dispatch = async (request: any) => {
+    capturedQueueRequest = request;
+
+    return {
+      id: 'audit-exports:test-job',
+      queue: request.queue,
+      payload: request.payload,
+      createdAt: request.createdAt ?? '2026-03-24T12:01:00.000Z',
+      attempts: request.attempts ?? 2,
+    } as any;
+  };
 
   const result = await service.exportAdminLogsForCurrentSession(createAuditLogExportSessionSnapshot(), {
     workspaceId: 'ws_1',
@@ -560,6 +752,20 @@ test('PlatformService.exportAdminLogsForCurrentSession exports filtered admin lo
   assert.match(result.fileName, /^audit-logs-demo-workspace-\d{4}-\d{2}-\d{2}\.json$/);
   assert.equal(result.itemCount, 1);
   assert.match(result.content, /support\.ticket_workflow_updated/);
+  assert.deepEqual(capturedQueueRequest, {
+    queue: 'audit-exports',
+    payload: {
+      exportType: 'admin_logs',
+      workspaceId: 'ws_1',
+      format: 'json',
+      fileName: result.fileName,
+      contentType: result.contentType,
+      exportedAt: result.exportedAt,
+      itemCount: 1,
+      requestedByUserId: 'user_1',
+    },
+    attempts: 2,
+  });
 });
 
 test('PlatformService.exportAdminLogsForCurrentSession denies principals without audit_logs:export', async () => {
@@ -898,6 +1104,11 @@ test('PlatformService.listAdminWebhooksForCurrentSession maps persisted webhook 
   assert.equal(result.items[1]?.status, 'processed');
   assert.equal(result.queues[0]?.name, 'billing-webhooks');
   assert.equal(result.queues[0]?.processorState, 'bound');
+  const queueStates = Object.fromEntries(result.queues.map((queue) => [queue.name, queue.processorState]));
+  assert.equal(queueStates['emails'], 'bound');
+  assert.equal(queueStates['quota-resets'], 'bound');
+  assert.equal(queueStates['entitlement-refresh'], 'bound');
+  assert.equal(queueStates['audit-exports'], 'bound');
 });
 
 test('PlatformService.retryAdminWebhookForCurrentSession requeues a failed Stripe delivery', async () => {
@@ -1047,6 +1258,28 @@ test('PlatformService.getUsageForCurrentSession maps persisted usage counters an
         createdAt: new Date('2026-03-24T11:50:00.000Z'),
       },
     ] as any;
+  usageRepository.listRecentAiRequestsByWorkspaceId = async () =>
+    [
+      {
+        id: 'airq_1',
+        userId: 'user_1',
+        installationId: null,
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        promptTokens: 12,
+        completionTokens: 18,
+        totalTokens: 30,
+        keySource: 'platform',
+        status: 'success',
+        errorCode: null,
+        durationMs: 432,
+        requestMetadata: {
+          requestId: 'req_1',
+          messageCount: 2,
+        },
+        occurredAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    ] as any;
 
   const result = await service.getUsageForCurrentSession(createConnectedSessionSnapshot(), 'ws_1');
 
@@ -1057,9 +1290,10 @@ test('PlatformService.getUsageForCurrentSession maps persisted usage counters an
   assert.equal(result.quotas[0]?.key, 'limit.requests_per_day');
   assert.equal(result.quotas[0]?.consumed, 126);
   assert.equal(result.installations[0]?.installationId, 'inst_chrome_1');
-  assert.equal(result.recentEvents.length, 2);
-  assert.equal(result.recentEvents[0]?.eventType, 'extension.quiz_answer_requested');
-  assert.equal(result.recentEvents[0]?.source, 'telemetry');
+  assert.equal(result.recentEvents.length, 3);
+  assert.equal(result.recentEvents[0]?.eventType, 'ai.proxy.completed');
+  assert.equal(result.recentEvents[0]?.source, 'ai');
+  assert.equal(result.recentEvents[0]?.actorId, 'user_1');
 });
 
 test('PlatformService.getUsageForCurrentSession denies principals without usage:read', async () => {
@@ -1075,8 +1309,172 @@ test('PlatformService.getUsageForCurrentSession denies principals without usage:
   );
 });
 
+test('PlatformService.listUsageHistoryForCurrentSession returns filtered usage events', async () => {
+  const { service, usageRepository } = createPlatformService();
+
+  usageRepository.listTelemetryHistoryByWorkspaceId = async () =>
+    [
+      {
+        id: 'telemetry_1',
+        eventType: 'extension.quiz_answer_requested',
+        severity: 'info',
+        payloadJson: {
+          questionType: 'multiple_choice',
+          surface: 'content_script',
+        },
+        createdAt: new Date('2026-03-24T11:59:00.000Z'),
+        installation: {
+          installationId: 'inst_chrome_1',
+        },
+      },
+      {
+        id: 'telemetry_2',
+        eventType: 'extension.quiz_answer_requested',
+        severity: 'warn',
+        payloadJson: {
+          questionType: 'multiple_choice',
+          surface: 'popup',
+        },
+        createdAt: new Date('2026-03-24T11:50:00.000Z'),
+        installation: {
+          installationId: 'inst_chrome_2',
+        },
+      },
+    ] as any;
+  usageRepository.listActivityHistoryByWorkspaceId = async () =>
+    [
+      {
+        id: 'activity_1',
+        actorId: 'user_1',
+        eventType: 'usage.dashboard_opened',
+        metadataJson: {
+          route: '/app/usage',
+          workspaceId: 'ws_1',
+        },
+        createdAt: new Date('2026-03-24T11:55:00.000Z'),
+      },
+    ] as any;
+
+  const result = await service.listUsageHistoryForCurrentSession(createConnectedSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    source: 'telemetry',
+    installationId: 'inst_chrome_1',
+    eventType: 'extension.quiz_answer_requested',
+    limit: 20,
+  });
+
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.filters.source, 'telemetry');
+  assert.equal(result.filters.installationId, 'inst_chrome_1');
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.source, 'telemetry');
+  assert.equal(result.items[0]?.installationId, 'inst_chrome_1');
+});
+
+test('PlatformService.listUsageHistoryForCurrentSession returns filtered ai proxy events', async () => {
+  let historyInput: unknown;
+  const { service, usageRepository } = createPlatformService();
+
+  usageRepository.listAiRequestHistoryByWorkspaceId = async (input: any) => {
+    historyInput = input;
+
+    return [
+      {
+        id: 'airq_1',
+        userId: 'user_1',
+        installationId: null,
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        keySource: 'platform',
+        status: 'error',
+        errorCode: 'upstream_bad_gateway',
+        durationMs: 780,
+        requestMetadata: {
+          requestId: 'req_error_1',
+          messageCount: 1,
+        },
+        occurredAt: new Date('2026-03-24T12:10:00.000Z'),
+      },
+      {
+        id: 'airq_2',
+        userId: 'user_2',
+        installationId: null,
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        promptTokens: 10,
+        completionTokens: 15,
+        totalTokens: 25,
+        keySource: 'platform',
+        status: 'success',
+        errorCode: null,
+        durationMs: 240,
+        requestMetadata: {
+          requestId: 'req_success_1',
+          messageCount: 2,
+        },
+        occurredAt: new Date('2026-03-24T12:05:00.000Z'),
+      },
+    ] as any;
+  };
+
+  const result = await service.listUsageHistoryForCurrentSession(createConnectedSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    source: 'ai',
+    actorId: 'user_1',
+    eventType: 'ai.proxy.failed',
+    limit: 20,
+  });
+
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.filters.source, 'ai');
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.source, 'ai');
+  assert.equal(result.items[0]?.eventType, 'ai.proxy.failed');
+  assert.equal(result.items[0]?.actorId, 'user_1');
+  assert.equal((historyInput as any).actorId, 'user_1');
+});
+
+test('PlatformService.listUsageHistoryForCurrentSession denies principals without usage:read', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.listUsageHistoryForCurrentSession(createUsageRestrictedSessionSnapshot(), {
+        workspaceId: 'ws_1',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: usage:read/);
+      return true;
+    },
+  );
+});
+
+test('PlatformService.listUsageHistoryForCurrentSession rejects incompatible source filters', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () =>
+      service.listUsageHistoryForCurrentSession(createConnectedSessionSnapshot(), {
+        workspaceId: 'ws_1',
+        source: 'telemetry',
+        actorId: 'user_1',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof BadRequestException);
+      assert.match((error as Error).message, /actorId filter is only supported for activity or ai sources/);
+      return true;
+    },
+  );
+});
+
 test('PlatformService.exportUsageForCurrentSession exports scoped usage data for principals with usage:export', async () => {
-  const { service, subscriptionRepository, usageRepository } = createPlatformService();
+  const { service, subscriptionRepository, usageRepository, queueDispatchService } = createPlatformService();
+  let capturedQueueRequest: any = null;
 
   subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
   usageRepository.listInstallationsByWorkspaceId = async () =>
@@ -1129,6 +1527,17 @@ test('PlatformService.exportUsageForCurrentSession exports scoped usage data for
         createdAt: new Date('2026-03-24T11:50:00.000Z'),
       },
     ] as any;
+  queueDispatchService.dispatch = async (request: any) => {
+    capturedQueueRequest = request;
+
+    return {
+      id: 'audit-exports:test-job',
+      queue: request.queue,
+      payload: request.payload,
+      createdAt: request.createdAt ?? '2026-03-24T12:00:00.000Z',
+      attempts: request.attempts ?? 2,
+    } as any;
+  };
 
   const result = await service.exportUsageForCurrentSession(createUsageExportSessionSnapshot(), {
     workspaceId: 'ws_1',
@@ -1141,6 +1550,20 @@ test('PlatformService.exportUsageForCurrentSession exports scoped usage data for
   assert.equal(result.scope, 'events');
   assert.match(result.fileName, /^usage-demo-workspace-events-/);
   assert.match(result.content, /extension\.quiz_answer_requested/);
+  assert.deepEqual(capturedQueueRequest, {
+    queue: 'audit-exports',
+    payload: {
+      exportType: 'usage',
+      workspaceId: 'ws_1',
+      format: 'json',
+      scope: 'events',
+      fileName: result.fileName,
+      contentType: result.contentType,
+      exportedAt: result.exportedAt,
+      requestedByUserId: 'user_1',
+    },
+    attempts: 2,
+  });
 });
 
 test('PlatformService.exportUsageForCurrentSession denies principals without usage:export', async () => {
@@ -1441,7 +1864,8 @@ test('PlatformService.publishCompatibilityRuleForCurrentSession persists a new c
 });
 
 test('PlatformService.publishRemoteConfigForCurrentSession persists a connected publish for admins', async () => {
-  const { service, remoteConfigRepository } = createPlatformService();
+  const { service, remoteConfigRepository, queueDispatchService } = createPlatformService();
+  let capturedQueueRequest: any = null;
 
   remoteConfigRepository.publishVersion = async (input) =>
     ({
@@ -1461,6 +1885,18 @@ test('PlatformService.publishRemoteConfigForCurrentSession persists a connected 
         createdAt: new Date('2026-03-23T12:30:00.000Z'),
       })),
     }) as any;
+  queueDispatchService.dispatch = async (request: any) => {
+    capturedQueueRequest = request;
+
+    return {
+      id: 'config-publish:test-job',
+      queue: request.queue,
+      payload: request.payload,
+      dedupeKey: request.dedupeKey,
+      createdAt: '2026-03-23T12:30:00.000Z',
+      attempts: request.attempts ?? 1,
+    } as any;
+  };
 
   const result = await service.publishRemoteConfigForCurrentSession(
     {
@@ -1504,6 +1940,12 @@ test('PlatformService.publishRemoteConfigForCurrentSession persists a connected 
   assert.equal(result.publishResult.workspaceId, 'ws_1');
   assert.equal(result.publishResult.publishedAt, '2026-03-23T12:30:00.000Z');
   assert.equal(result.auditLog.eventType, 'remote_config.published');
+  assert.deepEqual(capturedQueueRequest, {
+    queue: 'config-publish',
+    payload: result.publishResult,
+    dedupeKey: 'ws_1:integration-publish:2026-03-23T12:30:00.000Z',
+    attempts: 5,
+  });
   assert.deepEqual(result.preview.values, {
     aiProvider: 'openai',
     answerStyle: 'detailed',

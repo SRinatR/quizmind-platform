@@ -37,6 +37,15 @@ export const dashboardSections: DashboardSection[] = [
     },
   },
   {
+    id: 'history',
+    title: 'History',
+    href: '/app/history',
+    description: 'Filter telemetry and activity history with workspace-aware event drilldowns.',
+    requirement: {
+      permission: 'usage:read',
+    },
+  },
+  {
     id: 'installations',
     title: 'Installations',
     href: '/app/installations',

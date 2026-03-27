@@ -69,6 +69,22 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/workspaces/:id',
+    summary: 'Return workspace details and access state for a specific workspace.',
+    permission: 'workspaces:read',
+  },
+  {
+    method: 'GET',
+    path: '/user/profile',
+    summary: 'Return profile details for the authenticated user account.',
+  },
+  {
+    method: 'PATCH',
+    path: '/user/profile',
+    summary: 'Update mutable user profile settings such as display name, avatar, locale, and timezone.',
+  },
+  {
+    method: 'GET',
     path: '/billing/plans',
     summary: 'Return the public billing plan catalog, prices, and entitlements for pricing surfaces.',
   },
@@ -82,6 +98,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'GET',
     path: '/usage/summary',
     summary: 'Return quota counters, extension installations, and recent usage activity for a workspace.',
+    permission: 'usage:read',
+  },
+  {
+    method: 'GET',
+    path: '/usage/history',
+    summary: 'Return filtered usage activity history for telemetry, workspace activity, and AI proxy streams.',
     permission: 'usage:read',
   },
   {
@@ -183,6 +205,35 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'POST',
     path: '/ai/proxy',
     summary: 'Proxy AI chat-completion requests with policy, quota, and BYOK enforcement.',
+  },
+  {
+    method: 'GET',
+    path: '/ai/models',
+    summary: 'Return plan-aware AI model availability for the current workspace and provider policy.',
+  },
+  {
+    method: 'GET',
+    path: '/user/api-keys',
+    summary: 'List user-owned API keys for BYOK without returning decrypted provider secrets.',
+    permission: 'credentials:read',
+  },
+  {
+    method: 'POST',
+    path: '/user/api-keys',
+    summary: 'Create a user-owned encrypted API key for BYOK routing in the selected workspace context.',
+    permission: 'credentials:write',
+  },
+  {
+    method: 'DELETE',
+    path: '/user/api-keys/:id',
+    summary: 'Revoke a previously saved user API key while preserving audit history.',
+    permission: 'credentials:rotate',
+  },
+  {
+    method: 'POST',
+    path: '/user/api-keys/:id/test',
+    summary: 'Run a BYOK validation pass for a stored user API key and persist the latest validation status.',
+    permission: 'credentials:rotate',
   },
   {
     method: 'GET',

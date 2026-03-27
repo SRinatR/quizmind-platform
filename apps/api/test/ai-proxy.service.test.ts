@@ -63,6 +63,7 @@ function createService(
   policyOverrides?: Partial<AiProviderPolicySnapshot>,
 ) {
   const repository: Partial<AiProxyRepository> = {
+    findWorkspacePlanCode: async () => 'pro',
     findUsageLimit: async () => 5,
     findActiveQuotaCounter: async () =>
       ({
@@ -76,6 +77,7 @@ function createService(
         updatedAt: new Date('2026-03-24T12:00:00.000Z'),
       }) as any,
     findBestUserCredential: async () => null,
+    recordProxyFailure: async () => undefined,
     recordProxyEvent: async () =>
       ({
         id: 'quota_1',
@@ -201,6 +203,8 @@ test('AiProxyService proxies via platform key and increments quota', async (t) =
   assert.equal(result.quota.consumed, 2);
   assert.equal(result.response.id, 'gen_1');
   assert.equal((recordInput as any).consumeQuota, true);
+  assert.equal(typeof (recordInput as any).durationMs, 'number');
+  assert.ok((recordInput as any).durationMs >= 0);
 });
 
 test('AiProxyService rejects BYOK requests when policy disables BYOK', async (t) => {
@@ -241,6 +245,7 @@ test('AiProxyService rejects BYOK requests when policy disables BYOK', async (t)
 });
 
 test('AiProxyService blocks proxy calls when requests-per-day quota is exhausted', async (t) => {
+  let failureInput: unknown;
   const { service } = createService({
     findUsageLimit: async () => 1,
     findActiveQuotaCounter: async () =>
@@ -254,6 +259,9 @@ test('AiProxyService blocks proxy calls when requests-per-day quota is exhausted
         createdAt: new Date('2026-03-24T00:00:00.000Z'),
         updatedAt: new Date('2026-03-24T12:00:00.000Z'),
       }) as any,
+    recordProxyFailure: async (input: any) => {
+      failureInput = input;
+    },
   });
   let fetchCalled = false;
   const previousFetch = globalThis.fetch;
@@ -280,4 +288,168 @@ test('AiProxyService blocks proxy calls when requests-per-day quota is exhausted
     /quota has been exhausted/i,
   );
   assert.equal(fetchCalled, false);
+  assert.equal((failureInput as any).status, 'quota_exceeded');
+  assert.equal((failureInput as any).errorCode, 'quota_exhausted');
+  assert.equal(typeof (failureInput as any).durationMs, 'number');
+  assert.ok((failureInput as any).durationMs >= 0);
+});
+
+test('AiProxyService records upstream proxy failures in ai request telemetry', async (t) => {
+  let failureInput: unknown;
+  const { service } = createService({
+    recordProxyFailure: async (input: any) => {
+      failureInput = input;
+    },
+  });
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          message: 'upstream unavailable',
+        },
+      }),
+      {
+        status: 502,
+        headers: {
+          'content-type': 'application/json',
+        },
+      },
+    )) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  await assert.rejects(
+    () =>
+      service.proxyForCurrentSession(createSession(), {
+        model: 'openrouter/auto',
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello!',
+          },
+        ],
+      }),
+    /OpenRouter request failed with status 502/i,
+  );
+
+  assert.equal((failureInput as any).status, 'error');
+  assert.equal((failureInput as any).errorCode, 'upstream_bad_gateway');
+  assert.equal(typeof (failureInput as any).durationMs, 'number');
+  assert.ok((failureInput as any).durationMs >= 0);
+});
+
+test('AiProxyService.listModelsForCurrentSession returns plan-aware models filtered by policy providers', async () => {
+  const { service } = createService(
+    {
+      findWorkspacePlanCode: async () => 'pro',
+    },
+    {
+      providers: ['openrouter', 'openai', 'anthropic'],
+      defaultProvider: 'openrouter',
+      defaultModel: 'openrouter/auto',
+    },
+  );
+
+  const result = await service.listModelsForCurrentSession(createSession());
+
+  assert.equal(result.workspaceId, 'ws_1');
+  assert.equal(result.planCode, 'pro');
+  assert.equal(result.defaultProvider, 'openrouter');
+  assert.equal(result.defaultModel, 'openrouter/auto');
+  assert.deepEqual(
+    result.models.map((entry) => entry.modelId),
+    ['openrouter/auto', 'gpt-4.1-mini'],
+  );
+});
+
+test('AiProxyService.listModelsForCurrentSession applies allowed model tag filters', async () => {
+  const { service } = createService(
+    {
+      findWorkspacePlanCode: async () => 'pro',
+    },
+    {
+      providers: ['openrouter', 'openai'],
+      defaultProvider: 'openai',
+      defaultModel: 'gpt-4.1-mini',
+      allowedModelTags: ['vision'],
+    },
+  );
+
+  const result = await service.listModelsForCurrentSession(createSession());
+
+  assert.equal(result.defaultProvider, 'openai');
+  assert.equal(result.defaultModel, 'gpt-4.1-mini');
+  assert.deepEqual(result.allowedModelTags, ['vision']);
+  assert.deepEqual(result.models.map((entry) => entry.modelId), ['gpt-4.1-mini']);
+});
+
+test('AiProxyService streams proxy responses and records usage metadata', async (t) => {
+  let recordInput: unknown;
+  const { service } = createService({
+    recordProxyEvent: async (input: any) => {
+      recordInput = input;
+
+      return {
+        id: 'quota_1',
+        workspaceId: 'ws_1',
+        key: 'limit.requests_per_day',
+        consumed: 2,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        createdAt: input.occurredAt,
+        updatedAt: input.occurredAt,
+      } as any;
+    },
+  });
+  const previousFetch = globalThis.fetch;
+  const encoder = new TextEncoder();
+  const streamBody = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(
+        encoder.encode('data: {"id":"gen_stream_1","model":"openrouter/auto","choices":[{"delta":{"content":"Hi"}}]}\n\n'),
+      );
+      controller.enqueue(
+        encoder.encode('data: {"usage":{"prompt_tokens":10,"completion_tokens":12,"total_tokens":22}}\n\n'),
+      );
+      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    },
+  });
+
+  globalThis.fetch = (async () =>
+    new Response(streamBody, {
+      status: 200,
+      headers: {
+        'content-type': 'text/event-stream; charset=utf-8',
+      },
+    })) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  const streamResult = await service.proxyStreamForCurrentSession(createSession(), {
+    model: 'openrouter/auto',
+    stream: true,
+    messages: [
+      {
+        role: 'user',
+        content: 'Hello!',
+      },
+    ],
+  });
+
+  const streamedPayload = await new Response(streamResult.stream).text();
+  const completion = await streamResult.completion;
+
+  assert.match(streamedPayload, /gen_stream_1/);
+  assert.equal(completion.responseId, 'gen_stream_1');
+  assert.equal(completion.usage?.totalTokens, 22);
+  assert.equal(completion.quota.decremented, true);
+  assert.equal(completion.quota.consumed, 2);
+  assert.equal((recordInput as any).consumeQuota, true);
+  assert.equal(typeof (recordInput as any).durationMs, 'number');
+  assert.ok((recordInput as any).durationMs >= 0);
 });

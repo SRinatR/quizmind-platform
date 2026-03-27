@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Prisma } from '@quizmind/database';
+import { Prisma, type SubscriptionStatus } from '@quizmind/database';
 
 import { PrismaService } from '../database/prisma.service';
 
@@ -60,7 +60,30 @@ interface RecordProxyEventInput {
   periodEnd: Date;
   consumeQuota: boolean;
   occurredAt: Date;
+  durationMs?: number;
 }
+
+interface RecordProxyFailureInput {
+  workspaceId: string;
+  userId: string;
+  requestId: string;
+  provider: string;
+  model: string;
+  keySource: 'platform' | 'user';
+  messageCount: number;
+  status: 'error' | 'quota_exceeded';
+  errorCode: string;
+  errorMessage?: string;
+  occurredAt: Date;
+  durationMs?: number;
+}
+
+const subscriptionStatusesWithPlanAccess: SubscriptionStatus[] = [
+  'trialing',
+  'active',
+  'past_due',
+  'grace_period',
+];
 
 function toNullableJsonInput(
   value: Prisma.InputJsonValue | null | undefined,
@@ -88,9 +111,67 @@ function selectCredentialRank(record: AiProxyCredentialRecord, workspaceId: stri
   return 10;
 }
 
+function normalizeTokenCount(value: number | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  return Math.trunc(value);
+}
+
+function normalizeDurationMs(value: number | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+
+  return Math.trunc(value);
+}
+
 @Injectable()
 export class AiProxyRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  async findWorkspacePlanCode(workspaceId: string): Promise<string | undefined> {
+    const activeSubscription = await this.prisma.subscription.findFirst({
+      where: {
+        workspaceId,
+        status: {
+          in: subscriptionStatusesWithPlanAccess,
+        },
+      },
+      orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        planId: true,
+      },
+    });
+
+    const latestSubscription =
+      activeSubscription ??
+      (await this.prisma.subscription.findFirst({
+        where: {
+          workspaceId,
+        },
+        orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          planId: true,
+        },
+      }));
+
+    if (!latestSubscription?.planId) {
+      return undefined;
+    }
+
+    const plan = await this.prisma.plan.findUnique({
+      where: {
+        id: latestSubscription.planId,
+      },
+      select: {
+        code: true,
+      },
+    });
+
+    return plan?.code ?? undefined;
+  }
 
   async findUsageLimit(workspaceId: string, key: string): Promise<number | undefined> {
     const subscription = await this.prisma.subscription.findFirst({
@@ -247,7 +328,31 @@ export class AiProxyRepository {
         quotaKey: input.quotaKey,
         quotaConsumed: input.consumeQuota,
         quotaConsumedTotal: nextCounter?.consumed ?? null,
+        durationMs: normalizeDurationMs(input.durationMs),
       } satisfies Prisma.InputJsonObject;
+      const promptTokens = normalizeTokenCount(input.usage?.promptTokens);
+      const completionTokens = normalizeTokenCount(input.usage?.completionTokens);
+      const totalTokens = normalizeTokenCount(input.usage?.totalTokens);
+      const durationMs = normalizeDurationMs(input.durationMs);
+
+      await transaction.aiRequest.create({
+        data: {
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          installationId: null,
+          provider: input.provider,
+          model: input.model,
+          promptTokens,
+          completionTokens,
+          totalTokens: totalTokens > 0 ? totalTokens : promptTokens + completionTokens,
+          keySource: input.keySource,
+          status: 'success',
+          errorCode: null,
+          durationMs,
+          requestMetadata: metadata,
+          occurredAt: input.occurredAt,
+        },
+      });
 
       await transaction.activityLog.create({
         data: {
@@ -282,6 +387,40 @@ export class AiProxyRepository {
       }
 
       return nextCounter;
+    });
+  }
+
+  async recordProxyFailure(input: RecordProxyFailureInput): Promise<void> {
+    const metadata = {
+      requestId: input.requestId,
+      provider: input.provider,
+      model: input.model,
+      keySource: input.keySource,
+      messageCount: input.messageCount,
+      status: input.status,
+      errorCode: input.errorCode,
+      errorMessage: input.errorMessage ?? null,
+      durationMs: normalizeDurationMs(input.durationMs),
+    } satisfies Prisma.InputJsonObject;
+    const durationMs = normalizeDurationMs(input.durationMs);
+
+    await this.prisma.aiRequest.create({
+      data: {
+        userId: input.userId,
+        workspaceId: input.workspaceId,
+        installationId: null,
+        provider: input.provider,
+        model: input.model,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        keySource: input.keySource,
+        status: input.status,
+        errorCode: input.errorCode,
+        durationMs,
+        requestMetadata: metadata,
+        occurredAt: input.occurredAt,
+      },
     });
   }
 }

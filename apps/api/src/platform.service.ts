@@ -3,7 +3,7 @@ import { Prisma } from '@quizmind/database';
 import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 import { createLogEvent } from '@quizmind/logger';
-import { listQueueDefinitions } from '@quizmind/queue';
+import { createQueueDispatchRequest, listQueueDefinitions } from '@quizmind/queue';
 import { type SessionPrincipal } from '@quizmind/auth';
 import {
   adminExtensionCompatibilityFilters,
@@ -18,6 +18,7 @@ import {
   type AdminLogExportFormat,
   type AdminLogExportRequest,
   type AdminLogExportResult,
+  type AuditExportJobPayload,
   adminLogSeverityFilters,
   adminLogStreamFilters,
   type AdminQueueSummary,
@@ -58,10 +59,16 @@ import {
   type SupportTicketQueueSnapshot,
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
+  type UserProfilePayload,
+  type UserProfileUpdateRequest,
   type UsageExportRequest,
   type UsageExportResult,
+  type UsageHistoryRequest,
+  type UsageHistorySourceFilter,
   type UsageEventIngestResult,
   type UsageEventPayload,
+  type WorkspaceDetailSnapshot,
+  type WorkspaceUsageHistorySnapshot,
   type WorkspaceUsageSnapshot,
 } from '@quizmind/contracts';
 
@@ -82,6 +89,7 @@ import {
   canWriteFeatureFlags,
   canStartSupportImpersonation,
   canPublishRemoteConfig,
+  canReadWorkspace,
   canReadWorkspaceSubscription,
   listPrincipalPermissions,
 } from './services/access-service';
@@ -126,7 +134,7 @@ import {
 } from './services/feature-flags-service';
 import { buildRecentUsageEvents, buildUsageQuotas, mapUsageInstallations } from './services/usage-service';
 import { type CurrentSessionSnapshot } from './auth/auth.types';
-import { mapUserRecordToDirectoryEntry } from './services/users-service';
+import { mapUserRecordToDirectoryEntry, mapUserRecordToProfile } from './services/users-service';
 import {
   buildAuthSession,
   getAccessibleWorkspaces,
@@ -169,6 +177,13 @@ const validAdminWebhookProviderFilters = new Set<string>(adminWebhookProviderFil
 const validAdminWebhookStatusFilters = new Set<string>(adminWebhookStatusFilters);
 const validAdminExtensionConnectionFilters = new Set<string>(adminExtensionConnectionFilters);
 const validAdminExtensionCompatibilityFilters = new Set<string>(adminExtensionCompatibilityFilters);
+const maxProfileDisplayNameLength = 120;
+const maxProfileLocaleLength = 32;
+const maxProfileTimezoneLength = 100;
+const maxProfileAvatarUrlLength = 2048;
+const defaultUsageHistoryLimit = 25;
+const maxUsageHistoryLimit = 200;
+const validUsageHistorySources = new Set<UsageHistorySourceFilter>(['all', 'telemetry', 'activity', 'ai']);
 
 function normalizeInstallationCapabilities(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -191,6 +206,122 @@ function resolveAdminExtensionSessionStatus(
   }
 
   return session.expiresAt <= now ? 'expired' : 'active';
+}
+
+function normalizeOptionalProfileText(
+  value: string | null | undefined,
+  fieldName: string,
+  maxLength: number,
+): string | null | undefined {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw new BadRequestException(`${fieldName} must be a string or null.`);
+  }
+
+  const normalized = value.trim();
+
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  if (normalized.length > maxLength) {
+    throw new BadRequestException(`${fieldName} must be at most ${maxLength} characters.`);
+  }
+
+  return normalized;
+}
+
+function normalizeLocale(value: string | null | undefined): string | null | undefined {
+  const normalized = normalizeOptionalProfileText(value, 'locale', maxProfileLocaleLength);
+
+  if (typeof normalized !== 'string') {
+    return normalized;
+  }
+
+  try {
+    return Intl.getCanonicalLocales(normalized)[0] ?? normalized;
+  } catch {
+    throw new BadRequestException('locale must be a valid BCP-47 locale tag.');
+  }
+}
+
+function normalizeTimezone(value: string | null | undefined): string | null | undefined {
+  const normalized = normalizeOptionalProfileText(value, 'timezone', maxProfileTimezoneLength);
+
+  if (typeof normalized !== 'string') {
+    return normalized;
+  }
+
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: normalized }).format(new Date());
+  } catch {
+    throw new BadRequestException('timezone must be a valid IANA timezone name.');
+  }
+
+  return normalized;
+}
+
+function normalizeAvatarUrl(value: string | null | undefined): string | null | undefined {
+  const normalized = normalizeOptionalProfileText(value, 'avatarUrl', maxProfileAvatarUrlLength);
+
+  if (typeof normalized !== 'string') {
+    return normalized;
+  }
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    throw new BadRequestException('avatarUrl must be a valid absolute URL.');
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new BadRequestException('avatarUrl protocol must be http or https.');
+  }
+
+  return parsed.toString();
+}
+
+function normalizeUsageHistoryLimit(value: number | undefined): number {
+  if (typeof value === 'undefined') {
+    return defaultUsageHistoryLimit;
+  }
+
+  if (!Number.isInteger(value) || value < 1 || value > maxUsageHistoryLimit) {
+    throw new BadRequestException(`limit must be an integer between 1 and ${maxUsageHistoryLimit}.`);
+  }
+
+  return value;
+}
+
+function normalizeUsageHistorySource(value: UsageHistoryRequest['source']): UsageHistorySourceFilter {
+  if (typeof value === 'undefined') {
+    return 'all';
+  }
+
+  if (!validUsageHistorySources.has(value)) {
+    throw new BadRequestException('source must be one of: all, telemetry, activity, ai.');
+  }
+
+  return value;
+}
+
+function normalizeUsageHistoryString(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length > 0 ? normalized : undefined;
 }
 
 @Injectable()
@@ -355,6 +486,22 @@ export class PlatformService {
     };
   }
 
+  getWorkspace(personaKey?: string, workspaceId?: string): WorkspaceDetailSnapshot {
+    const persona = getPersona(personaKey);
+    const requestedWorkspaceId = workspaceId?.trim() || persona.preferredWorkspaceId;
+    const workspace = getAccessibleWorkspaces(persona).find((candidate) => candidate.id === requestedWorkspaceId);
+
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    return {
+      workspace,
+      accessDecision: canReadWorkspace(persona.principal as SessionPrincipal, workspace.id),
+      permissions: listPrincipalPermissions(persona.principal, workspace.id),
+    };
+  }
+
   private buildFoundationRemoteConfigVersions(
     activeLayers: RemoteConfigSnapshot['activeLayers'],
     workspaceId?: string,
@@ -426,6 +573,102 @@ export class PlatformService {
         role: workspace.memberships[0]?.role ?? 'workspace_viewer',
       })),
     };
+  }
+
+  async getWorkspaceForCurrentSession(
+    session: CurrentSessionSnapshot,
+    workspaceId: string,
+  ): Promise<WorkspaceDetailSnapshot> {
+    const requestedWorkspace = session.workspaces.find((workspace) => workspace.id === workspaceId) ?? null;
+
+    if (!requestedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const accessDecision = canReadWorkspace(session.principal as SessionPrincipal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const persistedWorkspace = await this.workspaceRepository.findById(requestedWorkspace.id);
+
+    if (!persistedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    return {
+      workspace: {
+        id: persistedWorkspace.id,
+        slug: persistedWorkspace.slug,
+        name: persistedWorkspace.name,
+        role: requestedWorkspace.role,
+      },
+      accessDecision,
+      permissions: session.permissions,
+    };
+  }
+
+  async getUserProfileForCurrentSession(session: CurrentSessionSnapshot): Promise<UserProfilePayload> {
+    const user = await this.userRepository.findById(session.user.id);
+
+    if (!user) {
+      throw new NotFoundException('User profile not found.');
+    }
+
+    return mapUserRecordToProfile(user);
+  }
+
+  async updateUserProfileForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<UserProfileUpdateRequest>,
+  ): Promise<UserProfilePayload> {
+    if (!request || typeof request !== 'object' || Array.isArray(request)) {
+      throw new BadRequestException('Request body is required for /user/profile PATCH.');
+    }
+
+    const existing = await this.userRepository.findById(session.user.id);
+
+    if (!existing) {
+      throw new NotFoundException('User profile not found.');
+    }
+
+    const updateData: Prisma.UserUpdateInput = {};
+    let mutationCount = 0;
+
+    if ('displayName' in request) {
+      updateData.displayName = normalizeOptionalProfileText(
+        request.displayName ?? null,
+        'displayName',
+        maxProfileDisplayNameLength,
+      );
+      mutationCount += 1;
+    }
+
+    if ('avatarUrl' in request) {
+      updateData.avatarUrl = normalizeAvatarUrl(request.avatarUrl ?? null);
+      mutationCount += 1;
+    }
+
+    if ('locale' in request) {
+      updateData.locale = normalizeLocale(request.locale ?? null);
+      mutationCount += 1;
+    }
+
+    if ('timezone' in request) {
+      updateData.timezone = normalizeTimezone(request.timezone ?? null);
+      mutationCount += 1;
+    }
+
+    if (mutationCount === 0) {
+      throw new BadRequestException(
+        'At least one profile field must be provided: displayName, avatarUrl, locale, timezone.',
+      );
+    }
+
+    const updated = await this.userRepository.update(session.user.id, updateData);
+
+    return mapUserRecordToProfile(updated);
   }
 
   getSubscription(personaKey?: string, workspaceId?: string) {
@@ -546,6 +789,7 @@ export class PlatformService {
           createdAt: new Date(Date.now() - 30 * 60 * 1000),
         },
       ],
+      aiRequests: [],
     });
 
     return {
@@ -584,11 +828,12 @@ export class PlatformService {
       throw new NotFoundException('Subscription not found for workspace.');
     }
 
-    const [installations, counters, telemetry, activity] = await Promise.all([
+    const [installations, counters, telemetry, activity, aiRequests] = await Promise.all([
       this.usageRepository.listInstallationsByWorkspaceId(requestedWorkspace.id),
       this.usageRepository.listQuotaCountersByWorkspaceId(requestedWorkspace.id),
       this.usageRepository.listRecentTelemetryByWorkspaceId(requestedWorkspace.id),
       this.usageRepository.listRecentActivityByWorkspaceId(requestedWorkspace.id),
+      this.usageRepository.listRecentAiRequestsByWorkspaceId(requestedWorkspace.id),
     ]);
     const summary = resolveWorkspaceSubscriptionSummary({
       workspaceId: requestedWorkspace.id,
@@ -615,8 +860,152 @@ export class PlatformService {
       recentEvents: buildRecentUsageEvents({
         telemetry,
         activity,
+        aiRequests,
       }),
     };
+  }
+
+  listUsageHistory(
+    personaKey?: string,
+    request?: Partial<UsageHistoryRequest>,
+  ): WorkspaceUsageHistorySnapshot {
+    const persona = getPersona(personaKey);
+    const workspaceId = request?.workspaceId?.trim() || persona.preferredWorkspaceId;
+    const workspace = getWorkspaceSummary(workspaceId);
+    const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
+    const summary = this.getUsage(personaKey, workspace.id);
+    const filters = this.normalizeUsageHistoryFilters({
+      workspaceId: workspace.id,
+      source: request?.source,
+      eventType: request?.eventType,
+      installationId: request?.installationId,
+      actorId: request?.actorId,
+      limit: request?.limit,
+    });
+
+    return {
+      workspace,
+      accessDecision,
+      filters,
+      items: this.filterUsageHistoryItems(summary.recentEvents, filters),
+      permissions: listPrincipalPermissions(persona.principal, workspace.id),
+    };
+  }
+
+  async listUsageHistoryForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<UsageHistoryRequest>,
+  ): Promise<WorkspaceUsageHistorySnapshot> {
+    const requestedWorkspace =
+      ((request?.workspaceId?.trim()
+        ? session.workspaces.find((workspace) => workspace.id === request.workspaceId?.trim())
+        : session.workspaces[0]) as CurrentSessionSnapshot['workspaces'][number] | undefined) ?? null;
+
+    if (!requestedWorkspace) {
+      throw new NotFoundException('Workspace not found or not accessible.');
+    }
+
+    const accessDecision = canReadUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const filters = this.normalizeUsageHistoryFilters({
+      workspaceId: requestedWorkspace.id,
+      source: request?.source,
+      eventType: request?.eventType,
+      installationId: request?.installationId,
+      actorId: request?.actorId,
+      limit: request?.limit,
+    });
+    const fetchLimit = Math.min(filters.limit * 2, maxUsageHistoryLimit);
+    const telemetryPromise =
+      filters.source === 'activity' || filters.source === 'ai'
+        ? Promise.resolve([])
+        : this.usageRepository.listTelemetryHistoryByWorkspaceId({
+            workspaceId: requestedWorkspace.id,
+            limit: fetchLimit,
+            ...(filters.eventType ? { eventType: filters.eventType } : {}),
+            ...(filters.installationId ? { installationId: filters.installationId } : {}),
+          });
+    const activityPromise =
+      filters.source === 'telemetry' || filters.source === 'ai'
+        ? Promise.resolve([])
+        : this.usageRepository.listActivityHistoryByWorkspaceId({
+            workspaceId: requestedWorkspace.id,
+            limit: fetchLimit,
+            ...(filters.eventType ? { eventType: filters.eventType } : {}),
+            ...(filters.actorId ? { actorId: filters.actorId } : {}),
+          });
+    const aiRequestsPromise =
+      filters.source === 'telemetry' || filters.source === 'activity'
+        ? Promise.resolve([])
+        : this.usageRepository.listAiRequestHistoryByWorkspaceId({
+            workspaceId: requestedWorkspace.id,
+            limit: fetchLimit,
+            ...(filters.actorId ? { actorId: filters.actorId } : {}),
+            ...(filters.installationId ? { installationId: filters.installationId } : {}),
+          });
+    const [telemetry, activity, aiRequests] = await Promise.all([telemetryPromise, activityPromise, aiRequestsPromise]);
+    const items = buildRecentUsageEvents({
+      telemetry,
+      activity,
+      aiRequests,
+      limit: Math.min(fetchLimit * 2, maxUsageHistoryLimit),
+    });
+
+    return {
+      workspace: requestedWorkspace,
+      accessDecision,
+      filters,
+      items: this.filterUsageHistoryItems(items, filters),
+      permissions: listPrincipalPermissions(session.principal, requestedWorkspace.id),
+    };
+  }
+
+  private normalizeUsageHistoryFilters(input: {
+    workspaceId: string;
+    source?: UsageHistoryRequest['source'];
+    eventType?: string;
+    installationId?: string;
+    actorId?: string;
+    limit?: number;
+  }): WorkspaceUsageHistorySnapshot['filters'] {
+    const source = normalizeUsageHistorySource(input.source);
+    const eventType = normalizeUsageHistoryString(input.eventType);
+    const installationId = normalizeUsageHistoryString(input.installationId);
+    const actorId = normalizeUsageHistoryString(input.actorId);
+    const limit = normalizeUsageHistoryLimit(input.limit);
+
+    if (source === 'telemetry' && actorId) {
+      throw new BadRequestException('actorId filter is only supported for activity or ai sources.');
+    }
+
+    if (source === 'activity' && installationId) {
+      throw new BadRequestException('installationId filter is only supported for telemetry or ai sources.');
+    }
+
+    return {
+      workspaceId: input.workspaceId,
+      source,
+      ...(eventType ? { eventType } : {}),
+      ...(installationId ? { installationId } : {}),
+      ...(actorId ? { actorId } : {}),
+      limit,
+    };
+  }
+
+  private filterUsageHistoryItems(
+    items: WorkspaceUsageHistorySnapshot['items'],
+    filters: WorkspaceUsageHistorySnapshot['filters'],
+  ): WorkspaceUsageHistorySnapshot['items'] {
+    return items
+      .filter((item) => (filters.source === 'all' ? true : item.source === filters.source))
+      .filter((item) => (filters.eventType ? item.eventType === filters.eventType : true))
+      .filter((item) => (filters.installationId ? item.installationId === filters.installationId : true))
+      .filter((item) => (filters.actorId ? item.actorId === filters.actorId : true))
+      .slice(0, filters.limit);
   }
 
   exportUsage(personaKey?: string, request?: Partial<UsageExportRequest>): UsageExportResult {
@@ -653,7 +1042,28 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    return this.buildUsageExportResult(await this.getUsageForCurrentSession(session, requestedWorkspace.id), request);
+    const exportResult = this.buildUsageExportResult(
+      await this.getUsageForCurrentSession(session, requestedWorkspace.id),
+      request,
+    );
+    const queuePayload: AuditExportJobPayload = {
+      exportType: 'usage',
+      workspaceId: exportResult.workspaceId,
+      format: exportResult.format,
+      scope: exportResult.scope,
+      fileName: exportResult.fileName,
+      contentType: exportResult.contentType,
+      exportedAt: exportResult.exportedAt,
+      requestedByUserId: session.user.id,
+    };
+    await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'audit-exports',
+        payload: queuePayload,
+      }),
+    );
+
+    return exportResult;
   }
 
   exportAdminLogs(personaKey?: string, request?: Partial<AdminLogExportRequest>): AdminLogExportResult {
@@ -679,13 +1089,31 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    return this.buildAdminLogExportResult(
+    const exportResult = this.buildAdminLogExportResult(
       await this.listAdminLogsForCurrentSession(session, {
         ...request,
         ...(resolvedWorkspaceId ? { workspaceId: resolvedWorkspaceId } : {}),
       }),
       request,
     );
+    const queuePayload: AuditExportJobPayload = {
+      exportType: 'admin_logs',
+      ...(exportResult.workspaceId ? { workspaceId: exportResult.workspaceId } : {}),
+      format: exportResult.format,
+      fileName: exportResult.fileName,
+      contentType: exportResult.contentType,
+      exportedAt: exportResult.exportedAt,
+      itemCount: exportResult.itemCount,
+      requestedByUserId: session.user.id,
+    };
+    await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'audit-exports',
+        payload: queuePayload,
+      }),
+    );
+
+    return exportResult;
   }
 
   listAdminExtensionFleet(
@@ -1311,11 +1739,18 @@ export class PlatformService {
           activeFlags: ['beta.remote-config-v2'],
         },
       };
+      const publishResult = publishRemoteConfigVersion(publishRequest, {
+        publishedAt: persistedVersion.createdAt.toISOString(),
+      });
+      await this.queueDispatchService.dispatch(
+        createQueueDispatchRequest({
+          queue: 'config-publish',
+          payload: publishResult.publishResult,
+        }),
+      );
 
       return {
-        ...publishRemoteConfigVersion(publishRequest, {
-          publishedAt: persistedVersion.createdAt.toISOString(),
-        }),
+        ...publishResult,
         preview: previewRemoteConfig(previewRequest),
       };
     } catch (error) {
@@ -1437,11 +1872,12 @@ export class PlatformService {
       },
     };
 
-    const queueJob = await this.queueDispatchService.dispatch({
-      queue: 'usage-events',
-      payload: usageEvent,
-      dedupeKey: `${usageEvent.installationId}:${usageEvent.occurredAt}`,
-    });
+    const queueJob = await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'usage-events',
+        payload: usageEvent,
+      }),
+    );
 
     const logEvent = createLogEvent({
       eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
@@ -1933,6 +2369,31 @@ export class PlatformService {
         return {
           processorState: 'bound',
           handler: 'processUsageEventJob',
+        };
+      case 'emails':
+        return {
+          processorState: 'bound',
+          handler: 'processEmailJob',
+        };
+      case 'quota-resets':
+        return {
+          processorState: 'bound',
+          handler: 'processQuotaResetJob',
+        };
+      case 'entitlement-refresh':
+        return {
+          processorState: 'bound',
+          handler: 'processEntitlementRefreshJob',
+        };
+      case 'config-publish':
+        return {
+          processorState: 'bound',
+          handler: 'propagateRemoteConfigPublish',
+        };
+      case 'audit-exports':
+        return {
+          processorState: 'bound',
+          handler: 'processAuditExportJob',
         };
       default:
         return {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Param, Patch, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
@@ -17,7 +17,9 @@ import {
   type SupportImpersonationRequest,
   type SupportTicketQueuePresetFavoriteRequest,
   type SupportTicketWorkflowUpdateRequest,
+  type UserProfileUpdateRequest,
   type UsageExportRequest,
+  type UsageHistoryRequest,
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
@@ -67,6 +69,39 @@ export class PlatformController {
     return ok(await this.platformService.listWorkspacesForCurrentSession(session));
   }
 
+  @Get('workspaces/:id')
+  async getWorkspace(
+    @Param('id') workspaceId: string,
+    @Query('persona') persona?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.getWorkspace(persona, workspaceId));
+    }
+
+    return ok(await this.platformService.getWorkspaceForCurrentSession(session, workspaceId));
+  }
+
+  @Get('user/profile')
+  async getUserProfile(@Headers('authorization') authorization?: string) {
+    return ok(await this.platformService.getUserProfileForCurrentSession(await this.requireStrictConnectedSession(authorization)));
+  }
+
+  @Patch('user/profile')
+  async updateUserProfile(
+    @Body() request?: Partial<UserProfileUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.platformService.updateUserProfileForCurrentSession(
+        await this.requireStrictConnectedSession(authorization),
+        request,
+      ),
+    );
+  }
+
   @Get('billing/subscription')
   async getSubscription(
     @Query('persona') persona?: string,
@@ -95,6 +130,34 @@ export class PlatformController {
     }
 
     return ok(await this.platformService.getUsageForCurrentSession(session, workspaceId));
+  }
+
+  @Get('usage/history')
+  async getUsageHistory(
+    @Query('persona') persona?: string,
+    @Query('workspaceId') workspaceId?: string,
+    @Query('source') source?: string,
+    @Query('eventType') eventType?: string,
+    @Query('installationId') installationId?: string,
+    @Query('actorId') actorId?: string,
+    @Query('limit') limit?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const request: Partial<UsageHistoryRequest> = {
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(source ? { source: source as UsageHistoryRequest['source'] } : {}),
+      ...(eventType ? { eventType } : {}),
+      ...(installationId ? { installationId } : {}),
+      ...(actorId ? { actorId } : {}),
+      ...(limit ? { limit: Number(limit) } : {}),
+    };
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listUsageHistory(persona, request));
+    }
+
+    return ok(await this.platformService.listUsageHistoryForCurrentSession(session, request));
   }
 
   @Get('admin/installations')
@@ -453,5 +516,15 @@ export class PlatformController {
     }
 
     return this.authService.getCurrentSession(accessToken);
+  }
+
+  private async requireStrictConnectedSession(authorization?: string): Promise<CurrentSessionSnapshot> {
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      throw new ServiceUnavailableException('User profile endpoints require QUIZMIND_RUNTIME_MODE=connected.');
+    }
+
+    return session;
   }
 }

@@ -245,7 +245,7 @@ One-time bind code fallback (when `postMessage` handoff fails):
 
 - bridge now returns `fallbackCode` with short TTL and redeem path
 - extension can redeem once through:
-- current implementation stores fallback codes in web-process memory; use a shared store for multi-instance production runtime
+- fallback codes are persisted in a Redis-backed shared store (with in-memory fallback if Redis is unavailable)
 
 ```http
 POST /api/extension/bind/redeem

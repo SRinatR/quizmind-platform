@@ -1,6 +1,7 @@
 import {
   type PlanEntitlement,
   type UsageInstallationSummary,
+  type UsageEventSeverity,
   type UsageMetricStatus,
   type UsageQuotaSnapshot,
   type UsageRecentEventSummary,
@@ -9,6 +10,7 @@ import { addUtcDays, resolveUsageMetricStatus, startOfUtcDay } from '@quizmind/u
 
 import {
   type WorkspaceActivityRecord,
+  type WorkspaceAiRequestRecord,
   type WorkspaceQuotaCounterRecord,
   type WorkspaceTelemetryRecord,
   type WorkspaceUsageInstallationRecord,
@@ -51,6 +53,58 @@ function summarizeRecord(value: unknown): string {
     .map(([key, entryValue]) => `${key}=${String(entryValue)}`);
 
   return entries.length > 0 ? entries.join(' | ') : 'Metadata recorded.';
+}
+
+function resolveAiRequestEventType(status: string): string {
+  if (status === 'quota_exceeded') {
+    return 'ai.proxy.quota_exceeded';
+  }
+
+  if (status === 'error') {
+    return 'ai.proxy.failed';
+  }
+
+  return 'ai.proxy.completed';
+}
+
+function resolveAiRequestSeverity(status: string): UsageEventSeverity {
+  if (status === 'quota_exceeded') {
+    return 'warn';
+  }
+
+  if (status === 'error') {
+    return 'error';
+  }
+
+  return 'info';
+}
+
+function summarizeAiRequest(record: WorkspaceAiRequestRecord): string {
+  const parts: string[] = [
+    `provider=${record.provider}`,
+    `model=${record.model}`,
+    `key=${record.keySource}`,
+  ];
+
+  if (record.totalTokens > 0) {
+    parts.push(`tokens=${record.totalTokens}`);
+  }
+
+  if (typeof record.durationMs === 'number' && Number.isFinite(record.durationMs) && record.durationMs >= 0) {
+    parts.push(`durationMs=${Math.trunc(record.durationMs)}`);
+  }
+
+  if (record.status !== 'success') {
+    parts.push(`error=${record.errorCode ?? 'unknown'}`);
+  }
+
+  const metadataSummary = summarizeRecord(record.requestMetadata);
+
+  if (metadataSummary !== 'No metadata attached.' && metadataSummary !== 'Metadata recorded.') {
+    parts.push(metadataSummary);
+  }
+
+  return parts.join(' | ');
 }
 
 function resolveCounterFallbackWindow(input: {
@@ -146,6 +200,7 @@ export function buildUsageQuotas(input: {
 export function buildRecentUsageEvents(input: {
   telemetry: WorkspaceTelemetryRecord[];
   activity: WorkspaceActivityRecord[];
+  aiRequests?: WorkspaceAiRequestRecord[];
   limit?: number;
 }): UsageRecentEventSummary[] {
   const events: UsageRecentEventSummary[] = [
@@ -165,6 +220,16 @@ export function buildRecentUsageEvents(input: {
       occurredAt: record.createdAt.toISOString(),
       actorId: record.actorId ?? undefined,
       summary: summarizeRecord(record.metadataJson),
+    })),
+    ...(input.aiRequests ?? []).map((record) => ({
+      id: `ai:${record.id}`,
+      source: 'ai' as const,
+      eventType: resolveAiRequestEventType(record.status),
+      severity: resolveAiRequestSeverity(record.status),
+      occurredAt: record.occurredAt.toISOString(),
+      installationId: record.installationId ?? undefined,
+      actorId: record.userId,
+      summary: summarizeAiRequest(record),
     })),
   ];
 

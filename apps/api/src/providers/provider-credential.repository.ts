@@ -12,6 +12,7 @@ const providerCredentialSelect = {
   ownerId: true,
   userId: true,
   workspaceId: true,
+  encryptedSecretJson: true,
   validationStatus: true,
   scopesJson: true,
   metadataJson: true,
@@ -73,6 +74,13 @@ interface RevokeProviderCredentialInput extends ProviderCredentialLogInput {
   validationStatus: CredentialValidationStatus;
   metadataJson?: Prisma.InputJsonValue | null;
   revokedAt: Date;
+}
+
+interface ValidateProviderCredentialInput extends ProviderCredentialLogInput {
+  credentialId: string;
+  validationStatus: CredentialValidationStatus;
+  metadataJson?: Prisma.InputJsonValue | null;
+  lastValidatedAt: Date;
 }
 
 function buildMetadataJson(event: StructuredLogEvent): Prisma.InputJsonValue {
@@ -281,6 +289,56 @@ export class ProviderCredentialRepository {
           validationStatus: input.validationStatus,
           revokedAt: input.revokedAt,
           metadataJson: input.metadataJson ?? undefined,
+        },
+        select: providerCredentialSelect,
+      });
+
+      await transaction.auditLog.create({
+        data: {
+          workspaceId: record.workspaceId ?? null,
+          actorId: input.auditLog.actorId,
+          action: input.auditLog.eventType,
+          targetType: input.auditLog.targetType,
+          targetId: input.auditLog.targetId,
+          metadataJson: buildMetadataJson(input.auditLog),
+          createdAt: input.occurredAt,
+        },
+      });
+
+      await transaction.securityEvent.create({
+        data: {
+          workspaceId: record.workspaceId ?? null,
+          actorId: input.securityLog.actorId,
+          eventType: input.securityLog.eventType,
+          severity: input.securityLog.severity,
+          metadataJson: buildMetadataJson(input.securityLog),
+          createdAt: input.occurredAt,
+        },
+      });
+
+      await transaction.domainEvent.create({
+        data: {
+          workspaceId: record.workspaceId ?? null,
+          eventType: input.domainEventType,
+          payloadJson: input.domainPayload,
+          createdAt: input.occurredAt,
+        },
+      });
+
+      return record;
+    });
+  }
+
+  async validateWithLogs(input: ValidateProviderCredentialInput): Promise<ProviderCredentialRecord> {
+    return this.prisma.$transaction(async (transaction) => {
+      const record = await transaction.providerCredential.update({
+        where: {
+          id: input.credentialId,
+        },
+        data: {
+          validationStatus: input.validationStatus,
+          metadataJson: toNullableJsonInput(input.metadataJson),
+          lastValidatedAt: input.lastValidatedAt,
         },
         select: providerCredentialSelect,
       });

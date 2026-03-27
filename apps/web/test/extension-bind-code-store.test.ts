@@ -9,6 +9,8 @@ import {
   resetBindFallbackCodesForTests,
 } from '../src/lib/extension-bind-code-store';
 
+const originalRedisUrl = process.env.REDIS_URL;
+
 function createBindResult(): ExtensionInstallationBindResult {
   return {
     installation: {
@@ -61,12 +63,22 @@ function createBindResult(): ExtensionInstallationBindResult {
   };
 }
 
-test.beforeEach(() => {
-  resetBindFallbackCodesForTests();
+test.beforeEach(async () => {
+  delete process.env.REDIS_URL;
+  await resetBindFallbackCodesForTests();
 });
 
-test('issueBindFallbackCode creates a redeemable one-time bind code', () => {
-  const fallbackCode = issueBindFallbackCode({
+test.after(() => {
+  if (typeof originalRedisUrl === 'string') {
+    process.env.REDIS_URL = originalRedisUrl;
+    return;
+  }
+
+  delete process.env.REDIS_URL;
+});
+
+test('issueBindFallbackCode creates a redeemable one-time bind code', async () => {
+  const fallbackCode = await issueBindFallbackCode({
     result: createBindResult(),
     installationId: 'inst_123',
     requestId: 'bind_123',
@@ -80,9 +92,9 @@ test('issueBindFallbackCode creates a redeemable one-time bind code', () => {
   assert.equal(fallbackCode.ttlSeconds, 180);
 });
 
-test('redeemBindFallbackCode returns payload once and invalidates the code', () => {
+test('redeemBindFallbackCode returns payload once and invalidates the code', async () => {
   const nowMs = Date.UTC(2026, 2, 27, 10, 0, 0);
-  const fallbackCode = issueBindFallbackCode({
+  const fallbackCode = await issueBindFallbackCode({
     result: createBindResult(),
     installationId: 'inst_123',
     requestId: 'bind_123',
@@ -91,7 +103,7 @@ test('redeemBindFallbackCode returns payload once and invalidates the code', () 
     nowMs,
   });
 
-  const firstRedeem = redeemBindFallbackCode({
+  const firstRedeem = await redeemBindFallbackCode({
     code: fallbackCode.code,
     installationId: 'inst_123',
     requestId: 'bind_123',
@@ -105,7 +117,7 @@ test('redeemBindFallbackCode returns payload once and invalidates the code', () 
     assert.equal(firstRedeem.result.installation.installationId, 'inst_123');
   }
 
-  const secondRedeem = redeemBindFallbackCode({
+  const secondRedeem = await redeemBindFallbackCode({
     code: fallbackCode.code,
     nowMs: nowMs + 2_000,
   });
@@ -116,9 +128,9 @@ test('redeemBindFallbackCode returns payload once and invalidates the code', () 
   }
 });
 
-test('redeemBindFallbackCode enforces context checks when request metadata is present', () => {
+test('redeemBindFallbackCode enforces context checks when request metadata is present', async () => {
   const nowMs = Date.UTC(2026, 2, 27, 10, 0, 0);
-  const fallbackCode = issueBindFallbackCode({
+  const fallbackCode = await issueBindFallbackCode({
     result: createBindResult(),
     installationId: 'inst_123',
     requestId: 'bind_123',
@@ -127,7 +139,7 @@ test('redeemBindFallbackCode enforces context checks when request metadata is pr
     nowMs,
   });
 
-  const mismatch = redeemBindFallbackCode({
+  const mismatch = await redeemBindFallbackCode({
     code: fallbackCode.code,
     installationId: 'inst_123',
     requestId: 'bind_123',
@@ -142,16 +154,16 @@ test('redeemBindFallbackCode enforces context checks when request metadata is pr
   }
 });
 
-test('redeemBindFallbackCode expires stale codes', () => {
+test('redeemBindFallbackCode expires stale codes', async () => {
   const nowMs = Date.UTC(2026, 2, 27, 10, 0, 0);
-  const fallbackCode = issueBindFallbackCode({
+  const fallbackCode = await issueBindFallbackCode({
     result: createBindResult(),
     installationId: 'inst_123',
     ttlSeconds: 60,
     nowMs,
   });
 
-  const expired = redeemBindFallbackCode({
+  const expired = await redeemBindFallbackCode({
     code: fallbackCode.code,
     nowMs: nowMs + 61_000,
   });
@@ -160,4 +172,23 @@ test('redeemBindFallbackCode expires stale codes', () => {
   if (!expired.ok) {
     assert.equal(expired.code, 'invalid_or_expired');
   }
+});
+
+test('bind fallback codes stay redeemable when redis is configured but unavailable', async () => {
+  process.env.REDIS_URL = 'redis://127.0.0.1:6399';
+  await resetBindFallbackCodesForTests();
+
+  const nowMs = Date.UTC(2026, 2, 27, 10, 0, 0);
+  const fallbackCode = await issueBindFallbackCode({
+    result: createBindResult(),
+    installationId: 'inst_123',
+    nowMs,
+  });
+
+  const redeemed = await redeemBindFallbackCode({
+    code: fallbackCode.code,
+    nowMs: nowMs + 1_000,
+  });
+
+  assert.equal(redeemed.ok, true);
 });

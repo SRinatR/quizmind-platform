@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     return badRequest(fallbackMessage ?? 'Unable to bind the extension installation right now.', response.status || 500);
   }
 
-  const fallbackCode = issueBindFallbackCode({
+  const fallbackCode = await issueBindFallbackCode({
     installationId,
     requestId,
     bridgeNonce,

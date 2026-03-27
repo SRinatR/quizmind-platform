@@ -1,9 +1,15 @@
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+
 import {
   Body,
   Controller,
+  Get,
   Headers,
   Inject,
   Post,
+  Query,
+  Res,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -37,10 +43,59 @@ export class AiProxyController {
   async proxy(
     @Body() request?: Partial<AiProxyRequest>,
     @Headers('authorization') authorization?: string,
+    @Res({ passthrough: true }) response?: any,
   ) {
     const session = await this.requireConnectedSession(authorization);
 
+    if (request?.stream === true && response) {
+      const streamResult = await this.aiProxyService.proxyStreamForCurrentSession(session, request);
+
+      response.status(200);
+      response.setHeader('Content-Type', streamResult.contentType);
+      response.setHeader('Cache-Control', 'no-cache, no-transform');
+      response.setHeader('Connection', 'keep-alive');
+      response.setHeader('X-Accel-Buffering', 'no');
+      response.flushHeaders?.();
+
+      let clientDisconnected = false;
+
+      response.on('close', () => {
+        if (!response.writableEnded) {
+          clientDisconnected = true;
+          streamResult.abort();
+        }
+      });
+
+      try {
+        await pipeline(Readable.fromWeb(streamResult.stream as any), response);
+      } catch {
+        if (!clientDisconnected) {
+          streamResult.abort();
+          throw new ServiceUnavailableException('Unable to stream AI proxy response right now.');
+        }
+      }
+
+      await streamResult.completion.catch((error) => {
+        console.error('[ai-proxy] Failed to persist stream completion event.', error);
+      });
+
+      return;
+    }
+
     return ok(await this.aiProxyService.proxyForCurrentSession(session, request));
+  }
+
+  @Get('ai/models')
+  async listModels(
+    @Query('workspaceId') workspaceId?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.aiProxyService.listModelsForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        workspaceId,
+      ),
+    );
   }
 
   private async requireConnectedSession(authorization?: string): Promise<CurrentSessionSnapshot> {

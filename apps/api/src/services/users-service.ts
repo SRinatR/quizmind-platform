@@ -1,4 +1,4 @@
-import { type AdminUserDirectoryEntry } from '@quizmind/contracts';
+import { type AdminUserDirectoryEntry, type UserProfilePayload } from '@quizmind/contracts';
 
 import { type AuthUserRecord } from '../auth/repositories/user.repository';
 
@@ -17,5 +17,19 @@ export function mapUserRecordToDirectoryEntry(user: AuthUserRecord): AdminUserDi
       workspaceName: membership.workspace.name,
       role: membership.role,
     })),
+  };
+}
+
+export function mapUserRecordToProfile(user: AuthUserRecord): UserProfilePayload {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    locale: user.locale ?? null,
+    timezone: user.timezone ?? null,
+    emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
   };
 }

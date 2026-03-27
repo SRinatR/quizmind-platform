@@ -41,6 +41,23 @@ const activitySelect = {
   createdAt: true,
 } satisfies Prisma.ActivityLogSelect;
 
+const aiRequestSelect = {
+  id: true,
+  userId: true,
+  installationId: true,
+  provider: true,
+  model: true,
+  promptTokens: true,
+  completionTokens: true,
+  totalTokens: true,
+  keySource: true,
+  status: true,
+  errorCode: true,
+  durationMs: true,
+  requestMetadata: true,
+  occurredAt: true,
+} satisfies Prisma.AiRequestSelect;
+
 export type WorkspaceUsageInstallationRecord = Prisma.ExtensionInstallationGetPayload<{
   select: typeof installationSelect;
 }>;
@@ -55,6 +72,10 @@ export type WorkspaceTelemetryRecord = Prisma.ExtensionTelemetryGetPayload<{
 
 export type WorkspaceActivityRecord = Prisma.ActivityLogGetPayload<{
   select: typeof activitySelect;
+}>;
+
+export type WorkspaceAiRequestRecord = Prisma.AiRequestGetPayload<{
+  select: typeof aiRequestSelect;
 }>;
 
 @Injectable()
@@ -99,6 +120,28 @@ export class UsageRepository {
     });
   }
 
+  listTelemetryHistoryByWorkspaceId(input: {
+    workspaceId: string;
+    limit: number;
+    eventType?: string;
+    installationId?: string;
+  }): Promise<WorkspaceTelemetryRecord[]> {
+    return this.prisma.extensionTelemetry.findMany({
+      where: {
+        ...(input.eventType ? { eventType: input.eventType } : {}),
+        installation: {
+          workspaceId: input.workspaceId,
+          ...(input.installationId ? { installationId: input.installationId } : {}),
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: input.limit,
+      select: telemetrySelect,
+    });
+  }
+
   listRecentActivityByWorkspaceId(workspaceId: string, limit = 8): Promise<WorkspaceActivityRecord[]> {
     return this.prisma.activityLog.findMany({
       where: {
@@ -109,6 +152,55 @@ export class UsageRepository {
       },
       take: limit,
       select: activitySelect,
+    });
+  }
+
+  listActivityHistoryByWorkspaceId(input: {
+    workspaceId: string;
+    limit: number;
+    eventType?: string;
+    actorId?: string;
+  }): Promise<WorkspaceActivityRecord[]> {
+    return this.prisma.activityLog.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        ...(input.eventType ? { eventType: input.eventType } : {}),
+        ...(input.actorId ? { actorId: input.actorId } : {}),
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: input.limit,
+      select: activitySelect,
+    });
+  }
+
+  listRecentAiRequestsByWorkspaceId(workspaceId: string, limit = 8): Promise<WorkspaceAiRequestRecord[]> {
+    return this.prisma.aiRequest.findMany({
+      where: {
+        workspaceId,
+      },
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      select: aiRequestSelect,
+    });
+  }
+
+  listAiRequestHistoryByWorkspaceId(input: {
+    workspaceId: string;
+    limit: number;
+    actorId?: string;
+    installationId?: string;
+  }): Promise<WorkspaceAiRequestRecord[]> {
+    return this.prisma.aiRequest.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        ...(input.actorId ? { userId: input.actorId } : {}),
+        ...(input.installationId ? { installationId: input.installationId } : {}),
+      },
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      take: input.limit,
+      select: aiRequestSelect,
     });
   }
 }

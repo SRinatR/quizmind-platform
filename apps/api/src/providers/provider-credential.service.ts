@@ -18,6 +18,12 @@ import {
   type ProviderCredentialRotateRequest,
   type ProviderCredentialStatusBreakdown,
   type ProviderCredentialSummary,
+  type UserApiKeyCreateRequest,
+  type UserApiKeyCreateResult,
+  type UserApiKeyDeleteResult,
+  type UserApiKeyInventoryPayload,
+  type UserApiKeySummary,
+  type UserApiKeyTestResult,
 } from '@quizmind/contracts';
 import { createLogEvent, redactSecrets } from '@quizmind/logger';
 import {
@@ -25,7 +31,7 @@ import {
   providerRegistry,
   validateProviderSecretShape,
 } from '@quizmind/providers';
-import { buildSecretMetadata, encryptSecret, redactSecretValue } from '@quizmind/secrets';
+import { buildSecretMetadata, decryptSecret, encryptSecret, redactSecretValue, type EncryptedSecretEnvelope } from '@quizmind/secrets';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import {
@@ -61,6 +67,67 @@ function normalizeScopes(value: string[] | undefined): string[] {
         .filter((item) => item.length > 0),
     ),
   ).sort();
+}
+
+function normalizeLabel(value: string | undefined): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function readMetadataString(
+  metadata: Record<string, unknown> | null | undefined,
+  key: string,
+): string | null {
+  const value = metadata?.[key];
+
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readKeyHintFromSecret(secret: string): string | null {
+  const normalized = secret.trim();
+
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  return normalized.slice(-4);
+}
+
+function readEncryptedSecretEnvelope(value: Prisma.JsonValue): EncryptedSecretEnvelope {
+  const parsed = readJsonObject(value);
+
+  if (!parsed) {
+    throw new BadRequestException('Stored provider credential is malformed.');
+  }
+
+  const algorithm = parsed.algorithm;
+  const keyVersion = parsed.keyVersion;
+  const ciphertext = parsed.ciphertext;
+  const iv = parsed.iv;
+  const authTag = parsed.authTag;
+
+  if (
+    algorithm !== 'aes-256-gcm' ||
+    keyVersion !== 'v1' ||
+    typeof ciphertext !== 'string' ||
+    typeof iv !== 'string' ||
+    typeof authTag !== 'string'
+  ) {
+    throw new BadRequestException('Stored provider credential envelope is invalid.');
+  }
+
+  return {
+    algorithm,
+    keyVersion,
+    ciphertext,
+    iv,
+    authTag,
+  };
 }
 
 function createOwnerBreakdown(): ProviderCredentialOwnerBreakdown {
@@ -181,6 +248,8 @@ export class ProviderCredentialService {
     }
 
     const scopes = normalizeScopes(request?.scopes);
+    const label = normalizeLabel(request?.label);
+    const keyHint = readKeyHintFromSecret(secretValidation.normalizedSecret);
     const occurredAt = new Date();
     const ownerId =
       ownerType === 'platform'
@@ -200,6 +269,8 @@ export class ProviderCredentialService {
       validationMessage: secretValidation.reason,
       validationMode: 'shape_check',
       proxyMode: 'proxy_only',
+      ...(label ? { label } : {}),
+      ...(keyHint ? { keyHint } : {}),
       ...(workspace ? { workspaceId: workspace.id } : {}),
     };
     const logMetadata = redactSecrets({
@@ -471,6 +542,199 @@ export class ProviderCredentialService {
     };
   }
 
+  async listUserApiKeysForCurrentSession(
+    session: CurrentSessionSnapshot,
+    workspaceId?: string,
+  ): Promise<UserApiKeyInventoryPayload> {
+    const workspace = this.resolveRequestedWorkspace(session, workspaceId);
+    const accessDecision = canReadProviderCredentials(session.principal, workspace.id);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
+    this.assertByokEnabledForUserApiKeys(policy);
+
+    const items = await this.providerCredentialRepository.listAccessible({
+      userId: session.user.id,
+      workspaceIds: session.workspaces.map((entry) => entry.id),
+      includePlatform: false,
+    });
+
+    return {
+      workspace,
+      items: items
+        .filter((item) => this.isVisibleForWorkspace(item, workspace.id))
+        .filter((item) => item.ownerType === 'user' && item.userId === session.user.id)
+        .map((item) => this.mapProviderCredentialToUserApiKey(this.mapRecordToSummary(item))),
+    };
+  }
+
+  async createUserApiKeyForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<UserApiKeyCreateRequest>,
+  ): Promise<UserApiKeyCreateResult> {
+    const workspace = this.resolveRequestedWorkspace(session, request?.workspaceId);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
+    this.assertByokEnabledForUserApiKeys(policy);
+
+    const provider = this.readProvider(request?.provider);
+
+    if (!policy.providers.includes(provider)) {
+      throw new ForbiddenException(`Provider "${provider}" is not enabled by the current AI provider policy.`);
+    }
+
+    const result = await this.createCredentialForCurrentSession(session, {
+      provider,
+      ownerType: 'user',
+      ownerId: session.user.id,
+      workspaceId: workspace.id,
+      label: request?.label,
+      secret: request?.secret ?? '',
+    });
+
+    return {
+      apiKey: this.mapProviderCredentialToUserApiKey(result.credential),
+      ...(typeof result.validationMessage === 'string' ? { validationMessage: result.validationMessage } : {}),
+    };
+  }
+
+  async deleteUserApiKeyForCurrentSession(
+    session: CurrentSessionSnapshot,
+    apiKeyId: string,
+  ): Promise<UserApiKeyDeleteResult> {
+    const credentialId = apiKeyId.trim();
+
+    if (!credentialId) {
+      throw new BadRequestException('id is required.');
+    }
+
+    const existing = await this.providerCredentialRepository.findById(credentialId);
+
+    if (!existing) {
+      throw new NotFoundException('User API key not found.');
+    }
+
+    this.assertUserApiKeyOwnership(session, existing);
+
+    const workspace = this.resolveRequestedWorkspace(session, existing.workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
+    this.assertByokEnabledForUserApiKeys(policy);
+
+    const revoked = await this.revokeCredentialForCurrentSession(session, {
+      credentialId: existing.id,
+      reason: 'Deleted via /user/api-keys endpoint.',
+    });
+
+    return {
+      apiKeyId: revoked.credentialId,
+      deletedAt: revoked.revokedAt,
+    };
+  }
+
+  async testUserApiKeyForCurrentSession(
+    session: CurrentSessionSnapshot,
+    apiKeyId: string,
+  ): Promise<UserApiKeyTestResult> {
+    const credentialId = apiKeyId.trim();
+
+    if (!credentialId) {
+      throw new BadRequestException('id is required.');
+    }
+
+    const existing = await this.providerCredentialRepository.findById(credentialId);
+
+    if (!existing) {
+      throw new NotFoundException('User API key not found.');
+    }
+
+    this.assertUserApiKeyOwnership(session, existing);
+    this.assertCanRotateCredential(session, existing);
+
+    const workspace = this.resolveRequestedWorkspace(session, existing.workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
+    this.assertPolicyAllowsCredentialManagement(policy, 'user', existing.provider as AiProvider, 'rotate');
+
+    if (existing.revokedAt) {
+      throw new BadRequestException('User API key is revoked and cannot be tested.');
+    }
+
+    const provider = this.readProvider(existing.provider as AiProvider);
+    const decryptedSecret = this.decryptCredential(existing);
+    const validation = validateProviderSecretShape(provider, decryptedSecret);
+    const isValid = validation.valid && Boolean(validation.normalizedSecret);
+    const occurredAt = new Date();
+    const metadata = {
+      ...(readJsonObject(existing.metadataJson) ?? {}),
+      validationMode: 'shape_check',
+      validationMessage: validation.reason ?? (isValid ? 'Provider secret shape check passed.' : 'Provider secret shape check failed.'),
+      keyHint: readKeyHintFromSecret(validation.normalizedSecret ?? decryptedSecret),
+      lastTestedAt: occurredAt.toISOString(),
+    };
+    const logMetadata = redactSecrets({
+      provider,
+      ownerType: existing.ownerType,
+      ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
+      workspaceId: existing.workspaceId,
+      validationStatus: isValid ? 'valid' : 'invalid',
+    });
+    const auditLog = createLogEvent({
+      category: 'audit',
+      eventId: randomUUID(),
+      eventType: 'provider_credential.tested',
+      actorId: session.user.id,
+      actorType: 'user',
+      workspaceId: existing.workspaceId ?? undefined,
+      targetType: 'provider_credential',
+      targetId: existing.id,
+      occurredAt: occurredAt.toISOString(),
+      severity: isValid ? 'info' : 'warn',
+      status: 'success',
+      metadata: logMetadata,
+    });
+    const securityLog = createLogEvent({
+      category: 'security',
+      eventId: randomUUID(),
+      eventType: 'provider_credential.validation_tested',
+      actorId: session.user.id,
+      actorType: 'user',
+      workspaceId: existing.workspaceId ?? undefined,
+      targetType: 'provider_credential',
+      targetId: existing.id,
+      occurredAt: occurredAt.toISOString(),
+      severity: isValid ? 'info' : 'warn',
+      status: 'success',
+      metadata: logMetadata,
+    });
+    const updated = await this.providerCredentialRepository.validateWithLogs({
+      credentialId: existing.id,
+      validationStatus: isValid ? 'valid' : 'invalid',
+      metadataJson: metadata as Prisma.InputJsonValue,
+      lastValidatedAt: occurredAt,
+      occurredAt,
+      auditLog,
+      securityLog,
+      domainEventType: 'provider_credential.tested',
+      domainPayload: {
+        credentialId: existing.id,
+        provider,
+        ownerType: existing.ownerType,
+        ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
+        workspaceId: existing.workspaceId,
+        validationStatus: isValid ? 'valid' : 'invalid',
+      },
+    });
+    const summary = this.mapProviderCredentialToUserApiKey(this.mapRecordToSummary(updated));
+
+    return {
+      apiKey: summary,
+      valid: isValid,
+      ...(typeof summary.validationMessage === 'string' ? { validationMessage: summary.validationMessage } : {}),
+      testedAt: occurredAt.toISOString(),
+    };
+  }
+
   private resolveRequestedWorkspace(session: CurrentSessionSnapshot, workspaceId?: string) {
     const resolvedWorkspaceId = workspaceId?.trim() || session.workspaces[0]?.id;
 
@@ -494,6 +758,8 @@ export class ProviderCredentialService {
   private mapRecordToSummary(record: ProviderCredentialRecord): ProviderCredentialSummary {
     const metadata = readJsonObject(record.metadataJson);
     const ownerId = record.ownerId ?? record.workspaceId ?? record.userId ?? 'unknown';
+    const secretPreview = readMetadataString(metadata, 'secretPreview');
+    const keyHint = readMetadataString(metadata, 'keyHint') ?? (secretPreview ? secretPreview.slice(-4) : null);
 
     return {
       id: record.id,
@@ -502,15 +768,33 @@ export class ProviderCredentialService {
       ownerId,
       userId: record.userId,
       workspaceId: record.workspaceId,
+      label: readMetadataString(metadata, 'label'),
+      keyHint,
       validationStatus: record.validationStatus,
-      validationMessage: typeof metadata?.validationMessage === 'string' ? metadata.validationMessage : null,
+      validationMessage: readMetadataString(metadata, 'validationMessage'),
       scopes: readJsonStringArray(record.scopesJson),
-      secretPreview: typeof metadata?.secretPreview === 'string' ? metadata.secretPreview : null,
+      secretPreview,
       lastValidatedAt: record.lastValidatedAt?.toISOString() ?? null,
       disabledAt: record.disabledAt?.toISOString() ?? null,
       revokedAt: record.revokedAt?.toISOString() ?? null,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
+    };
+  }
+
+  private mapProviderCredentialToUserApiKey(summary: ProviderCredentialSummary): UserApiKeySummary {
+    return {
+      id: summary.id,
+      provider: summary.provider,
+      workspaceId: summary.workspaceId ?? null,
+      label: summary.label ?? null,
+      keyHint: summary.keyHint ?? null,
+      validationStatus: summary.validationStatus,
+      validationMessage: summary.validationMessage ?? null,
+      lastValidatedAt: summary.lastValidatedAt ?? null,
+      revokedAt: summary.revokedAt ?? null,
+      createdAt: summary.createdAt,
+      updatedAt: summary.updatedAt,
     };
   }
 
@@ -549,12 +833,20 @@ export class ProviderCredentialService {
     });
   }
 
-  private assertPolicyAllowsCredentialManagement(
-    policy: ProviderCredentialInventory['policy'],
-    ownerType: CredentialOwnerType,
-    provider: AiProvider,
-    action: 'create' | 'rotate',
-  ): void {
+  private decryptCredential(record: ProviderCredentialRecord): string {
+    return decryptSecret({
+      envelope: readEncryptedSecretEnvelope(record.encryptedSecretJson),
+      secret: this.env.providerCredentialSecret,
+    });
+  }
+
+  private assertUserApiKeyOwnership(session: CurrentSessionSnapshot, record: ProviderCredentialRecord): void {
+    if (record.ownerType !== 'user' || !record.userId || record.userId !== session.user.id) {
+      throw new NotFoundException('User API key not found.');
+    }
+  }
+
+  private assertByokEnabledForUserApiKeys(policy: ProviderCredentialInventory['policy']): void {
     if (!policy.allowBringYourOwnKey) {
       throw new ForbiddenException(
         policy.reason ?? 'Bring-your-own-key is disabled by the current AI provider policy.',
@@ -566,6 +858,15 @@ export class ProviderCredentialService {
         policy.reason ?? 'Bring-your-own-key currently requires admin approval for this workspace.',
       );
     }
+  }
+
+  private assertPolicyAllowsCredentialManagement(
+    policy: ProviderCredentialInventory['policy'],
+    ownerType: CredentialOwnerType,
+    provider: AiProvider,
+    action: 'create' | 'rotate',
+  ): void {
+    this.assertByokEnabledForUserApiKeys(policy);
 
     if (ownerType === 'workspace' && !policy.allowWorkspaceSharedCredentials) {
       throw new ForbiddenException(

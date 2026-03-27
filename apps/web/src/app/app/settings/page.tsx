@@ -8,6 +8,7 @@ import {
   getProviderCredentialInventory,
   getSession,
   getSubscription,
+  getUserProfile,
   resolvePersona,
 } from '../../../lib/api';
 import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
@@ -26,6 +27,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
   const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
+  const userProfile = await getUserProfile(accessToken);
   const authSessions = await getAuthSessions(accessToken);
   const providerCatalog = await getProviderCatalog();
   const providerCredentialInventory = await getProviderCredentialInventory(workspaceId, accessToken);
@@ -52,6 +54,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           providerCredentialInventory={providerCredentialInventory}
           session={session}
           subscription={subscription}
+          userProfile={userProfile}
           visibleSections={visibleSections}
         />
       ) : (

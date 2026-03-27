@@ -404,6 +404,7 @@ export const ModelName = {
   WebhookEvent: 'WebhookEvent',
   EntitlementOverride: 'EntitlementOverride',
   QuotaCounter: 'QuotaCounter',
+  AiRequest: 'AiRequest',
   FeatureFlag: 'FeatureFlag',
   FeatureFlagOverride: 'FeatureFlagOverride',
   RemoteConfigVersion: 'RemoteConfigVersion',
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "plan" | "planPrice" | "planPriceProviderMapping" | "planEntitlement" | "subscription" | "invoice" | "payment" | "coupon" | "webhookEvent" | "entitlementOverride" | "quotaCounter" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "plan" | "planPrice" | "planPriceProviderMapping" | "planEntitlement" | "subscription" | "invoice" | "payment" | "coupon" | "webhookEvent" | "entitlementOverride" | "quotaCounter" | "aiRequest" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1917,6 +1918,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.QuotaCounterCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.QuotaCounterCountAggregateOutputType> | number
+        }
+      }
+    }
+    AiRequest: {
+      payload: Prisma.$AiRequestPayload<ExtArgs>
+      fields: Prisma.AiRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.AiRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>
+        }
+        findMany: {
+          args: Prisma.AiRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>[]
+        }
+        create: {
+          args: Prisma.AiRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>
+        }
+        createMany: {
+          args: Prisma.AiRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.AiRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>
+        }
+        update: {
+          args: Prisma.AiRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.AiRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiRequest>
+        }
+        groupBy: {
+          args: Prisma.AiRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestCountAggregateOutputType> | number
         }
       }
     }
@@ -3518,6 +3593,28 @@ export const QuotaCounterScalarFieldEnum = {
 export type QuotaCounterScalarFieldEnum = (typeof QuotaCounterScalarFieldEnum)[keyof typeof QuotaCounterScalarFieldEnum]
 
 
+export const AiRequestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  installationId: 'installationId',
+  provider: 'provider',
+  model: 'model',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  keySource: 'keySource',
+  status: 'status',
+  errorCode: 'errorCode',
+  durationMs: 'durationMs',
+  requestMetadata: 'requestMetadata',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestScalarFieldEnum = (typeof AiRequestScalarFieldEnum)[keyof typeof AiRequestScalarFieldEnum]
+
+
 export const FeatureFlagScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -4179,6 +4276,7 @@ export type GlobalOmitConfig = {
   webhookEvent?: Prisma.WebhookEventOmit
   entitlementOverride?: Prisma.EntitlementOverrideOmit
   quotaCounter?: Prisma.QuotaCounterOmit
+  aiRequest?: Prisma.AiRequestOmit
   featureFlag?: Prisma.FeatureFlagOmit
   featureFlagOverride?: Prisma.FeatureFlagOverrideOmit
   remoteConfigVersion?: Prisma.RemoteConfigVersionOmit

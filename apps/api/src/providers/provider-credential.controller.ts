@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Inject,
+  Param,
   Post,
   Query,
   ServiceUnavailableException,
@@ -18,6 +20,7 @@ import {
   type ProviderCredentialCreateRequest,
   type ProviderCredentialRevokeRequest,
   type ProviderCredentialRotateRequest,
+  type UserApiKeyCreateRequest,
 } from '@quizmind/contracts';
 
 import { AuthService } from '../auth/auth.service';
@@ -137,6 +140,58 @@ export class ProviderCredentialController {
       await this.providerCredentialService.revokeCredentialForCurrentSession(
         await this.requireConnectedSession(authorization),
         request,
+      ),
+    );
+  }
+
+  @Get('user/api-keys')
+  async listUserApiKeys(
+    @Query('workspaceId') workspaceId?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.providerCredentialService.listUserApiKeysForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        workspaceId,
+      ),
+    );
+  }
+
+  @Post('user/api-keys')
+  async createUserApiKey(
+    @Body() request?: Partial<UserApiKeyCreateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.providerCredentialService.createUserApiKeyForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        request,
+      ),
+    );
+  }
+
+  @Delete('user/api-keys/:id')
+  async deleteUserApiKey(
+    @Param('id') apiKeyId: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.providerCredentialService.deleteUserApiKeyForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        apiKeyId,
+      ),
+    );
+  }
+
+  @Post('user/api-keys/:id/test')
+  async testUserApiKey(
+    @Param('id') apiKeyId: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.providerCredentialService.testUserApiKeyForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        apiKeyId,
       ),
     );
   }

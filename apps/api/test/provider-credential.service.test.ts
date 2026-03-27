@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { type AiProviderPolicySnapshot } from '@quizmind/contracts';
 import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
-import { decryptSecret, type EncryptedSecretEnvelope } from '@quizmind/secrets';
+import { decryptSecret, encryptSecret, type EncryptedSecretEnvelope } from '@quizmind/secrets';
 
 import { type CurrentSessionSnapshot } from '../src/auth/auth.types';
 import { type AiProviderPolicyService } from '../src/providers/ai-provider-policy.service';
@@ -62,6 +62,13 @@ function createPolicy(overrides?: Partial<AiProviderPolicySnapshot>): AiProvider
   };
 }
 
+function createEncryptedSecret(plaintext = 'sk-or-1234567890') {
+  return encryptSecret({
+    plaintext,
+    secret: 'provider-secret',
+  });
+}
+
 function createService(
   overrides?: Partial<ProviderCredentialRepository>,
   policyOverrides?: Partial<AiProviderPolicySnapshot>,
@@ -78,6 +85,7 @@ function createService(
         ownerId: input.ownerId ?? null,
         userId: input.userId ?? null,
         workspaceId: input.workspaceId ?? null,
+        encryptedSecretJson: input.encryptedSecretJson ?? createEncryptedSecret(),
         validationStatus: input.validationStatus,
         scopesJson: input.scopesJson ?? [],
         metadataJson: input.metadataJson ?? null,
@@ -95,6 +103,7 @@ function createService(
         ownerId: 'user_1',
         userId: 'user_1',
         workspaceId: 'ws_1',
+        encryptedSecretJson: input.encryptedSecretJson ?? createEncryptedSecret(),
         validationStatus: input.validationStatus,
         scopesJson: input.scopesJson ?? [],
         metadataJson: input.metadataJson ?? null,
@@ -112,12 +121,31 @@ function createService(
         ownerId: 'user_1',
         userId: 'user_1',
         workspaceId: 'ws_1',
+        encryptedSecretJson: createEncryptedSecret(),
         validationStatus: input.validationStatus,
         scopesJson: ['chat'],
         metadataJson: input.metadataJson ?? null,
         lastValidatedAt: new Date('2026-03-24T12:00:00.000Z'),
         disabledAt: null,
         revokedAt: input.revokedAt,
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: input.occurredAt,
+      }) as any,
+    validateWithLogs: async (input: any) =>
+      ({
+        id: input.credentialId,
+        provider: 'openrouter',
+        ownerType: 'user',
+        ownerId: 'user_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        encryptedSecretJson: createEncryptedSecret(),
+        validationStatus: input.validationStatus,
+        scopesJson: ['chat'],
+        metadataJson: input.metadataJson ?? null,
+        lastValidatedAt: input.lastValidatedAt ?? null,
+        disabledAt: null,
+        revokedAt: null,
         createdAt: new Date('2026-03-24T12:00:00.000Z'),
         updatedAt: input.occurredAt,
       }) as any,
@@ -507,4 +535,211 @@ test('ProviderCredentialService.revokeCredentialForCurrentSession marks a creden
   assert.equal(revokeInput.auditLog.eventType, 'provider_credential.revoked');
   assert.equal(revokeInput.securityLog.eventType, 'provider_credential.secret_revoked');
   assert.match(result.revokedAt, /^2026-/);
+});
+
+test('ProviderCredentialService.listUserApiKeysForCurrentSession returns only user-owned keys for the workspace', async () => {
+  const session = createSession();
+  const { service } = createService({
+    listAccessible: async () =>
+      ([
+        {
+          id: 'cred_user_ws1',
+          provider: 'openrouter',
+          ownerType: 'user',
+          ownerId: 'user_1',
+          userId: 'user_1',
+          workspaceId: 'ws_1',
+          encryptedSecretJson: createEncryptedSecret(),
+          validationStatus: 'valid',
+          scopesJson: ['chat'],
+          metadataJson: {
+            label: 'Primary key',
+            keyHint: '7890',
+            secretPreview: '******7890',
+            validationMessage: 'Shape check passed.',
+          },
+          lastValidatedAt: new Date('2026-03-24T12:00:00.000Z'),
+          disabledAt: null,
+          revokedAt: null,
+          createdAt: new Date('2026-03-24T12:00:00.000Z'),
+          updatedAt: new Date('2026-03-24T12:05:00.000Z'),
+        },
+        {
+          id: 'cred_workspace_ws1',
+          provider: 'openrouter',
+          ownerType: 'workspace',
+          ownerId: 'ws_1',
+          userId: null,
+          workspaceId: 'ws_1',
+          encryptedSecretJson: createEncryptedSecret(),
+          validationStatus: 'valid',
+          scopesJson: ['chat'],
+          metadataJson: { label: 'Workspace key', keyHint: '9999', secretPreview: '******9999' },
+          lastValidatedAt: new Date('2026-03-24T12:00:00.000Z'),
+          disabledAt: null,
+          revokedAt: null,
+          createdAt: new Date('2026-03-24T12:00:00.000Z'),
+          updatedAt: new Date('2026-03-24T12:05:00.000Z'),
+        },
+      ]) as any,
+  });
+
+  const result = await service.listUserApiKeysForCurrentSession(session, 'ws_1');
+
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0]?.id, 'cred_user_ws1');
+  assert.equal(result.items[0]?.label, 'Primary key');
+  assert.equal(result.items[0]?.keyHint, '7890');
+});
+
+test('ProviderCredentialService.createUserApiKeyForCurrentSession stores user metadata fields', async () => {
+  const session = createSession();
+  let createInput: any;
+  const { service } = createService({
+    createWithLogs: async (input) => {
+      createInput = input;
+
+      return {
+        id: 'cred_user_1',
+        provider: input.provider,
+        ownerType: input.ownerType,
+        ownerId: input.ownerId,
+        userId: input.userId,
+        workspaceId: input.workspaceId,
+        encryptedSecretJson: input.encryptedSecretJson,
+        validationStatus: input.validationStatus,
+        scopesJson: input.scopesJson ?? [],
+        metadataJson: input.metadataJson,
+        lastValidatedAt: input.lastValidatedAt,
+        disabledAt: null,
+        revokedAt: null,
+        createdAt: input.occurredAt,
+        updatedAt: input.occurredAt,
+      } as any;
+    },
+  });
+
+  const result = await service.createUserApiKeyForCurrentSession(session, {
+    provider: 'openrouter',
+    label: 'Personal OpenRouter',
+    secret: 'sk-or-1234567890',
+    workspaceId: 'ws_1',
+  });
+
+  assert.equal(createInput.ownerType, 'user');
+  assert.equal(createInput.userId, 'user_1');
+  assert.equal(createInput.workspaceId, 'ws_1');
+  assert.equal(result.apiKey.label, 'Personal OpenRouter');
+  assert.equal(result.apiKey.keyHint, '7890');
+});
+
+test('ProviderCredentialService.deleteUserApiKeyForCurrentSession revokes a user-owned key', async () => {
+  const session = createSession();
+  let revokeInput: any;
+  const { service } = createService({
+    findById: async () =>
+      ({
+        id: 'cred_user_1',
+        provider: 'openrouter',
+        ownerType: 'user',
+        ownerId: 'user_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        encryptedSecretJson: createEncryptedSecret(),
+        validationStatus: 'valid',
+        scopesJson: ['chat'],
+        metadataJson: { secretPreview: '******7890' },
+        lastValidatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        disabledAt: null,
+        revokedAt: null,
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:01:00.000Z'),
+      }) as any,
+    revokeWithLogs: async (input) => {
+      revokeInput = input;
+
+      return {
+        id: 'cred_user_1',
+        provider: 'openrouter',
+        ownerType: 'user',
+        ownerId: 'user_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        encryptedSecretJson: createEncryptedSecret(),
+        validationStatus: input.validationStatus,
+        scopesJson: ['chat'],
+        metadataJson: input.metadataJson,
+        lastValidatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        disabledAt: null,
+        revokedAt: input.revokedAt,
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: input.occurredAt,
+      } as any;
+    },
+  });
+
+  const result = await service.deleteUserApiKeyForCurrentSession(session, 'cred_user_1');
+
+  assert.equal(revokeInput.credentialId, 'cred_user_1');
+  assert.equal(result.apiKeyId, 'cred_user_1');
+  assert.match(result.deletedAt, /^2026-/);
+});
+
+test('ProviderCredentialService.testUserApiKeyForCurrentSession validates and persists status', async () => {
+  const session = createSession();
+  let validateInput: any;
+  const { service } = createService({
+    findById: async () =>
+      ({
+        id: 'cred_user_1',
+        provider: 'openrouter',
+        ownerType: 'user',
+        ownerId: 'user_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        encryptedSecretJson: createEncryptedSecret('sk-or-1234567890'),
+        validationStatus: 'valid',
+        scopesJson: ['chat'],
+        metadataJson: {
+          label: 'Personal key',
+          keyHint: '7890',
+          secretPreview: '******7890',
+        },
+        lastValidatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        disabledAt: null,
+        revokedAt: null,
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:01:00.000Z'),
+      }) as any,
+    validateWithLogs: async (input) => {
+      validateInput = input;
+
+      return {
+        id: 'cred_user_1',
+        provider: 'openrouter',
+        ownerType: 'user',
+        ownerId: 'user_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        encryptedSecretJson: createEncryptedSecret('sk-or-1234567890'),
+        validationStatus: input.validationStatus,
+        scopesJson: ['chat'],
+        metadataJson: input.metadataJson,
+        lastValidatedAt: input.lastValidatedAt,
+        disabledAt: null,
+        revokedAt: null,
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: input.occurredAt,
+      } as any;
+    },
+  });
+
+  const result = await service.testUserApiKeyForCurrentSession(session, 'cred_user_1');
+
+  assert.equal(validateInput.validationStatus, 'valid');
+  assert.equal(validateInput.auditLog.eventType, 'provider_credential.tested');
+  assert.equal(validateInput.securityLog.eventType, 'provider_credential.validation_tested');
+  assert.equal(result.valid, true);
+  assert.equal(result.apiKey.keyHint, '7890');
 });

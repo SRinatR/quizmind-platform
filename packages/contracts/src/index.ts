@@ -414,11 +414,36 @@ export interface AuthSessionsPayload {
   items: AuthSessionSummary[];
 }
 
+export interface UserProfilePayload {
+  id: string;
+  email: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  locale?: string | null;
+  timezone?: string | null;
+  emailVerifiedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserProfileUpdateRequest {
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  locale?: string | null;
+  timezone?: string | null;
+}
+
 export interface WorkspaceSummary {
   id: string;
   slug: string;
   name: string;
   role: WorkspaceRole;
+}
+
+export interface WorkspaceDetailSnapshot {
+  workspace: WorkspaceSummary;
+  accessDecision: AccessDecision;
+  permissions: string[];
 }
 
 export interface AdminUserWorkspaceMembership {
@@ -1040,9 +1065,64 @@ export interface UsageExportResult {
   content: string;
 }
 
+export interface EmailQueueJobPayload {
+  to: string;
+  templateKey: string;
+  variables: Record<string, unknown>;
+  requestedAt: string;
+  workspaceId?: string;
+  requestedByUserId?: string;
+}
+
+export interface QuotaResetJobPayload {
+  workspaceId: string;
+  key: string;
+  consumed: number;
+  periodStart: string;
+  periodEnd: string;
+  nextPeriodStart: string;
+  nextPeriodEnd: string;
+  requestedAt: string;
+}
+
+export interface EntitlementRefreshJobPayload {
+  workspaceId: string;
+  subscriptionId: string;
+  previousStatus: SubscriptionStatus;
+  nextStatus: SubscriptionStatus;
+  reason: 'subscription_canceled' | 'subscription_resumed' | 'manual' | 'webhook';
+  requestedAt: string;
+  requestedByUserId?: string;
+}
+
+export interface UsageAuditExportJobPayload {
+  exportType: 'usage';
+  workspaceId: string;
+  format: UsageExportFormat;
+  scope: UsageExportScope;
+  fileName: string;
+  contentType: string;
+  exportedAt: string;
+  requestedByUserId: string;
+}
+
+export interface AdminLogsAuditExportJobPayload {
+  exportType: 'admin_logs';
+  workspaceId?: string;
+  format: AdminLogExportFormat;
+  fileName: string;
+  contentType: string;
+  exportedAt: string;
+  itemCount: number;
+  requestedByUserId: string;
+}
+
+export type AuditExportJobPayload = UsageAuditExportJobPayload | AdminLogsAuditExportJobPayload;
+
 export type UsageMetricStatus = 'healthy' | 'warning' | 'exceeded';
-export type UsageEventSource = 'telemetry' | 'activity';
+export type UsageEventSource = 'telemetry' | 'activity' | 'ai';
 export type UsageEventSeverity = 'debug' | 'info' | 'warn' | 'error';
+export type UsageHistorySourceFilter = UsageEventSource | 'all';
 
 export interface UsageQuotaSnapshot {
   key: string;
@@ -1073,6 +1153,32 @@ export interface UsageRecentEventSummary {
   installationId?: string;
   actorId?: string;
   summary: string;
+}
+
+export interface UsageHistoryRequest {
+  workspaceId?: string;
+  source?: UsageHistorySourceFilter;
+  eventType?: string;
+  installationId?: string;
+  actorId?: string;
+  limit?: number;
+}
+
+export interface UsageHistoryFilters {
+  workspaceId: string;
+  source: UsageHistorySourceFilter;
+  eventType?: string;
+  installationId?: string;
+  actorId?: string;
+  limit: number;
+}
+
+export interface WorkspaceUsageHistorySnapshot {
+  workspace: WorkspaceSummary;
+  accessDecision: AccessDecision;
+  filters: UsageHistoryFilters;
+  items: UsageRecentEventSummary[];
+  permissions: string[];
 }
 
 export interface WorkspaceUsageSnapshot {
@@ -1136,6 +1242,8 @@ export interface ProviderCredentialSummary {
   ownerId: string;
   userId?: string | null;
   workspaceId?: string | null;
+  label?: string | null;
+  keyHint?: string | null;
   validationStatus: CredentialValidationStatus;
   validationMessage?: string | null;
   scopes: string[];
@@ -1231,6 +1339,7 @@ export interface ProviderCredentialCreateRequest {
   ownerType: CredentialOwnerType;
   ownerId?: string;
   workspaceId?: string;
+  label?: string;
   secret: string;
   scopes?: string[];
 }
@@ -1256,6 +1365,49 @@ export interface ProviderCredentialRevokeResult {
   revokedAt: string;
 }
 
+export interface UserApiKeySummary {
+  id: string;
+  provider: AiProvider;
+  workspaceId?: string | null;
+  label?: string | null;
+  keyHint?: string | null;
+  validationStatus: CredentialValidationStatus;
+  validationMessage?: string | null;
+  lastValidatedAt?: string | null;
+  revokedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserApiKeyInventoryPayload {
+  workspace: WorkspaceSummary;
+  items: UserApiKeySummary[];
+}
+
+export interface UserApiKeyCreateRequest {
+  provider: AiProvider;
+  secret: string;
+  label?: string;
+  workspaceId?: string;
+}
+
+export interface UserApiKeyCreateResult {
+  apiKey: UserApiKeySummary;
+  validationMessage?: string;
+}
+
+export interface UserApiKeyDeleteResult {
+  apiKeyId: string;
+  deletedAt: string;
+}
+
+export interface UserApiKeyTestResult {
+  apiKey: UserApiKeySummary;
+  valid: boolean;
+  validationMessage?: string;
+  testedAt: string;
+}
+
 export type AiProxyMessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
 export interface AiProxyMessage {
@@ -1273,6 +1425,16 @@ export interface AiProxyRequest {
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+}
+
+export interface AiModelsCatalogPayload {
+  workspaceId: string;
+  planCode: string;
+  providers: ProviderRegistryEntry[];
+  models: ProviderModelCatalogEntry[];
+  defaultProvider?: AiProvider;
+  defaultModel?: string;
+  allowedModelTags?: string[];
 }
 
 export interface AiProxyTokenUsage {

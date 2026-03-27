@@ -29,10 +29,12 @@ import {
   type BillingSubscriptionMutationResult,
   type BillingWebhookIngestResult,
   type BillingWebhookJobPayload,
+  type EntitlementRefreshJobPayload,
   type SubscriptionStatus,
 } from '@quizmind/contracts';
 import { Prisma } from '@quizmind/database';
 import { resolveBillingProvider as resolveConfiguredBillingProvider } from '@quizmind/providers';
+import { createQueueDispatchRequest } from '@quizmind/queue';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { QueueDispatchService } from '../queue/queue-dispatch.service';
@@ -731,6 +733,14 @@ export class BillingService {
         ...(currentSubscription.providerCustomerId ? { providerCustomerId: currentSubscription.providerCustomerId } : {}),
         ...(currentSubscription.providerPriceId ? { providerPriceId: currentSubscription.providerPriceId } : {}),
       });
+      await this.enqueueEntitlementRefresh({
+        workspaceId: workspace.id,
+        subscriptionId: currentSubscription.id,
+        previousStatus: currentSubscription.status as SubscriptionStatus,
+        nextStatus: currentSubscription.status as SubscriptionStatus,
+        reason: 'subscription_canceled',
+        requestedByUserId: session.user.id,
+      });
 
       return {
         workspaceId: workspace.id,
@@ -779,6 +789,14 @@ export class BillingService {
     if (stripeSubscription.customerId && workspace.stripeCustomerId !== stripeSubscription.customerId) {
       await this.billingRepository.updateWorkspaceStripeCustomerId(workspace.id, stripeSubscription.customerId);
     }
+    await this.enqueueEntitlementRefresh({
+      workspaceId: workspace.id,
+      subscriptionId: currentSubscription.id,
+      previousStatus: currentSubscription.status as SubscriptionStatus,
+      nextStatus,
+      reason: 'subscription_canceled',
+      requestedByUserId: session.user.id,
+    });
 
     return {
       workspaceId: workspace.id,
@@ -826,6 +844,14 @@ export class BillingService {
         status: currentSubscription.status,
         ...(currentSubscription.providerCustomerId ? { providerCustomerId: currentSubscription.providerCustomerId } : {}),
         ...(currentSubscription.providerPriceId ? { providerPriceId: currentSubscription.providerPriceId } : {}),
+      });
+      await this.enqueueEntitlementRefresh({
+        workspaceId: workspace.id,
+        subscriptionId: currentSubscription.id,
+        previousStatus: currentSubscription.status as SubscriptionStatus,
+        nextStatus: currentSubscription.status as SubscriptionStatus,
+        reason: 'subscription_resumed',
+        requestedByUserId: session.user.id,
       });
 
       return {
@@ -875,6 +901,14 @@ export class BillingService {
     if (stripeSubscription.customerId && workspace.stripeCustomerId !== stripeSubscription.customerId) {
       await this.billingRepository.updateWorkspaceStripeCustomerId(workspace.id, stripeSubscription.customerId);
     }
+    await this.enqueueEntitlementRefresh({
+      workspaceId: workspace.id,
+      subscriptionId: currentSubscription.id,
+      previousStatus: currentSubscription.status as SubscriptionStatus,
+      nextStatus,
+      reason: 'subscription_resumed',
+      requestedByUserId: session.user.id,
+    });
 
     return {
       workspaceId: workspace.id,
@@ -937,17 +971,18 @@ export class BillingService {
       };
     }
 
-    const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>({
-      queue: 'billing-webhooks',
-      dedupeKey: `stripe:${event.id}`,
-      payload: {
-        provider: 'stripe',
-        webhookEventId: persistedEvent.record.id,
-        externalEventId: event.id,
-        eventType: event.type,
-        receivedAt: persistedEvent.record.receivedAt.toISOString(),
-      },
-    });
+    const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>(
+      createQueueDispatchRequest({
+        queue: 'billing-webhooks',
+        payload: {
+          provider: 'stripe',
+          webhookEventId: persistedEvent.record.id,
+          externalEventId: event.id,
+          eventType: event.type,
+          receivedAt: persistedEvent.record.receivedAt.toISOString(),
+        },
+      }),
+    );
 
     return {
       accepted: true,
@@ -988,17 +1023,18 @@ export class BillingService {
       };
     }
 
-    const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>({
-      queue: 'billing-webhooks',
-      dedupeKey: `yookassa:${event.id}`,
-      payload: {
-        provider: 'yookassa',
-        webhookEventId: persistedEvent.record.id,
-        externalEventId: event.id,
-        eventType: event.type,
-        receivedAt: persistedEvent.record.receivedAt.toISOString(),
-      },
-    });
+    const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>(
+      createQueueDispatchRequest({
+        queue: 'billing-webhooks',
+        payload: {
+          provider: 'yookassa',
+          webhookEventId: persistedEvent.record.id,
+          externalEventId: event.id,
+          eventType: event.type,
+          receivedAt: persistedEvent.record.receivedAt.toISOString(),
+        },
+      }),
+    );
 
     return {
       accepted: true,
@@ -1010,6 +1046,30 @@ export class BillingService {
       queue: job.queue,
       jobId: job.id,
     };
+  }
+
+  private async enqueueEntitlementRefresh(input: {
+    workspaceId: string;
+    subscriptionId: string;
+    previousStatus: SubscriptionStatus;
+    nextStatus: SubscriptionStatus;
+    reason: EntitlementRefreshJobPayload['reason'];
+    requestedByUserId?: string;
+  }): Promise<void> {
+    await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'entitlement-refresh',
+        payload: {
+          workspaceId: input.workspaceId,
+          subscriptionId: input.subscriptionId,
+          previousStatus: input.previousStatus,
+          nextStatus: input.nextStatus,
+          reason: input.reason,
+          requestedAt: new Date().toISOString(),
+          ...(input.requestedByUserId ? { requestedByUserId: input.requestedByUserId } : {}),
+        },
+      }),
+    );
   }
 
   private async loadWorkspaceForSubscriptionRead(

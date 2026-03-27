@@ -71,6 +71,7 @@ export const ModelName = {
   WebhookEvent: 'WebhookEvent',
   EntitlementOverride: 'EntitlementOverride',
   QuotaCounter: 'QuotaCounter',
+  AiRequest: 'AiRequest',
   FeatureFlag: 'FeatureFlag',
   FeatureFlagOverride: 'FeatureFlagOverride',
   RemoteConfigVersion: 'RemoteConfigVersion',
@@ -405,6 +406,28 @@ export const QuotaCounterScalarFieldEnum = {
 } as const
 
 export type QuotaCounterScalarFieldEnum = (typeof QuotaCounterScalarFieldEnum)[keyof typeof QuotaCounterScalarFieldEnum]
+
+
+export const AiRequestScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  installationId: 'installationId',
+  provider: 'provider',
+  model: 'model',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  keySource: 'keySource',
+  status: 'status',
+  errorCode: 'errorCode',
+  durationMs: 'durationMs',
+  requestMetadata: 'requestMetadata',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestScalarFieldEnum = (typeof AiRequestScalarFieldEnum)[keyof typeof AiRequestScalarFieldEnum]
 
 
 export const FeatureFlagScalarFieldEnum = {

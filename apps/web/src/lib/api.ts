@@ -32,10 +32,14 @@ import {
   type SupportTicketQueueFilters,
   type SupportTicketQueueSnapshot,
   type SubscriptionSummary,
+  type UsageHistoryRequest,
   type UsageEventIngestResult,
   type UsageEventPayload,
+  type WorkspaceUsageHistorySnapshot,
   type WorkspaceUsageSnapshot,
   type WorkspaceSummary,
+  type UserProfilePayload,
+  type UserProfileUpdateRequest,
 } from '@quizmind/contracts';
 
 export interface ApiEnvelope<T> {
@@ -147,6 +151,7 @@ export type BillingCheckoutSnapshot = BillingCheckoutResult;
 export type BillingPortalSnapshot = BillingPortalResult;
 export type BillingSubscriptionMutationSnapshot = BillingSubscriptionMutationResult;
 export type UsageSummarySnapshot = WorkspaceUsageSnapshot;
+export type UsageHistorySnapshot = WorkspaceUsageHistorySnapshot;
 export type UsageEventIngestSnapshot = UsageEventIngestResult;
 export type RemoteConfigStateSnapshot = RemoteConfigSnapshot;
 export type RemoteConfigPublishStateSnapshot = RemoteConfigPublishResponse;
@@ -155,6 +160,7 @@ export type ExtensionInstallationInventoryStateSnapshot = ExtensionInstallationI
 export type ProviderCatalogSnapshot = ProviderCatalogPayload;
 export type ProviderCredentialInventorySnapshot = ProviderCredentialInventory;
 export type AdminProviderGovernanceStateSnapshot = AdminProviderGovernanceSnapshot;
+export type UserProfileSnapshot = UserProfilePayload;
 
 export const API_URL =
   process.env.API_INTERNAL_URL ??
@@ -273,6 +279,45 @@ export async function getSession(persona: string, accessToken?: string | null) {
   return readApiData<SessionSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
+export async function getUserProfile(accessToken?: string | null) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return readApiData<UserProfileSnapshot>('/user/profile', withAccessToken(undefined, accessToken));
+}
+
+export async function updateUserProfile(
+  request: Partial<UserProfileUpdateRequest>,
+  accessToken?: string | null,
+) {
+  if (!accessToken) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/user/profile`, {
+      method: 'PATCH',
+      cache: 'no-store',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as ApiEnvelope<UserProfileSnapshot>;
+
+    return payload.ok ? payload.data : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getAuthSessions(accessToken?: string | null) {
   if (!accessToken) {
     return null;
@@ -388,6 +433,24 @@ export async function getUsageSummary(
   });
 
   return readApiData<UsageSummarySnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getUsageHistory(
+  persona: string,
+  request?: Partial<UsageHistoryRequest>,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/usage/history' : withPersona('/usage/history', persona);
+  const path = withQuery(basePath, {
+    workspaceId: request?.workspaceId,
+    source: request?.source,
+    eventType: request?.eventType,
+    installationId: request?.installationId,
+    actorId: request?.actorId,
+    limit: request?.limit,
+  });
+
+  return readApiData<UsageHistorySnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getExtensionInstallationInventory(
