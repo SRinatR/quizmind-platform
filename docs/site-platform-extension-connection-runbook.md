@@ -257,7 +257,8 @@ Recommended payload returned from the bridge to the extension:
 One-time bind code fallback (when `postMessage` handoff fails):
 
 - bridge now returns `fallbackCode` with short TTL and redeem path
-- fallback codes are only issued when secure bridge headers are present together:
+- fallback codes are only issued when bridge mode explicitly requests fallback and secure headers are present together:
+  - `x-quizmind-bridge-mode: fallback_code`
   - `x-quizmind-bind-request-id`
   - `x-quizmind-bridge-nonce`
   - `x-quizmind-target-origin`
@@ -441,6 +442,8 @@ Current implementation status:
   - `extension.bootstrap_refresh_failed`
   - `extension.installation_reconnect_requested`
   - `extension.installation_reconnected`
+  - `extension.installation_session_revoked`
+  - `extension.installation_session_rotated`
   - `extension.runtime_error`
 - admin security findings now expose dedicated lifecycle counters for:
   - bootstrap refresh failures

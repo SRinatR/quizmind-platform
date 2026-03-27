@@ -67,6 +67,12 @@ function normalizeBridgeNonce(value?: string): string | null {
   return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : null;
 }
 
+function normalizeBridgeMode(value?: string): 'bind_result' | 'fallback_code' {
+  const normalized = value?.trim().toLowerCase();
+
+  return normalized === 'fallback_code' ? 'fallback_code' : 'bind_result';
+}
+
 function resolveBridgeTarget(): Window | null {
   if (typeof window === 'undefined') {
     return null;
@@ -120,9 +126,13 @@ export function ExtensionConnectClient({
   const autoBindAttemptedRef = useRef(false);
   const postedInitialErrorRef = useRef(false);
   const bridgeRequestIdRef = useRef<string>(requestId?.trim() || `bind_${Date.now()}`);
-  const bridgeModePreference = bridgeMode?.trim().toLowerCase() ?? 'bind_result';
+  const bridgeModePreference = normalizeBridgeMode(bridgeMode);
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
   const resolvedBridgeNonce = normalizeBridgeNonce(bridgeNonce);
+  const bindRouteBridgeMode: 'bind_result' | 'fallback_code' =
+    bridgeModePreference === 'fallback_code' && resolvedBridgeNonce && resolvedTargetOrigin
+      ? 'fallback_code'
+      : 'bind_result';
   const bridgeSecurityIssue =
     hasBridgeTarget && !resolvedTargetOrigin
       ? 'Secure bridge requires a valid targetOrigin query parameter.'
@@ -184,6 +194,7 @@ export function ExtensionConnectClient({
       const bindHeaders: Record<string, string> = {
         'content-type': 'application/json',
         'x-quizmind-bind-request-id': bridgeRequestIdRef.current,
+        'x-quizmind-bridge-mode': bindRouteBridgeMode,
       };
 
       if (resolvedBridgeNonce) {
@@ -486,6 +497,7 @@ export function ExtensionConnectClient({
         </p>
         <p>
           Bridge mode: <span className="monospace">{bridgeModePreference}</span>
+          {' '}| Bind route mode: <span className="monospace">{bindRouteBridgeMode}</span>
         </p>
       </div>
     </div>

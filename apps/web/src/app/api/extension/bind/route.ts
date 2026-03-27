@@ -30,6 +30,8 @@ interface RouteSuccessPayload {
 }
 
 const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
+const validBridgeModes = new Set(['bind_result', 'fallback_code']);
+type BridgeMode = 'bind_result' | 'fallback_code';
 
 interface BindRouteDependencies {
   apiUrl: string;
@@ -91,6 +93,16 @@ function normalizeBridgeNonce(value: string | undefined): string | undefined {
   return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : undefined;
 }
 
+function normalizeBridgeMode(value: string | undefined): BridgeMode | undefined {
+  const normalized = value?.trim().toLowerCase();
+
+  if (!normalized) {
+    return undefined;
+  }
+
+  return validBridgeModes.has(normalized) ? (normalized as BridgeMode) : undefined;
+}
+
 function normalizeHandshake(value: unknown): CompatibilityHandshake | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -131,6 +143,8 @@ export async function POST(request: Request) {
   const bridgeNonce = normalizeBridgeNonce(rawBridgeNonce);
   const rawTargetOrigin = request.headers.get('x-quizmind-target-origin')?.trim() || undefined;
   const targetOrigin = normalizeBridgeOrigin(rawTargetOrigin);
+  const rawBridgeMode = request.headers.get('x-quizmind-bridge-mode')?.trim() || undefined;
+  const bridgeMode = normalizeBridgeMode(rawBridgeMode) ?? 'bind_result';
 
   if (!installationId || !environment || !handshake) {
     return badRequest('installationId, environment, and a valid handshake are required.');
@@ -144,12 +158,22 @@ export async function POST(request: Request) {
     return badRequest('x-quizmind-target-origin must be a valid http(s) or extension origin.');
   }
 
+  if (rawBridgeMode && !normalizeBridgeMode(rawBridgeMode)) {
+    return badRequest('x-quizmind-bridge-mode must be one of: bind_result, fallback_code.');
+  }
+
   if ((bridgeNonce && !targetOrigin) || (!bridgeNonce && targetOrigin)) {
     return badRequest('x-quizmind-bridge-nonce and x-quizmind-target-origin must be provided together.');
   }
 
   if ((bridgeNonce || targetOrigin) && !requestId) {
     return badRequest('x-quizmind-bind-request-id is required when secure bridge headers are provided.');
+  }
+
+  if (bridgeMode === 'fallback_code' && (!requestId || !bridgeNonce || !targetOrigin)) {
+    return badRequest(
+      'x-quizmind-bridge-mode=fallback_code requires x-quizmind-bind-request-id, x-quizmind-bridge-nonce, and x-quizmind-target-origin.',
+    );
   }
 
   const response = await bindRouteDependencies.fetchImpl(`${bindRouteDependencies.apiUrl}/extension/installations/bind`, {
@@ -184,7 +208,7 @@ export async function POST(request: Request) {
   }
 
   const fallbackCode =
-    requestId && bridgeNonce && targetOrigin
+    bridgeMode === 'fallback_code' && requestId && bridgeNonce && targetOrigin
       ? await bindRouteDependencies.issueFallbackCode({
           installationId,
           requestId,

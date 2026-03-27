@@ -232,6 +232,7 @@ test('extension bind route proxies bind success and issues fallback code metadat
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        'x-quizmind-bridge-mode': 'fallback_code',
         'x-quizmind-bind-request-id': 'bind_123',
         'x-quizmind-bridge-nonce': 'nonce_12345',
         'x-quizmind-target-origin': 'https://app.quizmind.dev/callback?source=extension',
@@ -325,6 +326,64 @@ test('extension bind route proxies bind success without issuing fallback code wh
   assert.equal(capturedFallbackInput, undefined);
 });
 
+test('extension bind route does not issue fallback code in bind_result mode even with secure bridge headers', async () => {
+  const bindResult = createBindResult();
+  let capturedFallbackInput: unknown;
+
+  setBindRouteDependenciesForTests({
+    readAccessToken: async () => 'token_123',
+    fetchImpl: async () =>
+      new Response(
+        JSON.stringify({
+          ok: true,
+          data: bindResult,
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      ),
+    issueFallbackCode: async (input) => {
+      capturedFallbackInput = input;
+
+      return {
+        code: 'bindc_demo123',
+        expiresAt: '2026-03-27T10:03:00.000Z',
+        ttlSeconds: 180,
+        redeemPath: '/api/extension/bind/redeem',
+      };
+    },
+  });
+
+  const response = await POST(
+    new Request('http://localhost/api/extension/bind', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-quizmind-bind-request-id': 'bind_123',
+        'x-quizmind-bridge-nonce': 'nonce_12345',
+        'x-quizmind-target-origin': 'https://app.quizmind.dev',
+      },
+      body: JSON.stringify(createValidBindRequestBody()),
+    }),
+  );
+  const payload = (await response.json()) as {
+    ok: boolean;
+    data?: ExtensionInstallationBindResult;
+    fallbackCode?: {
+      code: string;
+    };
+  };
+
+  assert.equal(response.status, 200);
+  assert.equal(payload.ok, true);
+  assert.equal(payload.data?.installation.installationId, 'inst_123');
+  assert.equal(payload.fallbackCode, undefined);
+  assert.equal(capturedFallbackInput, undefined);
+});
+
 test('extension bind route rejects incomplete secure bridge headers before proxying upstream', async () => {
   let fetchCalled = false;
   let issueFallbackCalled = false;
@@ -361,6 +420,89 @@ test('extension bind route rejects incomplete secure bridge headers before proxy
   assert.equal(response.status, 400);
   assert.equal(payload.ok, false);
   assert.equal(payload.error?.message, 'x-quizmind-bridge-nonce and x-quizmind-target-origin must be provided together.');
+  assert.equal(fetchCalled, false);
+  assert.equal(issueFallbackCalled, false);
+});
+
+test('extension bind route rejects invalid bridge mode before proxying upstream', async () => {
+  let fetchCalled = false;
+  let issueFallbackCalled = false;
+
+  setBindRouteDependenciesForTests({
+    readAccessToken: async () => 'token_123',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      throw new Error('fetch should not be called for invalid bridge mode');
+    },
+    issueFallbackCode: async () => {
+      issueFallbackCalled = true;
+      throw new Error('fallback code should not be issued for invalid bridge mode');
+    },
+  });
+
+  const response = await POST(
+    new Request('http://localhost/api/extension/bind', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-quizmind-bridge-mode': 'unexpected_mode',
+      },
+      body: JSON.stringify(createValidBindRequestBody()),
+    }),
+  );
+  const payload = (await response.json()) as {
+    ok: boolean;
+    error?: {
+      message?: string;
+    };
+  };
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error?.message, 'x-quizmind-bridge-mode must be one of: bind_result, fallback_code.');
+  assert.equal(fetchCalled, false);
+  assert.equal(issueFallbackCalled, false);
+});
+
+test('extension bind route rejects fallback_code mode without full secure bridge headers', async () => {
+  let fetchCalled = false;
+  let issueFallbackCalled = false;
+
+  setBindRouteDependenciesForTests({
+    readAccessToken: async () => 'token_123',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      throw new Error('fetch should not be called when fallback_code mode context is incomplete');
+    },
+    issueFallbackCode: async () => {
+      issueFallbackCalled = true;
+      throw new Error('fallback code should not be issued when fallback_code mode context is incomplete');
+    },
+  });
+
+  const response = await POST(
+    new Request('http://localhost/api/extension/bind', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-quizmind-bridge-mode': 'fallback_code',
+      },
+      body: JSON.stringify(createValidBindRequestBody()),
+    }),
+  );
+  const payload = (await response.json()) as {
+    ok: boolean;
+    error?: {
+      message?: string;
+    };
+  };
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.ok, false);
+  assert.equal(
+    payload.error?.message,
+    'x-quizmind-bridge-mode=fallback_code requires x-quizmind-bind-request-id, x-quizmind-bridge-nonce, and x-quizmind-target-origin.',
+  );
   assert.equal(fetchCalled, false);
   assert.equal(issueFallbackCalled, false);
 });

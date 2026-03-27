@@ -14,6 +14,14 @@ export const extensionLifecycleFilterDefinitions = [
     label: 'Reconnected',
   },
   {
+    eventType: 'extension.installation_session_revoked',
+    label: 'Session revoked',
+  },
+  {
+    eventType: 'extension.installation_session_rotated',
+    label: 'Session rotated',
+  },
+  {
     eventType: 'extension.runtime_error',
     label: 'Runtime errors',
   },
@@ -39,6 +47,8 @@ export function summarizeExtensionLifecycleEvents(items: AdminLogEntry[]): Exten
     'extension.bootstrap_refresh_failed': 0,
     'extension.installation_reconnect_requested': 0,
     'extension.installation_reconnected': 0,
+    'extension.installation_session_revoked': 0,
+    'extension.installation_session_rotated': 0,
     'extension.runtime_error': 0,
   };
   let total = 0;

@@ -312,7 +312,7 @@ export function LogsExplorerClient({
           <div className="mini-list">
             <div className="list-item">
               <strong>Extension lifecycle focus</strong>
-              <p>Quick filters for reconnect and bootstrap refresh incident triage.</p>
+              <p>Quick filters for reconnect, bootstrap refresh, and session token lifecycle triage.</p>
               <div className="tag-row">
                 <button
                   className="btn-ghost"
