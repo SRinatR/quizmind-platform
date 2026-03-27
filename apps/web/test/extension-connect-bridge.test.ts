@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildRelayRedirectUrl,
   normalizeBridgeMode,
   normalizeBridgeNonce,
   normalizeRelayUrl,
@@ -78,6 +79,7 @@ test('resolveBridgeIssues reports no return channel when opener and relay are ab
 test('resolveBridgeIssues passes when secure relay context is complete', () => {
   const result = resolveBridgeIssues({
     hasBridgeTarget: false,
+    requestId: 'bind_123',
     rawRelayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
     resolvedRelayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
     resolvedTargetOrigin: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap',
@@ -86,4 +88,58 @@ test('resolveBridgeIssues passes when secure relay context is complete', () => {
 
   assert.equal(result.bridgeSecurityIssue, null);
   assert.equal(result.bridgeReturnChannelIssue, null);
+});
+
+test('resolveBridgeIssues flags missing requestId for secure return flows', () => {
+  const result = resolveBridgeIssues({
+    hasBridgeTarget: true,
+    requestId: undefined,
+    rawRelayUrl: undefined,
+    resolvedRelayUrl: null,
+    resolvedTargetOrigin: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap',
+    resolvedBridgeNonce: 'nonce_12345',
+  });
+
+  assert.equal(result.bridgeSecurityIssue, 'Secure bridge requires requestId query parameter from extension launcher.');
+  assert.equal(result.bridgeReturnChannelIssue, null);
+});
+
+test('buildRelayRedirectUrl includes payload envelope, request metadata, and platformBaseUrl for compatibility', () => {
+  const redirectUrl = buildRelayRedirectUrl({
+    relayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
+    envelope: {
+      type: 'quizmind.extension.bind_result',
+      requestId: 'bind_123',
+      payload: {
+        session: {
+          token: 'tok_123',
+        },
+      },
+    },
+    requestId: 'bind_123',
+    bridgeNonce: 'nonce_12345',
+    platformBaseUrl: 'https://quizmind.app/path?mode=connect',
+  });
+  const parsed = new URL(redirectUrl);
+
+  assert.equal(parsed.searchParams.get('quizmind_bridge_payload_format'), 'base64url-json');
+  assert.equal(parsed.searchParams.get('requestId'), 'bind_123');
+  assert.equal(parsed.searchParams.get('bridgeNonce'), 'nonce_12345');
+  assert.equal(parsed.searchParams.get('platformBaseUrl'), 'https://quizmind.app');
+  assert.ok(parsed.searchParams.get('quizmind_bridge_payload'));
+});
+
+test('buildRelayRedirectUrl omits invalid platformBaseUrl values', () => {
+  const redirectUrl = buildRelayRedirectUrl({
+    relayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
+    envelope: {
+      type: 'quizmind.extension.bind_result',
+    },
+    requestId: 'bind_123',
+    bridgeNonce: 'nonce_12345',
+    platformBaseUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap',
+  });
+  const parsed = new URL(redirectUrl);
+
+  assert.equal(parsed.searchParams.get('platformBaseUrl'), null);
 });

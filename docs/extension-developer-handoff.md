@@ -168,12 +168,13 @@ The bind flow exists because the extension cannot safely own the site session co
 ### Recommended bridge URL
 
 ```text
-http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&requestId=bind_123&bridgeNonce=<nonce>
+http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&relayUrl=chrome-extension://<extension-id>/relay.html&requestId=bind_123&bridgeNonce=<nonce>&bridgeMode=fallback_code
 ```
 
 Required hardening query params:
 
 - `targetOrigin`: exact extension origin that should receive `postMessage`
+- `relayUrl`: extension relay callback URL for `relay.query_payload` fallback
 - `requestId`: caller correlation id for response matching
 - `bridgeNonce`: single-use nonce echoed by the bridge in every message envelope
 
@@ -275,6 +276,7 @@ Expected response:
 Recommended transport:
 
 - `window.postMessage`
+- `relay.query_payload` via relay URL redirect when opener/parent messaging is unavailable
 
 Recommended message envelope:
 
@@ -319,6 +321,16 @@ Recommended fallback envelope (auto redeem path):
 }
 ```
 
+Recommended relay redirect URL shape for `relay.query_payload`:
+
+```text
+chrome-extension://<extension-id>/relay.html?quizmind_bridge_payload=<base64url-json>&quizmind_bridge_payload_format=base64url-json&requestId=bind_123&bridgeNonce=<nonce>&platformBaseUrl=https://quizmind.app
+```
+
+Compatibility note:
+
+- `platformBaseUrl` is now included by the site for backward compatibility with older extension relay implementations that still call `buildConnectUrl()` during relay processing.
+
 Bridge security requirements:
 
 - validate `origin` on both sides
@@ -326,6 +338,7 @@ Bridge security requirements:
 - do not broadcast to `*` when a strict target origin is known
 - close the bridge window after success or terminal failure
 - when opening the bridge URL, prefer `bridgeMode=fallback_code` so extension runtime can auto-redeem one-time bind codes
+- `requestId` returned from relay/payload must match `pendingBindRequestId` created by `openAuthPage()`; mismatches should be treated as bind context violations
 
 ### One-time bind code fallback
 
@@ -388,6 +401,7 @@ The extension must consume these fields as follows:
   - operational parameters for the enabled features
 - `quotaHints`
   - UI hints for remaining quota; not source of truth
+  - `status: exceeded` must not block bind auth success; it only gates product behavior (for example AI calls)
 - `aiAccessPolicy`
   - allowed AI routing mode and provider policy
 - `deprecationMessages`
@@ -421,6 +435,7 @@ Extension behavior expectations:
   - continue, but show a non-blocking warning when useful
 - `deprecated`
   - continue with a visible upgrade notice
+  - missing required capabilities (for example `quiz-capture`) are expected to produce `deprecated`/`unsupported` depending on policy
 - `unsupported`
   - disable managed actions, preserve safe fallback UI, and prompt upgrade/reconnect
 

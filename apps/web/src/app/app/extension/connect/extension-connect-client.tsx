@@ -8,6 +8,7 @@ import {
 } from '@quizmind/contracts';
 import { useEffect, useRef, useState } from 'react';
 import {
+  buildRelayRedirectUrl,
   normalizeBridgeMode,
   normalizeBridgeNonce,
   normalizeRelayUrl,
@@ -40,36 +41,6 @@ interface BindRouteResponse {
   error?: {
     message?: string;
   };
-}
-
-function encodeBase64UrlJson(value: unknown): string {
-  const json = JSON.stringify(value);
-  const bytes = new TextEncoder().encode(json);
-  let binary = '';
-
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte);
-  });
-
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-function buildRelayRedirectUrl(input: {
-  relayUrl: string;
-  envelope: Record<string, unknown>;
-  requestId: string;
-  bridgeNonce?: string | null;
-}): string {
-  const relay = new URL(input.relayUrl);
-  relay.searchParams.set('quizmind_bridge_payload', encodeBase64UrlJson(input.envelope));
-  relay.searchParams.set('quizmind_bridge_payload_format', 'base64url-json');
-  relay.searchParams.set('requestId', input.requestId);
-
-  if (input.bridgeNonce) {
-    relay.searchParams.set('bridgeNonce', input.bridgeNonce);
-  }
-
-  return relay.toString();
 }
 
 function resolveBridgeTarget(): Window | null {
@@ -137,6 +108,7 @@ export function ExtensionConnectClient({
       : 'bind_result';
   const { bridgeSecurityIssue, bridgeReturnChannelIssue } = resolveBridgeIssues({
     hasBridgeTarget,
+    requestId,
     rawRelayUrl: relayUrl,
     resolvedRelayUrl,
     resolvedTargetOrigin,
@@ -292,6 +264,7 @@ export function ExtensionConnectClient({
             },
             requestId: bridgeRequestIdRef.current,
             bridgeNonce: resolvedBridgeNonce,
+            platformBaseUrl: window.location.origin,
           }),
         );
         return;

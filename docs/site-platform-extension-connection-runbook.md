@@ -213,6 +213,7 @@ Fail-closed behavior in the site bridge:
 
 - bind is blocked when no automatic return channel exists (no opener/parent and no valid `relayUrl`)
 - bind is blocked when secure bridge headers are incomplete for return delivery (`targetOrigin` or `bridgeNonce` missing)
+- bind is blocked when secure bridge launch does not include `requestId`
 - bind is blocked when `relayUrl` origin does not match `targetOrigin`
 
 Current web bridge implementation:
@@ -234,6 +235,17 @@ Recommended response transport from web page to extension:
 
 - `window.postMessage` to the opener window, or
 - redirect to an extension callback URL if the extension platform supports it
+
+Recommended relay redirect shape (for `relay.query_payload` capability):
+
+```text
+chrome-extension://<extension-id>/relay.html?quizmind_bridge_payload=<base64url-json>&quizmind_bridge_payload_format=base64url-json&requestId=bind_123&bridgeNonce=<nonce>&platformBaseUrl=https://quizmind.app
+```
+
+Compatibility note:
+
+- include `platformBaseUrl` for backward compatibility with older extension relay implementations that still call `buildConnectUrl()` while processing relay payloads.
+- keep `requestId` identical across relay query params and payload envelope so extension-side pending bind verification can succeed.
 
 Recommended payload returned from the bridge to the extension:
 

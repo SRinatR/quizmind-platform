@@ -66,8 +66,66 @@ export function normalizeRelayUrl(value?: string, expectedTargetOrigin?: string 
   }
 }
 
+function normalizePlatformBaseUrl(value?: string | null): string | null {
+  const normalized = value?.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return null;
+    }
+
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
+function encodeBase64UrlJson(value: unknown): string {
+  const json = JSON.stringify(value);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+export function buildRelayRedirectUrl(input: {
+  relayUrl: string;
+  envelope: Record<string, unknown>;
+  requestId: string;
+  bridgeNonce?: string | null;
+  platformBaseUrl?: string | null;
+}): string {
+  const relay = new URL(input.relayUrl);
+  relay.searchParams.set('quizmind_bridge_payload', encodeBase64UrlJson(input.envelope));
+  relay.searchParams.set('quizmind_bridge_payload_format', 'base64url-json');
+  relay.searchParams.set('requestId', input.requestId);
+
+  if (input.bridgeNonce) {
+    relay.searchParams.set('bridgeNonce', input.bridgeNonce);
+  }
+
+  const normalizedPlatformBaseUrl = normalizePlatformBaseUrl(input.platformBaseUrl);
+
+  if (normalizedPlatformBaseUrl) {
+    relay.searchParams.set('platformBaseUrl', normalizedPlatformBaseUrl);
+  }
+
+  return relay.toString();
+}
+
 interface ResolveBridgeIssuesInput {
   hasBridgeTarget: boolean;
+  requestId?: string;
   rawRelayUrl?: string;
   resolvedRelayUrl: string | null;
   resolvedTargetOrigin: string | null;
@@ -81,6 +139,7 @@ interface ResolveBridgeIssuesOutput {
 
 export function resolveBridgeIssues(input: ResolveBridgeIssuesInput): ResolveBridgeIssuesOutput {
   const relayRequested = Boolean(input.rawRelayUrl?.trim());
+  const requestId = input.requestId?.trim();
   const secureReturnRequested = input.hasBridgeTarget || relayRequested;
 
   if (secureReturnRequested && !input.resolvedTargetOrigin) {
@@ -100,6 +159,13 @@ export function resolveBridgeIssues(input: ResolveBridgeIssuesInput): ResolveBri
   if (relayRequested && !input.resolvedRelayUrl) {
     return {
       bridgeSecurityIssue: 'relayUrl must be a valid extension URL that matches targetOrigin.',
+      bridgeReturnChannelIssue: null,
+    };
+  }
+
+  if (secureReturnRequested && !requestId) {
+    return {
+      bridgeSecurityIssue: 'Secure bridge requires requestId query parameter from extension launcher.',
       bridgeReturnChannelIssue: null,
     };
   }
