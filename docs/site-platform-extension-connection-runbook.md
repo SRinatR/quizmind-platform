@@ -145,8 +145,20 @@ If running through Docker, API startup already runs:
 
 Default local credentials:
 
-- `admin@quizmind.dev` / `demo-password`
+- `admin@quizmind.dev` / `demo-password` (personal super admin, all system roles)
+- `platform@quizmind.dev` / `demo-password`
 - `support@quizmind.dev` / `demo-password`
+- `billing@quizmind.dev` / `demo-password`
+- `security@quizmind.dev` / `demo-password`
+- `ops@quizmind.dev` / `demo-password`
+- `content@quizmind.dev` / `demo-password`
+- `owner@quizmind.dev` / `demo-password`
+- `workspace-admin@quizmind.dev` / `demo-password`
+- `billing-manager@quizmind.dev` / `demo-password`
+- `security-manager@quizmind.dev` / `demo-password`
+- `manager@quizmind.dev` / `demo-password`
+- `analyst@quizmind.dev` / `demo-password`
+- `member@quizmind.dev` / `demo-password`
 - `viewer@quizmind.dev` / `demo-password`
 
 Open:

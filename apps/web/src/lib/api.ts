@@ -6,6 +6,7 @@ import {
   type AccessDecision,
   type AdminLogsSnapshot,
   type AdminLogFilters,
+  type AdminSecuritySnapshot,
   type AdminWebhookFilters,
   type AdminWebhooksSnapshot,
   type AdminUserDirectorySnapshot,
@@ -139,6 +140,7 @@ export interface FeatureFlagsSnapshot {
 export type SupportImpersonationSnapshot = SupportImpersonationHistorySnapshot;
 export type SupportTicketsSnapshot = SupportTicketQueueSnapshot;
 export type AdminLogsStateSnapshot = AdminLogsSnapshot;
+export type AdminSecurityStateSnapshot = AdminSecuritySnapshot;
 export type AdminWebhooksStateSnapshot = AdminWebhooksSnapshot;
 export type AdminUsersSnapshot = AdminUserDirectorySnapshot;
 export type CompatibilityRulesStateSnapshot = CompatibilityRulesSnapshot;
@@ -530,6 +532,22 @@ export async function getAdminLogs(
   });
 
   return readApiData<AdminLogsStateSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getAdminSecurity(
+  persona: string,
+  filters?: Partial<AdminLogFilters>,
+  accessToken?: string | null,
+) {
+  const basePath = accessToken ? '/admin/security' : withPersona('/admin/security', persona);
+  const path = withQuery(basePath, {
+    workspaceId: filters?.workspaceId,
+    severity: filters?.severity,
+    search: filters?.search,
+    limit: filters?.limit,
+  });
+
+  return readApiData<AdminSecurityStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getAdminWebhooks(

@@ -14,6 +14,7 @@ import {
   getAdminExtensionFleet,
   getAdminProviderGovernance,
   getAdminLogs,
+  getAdminSecurity,
   getAdminWebhooks,
   getAdminUsers,
   getAdminPlans,
@@ -120,6 +121,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const session = await getSession(persona, accessToken);
   const workspaceId = readSearchParam(resolvedSearchParams, 'workspaceId') ?? session?.workspaces[0]?.id;
   const sessionWorkspaceId = workspaceId;
+  const isSecurityRoute = resolvedParams.section === 'security';
   const supportTicketFilters: Partial<SupportTicketQueueFilters> = {
     preset: readSearchParam(resolvedSearchParams, 'ticketPreset') as SupportTicketQueueFilters['preset'] | undefined,
     status: readSearchParam(resolvedSearchParams, 'ticketStatus') as SupportTicketQueueFilters['status'] | undefined,
@@ -130,9 +132,13 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     limit: readIntegerSearchParam(resolvedSearchParams, 'ticketLimit'),
     timelineLimit: readIntegerSearchParam(resolvedSearchParams, 'ticketTimeline'),
   };
+  const requestedLogStream = readSearchParam(
+    resolvedSearchParams,
+    'logStream',
+  ) as AdminLogFilters['stream'] | undefined;
   const adminLogFilters: Partial<AdminLogFilters> = {
     ...(sessionWorkspaceId ? { workspaceId: sessionWorkspaceId } : {}),
-    stream: readSearchParam(resolvedSearchParams, 'logStream') as AdminLogFilters['stream'] | undefined,
+    stream: requestedLogStream ?? (isSecurityRoute ? 'security' : undefined),
     severity: readSearchParam(resolvedSearchParams, 'logSeverity') as AdminLogFilters['severity'] | undefined,
     search: readSearchParam(resolvedSearchParams, 'logSearch'),
     limit: readIntegerSearchParam(resolvedSearchParams, 'logLimit'),
@@ -176,6 +182,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     usageSummary,
     adminExtensionFleet,
     adminLogs,
+    adminSecurity,
     adminWebhooks,
   ] =
     await Promise.all([
@@ -200,6 +207,9 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         : Promise.resolve(null),
       resolvedParams.section === 'logs'
         ? getAdminLogs(persona, adminLogFilters, accessToken)
+        : Promise.resolve(null),
+      resolvedParams.section === 'security'
+        ? getAdminSecurity(persona, adminLogFilters, accessToken)
         : Promise.resolve(null),
       resolvedParams.section === 'webhooks'
         ? getAdminWebhooks(persona, adminWebhookFilters, accessToken)
@@ -370,21 +380,117 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </article>
             </section>
             {adminLogs ? (
-              <LogsExplorerClient
-                canExportLogs={canExportAuditLogs}
-                isConnectedSession={isConnectedSession}
-                snapshot={adminLogs}
-                workspaceOptions={session.workspaces.map((workspace) => ({
-                  id: workspace.id,
-                  name: workspace.name,
-                  role: workspace.role,
-                }))}
-              />
+                <LogsExplorerClient
+                  canExportLogs={canExportAuditLogs}
+                  defaultStreamOnReset="all"
+                  isConnectedSession={isConnectedSession}
+                  snapshot={adminLogs}
+                  workspaceOptions={session.workspaces.map((workspace) => ({
+                    id: workspace.id,
+                    name: workspace.name,
+                    role: workspace.role,
+                  }))}
+                />
             ) : (
               <section className="empty-state">
                 <span className="micro-label">Logs</span>
                 <h2>Admin log stream state is unavailable.</h2>
                 <p>The API did not return an audit log snapshot for this workspace context.</p>
+              </section>
+            )}
+          </>
+        ) : section.id === 'security' ? (
+          <>
+            <section className="split-grid">
+              <article className="panel">
+                <span className="micro-label">Section</span>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+                <div className="tag-row">
+                  <span className="tag">
+                    {adminSecurity?.items.length ?? 0} visible
+                    {(adminSecurity?.items.length ?? 0) === 1 ? ' event' : ' events'}
+                  </span>
+                  <span className="tag">security stream {adminSecurity?.streamCounts.security ?? 0}</span>
+                </div>
+              </article>
+              <article className="panel">
+                <span className="micro-label">Security posture</span>
+                <h2>Operational security checkpoints</h2>
+                {adminSecurity ? (
+                  <div className="list-stack">
+                    <div className="list-item">
+                      <strong>Workspace</strong>
+                      <p>{adminSecurity.workspace?.name ?? 'No workspace scope selected.'}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Filter</strong>
+                      <p>
+                        {adminSecurity.filters.stream} | {adminSecurity.filters.severity}
+                        {adminSecurity.filters.search ? ` | ${adminSecurity.filters.search}` : ''}
+                      </p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Limit</strong>
+                      <p>{adminSecurity.filters.limit}</p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Signals requiring review</strong>
+                      <p>
+                        {adminSecurity.findings.totalFailures} event
+                        {adminSecurity.findings.totalFailures === 1 ? '' : 's'} currently flagged.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Security admin state is unavailable for this environment.</p>
+                )}
+              </article>
+            </section>
+            {adminSecurity ? (
+              <>
+                <section className="panel">
+                  <span className="micro-label">Findings</span>
+                  <h2>Current detection summary</h2>
+                  <div className="tag-row">
+                    <span className="tag warn">auth failures {adminSecurity.findings.suspiciousAuthFailures}</span>
+                    <span className="tag">impersonation {adminSecurity.findings.impersonationEvents}</span>
+                    <span className="tag">provider credentials {adminSecurity.findings.providerCredentialEvents}</span>
+                    <span className="tag">privileged actions {adminSecurity.findings.privilegedActionEvents}</span>
+                  </div>
+                </section>
+                <section className="panel">
+                  <span className="micro-label">Controls</span>
+                  <h2>Security hardening checkpoints</h2>
+                  <div className="list-stack">
+                    {adminSecurity.controls.map((control) => (
+                      <div className="list-item" key={control.id}>
+                        <strong>{control.title}</strong>
+                        <p>{control.description}</p>
+                        <span className={control.status === 'enabled' ? 'tag' : 'tag warn'}>
+                          {control.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <LogsExplorerClient
+                  canExportLogs={canExportAuditLogs}
+                  defaultStreamOnReset="security"
+                  isConnectedSession={isConnectedSession}
+                  snapshot={adminSecurity}
+                  workspaceOptions={session.workspaces.map((workspace) => ({
+                    id: workspace.id,
+                    name: workspace.name,
+                    role: workspace.role,
+                  }))}
+                />
+              </>
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Security</span>
+                <h2>Security admin state is unavailable.</h2>
+                <p>The API did not return a security-focused log snapshot for this workspace context.</p>
               </section>
             )}
           </>

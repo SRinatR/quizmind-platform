@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
 import { type AiProviderPolicySnapshot } from '@quizmind/contracts';
+import { encryptSecret } from '@quizmind/secrets';
 
 import { type CurrentSessionSnapshot } from '../src/auth/auth.types';
 import { AiProxyRepository } from '../src/ai/ai-proxy.repository';
@@ -244,6 +245,150 @@ test('AiProxyService rejects BYOK requests when policy disables BYOK', async (t)
   assert.equal(fetchCalled, false);
 });
 
+test('AiProxyService routes direct OpenAI BYOK requests when direct provider mode is enabled', async (t) => {
+  let recordInput: unknown;
+  let observedUrl = '';
+  let observedAuthorization = '';
+  const credentialEnvelope = encryptSecret({
+    plaintext: 'sk-openai-test_123456789',
+    secret: 'provider-secret',
+  });
+  const { service } = createService({
+    findWorkspacePlanCode: async () => 'pro',
+    findBestUserCredential: async () =>
+      ({
+        id: 'cred_openai_1',
+        provider: 'openai',
+        ownerType: 'user',
+        ownerId: null,
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        encryptedSecretJson: credentialEnvelope,
+        createdAt: new Date('2026-03-24T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+      }) as any,
+    recordProxyEvent: async (input: any) => {
+      recordInput = input;
+
+      return {
+        id: 'quota_1',
+        workspaceId: 'ws_1',
+        key: 'limit.requests_per_day',
+        consumed: 1,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        createdAt: input.occurredAt,
+        updatedAt: input.occurredAt,
+      } as any;
+    },
+  }, {
+    mode: 'user_key_optional',
+    providers: ['openrouter', 'openai'],
+    defaultProvider: 'openai',
+    allowBringYourOwnKey: true,
+    allowDirectProviderMode: true,
+    allowVisionOnUserKeys: true,
+  });
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async (url, init) => {
+    observedUrl = String(url);
+    const headers = init?.headers as Record<string, string> | undefined;
+    observedAuthorization = headers?.Authorization ?? headers?.authorization ?? '';
+
+    return new Response(
+      JSON.stringify({
+        id: 'chatcmpl_openai_1',
+        model: 'gpt-4.1-mini',
+        usage: {
+          prompt_tokens: 9,
+          completion_tokens: 6,
+          total_tokens: 15,
+        },
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Hello from OpenAI.',
+            },
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      },
+    );
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  const result = await service.proxyForCurrentSession(createSession(), {
+    provider: 'openai',
+    model: 'gpt-4.1-mini',
+    useOwnKey: true,
+    messages: [
+      {
+        role: 'user',
+        content: 'Hello!',
+      },
+    ],
+  });
+
+  assert.equal(result.provider, 'openai');
+  assert.equal(result.keySource, 'user');
+  assert.equal(result.usage?.totalTokens, 15);
+  assert.equal(result.quota.decremented, false);
+  assert.equal((recordInput as any).consumeQuota, false);
+  assert.match(observedUrl, /^https:\/\/api\.openai\.com\/v1\/chat\/completions$/);
+  assert.match(observedAuthorization, /^Bearer sk-openai-test_/);
+});
+
+test('AiProxyService rejects direct provider requests when allowDirectProviderMode is disabled', async (t) => {
+  const { service } = createService(
+    {
+      findWorkspacePlanCode: async () => 'pro',
+    },
+    {
+      mode: 'user_key_optional',
+      providers: ['openrouter', 'openai'],
+      defaultProvider: 'openai',
+      allowBringYourOwnKey: true,
+      allowDirectProviderMode: false,
+    },
+  );
+  let fetchCalled = false;
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async () => {
+    fetchCalled = true;
+    return new Response('{}', { status: 200 });
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  await assert.rejects(
+    () =>
+      service.proxyForCurrentSession(createSession(), {
+        provider: 'openai',
+        model: 'gpt-4.1-mini',
+        useOwnKey: true,
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello!',
+          },
+        ],
+      }),
+    /Direct provider mode is disabled/i,
+  );
+  assert.equal(fetchCalled, false);
+});
+
 test('AiProxyService enforces user_key_required mode for platform-managed requests', async (t) => {
   const { service } = createService(undefined, {
     mode: 'user_key_required',
@@ -286,8 +431,9 @@ test('AiProxyService blocks vision models for BYOK when allowVisionOnUserKeys is
     {
       mode: 'user_key_optional',
       providers: ['openrouter', 'openai'],
-      defaultProvider: 'openrouter',
+      defaultProvider: 'openai',
       allowBringYourOwnKey: true,
+      allowDirectProviderMode: true,
       allowVisionOnUserKeys: false,
     },
   );
@@ -305,6 +451,7 @@ test('AiProxyService blocks vision models for BYOK when allowVisionOnUserKeys is
   await assert.rejects(
     () =>
       service.proxyForCurrentSession(createSession(), {
+        provider: 'openai',
         model: 'gpt-4.1-mini',
         useOwnKey: true,
         messages: [

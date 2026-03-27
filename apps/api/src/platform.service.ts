@@ -25,6 +25,7 @@ import {
   type AdminLogEntry,
   type AdminLogFilters,
   type AdminLogsSnapshot,
+  type AdminSecuritySnapshot,
   type AdminWebhookEventSummary,
   type AdminWebhookFilters,
   type AdminWebhookRetryRequest,
@@ -1442,6 +1443,27 @@ export class PlatformService {
       streamCounts: filtered.streamCounts,
       permissions: session.permissions,
     };
+  }
+
+  listAdminSecurity(personaKey?: string, filters?: Partial<AdminLogFilters>): AdminSecuritySnapshot {
+    const snapshot = this.listAdminLogs(personaKey, {
+      ...filters,
+      stream: 'security',
+    });
+
+    return this.buildAdminSecuritySnapshot(snapshot);
+  }
+
+  async listAdminSecurityForCurrentSession(
+    session: CurrentSessionSnapshot,
+    filters?: Partial<AdminLogFilters>,
+  ): Promise<AdminSecuritySnapshot> {
+    const snapshot = await this.listAdminLogsForCurrentSession(session, {
+      ...filters,
+      stream: 'security',
+    });
+
+    return this.buildAdminSecuritySnapshot(snapshot);
   }
 
   listFeatureFlags(personaKey?: string) {
@@ -2888,6 +2910,103 @@ export class PlatformService {
       items: filteredItems.slice(0, filters.limit),
       streamCounts,
     };
+  }
+
+  private buildAdminSecuritySnapshot(snapshot: AdminLogsSnapshot): AdminSecuritySnapshot {
+    return {
+      personaKey: snapshot.personaKey,
+      accessDecision: snapshot.accessDecision,
+      ...(snapshot.workspace ? { workspace: snapshot.workspace } : {}),
+      filters: snapshot.filters,
+      items: snapshot.items,
+      streamCounts: snapshot.streamCounts,
+      findings: this.buildAdminSecurityFindings(snapshot.items),
+      controls: this.buildAdminSecurityControls(),
+      permissions: snapshot.permissions,
+    };
+  }
+
+  private buildAdminSecurityFindings(items: AdminLogEntry[]): AdminSecuritySnapshot['findings'] {
+    const eventSearchText = (item: AdminLogEntry) =>
+      [
+        item.eventType,
+        item.summary,
+        item.targetType,
+        item.targetId,
+        item.metadata ? JSON.stringify(item.metadata) : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+    const suspiciousAuthFailures = items.filter((item) => {
+      const search = eventSearchText(item);
+
+      return (
+        item.eventType.startsWith('auth.') &&
+        (item.status === 'failure' || search.includes('failed') || search.includes('invalid'))
+      );
+    }).length;
+    const impersonationEvents = items.filter((item) => eventSearchText(item).includes('impersonation')).length;
+    const providerCredentialEvents = items.filter((item) => {
+      const search = eventSearchText(item);
+
+      return (
+        search.includes('credential') ||
+        search.includes('provider') ||
+        search.includes('api key') ||
+        search.includes('api_key')
+      );
+    }).length;
+    const privilegedActionEvents = items.filter((item) => {
+      const search = eventSearchText(item);
+
+      return (
+        search.includes('policy') ||
+        search.includes('role') ||
+        search.includes('suspend') ||
+        search.includes('publish') ||
+        search.includes('impersonation') ||
+        search.includes('credential')
+      );
+    }).length;
+    const totalFailures = items.filter((item) => item.status === 'failure' || item.severity === 'error').length;
+
+    return {
+      suspiciousAuthFailures,
+      impersonationEvents,
+      providerCredentialEvents,
+      privilegedActionEvents,
+      totalFailures,
+    };
+  }
+
+  private buildAdminSecurityControls(): AdminSecuritySnapshot['controls'] {
+    return [
+      {
+        id: 'admin_mfa',
+        title: 'Admin MFA enforcement',
+        status: 'planned',
+        description: 'Require MFA enrollment and step-up verification for privileged admin surfaces.',
+      },
+      {
+        id: 'step_up_auth',
+        title: 'Step-up authentication',
+        status: 'in_progress',
+        description: 'Prompt for secondary verification before high-risk actions like role changes and key rotation.',
+      },
+      {
+        id: 'secret_access_audit',
+        title: 'Secret access audit',
+        status: 'in_progress',
+        description: 'Track and review provider credential and BYOK secret access events end-to-end.',
+      },
+      {
+        id: 'risk_scoring',
+        title: 'Risk scoring and markers',
+        status: 'planned',
+        description: 'Label suspicious authentication and control-plane behavior with review markers for security ops.',
+      },
+    ];
   }
 
   private matchesAdminLogSearch(item: AdminLogEntry, search: string): boolean {

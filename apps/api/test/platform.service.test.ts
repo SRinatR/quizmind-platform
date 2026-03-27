@@ -688,6 +688,121 @@ test('PlatformService.listAdminLogsForCurrentSession denies principals without a
   );
 });
 
+test('PlatformService.listAdminSecurityForCurrentSession returns security findings and hardening controls', async () => {
+  const { service, adminLogRepository } = createPlatformService();
+
+  adminLogRepository.listRecent = async () =>
+    ({
+      audit: [],
+      activity: [],
+      security: [
+        {
+          id: 'security_1',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'auth.login_failed',
+          severity: 'warn',
+          metadataJson: {
+            summary: 'Failed login attempt with an invalid password.',
+            status: 'failure',
+            reason: 'invalid_password',
+          },
+          createdAt: new Date('2026-03-24T11:50:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_2',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'support.impersonation_started',
+          severity: 'info',
+          metadataJson: {
+            summary: 'Support impersonation started by an operator.',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T11:45:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_3',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'provider.credential_rotated',
+          severity: 'error',
+          metadataJson: {
+            summary: 'Rotated provider api_key credential for OpenAI.',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T11:40:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      domain: [],
+      actors: [
+        {
+          id: 'user_1',
+          email: 'owner@quizmind.dev',
+          displayName: 'Workspace Owner',
+        },
+      ],
+    }) as any;
+
+  const result = await service.listAdminSecurityForCurrentSession(createAuditLogsSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    stream: 'all',
+    severity: 'all',
+    limit: 10,
+  });
+
+  assert.equal(result.personaKey, 'connected-user');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.filters.stream, 'security');
+  assert.deepEqual(result.streamCounts, {
+    audit: 0,
+    activity: 0,
+    security: 3,
+    domain: 0,
+  });
+  assert.equal(result.items.length, 3);
+  assert.ok(result.items.every((entry) => entry.stream === 'security'));
+  assert.deepEqual(result.findings, {
+    suspiciousAuthFailures: 1,
+    impersonationEvents: 1,
+    providerCredentialEvents: 1,
+    privilegedActionEvents: 2,
+    totalFailures: 2,
+  });
+  assert.deepEqual(
+    result.controls.map((control) => control.id),
+    ['admin_mfa', 'step_up_auth', 'secret_access_audit', 'risk_scoring'],
+  );
+});
+
+test('PlatformService.listAdminSecurityForCurrentSession denies principals without audit_logs:read', async () => {
+  const { service } = createPlatformService();
+
+  await assert.rejects(
+    () => service.listAdminSecurityForCurrentSession(createConnectedSessionSnapshot(), { workspaceId: 'ws_1' }),
+    (error: unknown) => {
+      assert.ok(error instanceof ForbiddenException);
+      assert.match((error as Error).message, /Missing permission: audit_logs:read/);
+      return true;
+    },
+  );
+});
+
 test('PlatformService.exportAdminLogsForCurrentSession exports filtered admin logs as JSON', async () => {
   const { service, adminLogRepository, queueDispatchService } = createPlatformService();
   let capturedQueueRequest: any = null;

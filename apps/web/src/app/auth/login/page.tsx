@@ -46,8 +46,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </div>
             <div className="auth-highlight">
               <span className="micro-label">Demo credentials</span>
-              <strong>`admin@quizmind.dev`</strong>
-              <p>Password: `demo-password`</p>
+              <strong>Role matrix accounts</strong>
+              <p>Every seeded test account on this page uses password: `demo-password`.</p>
             </div>
             <div className="auth-highlight">
               <span className="micro-label">After login</span>

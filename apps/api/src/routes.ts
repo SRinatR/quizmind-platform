@@ -313,6 +313,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
     permission: 'audit_logs:read',
   },
   {
+    method: 'GET',
+    path: '/admin/security',
+    summary: 'Return a security-focused admin snapshot with filtered security events, findings, and hardening checkpoints.',
+    permission: 'audit_logs:read',
+  },
+  {
     method: 'POST',
     path: '/admin/logs/export',
     summary: 'Export filtered audit, activity, security, and domain log entries as JSON or CSV.',

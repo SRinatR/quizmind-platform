@@ -1,10 +1,15 @@
 'use client';
 
+import { buildAccessContext } from '@quizmind/auth';
+import { type AccessRequirement } from '@quizmind/contracts';
+import { evaluateAccess } from '@quizmind/permissions';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState, useTransition } from 'react';
 
+import { adminSections } from '../../../features/admin/sections';
+import { dashboardSections } from '../../../features/dashboard/sections';
 import type { SessionSnapshot } from '../../../lib/api';
 
 interface LoginClientProps {
@@ -33,8 +38,13 @@ interface LoginRouteResponse {
 
 const demoAccounts = [
   {
-    label: 'Platform admin',
+    label: 'Personal super admin',
     email: 'admin@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Platform admin',
+    email: 'platform@quizmind.dev',
     password: 'demo-password',
   },
   {
@@ -43,11 +53,81 @@ const demoAccounts = [
     password: 'demo-password',
   },
   {
+    label: 'Billing admin',
+    email: 'billing@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Security admin',
+    email: 'security@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Ops admin',
+    email: 'ops@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Content admin',
+    email: 'content@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Workspace owner',
+    email: 'owner@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Workspace admin',
+    email: 'workspace-admin@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Billing manager',
+    email: 'billing-manager@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Security manager',
+    email: 'security-manager@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Workspace manager',
+    email: 'manager@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Workspace analyst',
+    email: 'analyst@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
+    label: 'Workspace member',
+    email: 'member@quizmind.dev',
+    password: 'demo-password',
+  },
+  {
     label: 'Workspace viewer',
     email: 'viewer@quizmind.dev',
     password: 'demo-password',
   },
 ] as const;
+
+function isRequirementAllowed(input: {
+  context: ReturnType<typeof buildAccessContext>;
+  workspaceId?: string;
+  requirement?: AccessRequirement;
+}): boolean {
+  if (!input.requirement) {
+    return true;
+  }
+
+  return evaluateAccess(input.context, {
+    ...input.requirement,
+    workspaceId: input.requirement.workspaceId ?? input.workspaceId,
+  }).allowed;
+}
 
 export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   const router = useRouter();
@@ -137,7 +217,23 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   }
 
   if (isAuthenticated && initialSession) {
-    const canOpenAdmin = sessionRoles.length > 0;
+    const workspaceId = initialSession.workspaces[0]?.id;
+    const context = buildAccessContext(initialSession.principal);
+    const visibleDashboardSections = dashboardSections.filter((section) =>
+      isRequirementAllowed({
+        context,
+        workspaceId,
+        requirement: section.requirement,
+      }),
+    );
+    const visibleAdminSections = adminSections.filter((section) =>
+      isRequirementAllowed({
+        context,
+        workspaceId,
+        requirement: section.requirement,
+      }),
+    );
+    const canOpenAdmin = visibleAdminSections.length > 0;
 
     return (
       <div className="auth-form-shell">
@@ -157,6 +253,28 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
               </span>
             ))}
             {sessionRoles.length === 0 ? <span className="tag warn">workspace-only session</span> : null}
+          </div>
+        </div>
+
+        <div className="auth-session-card">
+          <strong>Resolved access snapshot</strong>
+          <p>
+            {initialSession.permissions.length} permissions · {visibleDashboardSections.length} dashboard sections ·{' '}
+            {visibleAdminSections.length} admin sections
+          </p>
+          <div className="link-row">
+            {visibleDashboardSections.map((section) => (
+              <Link className="btn-ghost" href={section.href} key={`dashboard:${section.id}`}>
+                {section.title}
+              </Link>
+            ))}
+          </div>
+          <div className="link-row">
+            {visibleAdminSections.map((section) => (
+              <Link className="btn-ghost" href={section.href} key={`admin:${section.id}`}>
+                {section.title}
+              </Link>
+            ))}
           </div>
         </div>
 

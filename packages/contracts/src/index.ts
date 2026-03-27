@@ -523,6 +523,35 @@ export interface AdminLogsSnapshot {
   permissions: string[];
 }
 
+export type AdminSecurityControlStatus = 'planned' | 'in_progress' | 'enabled';
+
+export interface AdminSecurityFindingCounts {
+  suspiciousAuthFailures: number;
+  impersonationEvents: number;
+  providerCredentialEvents: number;
+  privilegedActionEvents: number;
+  totalFailures: number;
+}
+
+export interface AdminSecurityControlCheckpoint {
+  id: 'admin_mfa' | 'step_up_auth' | 'secret_access_audit' | 'risk_scoring';
+  title: string;
+  status: AdminSecurityControlStatus;
+  description: string;
+}
+
+export interface AdminSecuritySnapshot {
+  personaKey: string;
+  accessDecision: AccessDecision;
+  workspace?: WorkspaceSummary;
+  filters: AdminLogFilters;
+  items: AdminLogEntry[];
+  streamCounts: AdminLogStreamCounts;
+  findings: AdminSecurityFindingCounts;
+  controls: AdminSecurityControlCheckpoint[];
+  permissions: string[];
+}
+
 export interface AdminLogExportRequest {
   workspaceId?: string;
   stream?: AdminLogStreamFilter;

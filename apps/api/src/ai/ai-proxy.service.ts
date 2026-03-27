@@ -31,9 +31,10 @@ import {
 } from './ai-proxy.repository';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
-const supportedProxyProviders = new Set<AiProvider>(['openrouter']);
+const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'openai']);
 const knownProviders = new Set<AiProvider>(providerRegistry.map((provider) => provider.provider));
 const supportedMessageRoles = new Set(['system', 'user', 'assistant', 'tool']);
+const openAiApiUrl = 'https://api.openai.com/v1';
 
 type OpenRouterResponsePayload = Record<string, unknown>;
 type AiProxyUsage = {
@@ -345,13 +346,28 @@ export class AiProxyService {
     }
 
     try {
-      const upstreamResponse = await this.invokeOpenRouter({
-        apiKey: invocation.apiKey,
-        model: invocation.request.model,
-        messages: invocation.request.messages,
-        temperature: invocation.request.temperature,
-        maxTokens: invocation.request.maxTokens,
-      });
+      const upstreamResponse =
+        invocation.provider === 'openrouter'
+          ? await this.invokeOpenRouter({
+              apiKey: invocation.apiKey,
+              model: invocation.request.model,
+              messages: invocation.request.messages,
+              temperature: invocation.request.temperature,
+              maxTokens: invocation.request.maxTokens,
+            })
+          : invocation.provider === 'openai'
+            ? await this.invokeOpenAi({
+                apiKey: invocation.apiKey,
+                model: invocation.request.model,
+                messages: invocation.request.messages,
+                temperature: invocation.request.temperature,
+                maxTokens: invocation.request.maxTokens,
+              })
+            : (() => {
+                throw new BadRequestException(
+                  `Provider "${invocation.provider}" proxy routing is not supported yet.`,
+                );
+              })();
       const usage = extractUsage(upstreamResponse);
       const quotaSnapshot = await this.recordProxyCompletion({
         invocation,
@@ -411,13 +427,28 @@ export class AiProxyService {
     }
 
     try {
-      const upstream = await this.invokeOpenRouterStream({
-        apiKey: invocation.apiKey,
-        model: invocation.request.model,
-        messages: invocation.request.messages,
-        temperature: invocation.request.temperature,
-        maxTokens: invocation.request.maxTokens,
-      });
+      const upstream =
+        invocation.provider === 'openrouter'
+          ? await this.invokeOpenRouterStream({
+              apiKey: invocation.apiKey,
+              model: invocation.request.model,
+              messages: invocation.request.messages,
+              temperature: invocation.request.temperature,
+              maxTokens: invocation.request.maxTokens,
+            })
+          : invocation.provider === 'openai'
+            ? await this.invokeOpenAiStream({
+                apiKey: invocation.apiKey,
+                model: invocation.request.model,
+                messages: invocation.request.messages,
+                temperature: invocation.request.temperature,
+                maxTokens: invocation.request.maxTokens,
+              })
+            : (() => {
+                throw new BadRequestException(
+                  `Provider "${invocation.provider}" proxy routing is not supported yet.`,
+                );
+              })();
       const [clientStream, inspectionStream] = upstream.stream.tee();
       const completion = this.consumeOpenRouterStream({
         invocation,
@@ -470,6 +501,12 @@ export class AiProxyService {
       );
     }
 
+    if (selectedModel.provider !== provider) {
+      throw new ForbiddenException(
+        `Model "${normalizedRequest.model}" is not available for provider "${provider}" under the current AI policy.`,
+      );
+    }
+
     if (!supportedProxyProviders.has(provider)) {
       throw new BadRequestException(
         `Provider "${provider}" proxy routing is not supported yet. Supported providers: ${Array.from(supportedProxyProviders).join(', ')}.`,
@@ -496,6 +533,20 @@ export class AiProxyService {
     ]);
     const quotaCounter = activeCounter ?? quotaCounterFallback;
     const keySource = normalizedRequest.useOwnKey ? 'user' : 'platform';
+
+    if (provider !== 'openrouter') {
+      if (!policy.allowDirectProviderMode) {
+        throw new ForbiddenException(
+          policy.reason ?? `Direct provider mode is disabled for provider "${provider}".`,
+        );
+      }
+
+      if (keySource !== 'user') {
+        throw new BadRequestException(
+          `Provider "${provider}" requires useOwnKey=true because platform-managed direct routing is not configured.`,
+        );
+      }
+    }
 
     if (policy.mode === 'user_key_required' && keySource !== 'user') {
       throw new ForbiddenException(
@@ -756,6 +807,50 @@ export class AiProxyService {
     return payload as OpenRouterResponsePayload;
   }
 
+  private async invokeOpenAi(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterResponsePayload> {
+    const endpoint = `${trimTrailingSlash(openAiApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: input.model,
+      messages: input.messages,
+      stream: false,
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.openRouterTimeoutMs,
+      }),
+    });
+    const rawResponseText = await response.text();
+    const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+
+    if (!response.ok) {
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      throw new BadGatewayException(
+        `OpenAI request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new BadGatewayException('OpenAI returned a non-object response payload.');
+    }
+
+    return payload as OpenRouterResponsePayload;
+  }
+
   private async invokeOpenRouterStream(input: {
     apiKey: string;
     model: string;
@@ -802,6 +897,63 @@ export class AiProxyService {
 
     if (!response.body) {
       throw new BadGatewayException('OpenRouter returned an empty streaming payload.');
+    }
+
+    return {
+      stream: response.body,
+      contentType: response.headers.get('content-type')?.trim() || 'text/event-stream; charset=utf-8',
+      abort: () => {
+        if (!abortController.signal.aborted) {
+          abortController.abort('stream-aborted');
+        }
+      },
+    };
+  }
+
+  private async invokeOpenAiStream(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterStreamInvocationResult> {
+    const endpoint = `${trimTrailingSlash(openAiApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: input.model,
+      messages: input.messages,
+      stream: true,
+      stream_options: {
+        include_usage: true,
+      },
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const abortController = new AbortController();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.openRouterTimeoutMs,
+        abortController,
+      }),
+    });
+
+    if (!response.ok) {
+      const rawResponseText = await response.text();
+      const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      throw new BadGatewayException(
+        `OpenAI request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new BadGatewayException('OpenAI returned an empty streaming payload.');
     }
 
     return {

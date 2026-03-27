@@ -28,6 +28,15 @@ export const adminSections: AdminSection[] = [
     },
   },
   {
+    id: 'security',
+    title: 'Security',
+    href: '/admin/security',
+    description: 'Security event review, privileged action trails, and hardening checkpoints.',
+    requirement: {
+      permission: 'audit_logs:read',
+    },
+  },
+  {
     id: 'webhooks',
     title: 'Jobs & Webhooks',
     href: '/admin/webhooks',

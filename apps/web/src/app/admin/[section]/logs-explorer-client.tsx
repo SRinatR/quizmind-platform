@@ -25,6 +25,7 @@ interface LogsExplorerClientProps {
   canExportLogs: boolean;
   isConnectedSession: boolean;
   workspaceOptions: WorkspaceOption[];
+  defaultStreamOnReset?: AdminLogFilters['stream'];
 }
 
 interface MutationRouteResponse<T> {
@@ -110,6 +111,7 @@ export function LogsExplorerClient({
   canExportLogs,
   isConnectedSession,
   workspaceOptions,
+  defaultStreamOnReset,
 }: LogsExplorerClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -275,7 +277,7 @@ export function LogsExplorerClient({
               onClick={() => {
                 setSearchDraft('');
                 pushFilters({
-                  stream: 'all',
+                  stream: defaultStreamOnReset ?? 'all',
                   severity: 'all',
                   search: '',
                   limit: 12,

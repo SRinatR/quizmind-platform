@@ -214,6 +214,31 @@ export class PlatformController {
     return ok(await this.platformService.listAdminLogsForCurrentSession(session, filters));
   }
 
+  @Get('admin/security')
+  async listAdminSecurity(
+    @Query('persona') persona?: string,
+    @Query('workspaceId') workspaceId?: string,
+    @Query('severity') severity?: string,
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const filters: Partial<AdminLogFilters> = {
+      workspaceId,
+      stream: 'security',
+      ...(severity ? { severity: severity as AdminLogFilters['severity'] } : {}),
+      ...(search ? { search } : {}),
+      ...(limit ? { limit: Number(limit) } : {}),
+    };
+    const session = await this.requireConnectedSession(authorization);
+
+    if (!session) {
+      return ok(this.platformService.listAdminSecurity(persona, filters));
+    }
+
+    return ok(await this.platformService.listAdminSecurityForCurrentSession(session, filters));
+  }
+
   @Get('admin/webhooks')
   async listAdminWebhooks(
     @Query('persona') persona?: string,
