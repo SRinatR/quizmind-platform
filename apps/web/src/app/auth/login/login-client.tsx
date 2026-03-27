@@ -1,15 +1,13 @@
 'use client';
 
 import { buildAccessContext } from '@quizmind/auth';
-import { type AccessRequirement } from '@quizmind/contracts';
-import { evaluateAccess } from '@quizmind/permissions';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState, useTransition } from 'react';
 
-import { adminSections } from '../../../features/admin/sections';
-import { dashboardSections } from '../../../features/dashboard/sections';
+import { demoAccounts } from '../../../features/auth/demo-accounts';
+import { buildAccessMatrixRows } from '../../../features/navigation/access-matrix';
 import type { SessionSnapshot } from '../../../lib/api';
 
 interface LoginClientProps {
@@ -36,99 +34,6 @@ interface LoginRouteResponse {
   };
 }
 
-const demoAccounts = [
-  {
-    label: 'Personal super admin',
-    email: 'admin@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Platform admin',
-    email: 'platform@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Support admin',
-    email: 'support@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Billing admin',
-    email: 'billing@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Security admin',
-    email: 'security@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Ops admin',
-    email: 'ops@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Content admin',
-    email: 'content@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Workspace owner',
-    email: 'owner@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Workspace admin',
-    email: 'workspace-admin@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Billing manager',
-    email: 'billing-manager@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Security manager',
-    email: 'security-manager@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Workspace manager',
-    email: 'manager@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Workspace analyst',
-    email: 'analyst@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Workspace member',
-    email: 'member@quizmind.dev',
-    password: 'demo-password',
-  },
-  {
-    label: 'Workspace viewer',
-    email: 'viewer@quizmind.dev',
-    password: 'demo-password',
-  },
-] as const;
-
-function isRequirementAllowed(input: {
-  context: ReturnType<typeof buildAccessContext>;
-  workspaceId?: string;
-  requirement?: AccessRequirement;
-}): boolean {
-  if (!input.requirement) {
-    return true;
-  }
-
-  return evaluateAccess(input.context, {
-    ...input.requirement,
-    workspaceId: input.requirement.workspaceId ?? input.workspaceId,
-  }).allowed;
-}
-
 export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   const router = useRouter();
   const [email, setEmail] = useState<string>(initialSession?.user.email ?? demoAccounts[0].email);
@@ -140,7 +45,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   const [, startNavigation] = useTransition();
 
   const isAuthenticated = Boolean(initialSession);
-  const sessionRoles = initialSession?.principal.systemRoles ?? [];
+  const sessionSystemRoles = initialSession?.principal.systemRoles ?? [];
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -219,61 +124,93 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   if (isAuthenticated && initialSession) {
     const workspaceId = initialSession.workspaces[0]?.id;
     const context = buildAccessContext(initialSession.principal);
-    const visibleDashboardSections = dashboardSections.filter((section) =>
-      isRequirementAllowed({
-        context,
-        workspaceId,
-        requirement: section.requirement,
-      }),
-    );
-    const visibleAdminSections = adminSections.filter((section) =>
-      isRequirementAllowed({
-        context,
-        workspaceId,
-        requirement: section.requirement,
-      }),
-    );
+    const sectionAccessRows = buildAccessMatrixRows({
+      context,
+      workspaceId,
+    });
+    const dashboardAccessRows = sectionAccessRows.filter((row) => row.scope === 'dashboard');
+    const adminAccessRows = sectionAccessRows.filter((row) => row.scope === 'admin');
+    const visibleDashboardSections = dashboardAccessRows.filter((row) => row.allowed);
+    const visibleAdminSections = adminAccessRows.filter((row) => row.allowed);
+    const blockedSections = sectionAccessRows.filter((row) => !row.allowed);
     const canOpenAdmin = visibleAdminSections.length > 0;
+    const workspaceRoleForCurrentWorkspace = workspaceId
+      ? initialSession.principal.workspaceMemberships
+          .filter((membership) => membership.workspaceId === workspaceId)
+          .map((membership) => membership.role)
+      : [];
+    const activeDemoAccount =
+      demoAccounts.find((account) => account.email === initialSession.user.email.toLowerCase()) ?? null;
 
     return (
       <div className="auth-form-shell">
         <span className="micro-label">Active session</span>
         <h2>You are already signed in.</h2>
         <p className="auth-form-copy">
-          {initialSession.user.displayName} · {initialSession.user.email}
+          {initialSession.user.displayName ?? initialSession.user.email} | {initialSession.user.email}
         </p>
 
         <div className="auth-session-card">
           <strong>{initialSession.personaLabel}</strong>
           <p>{initialSession.notes[0] ?? 'Connected session is active in this browser.'}</p>
           <div className="tag-row">
-            {sessionRoles.map((role) => (
+            {sessionSystemRoles.map((role) => (
               <span className="tag" key={role}>
                 {role}
               </span>
             ))}
-            {sessionRoles.length === 0 ? <span className="tag warn">workspace-only session</span> : null}
+            {workspaceRoleForCurrentWorkspace.map((role) => (
+              <span className="tag" key={role}>
+                {role}
+              </span>
+            ))}
+            {sessionSystemRoles.length === 0 ? <span className="tag warn">workspace-only session</span> : null}
           </div>
+          {activeDemoAccount ? <p>{activeDemoAccount.highlights[0]}</p> : null}
         </div>
 
         <div className="auth-session-card">
           <strong>Resolved access snapshot</strong>
           <p>
-            {initialSession.permissions.length} permissions · {visibleDashboardSections.length} dashboard sections ·{' '}
-            {visibleAdminSections.length} admin sections
+            {initialSession.permissions.length} permissions | {visibleDashboardSections.length} dashboard sections |
+            {' '}
+            {visibleAdminSections.length} admin sections | {blockedSections.length} blocked
           </p>
           <div className="link-row">
             {visibleDashboardSections.map((section) => (
-              <Link className="btn-ghost" href={section.href} key={`dashboard:${section.id}`}>
+              <Link className="btn-ghost" href={section.href} key={`dashboard:${section.id}:${section.href}`}>
                 {section.title}
               </Link>
             ))}
           </div>
           <div className="link-row">
             {visibleAdminSections.map((section) => (
-              <Link className="btn-ghost" href={section.href} key={`admin:${section.id}`}>
+              <Link className="btn-ghost" href={section.href} key={`admin:${section.id}:${section.href}`}>
                 {section.title}
               </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="auth-session-card">
+          <strong>Route access matrix</strong>
+          <p>
+            Every dashboard/admin section is listed below with its requirement and resolved access result for this
+            current session.
+          </p>
+          <div className="list-stack">
+            {sectionAccessRows.map((row) => (
+              <div className="list-item" key={`${row.scope}:${row.id}`}>
+                <strong>
+                  {row.scope.toUpperCase()} | {row.title}
+                </strong>
+                <p>{row.href}</p>
+                <p className="list-muted">{row.requirementSummary}</p>
+                <div className="tag-row">
+                  <span className={row.allowed ? 'tag' : 'tag warn'}>{row.allowed ? 'allowed' : 'blocked'}</span>
+                  {!row.allowed && row.reason ? <span className="tag warn">{row.reason}</span> : null}
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -355,6 +292,22 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
             <span className="micro-label">{account.label}</span>
             <strong>{account.email}</strong>
             <p>Click to prefill the real login form.</p>
+            <div className="tag-row">
+              {account.systemRoles.map((role) => (
+                <span className="tag" key={`${account.email}:system:${role}`}>
+                  {role}
+                </span>
+              ))}
+              {account.workspaceRoles.map((role) => (
+                <span className="tag" key={`${account.email}:workspace:${role}`}>
+                  {role}
+                </span>
+              ))}
+              {account.systemRoles.length === 0 && account.workspaceRoles.length === 0 ? (
+                <span className="tag warn">no seeded roles</span>
+              ) : null}
+            </div>
+            <p>{account.highlights[0]}</p>
           </button>
         ))}
       </div>

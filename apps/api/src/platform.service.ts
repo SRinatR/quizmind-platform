@@ -80,6 +80,7 @@ import {
   canExportUsage,
   canReadAuditLogs,
   canReadExtensionInstallations,
+  canWriteExtensionInstallations,
   canReadFeatureFlags,
   canReadJobs,
   canManageCompatibilityRules,
@@ -733,6 +734,7 @@ export class PlatformService {
     const persona = getPersona(personaKey);
     const workspace = getWorkspaceSummary(workspaceId ?? persona.preferredWorkspaceId);
     const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
+    const exportDecision = canExportUsage(persona.principal as SessionPrincipal, workspace.id);
     const plan = getPlanForWorkspace(workspace.id);
     const currentPeriodStart = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
     const currentPeriodEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -797,6 +799,7 @@ export class PlatformService {
     return {
       workspace,
       accessDecision,
+      exportDecision,
       planCode: plan.code,
       subscriptionStatus: workspace.id === 'ws_beta' ? 'trialing' : 'active',
       currentPeriodStart: currentPeriodStart.toISOString(),
@@ -819,6 +822,7 @@ export class PlatformService {
     }
 
     const accessDecision = canReadUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const exportDecision = canExportUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -846,6 +850,7 @@ export class PlatformService {
     const usageSnapshot: WorkspaceUsageSnapshot = {
       workspace: requestedWorkspace,
       accessDecision,
+      exportDecision,
       planCode: summary.planCode,
       subscriptionStatus: summary.status,
       currentPeriodStart: subscription.currentPeriodStart?.toISOString(),
@@ -877,6 +882,7 @@ export class PlatformService {
     const workspaceId = request?.workspaceId?.trim() || persona.preferredWorkspaceId;
     const workspace = getWorkspaceSummary(workspaceId);
     const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
+    const exportDecision = canExportUsage(persona.principal as SessionPrincipal, workspace.id);
     const summary = this.getUsage(personaKey, workspace.id);
     const filters = this.normalizeUsageHistoryFilters({
       workspaceId: workspace.id,
@@ -890,6 +896,7 @@ export class PlatformService {
     return {
       workspace,
       accessDecision,
+      exportDecision,
       filters,
       items: this.filterUsageHistoryItems(summary.recentEvents, filters),
       permissions: listPrincipalPermissions(persona.principal, workspace.id),
@@ -914,6 +921,7 @@ export class PlatformService {
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
+    const exportDecision = canExportUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
 
     const filters = this.normalizeUsageHistoryFilters({
       workspaceId: requestedWorkspace.id,
@@ -962,6 +970,7 @@ export class PlatformService {
     return {
       workspace: requestedWorkspace,
       accessDecision,
+      exportDecision,
       filters,
       items: this.filterUsageHistoryItems(items, filters),
       permissions: listPrincipalPermissions(session.principal, requestedWorkspace.id),
@@ -1183,6 +1192,7 @@ export class PlatformService {
 
     const normalizedFilters = this.normalizeAdminExtensionFleetFilters(filters, resolvedWorkspaceId);
     const accessDecision = canReadExtensionInstallations(persona.principal, normalizedFilters.workspaceId);
+    const manageDecision = canWriteExtensionInstallations(persona.principal, normalizedFilters.workspaceId);
     const workspace = getWorkspaceSummary(normalizedFilters.workspaceId);
     const baseItems = accessDecision.allowed
       ? this.buildFoundationAdminExtensionFleetItems(persona.key, workspace)
@@ -1198,6 +1208,7 @@ export class PlatformService {
     return {
       personaKey: persona.key,
       accessDecision,
+      manageDecision,
       workspace,
       filters: normalizedFilters,
       items: filtered.items,
@@ -1225,6 +1236,7 @@ export class PlatformService {
     }
 
     const accessDecision = canReadExtensionInstallations(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const manageDecision = canWriteExtensionInstallations(session.principal as SessionPrincipal, requestedWorkspace.id);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -1261,6 +1273,7 @@ export class PlatformService {
     return {
       personaKey: 'connected-user',
       accessDecision,
+      manageDecision,
       workspace: requestedWorkspace,
       filters: normalizedFilters,
       items: filtered.items,
@@ -1384,6 +1397,7 @@ export class PlatformService {
     const persona = getPersona(personaKey);
     const normalizedFilters = this.normalizeAdminLogFilters(filters, filters?.workspaceId ?? persona.preferredWorkspaceId);
     const accessDecision = canReadAuditLogs(persona.principal, normalizedFilters.workspaceId);
+    const exportDecision = canExportAuditLogs(persona.principal, normalizedFilters.workspaceId);
     const permissions = listPrincipalPermissions(persona.principal, normalizedFilters.workspaceId);
     const baseItems = accessDecision.allowed
       ? this.buildFoundationAdminLogEntries(normalizedFilters.workspaceId)
@@ -1393,6 +1407,7 @@ export class PlatformService {
     return {
       personaKey: persona.key,
       accessDecision,
+      exportDecision,
       ...(normalizedFilters.workspaceId ? { workspace: getWorkspaceSummary(normalizedFilters.workspaceId) } : {}),
       filters: normalizedFilters,
       items: filtered.items,
@@ -1408,6 +1423,7 @@ export class PlatformService {
     const resolvedWorkspaceId = filters?.workspaceId?.trim() || session.workspaces[0]?.id;
     const normalizedFilters = this.normalizeAdminLogFilters(filters, resolvedWorkspaceId);
     const accessDecision = canReadAuditLogs(session.principal as SessionPrincipal, normalizedFilters.workspaceId);
+    const exportDecision = canExportAuditLogs(session.principal as SessionPrincipal, normalizedFilters.workspaceId);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -1437,6 +1453,7 @@ export class PlatformService {
     return {
       personaKey: 'connected-user',
       accessDecision,
+      exportDecision,
       ...(workspace ? { workspace } : {}),
       filters: normalizedFilters,
       items: filtered.items,
@@ -1473,7 +1490,7 @@ export class PlatformService {
     return {
       personaKey: persona.key,
       flags: foundation.featureFlags,
-      publishDecision: canPublishRemoteConfig(persona.principal),
+      writeDecision: canWriteFeatureFlags(persona.principal),
       permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
     };
   }
@@ -1519,7 +1536,7 @@ export class PlatformService {
     return {
       personaKey: 'connected-user',
       flags: flags.map(mapFeatureFlagRecordToDefinition),
-      publishDecision: canPublishRemoteConfig(session.principal as SessionPrincipal),
+      writeDecision: canWriteFeatureFlags(session.principal as SessionPrincipal),
       permissions: session.permissions,
     };
   }
@@ -2916,13 +2933,85 @@ export class PlatformService {
     return {
       personaKey: snapshot.personaKey,
       accessDecision: snapshot.accessDecision,
+      exportDecision: snapshot.exportDecision,
       ...(snapshot.workspace ? { workspace: snapshot.workspace } : {}),
       filters: snapshot.filters,
       items: snapshot.items,
       streamCounts: snapshot.streamCounts,
       findings: this.buildAdminSecurityFindings(snapshot.items),
+      lifecycleTrend: this.buildAdminSecurityLifecycleTrend(snapshot.items),
       controls: this.buildAdminSecurityControls(),
       permissions: snapshot.permissions,
+    };
+  }
+
+  private buildAdminSecurityLifecycleTrend(items: AdminLogEntry[]): AdminSecuritySnapshot['lifecycleTrend'] {
+    const windowHours = 24;
+    const bucketHours = 6;
+    const bucketMs = bucketHours * 60 * 60 * 1000;
+    const windowMs = windowHours * 60 * 60 * 1000;
+    const observedTimestamps = items
+      .map((item) => Date.parse(item.occurredAt))
+      .filter((timestamp) => Number.isFinite(timestamp));
+    const referenceTime =
+      observedTimestamps.length > 0 ? new Date(Math.max(...observedTimestamps)) : new Date();
+    const endExclusive = new Date(referenceTime);
+
+    endExclusive.setUTCMinutes(0, 0, 0);
+    endExclusive.setUTCHours(endExclusive.getUTCHours() + 1);
+
+    const windowStart = new Date(endExclusive.getTime() - windowMs);
+    const buckets: AdminSecuritySnapshot['lifecycleTrend']['buckets'] = [];
+
+    for (let cursor = windowStart.getTime(); cursor < endExclusive.getTime(); cursor += bucketMs) {
+      buckets.push({
+        bucketStart: new Date(cursor).toISOString(),
+        extensionBootstrapRefreshFailures: 0,
+        extensionReconnectRequests: 0,
+        extensionReconnectRecoveries: 0,
+        extensionSessionRevocations: 0,
+        extensionSessionRotations: 0,
+        extensionRuntimeErrors: 0,
+      });
+    }
+
+    for (const item of items) {
+      const occurredAt = Date.parse(item.occurredAt);
+
+      if (!Number.isFinite(occurredAt)) {
+        continue;
+      }
+
+      if (occurredAt < windowStart.getTime() || occurredAt >= endExclusive.getTime()) {
+        continue;
+      }
+
+      const bucketIndex = Math.floor((occurredAt - windowStart.getTime()) / bucketMs);
+      const bucket = buckets[bucketIndex];
+
+      if (!bucket) {
+        continue;
+      }
+
+      if (item.eventType === 'extension.bootstrap_refresh_failed') {
+        bucket.extensionBootstrapRefreshFailures += 1;
+      } else if (item.eventType === 'extension.installation_reconnect_requested') {
+        bucket.extensionReconnectRequests += 1;
+      } else if (item.eventType === 'extension.installation_reconnected') {
+        bucket.extensionReconnectRecoveries += 1;
+      } else if (item.eventType === 'extension.installation_session_revoked') {
+        bucket.extensionSessionRevocations += 1;
+      } else if (item.eventType === 'extension.installation_session_rotated') {
+        bucket.extensionSessionRotations += 1;
+      } else if (item.eventType === 'extension.runtime_error') {
+        bucket.extensionRuntimeErrors += 1;
+      }
+    }
+
+    return {
+      windowHours,
+      bucketHours,
+      buckets,
     };
   }
 
@@ -2969,6 +3058,23 @@ export class PlatformService {
         search.includes('credential')
       );
     }).length;
+    const extensionBootstrapRefreshFailures = items.filter(
+      (item) => item.eventType === 'extension.bootstrap_refresh_failed',
+    ).length;
+    const extensionReconnectRequests = items.filter(
+      (item) => item.eventType === 'extension.installation_reconnect_requested',
+    ).length;
+    const extensionReconnectRecoveries = items.filter(
+      (item) => item.eventType === 'extension.installation_reconnected',
+    ).length;
+    const extensionReconnectOutstanding = Math.max(extensionReconnectRequests - extensionReconnectRecoveries, 0);
+    const extensionSessionRevocations = items.filter(
+      (item) => item.eventType === 'extension.installation_session_revoked',
+    ).length;
+    const extensionSessionRotations = items.filter(
+      (item) => item.eventType === 'extension.installation_session_rotated',
+    ).length;
+    const extensionRuntimeErrors = items.filter((item) => item.eventType === 'extension.runtime_error').length;
     const totalFailures = items.filter((item) => item.status === 'failure' || item.severity === 'error').length;
 
     return {
@@ -2976,6 +3082,13 @@ export class PlatformService {
       impersonationEvents,
       providerCredentialEvents,
       privilegedActionEvents,
+      extensionBootstrapRefreshFailures,
+      extensionReconnectRequests,
+      extensionReconnectRecoveries,
+      extensionReconnectOutstanding,
+      extensionSessionRevocations,
+      extensionSessionRotations,
+      extensionRuntimeErrors,
       totalFailures,
     };
   }

@@ -213,7 +213,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     })),
   );
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
-  const canExportCsv = Boolean(history?.permissions.includes('usage:export') && visibleItems.length > 0);
+  const canExportCsv = Boolean(history?.exportDecision.allowed && visibleItems.length > 0);
   const clearHref = buildHistoryHref({
     ...(isConnectedSession ? {} : { persona }),
     ...(workspaceId ? { workspaceId } : {}),

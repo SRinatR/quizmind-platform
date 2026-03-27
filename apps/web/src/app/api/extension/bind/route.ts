@@ -6,7 +6,6 @@ import {
 } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
-import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
 import {
   issueBindFallbackCode,
   normalizeBridgeOrigin,
@@ -22,7 +21,7 @@ interface RouteErrorPayload {
 interface RouteSuccessPayload {
   ok: true;
   data: ExtensionInstallationBindResult;
-  fallbackCode: {
+  fallbackCode?: {
     code: string;
     expiresAt: string;
     ttlSeconds: number;
@@ -31,6 +30,38 @@ interface RouteSuccessPayload {
 }
 
 const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
+
+interface BindRouteDependencies {
+  apiUrl: string;
+  readAccessToken: () => Promise<string | null>;
+  issueFallbackCode: typeof issueBindFallbackCode;
+  fetchImpl: typeof fetch;
+}
+
+async function readAccessTokenFromCookies() {
+  const authSessionModule = await import('../../../../lib/auth-session');
+
+  return authSessionModule.getAccessTokenFromCookies();
+}
+
+const defaultBindRouteDependencies: BindRouteDependencies = {
+  apiUrl: API_URL,
+  readAccessToken: readAccessTokenFromCookies,
+  issueFallbackCode: issueBindFallbackCode,
+  fetchImpl: fetch,
+};
+
+const bindRouteDependencies: BindRouteDependencies = {
+  ...defaultBindRouteDependencies,
+};
+
+export function setBindRouteDependenciesForTests(overrides: Partial<BindRouteDependencies>) {
+  Object.assign(bindRouteDependencies, overrides);
+}
+
+export function resetBindRouteDependenciesForTests() {
+  Object.assign(bindRouteDependencies, defaultBindRouteDependencies);
+}
 
 function badRequest(message: string, status = 400) {
   return NextResponse.json<RouteErrorPayload>(
@@ -48,6 +79,16 @@ function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
     : [];
+}
+
+function normalizeBridgeNonce(value: string | undefined): string | undefined {
+  const normalized = value?.trim();
+
+  if (!normalized || normalized.length < 8 || normalized.length > 128) {
+    return undefined;
+  }
+
+  return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : undefined;
 }
 
 function normalizeHandshake(value: unknown): CompatibilityHandshake | null {
@@ -74,7 +115,7 @@ function normalizeHandshake(value: unknown): CompatibilityHandshake | null {
 }
 
 export async function POST(request: Request) {
-  const accessToken = await getAccessTokenFromCookies();
+  const accessToken = await bindRouteDependencies.readAccessToken();
 
   if (!accessToken) {
     return badRequest('Sign in on the site before connecting the extension.', 401);
@@ -86,16 +127,32 @@ export async function POST(request: Request) {
   const environment = typeof body?.environment === 'string' ? body.environment.trim() : '';
   const handshake = normalizeHandshake(body?.handshake);
   const requestId = request.headers.get('x-quizmind-bind-request-id')?.trim() || undefined;
-  const bridgeNonce = request.headers.get('x-quizmind-bridge-nonce')?.trim() || undefined;
-  const targetOrigin = normalizeBridgeOrigin(
-    request.headers.get('x-quizmind-target-origin')?.trim() || undefined,
-  );
+  const rawBridgeNonce = request.headers.get('x-quizmind-bridge-nonce')?.trim() || undefined;
+  const bridgeNonce = normalizeBridgeNonce(rawBridgeNonce);
+  const rawTargetOrigin = request.headers.get('x-quizmind-target-origin')?.trim() || undefined;
+  const targetOrigin = normalizeBridgeOrigin(rawTargetOrigin);
 
   if (!installationId || !environment || !handshake) {
     return badRequest('installationId, environment, and a valid handshake are required.');
   }
 
-  const response = await fetch(`${API_URL}/extension/installations/bind`, {
+  if (rawBridgeNonce && !bridgeNonce) {
+    return badRequest('x-quizmind-bridge-nonce must be 8-128 characters using A-Z, a-z, 0-9, "_", "-", ".", or ":".');
+  }
+
+  if (rawTargetOrigin && !targetOrigin) {
+    return badRequest('x-quizmind-target-origin must be a valid http(s) or extension origin.');
+  }
+
+  if ((bridgeNonce && !targetOrigin) || (!bridgeNonce && targetOrigin)) {
+    return badRequest('x-quizmind-bridge-nonce and x-quizmind-target-origin must be provided together.');
+  }
+
+  if ((bridgeNonce || targetOrigin) && !requestId) {
+    return badRequest('x-quizmind-bind-request-id is required when secure bridge headers are provided.');
+  }
+
+  const response = await bindRouteDependencies.fetchImpl(`${bindRouteDependencies.apiUrl}/extension/installations/bind`, {
     method: 'POST',
     cache: 'no-store',
     headers: {
@@ -126,13 +183,16 @@ export async function POST(request: Request) {
     return badRequest(fallbackMessage ?? 'Unable to bind the extension installation right now.', response.status || 500);
   }
 
-  const fallbackCode = await issueBindFallbackCode({
-    installationId,
-    requestId,
-    bridgeNonce,
-    targetOrigin,
-    result: payload.data,
-  });
+  const fallbackCode =
+    requestId && bridgeNonce && targetOrigin
+      ? await bindRouteDependencies.issueFallbackCode({
+          installationId,
+          requestId,
+          bridgeNonce,
+          targetOrigin,
+          result: payload.data,
+        })
+      : undefined;
 
   return NextResponse.json<RouteSuccessPayload>(
     {

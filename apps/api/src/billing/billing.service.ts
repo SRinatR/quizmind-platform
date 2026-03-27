@@ -339,6 +339,7 @@ export class BillingService {
     const plans = await this.billingRepository.listAllPlans();
 
     return {
+      manageDecision: accessDecision,
       plans: plans.map(mapAdminPlanCatalogRecordToSnapshot),
     };
   }

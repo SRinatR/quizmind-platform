@@ -13,6 +13,7 @@ import {
   PlatformBridgeError,
   PlatformRequestError,
   PlatformStateManager,
+  redeemBindFallbackCode,
   refreshBootstrap,
   resolveBootstrapRefreshDelayMs,
   sendRuntimeError,
@@ -122,6 +123,7 @@ test('buildExtensionConnectUrl and connectToPlatform produce/consume secure brid
   assert.equal(parsedUrl.pathname, '/app/extension/connect');
   assert.equal(parsedUrl.searchParams.get('requestId'), requestId);
   assert.equal(parsedUrl.searchParams.get('bridgeNonce'), bridgeNonce);
+  assert.equal(parsedUrl.searchParams.get('bridgeMode'), 'fallback_code');
   assert.equal(
     parsedUrl.searchParams.get('targetOrigin'),
     'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
@@ -184,6 +186,151 @@ test('connectToPlatform rejects bridge nonce mismatches', async () => {
       return true;
     },
   );
+});
+
+test('redeemBindFallbackCode exchanges one-time fallback code for bind result', async () => {
+  const bindResult = createBindResult();
+  let capturedUrl: string | undefined;
+  let capturedInit: RequestInit | undefined;
+
+  const redeemed = await redeemBindFallbackCode({
+    siteUrl: 'http://localhost:3000',
+    fallbackCode: 'bindc_demo_123',
+    installationId: 'inst_demo',
+    requestId: 'bind_req_3',
+    bridgeNonce: 'nonce_expected',
+    fetcher: (async (input, init) => {
+      capturedUrl = String(input);
+      capturedInit = init;
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: bindResult,
+          redeemedAt: '2026-03-27T12:10:00.000Z',
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  assert.equal(redeemed.session.token, 'tok_demo_123');
+  assert.equal(capturedUrl, 'http://localhost:3000/api/extension/bind/redeem');
+  assert.equal((capturedInit?.method ?? '').toUpperCase(), 'POST');
+  assert.deepEqual(JSON.parse(String(capturedInit?.body)), {
+    code: 'bindc_demo_123',
+    installationId: 'inst_demo',
+    requestId: 'bind_req_3',
+    bridgeNonce: 'nonce_expected',
+  });
+});
+
+test('connectToPlatform redeems bridge fallback code envelopes and saves session state', async () => {
+  const store = createInMemoryPlatformStateStore({
+    'quizmind.platform.installation_id': 'inst_demo',
+  });
+  const state = new PlatformStateManager(store);
+  const handshake = createHandshake();
+  const bindResult = createBindResult();
+  let capturedRedeemBody: Record<string, unknown> | null = null;
+
+  const connected = await connectToPlatform({
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake,
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    requestId: 'bind_req_4',
+    bridgeNonce: 'nonce_expected',
+    state,
+    openBridge: () => ({
+      type: 'quizmind.extension.bind_fallback_code',
+      requestId: 'bind_req_4',
+      bridgeNonce: 'nonce_expected',
+      fallbackCode: {
+        code: 'bindc_demo_123',
+      },
+    }),
+    fetcher: (async (_input, init) => {
+      capturedRedeemBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: bindResult,
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  assert.equal(connected.session.token, 'tok_demo_123');
+  assert.deepEqual(capturedRedeemBody, {
+    code: 'bindc_demo_123',
+    installationId: 'inst_demo',
+    requestId: 'bind_req_4',
+    bridgeNonce: 'nonce_expected',
+  });
+  assert.equal((await state.getInstallationSession())?.token, 'tok_demo_123');
+});
+
+test('PlatformRuntimeClient.redeemBindFallbackCode supports manual fallback redeem and persists bind state', async () => {
+  const store = createInMemoryPlatformStateStore({
+    'quizmind.platform.installation_id': 'inst_manual',
+  });
+  const state = new PlatformStateManager(store);
+  const bindResult = createBindResult();
+  let capturedRequestBody: Record<string, unknown> | null = null;
+  const runtime = new PlatformRuntimeClient({
+    apiUrl: 'http://localhost:4000',
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake: createHandshake(),
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    state,
+    openBridge: async () => createBindResult(),
+    fetcher: (async (_input, init) => {
+      capturedRequestBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: bindResult,
+          redeemedAt: '2026-03-27T12:10:00.000Z',
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  const redeemed = await runtime.redeemBindFallbackCode({
+    fallbackCode: 'bindc_manual_123',
+    requestId: 'bind_req_5',
+    bridgeNonce: 'nonce_manual',
+  });
+
+  assert.equal(redeemed.session.token, 'tok_demo_123');
+  assert.deepEqual(capturedRequestBody, {
+    code: 'bindc_manual_123',
+    installationId: 'inst_manual',
+    requestId: 'bind_req_5',
+    bridgeNonce: 'nonce_manual',
+  });
+  assert.equal((await state.getInstallationSession())?.token, 'tok_demo_123');
 });
 
 test('refreshBootstrap stores cache and computes refresh delays', async () => {
@@ -315,6 +462,101 @@ test('sendUsageEvent/sendRuntimeError/flushBufferedEvents deliver and retain eve
   assert.equal(flushed.delivered.length, 1);
   assert.equal(flushed.remaining.length, 1);
   assert.equal(flushed.remaining[0]?.eventType, 'extension.force_fail');
+});
+
+test('PlatformRuntimeClient sends runtime and lifecycle telemetry through persisted session context', async () => {
+  const observedEvents: UsageEventPayload[] = [];
+  const state = new PlatformStateManager(
+    createInMemoryPlatformStateStore({
+      'quizmind.platform.installation_id': 'inst_demo',
+      'quizmind.platform.workspace_id': 'ws_1',
+    }),
+  );
+
+  await state.saveInstallationSession({
+    token: 'tok_demo_123',
+    expiresAt: '2026-03-27T13:00:00.000Z',
+    refreshAfterSeconds: 900,
+  });
+
+  const runtime = new PlatformRuntimeClient({
+    apiUrl: 'http://localhost:4000',
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake: createHandshake(),
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    state,
+    openBridge: async () => createBindResult(),
+    fetcher: (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body ?? '{}')) as UsageEventPayload;
+      observedEvents.push(body);
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: {
+            queued: true,
+            queue: 'usage-events',
+            job: {
+              id: `job_${observedEvents.length}`,
+              queue: 'usage-events',
+              createdAt: new Date().toISOString(),
+            },
+            handler: 'worker.process-usage-event',
+            logEvent: {
+              eventId: `evt_${observedEvents.length}`,
+              eventType: body.eventType,
+              occurredAt: body.occurredAt,
+              status: 'success',
+            },
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  await runtime.sendRuntimeError({
+    surface: 'popup',
+    message: 'runtime crash',
+    severity: 'error',
+  });
+  await runtime.sendBootstrapRefreshFailedEvent({
+    message: 'gateway timeout',
+    status: 504,
+    retryable: true,
+  });
+  await runtime.sendReconnectRequestedEvent({
+    reason: 'token_expired',
+  });
+  await runtime.sendReconnectedEvent();
+  const flushed = await runtime.flushBufferedEvents({
+    events: [
+      {
+        installationId: 'inst_demo',
+        workspaceId: 'ws_1',
+        eventType: 'extension.quiz_answer_requested',
+        occurredAt: '2026-03-27T12:05:00.000Z',
+        payload: {
+          surface: 'popup',
+        },
+      },
+    ],
+  });
+
+  assert.equal(flushed.delivered.length, 1);
+  assert.equal(flushed.remaining.length, 0);
+  assert.equal(observedEvents[0]?.eventType, 'extension.runtime_error');
+  assert.equal(observedEvents[0]?.installationId, 'inst_demo');
+  assert.equal(observedEvents[1]?.eventType, 'extension.bootstrap_refresh_failed');
+  assert.equal(observedEvents[2]?.eventType, 'extension.installation_reconnect_requested');
+  assert.equal(observedEvents[3]?.eventType, 'extension.installation_reconnected');
+  assert.equal(observedEvents[4]?.eventType, 'extension.quiz_answer_requested');
 });
 
 test('derivePlatformUiState reflects reconnect, unsupported, and warning signals', () => {

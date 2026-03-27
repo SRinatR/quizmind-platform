@@ -262,6 +262,9 @@ test('ProviderCredentialService lists only credentials visible to the requested 
     includePlatform: false,
   });
   assert.equal(inventory.workspace?.id, 'ws_1');
+  assert.equal(inventory.accessDecision.allowed, true);
+  assert.equal(inventory.writeDecision.allowed, true);
+  assert.equal(inventory.rotateDecision.allowed, true);
   assert.equal(inventory.aiAccessPolicy.mode, 'user_key_optional');
   assert.equal(inventory.policy.allowWorkspaceSharedCredentials, true);
   assert.equal(inventory.items.length, 1);
@@ -339,6 +342,9 @@ test('ProviderCredentialService.listAdminProviderGovernanceForCurrentSession ret
     includePlatform: true,
   });
   assert.equal(snapshot.workspace?.id, 'ws_1');
+  assert.equal(snapshot.accessDecision.allowed, true);
+  assert.equal(snapshot.writeDecision.allowed, true);
+  assert.equal(snapshot.rotateDecision.allowed, true);
   assert.equal(snapshot.aiAccessPolicy.mode, 'admin_approved_user_key');
   assert.equal(snapshot.policy.requireAdminApproval, true);
   assert.equal(snapshot.policyHistory.length, 1);

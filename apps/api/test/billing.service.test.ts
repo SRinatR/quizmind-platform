@@ -320,6 +320,7 @@ test('BillingService.listAdminPlans returns the full billing catalog for plan ma
 
   const result = await service.listAdminPlans(createAdminSession());
 
+  assert.equal(result.manageDecision.allowed, true);
   assert.equal(result.plans.length, 2);
   assert.equal(result.plans[0]?.plan.code, 'pro');
   assert.equal(result.plans[1]?.isActive, false);

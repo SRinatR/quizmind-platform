@@ -87,6 +87,45 @@ function normalizeBrowser(value: string): CompatibilityHandshake['browser'] {
     : 'other';
 }
 
+type UsageLifecycleEventMapping = {
+  auditEventType: string;
+  securityEventType: string;
+  securitySeverity: 'debug' | 'info' | 'warn' | 'error';
+  status: 'success' | 'failure';
+  summary: string;
+};
+
+const usageLifecycleEventMappings: Record<string, UsageLifecycleEventMapping> = {
+  'extension.runtime_error': {
+    auditEventType: 'extension.runtime_error',
+    securityEventType: 'extension.runtime_error',
+    securitySeverity: 'warn',
+    status: 'failure',
+    summary: 'extension runtime reported an error',
+  },
+  'extension.bootstrap_refresh_failed': {
+    auditEventType: 'extension.bootstrap_refresh_failed',
+    securityEventType: 'extension.bootstrap_refresh_failed',
+    securitySeverity: 'warn',
+    status: 'failure',
+    summary: 'extension runtime reported bootstrap refresh failure',
+  },
+  'extension.installation_reconnect_requested': {
+    auditEventType: 'extension.installation_reconnect_requested',
+    securityEventType: 'extension.installation_reconnect_requested',
+    securitySeverity: 'info',
+    status: 'success',
+    summary: 'extension runtime requested reconnect for installation session',
+  },
+  'extension.installation_reconnected': {
+    auditEventType: 'extension.installation_reconnected',
+    securityEventType: 'extension.installation_reconnected',
+    securitySeverity: 'info',
+    status: 'success',
+    summary: 'extension runtime reported installation reconnected',
+  },
+};
+
 @Injectable()
 export class ExtensionControlService {
   private readonly env = loadApiEnv();
@@ -307,6 +346,10 @@ export class ExtensionControlService {
       status: 'success',
       metadata: usageEvent.payload,
     });
+    await this.recordUsageLifecycleEventIfNeeded({
+      installation: installationSession.installation,
+      usageEvent,
+    });
 
     return {
       queued: true,
@@ -326,6 +369,46 @@ export class ExtensionControlService {
         status: logEvent.status ?? 'success',
       },
     };
+  }
+
+  private async recordUsageLifecycleEventIfNeeded(input: {
+    installation: ExtensionInstallationSessionRecord['installation'];
+    usageEvent: UsageEventPayload;
+  }): Promise<void> {
+    const mapping = usageLifecycleEventMappings[input.usageEvent.eventType];
+
+    if (!mapping) {
+      return;
+    }
+
+    const parsedOccurredAt = new Date(input.usageEvent.occurredAt);
+    const occurredAt = Number.isNaN(parsedOccurredAt.getTime()) ? new Date() : parsedOccurredAt;
+
+    await this.recordLifecycleEventSafely({
+      workspaceId: input.installation.workspaceId ?? undefined,
+      actorId: input.installation.userId,
+      targetType: 'extension_installation',
+      targetId: input.installation.installationId,
+      auditEventType: mapping.auditEventType,
+      securityEventType: mapping.securityEventType,
+      securitySeverity: mapping.securitySeverity,
+      status: mapping.status,
+      summary: mapping.summary,
+      metadata: {
+        sourceEventType: input.usageEvent.eventType,
+        installationId: input.installation.installationId,
+        workspaceId: input.installation.workspaceId ?? null,
+        payload: input.usageEvent.payload,
+      },
+      domainEventType: mapping.auditEventType,
+      domainPayload: {
+        sourceEventType: input.usageEvent.eventType,
+        installationId: input.installation.installationId,
+        workspaceId: input.installation.workspaceId ?? null,
+        payload: input.usageEvent.payload,
+      },
+      occurredAt,
+    });
   }
 
   async listInstallationsForCurrentSession(

@@ -5,13 +5,42 @@ import {
 } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../../lib/api';
-import { getAccessTokenFromCookies } from '../../../../../lib/auth-session';
 
 interface RouteErrorPayload {
   ok: false;
   error: {
     message: string;
   };
+}
+
+interface RotateSessionRouteDependencies {
+  apiUrl: string;
+  readAccessToken: () => Promise<string | null>;
+  fetchImpl: typeof fetch;
+}
+
+async function readAccessTokenFromCookies() {
+  const authSessionModule = await import('../../../../../lib/auth-session');
+
+  return authSessionModule.getAccessTokenFromCookies();
+}
+
+const defaultRotateSessionRouteDependencies: RotateSessionRouteDependencies = {
+  apiUrl: API_URL,
+  readAccessToken: readAccessTokenFromCookies,
+  fetchImpl: fetch,
+};
+
+const rotateSessionRouteDependencies: RotateSessionRouteDependencies = {
+  ...defaultRotateSessionRouteDependencies,
+};
+
+export function setRotateSessionRouteDependenciesForTests(overrides: Partial<RotateSessionRouteDependencies>) {
+  Object.assign(rotateSessionRouteDependencies, overrides);
+}
+
+export function resetRotateSessionRouteDependenciesForTests() {
+  Object.assign(rotateSessionRouteDependencies, defaultRotateSessionRouteDependencies);
 }
 
 function badRequest(message: string, status = 400) {
@@ -27,7 +56,7 @@ function badRequest(message: string, status = 400) {
 }
 
 export async function POST(request: Request) {
-  const accessToken = await getAccessTokenFromCookies();
+  const accessToken = await rotateSessionRouteDependencies.readAccessToken();
 
   if (!accessToken) {
     return badRequest('Sign in on the site before rotating an installation session.', 401);
@@ -41,7 +70,9 @@ export async function POST(request: Request) {
     return badRequest('installationId is required.');
   }
 
-  const response = await fetch(`${API_URL}/extension/installations/rotate-session`, {
+  const response = await rotateSessionRouteDependencies.fetchImpl(
+    `${rotateSessionRouteDependencies.apiUrl}/extension/installations/rotate-session`,
+    {
     method: 'POST',
     cache: 'no-store',
     headers: {
@@ -52,7 +83,8 @@ export async function POST(request: Request) {
       installationId,
       ...(workspaceId ? { workspaceId } : {}),
     } satisfies ExtensionInstallationRotateSessionRequest),
-  });
+  },
+  );
 
   const payload = (await response.json().catch(() => null)) as
     | ApiEnvelope<ExtensionInstallationRotateSessionResult>

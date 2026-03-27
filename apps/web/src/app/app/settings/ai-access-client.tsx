@@ -81,11 +81,11 @@ export function AiAccessClient({
   const credentials = providerCredentialInventory?.items ?? [];
   const policy = providerCredentialInventory?.policy ?? null;
   const canWrite = Boolean(
-    providerCredentialInventory?.permissions.includes('credentials:write') &&
+    providerCredentialInventory?.writeDecision.allowed &&
       providerCredentialInventory.aiAccessPolicy.allowBringYourOwnKey &&
       !providerCredentialInventory.policy.requireAdminApproval,
   );
-  const canRotate = Boolean(providerCredentialInventory?.permissions.includes('credentials:rotate'));
+  const canRotate = Boolean(providerCredentialInventory?.rotateDecision.allowed);
   const selectedWorkspaceRole = workspaceOptions.find((workspace) => workspace.id === formState.workspaceId)?.role ?? null;
   const canShareWorkspaceCredential =
     (selectedWorkspaceRole === 'workspace_owner' || selectedWorkspaceRole === 'workspace_admin') &&

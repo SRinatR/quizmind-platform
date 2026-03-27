@@ -303,12 +303,29 @@ Recommended error envelope:
 }
 ```
 
+Recommended fallback envelope (auto redeem path):
+
+```json
+{
+  "type": "quizmind.extension.bind_fallback_code",
+  "requestId": "bind_123",
+  "bridgeNonce": "<nonce>",
+  "fallbackCode": {
+    "code": "<fallback_code>",
+    "redeemPath": "/api/extension/bind/redeem",
+    "expiresAt": "2026-03-25T10:03:00.000Z",
+    "ttlSeconds": 180
+  }
+}
+```
+
 Bridge security requirements:
 
 - validate `origin` on both sides
 - include both `requestId` and `bridgeNonce`
 - do not broadcast to `*` when a strict target origin is known
 - close the bridge window after success or terminal failure
+- when opening the bridge URL, prefer `bridgeMode=fallback_code` so extension runtime can auto-redeem one-time bind codes
 
 ### One-time bind code fallback
 

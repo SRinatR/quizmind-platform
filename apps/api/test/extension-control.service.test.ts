@@ -456,6 +456,98 @@ test('ExtensionControlService.ingestUsageEventForInstallationSession queues work
   assert.equal(capturedPayload.payload.questionType, 'multiple_choice');
 });
 
+test('ExtensionControlService.ingestUsageEventForInstallationSession persists lifecycle logs for bootstrap refresh failures', async () => {
+  const { service, queueDispatchService, extensionEventRepository } = createService();
+  let capturedLifecycleEvent: any = null;
+
+  queueDispatchService.dispatch = async (input) => ({
+    id: 'usage-events:job_1',
+    queue: 'usage-events',
+    dedupeKey: input.dedupeKey,
+    createdAt: '2026-03-24T12:00:00.000Z',
+    attempts: 5,
+    payload: input.payload,
+  });
+  extensionEventRepository.recordLifecycleEvent = async (input) => {
+    capturedLifecycleEvent = input;
+  };
+
+  await service.ingestUsageEventForInstallationSession(
+    {
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_local_browser',
+        browser: 'chrome',
+        extensionVersion: '1.6.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    } as any,
+    {
+      eventType: 'extension.bootstrap_refresh_failed',
+      occurredAt: '2026-03-24T12:25:00.000Z',
+      payload: {
+        reason: 'token_expired',
+      },
+    },
+  );
+
+  assert.equal(capturedLifecycleEvent?.auditLog.eventType, 'extension.bootstrap_refresh_failed');
+  assert.equal(capturedLifecycleEvent?.securityLog.eventType, 'extension.bootstrap_refresh_failed');
+  assert.equal(capturedLifecycleEvent?.securityLog.severity, 'warn');
+  assert.equal(capturedLifecycleEvent?.domainEventType, 'extension.bootstrap_refresh_failed');
+  assert.equal((capturedLifecycleEvent?.domainPayload as any)?.sourceEventType, 'extension.bootstrap_refresh_failed');
+});
+
+test('ExtensionControlService.ingestUsageEventForInstallationSession skips lifecycle persistence for routine usage events', async () => {
+  const { service, queueDispatchService, extensionEventRepository } = createService();
+  let lifecycleEventCount = 0;
+
+  queueDispatchService.dispatch = async (input) => ({
+    id: 'usage-events:job_1',
+    queue: 'usage-events',
+    dedupeKey: input.dedupeKey,
+    createdAt: '2026-03-24T12:00:00.000Z',
+    attempts: 5,
+    payload: input.payload,
+  });
+  extensionEventRepository.recordLifecycleEvent = async () => {
+    lifecycleEventCount += 1;
+  };
+
+  await service.ingestUsageEventForInstallationSession(
+    {
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_local_browser',
+        browser: 'chrome',
+        extensionVersion: '1.6.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    } as any,
+    {
+      eventType: 'extension.quiz_answer_requested',
+      occurredAt: '2026-03-24T12:15:00.000Z',
+      payload: {
+        questionType: 'multiple_choice',
+      },
+    },
+  );
+
+  assert.equal(lifecycleEventCount, 0);
+});
+
 test('ExtensionControlService.resolveInstallationSession records refresh failure lifecycle events for invalid tokens', async () => {
   const {
     service,

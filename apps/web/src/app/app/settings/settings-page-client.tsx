@@ -13,6 +13,7 @@ import {
   type WorkspaceSubscriptionSnapshot,
 } from '../../../lib/api';
 import { type DashboardSection } from '../../../features/dashboard/sections';
+import { type NavigationAccessMatrixRow } from '../../../features/navigation/access-matrix';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { AiAccessClient } from './ai-access-client';
 
@@ -25,6 +26,7 @@ interface SettingsPageClientProps {
   subscription: WorkspaceSubscriptionSnapshot | null;
   userProfile: UserProfileSnapshot | null;
   visibleSections: DashboardSection[];
+  accessMatrix: NavigationAccessMatrixRow[];
 }
 
 interface LogoutAllRouteResponse {
@@ -61,6 +63,7 @@ export function SettingsPageClient({
   subscription,
   userProfile,
   visibleSections,
+  accessMatrix,
 }: SettingsPageClientProps) {
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -84,6 +87,9 @@ export function SettingsPageClient({
   const isVerified = Boolean(session.user.emailVerifiedAt);
   const currentDisplayName = profileState?.displayName || session.user.displayName || 'Connected account';
   const currentEmail = profileState?.email ?? session.user.email;
+  const blockedAccessRows = accessMatrix.filter((row) => !row.allowed);
+  const allowedDashboardRows = accessMatrix.filter((row) => row.scope === 'dashboard' && row.allowed);
+  const allowedAdminRows = accessMatrix.filter((row) => row.scope === 'admin' && row.allowed);
 
   async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -399,6 +405,34 @@ export function SettingsPageClient({
             </Link>
           </div>
         </article>
+      </section>
+
+      <section className="panel settings-card">
+        <span className="micro-label">Access Matrix</span>
+        <h2>Resolved section access</h2>
+        <p>Dashboard and admin route gates are shown with allow/deny reasons for this active session.</p>
+        <div className="tag-row">
+          <span className="tag">dashboard {allowedDashboardRows.length}</span>
+          <span className="tag">admin {allowedAdminRows.length}</span>
+          <span className={blockedAccessRows.length > 0 ? 'tag warn' : 'tag'}>
+            blocked {blockedAccessRows.length}
+          </span>
+        </div>
+        <div className="list-stack">
+          {accessMatrix.map((row) => (
+            <div className="list-item" key={`settings-matrix:${row.scope}:${row.id}`}>
+              <strong>
+                {row.scope.toUpperCase()} | {row.title}
+              </strong>
+              <p>{row.href}</p>
+              <p className="list-muted">{row.requirementSummary}</p>
+              <div className="tag-row">
+                <span className={row.allowed ? 'tag' : 'tag warn'}>{row.allowed ? 'allowed' : 'blocked'}</span>
+                {!row.allowed && row.reason ? <span className="tag warn">{row.reason}</span> : null}
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <AiAccessClient

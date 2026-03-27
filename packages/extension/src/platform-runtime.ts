@@ -4,16 +4,21 @@ import {
   type ExtensionInstallationBindResult,
   type UsageEventIngestResult,
   type UsageEventPayload,
+  type UsageEventSeverity,
 } from '@quizmind/contracts';
 
-import { connectToPlatform } from './platform-auth';
+import { connectToPlatform, redeemBindFallbackCode as redeemBindFallbackCodeRequest } from './platform-auth';
 import {
   PlatformRequestError,
   refreshBootstrap,
   resolveBootstrapRefreshDelayMs,
 } from './platform-bootstrap';
 import { type PlatformStateManager } from './platform-state';
-import { sendUsageEvent } from './platform-telemetry';
+import {
+  flushBufferedEvents as flushBufferedEventsRequest,
+  sendRuntimeError as sendRuntimeErrorRequest,
+  sendUsageEvent as sendUsageEventRequest,
+} from './platform-telemetry';
 import { derivePlatformUiState, type PlatformUiState } from './platform-ui';
 
 export interface PlatformRuntimeOptions {
@@ -53,10 +58,34 @@ export class PlatformRuntimeClient {
       targetOrigin: this.options.targetOrigin,
       state: this.options.state,
       openBridge: this.options.openBridge,
+      fetcher: this.options.fetcher,
       ...(input?.workspaceId ? { workspaceId: input.workspaceId } : {}),
       ...(input?.requestId ? { requestId: input.requestId } : {}),
       ...(input?.bridgeNonce ? { bridgeNonce: input.bridgeNonce } : {}),
     });
+  }
+
+  async redeemBindFallbackCode(input: {
+    fallbackCode: string;
+    requestId?: string;
+    bridgeNonce?: string;
+    redeemPath?: string;
+    installationId?: string;
+  }): Promise<ExtensionInstallationBindResult> {
+    const installationId = input.installationId ?? (await this.options.state.getOrCreateInstallationId());
+    const result = await redeemBindFallbackCodeRequest({
+      siteUrl: this.options.siteUrl,
+      fallbackCode: input.fallbackCode,
+      installationId,
+      ...(input.requestId ? { requestId: input.requestId } : {}),
+      ...(input.bridgeNonce ? { bridgeNonce: input.bridgeNonce } : {}),
+      ...(input.redeemPath ? { redeemPath: input.redeemPath } : {}),
+      fetcher: this.options.fetcher,
+    });
+
+    await this.options.state.saveBindResult(result);
+
+    return result;
   }
 
   async refreshBootstrap(input?: {
@@ -153,7 +182,7 @@ export class PlatformRuntimeClient {
     };
 
     try {
-      return await sendUsageEvent({
+      return await sendUsageEventRequest({
         apiUrl: this.options.apiUrl,
         token: session.token,
         event,
@@ -166,6 +195,124 @@ export class PlatformRuntimeClient {
 
       throw error;
     }
+  }
+
+  async sendRuntimeError(input: {
+    surface: string;
+    message: string;
+    stackPreview?: string;
+    severity?: UsageEventSeverity;
+    feature?: string;
+    occurredAt?: string;
+    extra?: Record<string, unknown>;
+    workspaceId?: string;
+  }): Promise<UsageEventIngestResult> {
+    const installationId = await this.options.state.getOrCreateInstallationId();
+    const session = await this.options.state.getInstallationSession();
+    const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
+
+    if (!session) {
+      throw createReconnectRequiredError();
+    }
+
+    try {
+      return await sendRuntimeErrorRequest({
+        apiUrl: this.options.apiUrl,
+        token: session.token,
+        installationId,
+        ...(workspaceId ? { workspaceId } : {}),
+        surface: input.surface,
+        message: input.message,
+        ...(input.stackPreview ? { stackPreview: input.stackPreview } : {}),
+        ...(input.severity ? { severity: input.severity } : {}),
+        ...(input.feature ? { feature: input.feature } : {}),
+        ...(input.occurredAt ? { occurredAt: input.occurredAt } : {}),
+        ...(input.extra ? { extra: input.extra } : {}),
+        fetcher: this.options.fetcher,
+      });
+    } catch (error) {
+      if (error instanceof PlatformRequestError && error.status === 401) {
+        await this.options.state.clearInstallationSession();
+      }
+
+      throw error;
+    }
+  }
+
+  async flushBufferedEvents(input: {
+    events: UsageEventPayload[];
+  }): Promise<{
+    delivered: Array<{
+      event: UsageEventPayload;
+      result: UsageEventIngestResult;
+    }>;
+    remaining: UsageEventPayload[];
+  }> {
+    const session = await this.options.state.getInstallationSession();
+
+    if (!session) {
+      throw createReconnectRequiredError();
+    }
+
+    return flushBufferedEventsRequest({
+      apiUrl: this.options.apiUrl,
+      token: session.token,
+      events: input.events,
+      fetcher: this.options.fetcher,
+    });
+  }
+
+  async sendBootstrapRefreshFailedEvent(input: {
+    message: string;
+    status?: number;
+    retryable?: boolean;
+    occurredAt?: string;
+    workspaceId?: string;
+    extra?: Record<string, unknown>;
+  }): Promise<UsageEventIngestResult> {
+    return this.sendUsageEvent({
+      eventType: 'extension.bootstrap_refresh_failed',
+      occurredAt: input.occurredAt,
+      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
+      payload: {
+        message: input.message,
+        ...(typeof input.status === 'number' ? { status: input.status } : {}),
+        ...(typeof input.retryable === 'boolean' ? { retryable: input.retryable } : {}),
+        ...(input.extra ?? {}),
+      },
+    });
+  }
+
+  async sendReconnectRequestedEvent(input?: {
+    reason?: string;
+    occurredAt?: string;
+    workspaceId?: string;
+    extra?: Record<string, unknown>;
+  }): Promise<UsageEventIngestResult> {
+    return this.sendUsageEvent({
+      eventType: 'extension.installation_reconnect_requested',
+      occurredAt: input?.occurredAt,
+      ...(input?.workspaceId ? { workspaceId: input.workspaceId } : {}),
+      payload: {
+        ...(input?.reason ? { reason: input.reason } : {}),
+        ...(input?.extra ?? {}),
+      },
+    });
+  }
+
+  async sendReconnectedEvent(input?: {
+    occurredAt?: string;
+    workspaceId?: string;
+    extra?: Record<string, unknown>;
+  }): Promise<UsageEventIngestResult> {
+    return this.sendUsageEvent({
+      eventType: 'extension.installation_reconnected',
+      occurredAt: input?.occurredAt,
+      ...(input?.workspaceId ? { workspaceId: input.workspaceId } : {}),
+      payload: {
+        ...(input?.extra ?? {}),
+      },
+    });
   }
 
   async deriveUiState(input?: {

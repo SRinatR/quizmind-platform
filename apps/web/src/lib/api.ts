@@ -133,7 +133,7 @@ export interface WorkspaceSubscriptionSnapshot {
 export interface FeatureFlagsSnapshot {
   personaKey: string;
   flags: FeatureFlagDefinition[];
-  publishDecision: AccessDecision;
+  writeDecision: AccessDecision;
   permissions: string[];
 }
 

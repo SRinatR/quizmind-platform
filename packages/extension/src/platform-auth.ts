@@ -10,6 +10,16 @@ interface BridgeEnvelopeBase {
   bridgeNonce?: string;
 }
 
+interface ApiEnvelope<T> {
+  ok: boolean;
+  data?: T;
+  error?: {
+    code?: string;
+    message?: string;
+  };
+  message?: string;
+}
+
 export interface BridgeBindResultEnvelope extends BridgeEnvelopeBase {
   type: 'quizmind.extension.bind_result';
   payload: ExtensionInstallationBindResult;
@@ -23,7 +33,20 @@ export interface BridgeBindErrorEnvelope extends BridgeEnvelopeBase {
   };
 }
 
-export type BridgeEnvelope = BridgeBindResultEnvelope | BridgeBindErrorEnvelope;
+export interface BridgeBindFallbackCodeEnvelope extends BridgeEnvelopeBase {
+  type: 'quizmind.extension.bind_fallback_code';
+  fallbackCode: {
+    code: string;
+    redeemPath?: string;
+    expiresAt?: string;
+    ttlSeconds?: number;
+  };
+}
+
+export type BridgeEnvelope =
+  | BridgeBindResultEnvelope
+  | BridgeBindErrorEnvelope
+  | BridgeBindFallbackCodeEnvelope;
 
 export interface ConnectToPlatformInput {
   siteUrl: string;
@@ -42,6 +65,7 @@ export interface ConnectToPlatformInput {
     | Promise<BridgeEnvelope | ExtensionInstallationBindResult>
     | BridgeEnvelope
     | ExtensionInstallationBindResult;
+  fetcher?: typeof fetch;
 }
 
 export class PlatformBridgeError extends Error {
@@ -74,6 +98,10 @@ function normalizeString(value: string | undefined): string | undefined {
   const normalized = value?.trim();
 
   return normalized ? normalized : undefined;
+}
+
+function trimTrailingSlash(value: string): string {
+  return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -115,6 +143,7 @@ export function buildExtensionConnectUrl(input: {
   targetOrigin: string;
   requestId: string;
   bridgeNonce: string;
+  bridgeMode?: 'bind_result' | 'fallback_code';
   workspaceId?: string;
 }): string {
   const url = new URL('/app/extension/connect', input.siteUrl);
@@ -128,6 +157,7 @@ export function buildExtensionConnectUrl(input: {
   url.searchParams.set('targetOrigin', normalizeOrigin(input.targetOrigin));
   url.searchParams.set('requestId', input.requestId);
   url.searchParams.set('bridgeNonce', input.bridgeNonce);
+  url.searchParams.set('bridgeMode', input.bridgeMode ?? 'fallback_code');
 
   if (input.handshake.buildId) {
     url.searchParams.set('buildId', input.handshake.buildId);
@@ -156,12 +186,32 @@ export function isBridgeBindErrorEnvelope(value: unknown): value is BridgeBindEr
   return isRecord(value.error) && typeof value.error.code === 'string' && typeof value.error.message === 'string';
 }
 
+export function isBridgeBindFallbackCodeEnvelope(value: unknown): value is BridgeBindFallbackCodeEnvelope {
+  if (
+    !isRecord(value) ||
+    value.type !== 'quizmind.extension.bind_fallback_code' ||
+    typeof value.requestId !== 'string'
+  ) {
+    return false;
+  }
+
+  return (
+    isRecord(value.fallbackCode) &&
+    typeof value.fallbackCode.code === 'string' &&
+    value.fallbackCode.code.trim().length > 0
+  );
+}
+
 function normalizeBridgeEnvelope(value: unknown): BridgeEnvelope | undefined {
   if (isBridgeBindResultEnvelope(value)) {
     return value;
   }
 
   if (isBridgeBindErrorEnvelope(value)) {
+    return value;
+  }
+
+  if (isBridgeBindFallbackCodeEnvelope(value)) {
     return value;
   }
 
@@ -174,10 +224,82 @@ function normalizeBindResult(value: unknown): ExtensionInstallationBindResult | 
   }
 
   if (!isRecord(value.installation) || !isRecord(value.session) || !isRecord(value.bootstrap)) {
+    if (isRecord(value.data)) {
+      return normalizeBindResult(value.data);
+    }
+
     return undefined;
   }
 
   return value as unknown as ExtensionInstallationBindResult;
+}
+
+function resolveBridgeErrorMessage(payload: unknown, fallback: string): string {
+  if (!isRecord(payload)) {
+    return fallback;
+  }
+
+  if (isRecord(payload.error) && typeof payload.error.message === 'string' && payload.error.message.trim().length > 0) {
+    return payload.error.message.trim();
+  }
+
+  if (typeof payload.message === 'string' && payload.message.trim().length > 0) {
+    return payload.message.trim();
+  }
+
+  return fallback;
+}
+
+function resolveBridgeErrorCode(payload: unknown, fallback: string): string {
+  if (!isRecord(payload) || !isRecord(payload.error) || typeof payload.error.code !== 'string') {
+    return fallback;
+  }
+
+  const normalized = payload.error.code.trim();
+
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+export async function redeemBindFallbackCode(input: {
+  siteUrl: string;
+  fallbackCode: string;
+  installationId?: string;
+  requestId?: string;
+  bridgeNonce?: string;
+  redeemPath?: string;
+  fetcher?: typeof fetch;
+}): Promise<ExtensionInstallationBindResult> {
+  const normalizedCode = normalizeString(input.fallbackCode);
+
+  if (!normalizedCode) {
+    throw new PlatformBridgeError('Fallback bind code is required.', 'missing_fallback_code', input.requestId);
+  }
+
+  const redeemPath = normalizeString(input.redeemPath) ?? '/api/extension/bind/redeem';
+  const redeemUrl = new URL(redeemPath, `${trimTrailingSlash(input.siteUrl)}/`).toString();
+  const fetcher = input.fetcher ?? fetch;
+  const response = await fetcher(redeemUrl, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      code: normalizedCode,
+      ...(normalizeString(input.installationId) ? { installationId: normalizeString(input.installationId) } : {}),
+      ...(normalizeString(input.requestId) ? { requestId: normalizeString(input.requestId) } : {}),
+      ...(normalizeString(input.bridgeNonce) ? { bridgeNonce: normalizeString(input.bridgeNonce) } : {}),
+    }),
+  });
+  const payload = (await response.json().catch(() => null)) as ApiEnvelope<ExtensionInstallationBindResult> | null;
+
+  if (!response.ok || !payload?.ok || !payload.data) {
+    const message = resolveBridgeErrorMessage(payload, `Fallback bind redeem failed (status ${response.status}).`);
+    const code = resolveBridgeErrorCode(payload, 'bind_redeem_failed');
+
+    throw new PlatformBridgeError(message, code, input.requestId);
+  }
+
+  return payload.data;
 }
 
 export function handleBridgeMessage(input: {
@@ -229,6 +351,16 @@ export function handleBridgeMessage(input: {
     };
   }
 
+  if (envelope.type === 'quizmind.extension.bind_fallback_code') {
+    return {
+      ok: false,
+      error: {
+        code: 'fallback_code_envelope',
+        message: 'Bridge returned a fallback code envelope instead of a direct bind result.',
+      },
+    };
+  }
+
   return {
     ok: true,
     result: envelope.payload,
@@ -247,6 +379,7 @@ export async function connectToPlatform(input: ConnectToPlatformInput): Promise<
     targetOrigin: input.targetOrigin,
     requestId,
     bridgeNonce,
+    bridgeMode: 'fallback_code',
     ...(normalizeString(input.workspaceId) ? { workspaceId: normalizeString(input.workspaceId) } : {}),
   });
   const bridgeResponse = await input.openBridge({
@@ -259,6 +392,40 @@ export async function connectToPlatform(input: ConnectToPlatformInput): Promise<
   if (directBindResult) {
     await input.state.saveBindResult(directBindResult);
     return directBindResult;
+  }
+
+  const bridgeEnvelope = normalizeBridgeEnvelope(bridgeResponse);
+
+  if (bridgeEnvelope?.type === 'quizmind.extension.bind_fallback_code') {
+    if (bridgeEnvelope.requestId !== requestId) {
+      throw new PlatformBridgeError(
+        'Bridge response requestId does not match the active bind request.',
+        'request_mismatch',
+        requestId,
+      );
+    }
+
+    if (normalizeString(bridgeEnvelope.bridgeNonce) !== bridgeNonce) {
+      throw new PlatformBridgeError(
+        'Bridge response bridgeNonce does not match the active bind request.',
+        'nonce_mismatch',
+        requestId,
+      );
+    }
+
+    const redeemedResult = await redeemBindFallbackCode({
+      siteUrl: input.siteUrl,
+      fallbackCode: bridgeEnvelope.fallbackCode.code,
+      installationId,
+      requestId,
+      bridgeNonce,
+      redeemPath: bridgeEnvelope.fallbackCode.redeemPath,
+      fetcher: input.fetcher,
+    });
+
+    await input.state.saveBindResult(redeemedResult);
+
+    return redeemedResult;
   }
 
   const handledMessage = handleBridgeMessage({

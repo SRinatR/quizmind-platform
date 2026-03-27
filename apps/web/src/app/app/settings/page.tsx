@@ -1,6 +1,8 @@
 import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../../components/site-shell';
+import { buildAccessMatrixRows } from '../../../features/navigation/access-matrix';
+import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAuthSessions,
@@ -11,7 +13,6 @@ import {
   getUserProfile,
   resolvePersona,
 } from '../../../lib/api';
-import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
 import { SettingsPageClient } from './settings-page-client';
 
 interface SettingsPageProps {
@@ -33,6 +34,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const providerCredentialInventory = await getProviderCredentialInventory(workspaceId, accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
+  const accessMatrix = context
+    ? buildAccessMatrixRows({
+        context,
+        workspaceId,
+      })
+    : [];
 
   return (
     <SiteShell
@@ -55,6 +62,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           session={session}
           subscription={subscription}
           userProfile={userProfile}
+          accessMatrix={accessMatrix}
           visibleSections={visibleSections}
         />
       ) : (

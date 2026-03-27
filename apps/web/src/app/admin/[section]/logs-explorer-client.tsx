@@ -13,6 +13,12 @@ import { useState } from 'react';
 
 import { type AdminLogsStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import {
+  buildExtensionLifecycleSearch,
+  extensionLifecycleFilterDefinitions,
+  isExtensionLifecycleEventType,
+  summarizeExtensionLifecycleEvents,
+} from '../../../features/admin/log-lifecycle';
 
 interface WorkspaceOption {
   id: string;
@@ -123,6 +129,7 @@ export function LogsExplorerClient({
     'Admin log explorer can now export filtered audit streams as JSON or CSV.',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const extensionLifecycleSummary = summarizeExtensionLifecycleEvents(snapshot.items);
 
   function pushFilters(next: Partial<AdminLogFilters & { workspaceId: string }>) {
     const params = buildNextSearchParams(searchParams, next);
@@ -135,6 +142,17 @@ export function LogsExplorerClient({
     setErrorMessage(null);
     pushFilters({
       search: searchDraft,
+    });
+  }
+
+  function applyExtensionLifecycleFilter(eventType?: (typeof extensionLifecycleFilterDefinitions)[number]['eventType']) {
+    const search = buildExtensionLifecycleSearch(eventType);
+
+    setSearchDraft(search);
+    setErrorMessage(null);
+    pushFilters({
+      stream: 'all',
+      search,
     });
   }
 
@@ -291,6 +309,32 @@ export function LogsExplorerClient({
           <p className="admin-ticket-note">
             Counts below reflect the current workspace context and any active search or severity filter.
           </p>
+          <div className="mini-list">
+            <div className="list-item">
+              <strong>Extension lifecycle focus</strong>
+              <p>Quick filters for reconnect and bootstrap refresh incident triage.</p>
+              <div className="tag-row">
+                <button
+                  className="btn-ghost"
+                  onClick={() => applyExtensionLifecycleFilter()}
+                  type="button"
+                >
+                  all extension lifecycle
+                </button>
+                {extensionLifecycleFilterDefinitions.map((definition) => (
+                  <button
+                    className="btn-ghost"
+                    key={definition.eventType}
+                    onClick={() => applyExtensionLifecycleFilter(definition.eventType)}
+                    type="button"
+                  >
+                    {definition.label} (
+                    {extensionLifecycleSummary.byEventType[definition.eventType]})
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </article>
 
         <article className="panel">
@@ -352,12 +396,15 @@ export function LogsExplorerClient({
       <section className="panel">
         <span className="micro-label">Counts</span>
         <h2>Stream distribution</h2>
-          <div className="tag-row">
-            <span className="tag">audit {snapshot.streamCounts.audit}</span>
-            <span className="tag">activity {snapshot.streamCounts.activity}</span>
-            <span className="tag">security {snapshot.streamCounts.security}</span>
-            <span className="tag">domain {snapshot.streamCounts.domain}</span>
-          </div>
+        <div className="tag-row">
+          <span className="tag">audit {snapshot.streamCounts.audit}</span>
+          <span className="tag">activity {snapshot.streamCounts.activity}</span>
+          <span className="tag">security {snapshot.streamCounts.security}</span>
+          <span className="tag">domain {snapshot.streamCounts.domain}</span>
+          <span className={extensionLifecycleSummary.total > 0 ? 'tag warn' : 'tag'}>
+            extension lifecycle {extensionLifecycleSummary.total}
+          </span>
+        </div>
       </section>
 
       <section className="panel">
@@ -388,6 +435,17 @@ export function LogsExplorerClient({
                   <span className={item.stream === 'security' || item.status === 'failure' ? 'tag warn' : 'tag'}>
                     {item.stream}
                   </span>
+                  {isExtensionLifecycleEventType(item.eventType) ? (
+                    <span
+                      className={
+                        item.eventType === 'extension.bootstrap_refresh_failed' || item.eventType === 'extension.runtime_error'
+                          ? 'tag warn'
+                          : 'tag'
+                      }
+                    >
+                      extension lifecycle
+                    </span>
+                  ) : null}
                 </div>
               </div>
             ))}

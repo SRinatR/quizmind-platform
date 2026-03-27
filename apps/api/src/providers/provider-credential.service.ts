@@ -173,6 +173,8 @@ export class ProviderCredentialService {
     }
 
     const workspace = this.resolveRequestedWorkspace(session, workspaceId);
+    const writeDecision = canWriteProviderCredentials(session.principal, workspace.id);
+    const rotateDecision = canRotateProviderCredentials(session.principal, workspace.id);
     const items = await this.providerCredentialRepository.listForGovernance({
       workspaceId: workspace.id,
       includePlatform: true,
@@ -183,6 +185,9 @@ export class ProviderCredentialService {
 
     return {
       workspace,
+      accessDecision,
+      writeDecision,
+      rotateDecision,
       permissions: session.permissions,
       ...getProviderCatalog(),
       aiAccessPolicy: policy,
@@ -207,6 +212,8 @@ export class ProviderCredentialService {
     }
 
     const includePlatform = canManageAiProviders(session.principal).allowed;
+    const writeDecision = canWriteProviderCredentials(session.principal, workspace.id);
+    const rotateDecision = canRotateProviderCredentials(session.principal, workspace.id);
     const items = await this.providerCredentialRepository.listAccessible({
       userId: session.user.id,
       workspaceIds: session.workspaces.map((entry) => entry.id),
@@ -216,6 +223,9 @@ export class ProviderCredentialService {
 
     return {
       workspace,
+      accessDecision,
+      writeDecision,
+      rotateDecision,
       permissions: session.permissions,
       ...getProviderCatalog(),
       aiAccessPolicy: policy,

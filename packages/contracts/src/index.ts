@@ -516,6 +516,7 @@ export interface AdminLogStreamCounts {
 export interface AdminLogsSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
+  exportDecision: AccessDecision;
   workspace?: WorkspaceSummary;
   filters: AdminLogFilters;
   items: AdminLogEntry[];
@@ -530,7 +531,30 @@ export interface AdminSecurityFindingCounts {
   impersonationEvents: number;
   providerCredentialEvents: number;
   privilegedActionEvents: number;
+  extensionBootstrapRefreshFailures: number;
+  extensionReconnectRequests: number;
+  extensionReconnectRecoveries: number;
+  extensionReconnectOutstanding: number;
+  extensionSessionRevocations: number;
+  extensionSessionRotations: number;
+  extensionRuntimeErrors: number;
   totalFailures: number;
+}
+
+export interface AdminSecurityLifecycleTrendBucket {
+  bucketStart: string;
+  extensionBootstrapRefreshFailures: number;
+  extensionReconnectRequests: number;
+  extensionReconnectRecoveries: number;
+  extensionSessionRevocations: number;
+  extensionSessionRotations: number;
+  extensionRuntimeErrors: number;
+}
+
+export interface AdminSecurityLifecycleTrend {
+  windowHours: number;
+  bucketHours: number;
+  buckets: AdminSecurityLifecycleTrendBucket[];
 }
 
 export interface AdminSecurityControlCheckpoint {
@@ -543,11 +567,13 @@ export interface AdminSecurityControlCheckpoint {
 export interface AdminSecuritySnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
+  exportDecision: AccessDecision;
   workspace?: WorkspaceSummary;
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
   findings: AdminSecurityFindingCounts;
+  lifecycleTrend: AdminSecurityLifecycleTrend;
   controls: AdminSecurityControlCheckpoint[];
   permissions: string[];
 }
@@ -674,6 +700,7 @@ export interface BillingAdminPlanSnapshot extends BillingPlanCatalogEntry {
 }
 
 export interface BillingAdminPlansPayload {
+  manageDecision: AccessDecision;
   plans: BillingAdminPlanSnapshot[];
 }
 
@@ -1042,6 +1069,7 @@ export interface AdminExtensionFleetInstallationDetail {
 export interface AdminExtensionFleetSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
+  manageDecision: AccessDecision;
   workspace: WorkspaceSummary;
   filters: AdminExtensionFleetFilters;
   items: AdminExtensionFleetItem[];
@@ -1208,6 +1236,7 @@ export interface UsageHistoryFilters {
 export interface WorkspaceUsageHistorySnapshot {
   workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
+  exportDecision: AccessDecision;
   filters: UsageHistoryFilters;
   items: UsageRecentEventSummary[];
   permissions: string[];
@@ -1216,6 +1245,7 @@ export interface WorkspaceUsageHistorySnapshot {
 export interface WorkspaceUsageSnapshot {
   workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
+  exportDecision: AccessDecision;
   planCode: string;
   subscriptionStatus: SubscriptionStatus;
   currentPeriodStart?: string;
@@ -1289,6 +1319,9 @@ export interface ProviderCredentialSummary {
 
 export interface ProviderCredentialInventory {
   workspace?: WorkspaceSummary;
+  accessDecision: AccessDecision;
+  writeDecision: AccessDecision;
+  rotateDecision: AccessDecision;
   permissions: string[];
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
@@ -1321,6 +1354,9 @@ export interface ProviderCredentialProviderBreakdown {
 
 export interface AdminProviderGovernanceSnapshot {
   workspace?: WorkspaceSummary;
+  accessDecision: AccessDecision;
+  writeDecision: AccessDecision;
+  rotateDecision: AccessDecision;
   permissions: string[];
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];

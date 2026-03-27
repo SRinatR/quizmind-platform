@@ -80,6 +80,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
   const targetOrigin = readTrimmedSearchParam(resolvedSearchParams?.targetOrigin);
   const bridgeNonce = readTrimmedSearchParam(resolvedSearchParams?.bridgeNonce);
   const requestId = readTrimmedSearchParam(resolvedSearchParams?.requestId);
+  const bridgeMode = readTrimmedSearchParam(resolvedSearchParams?.bridgeMode);
   const capabilities = Array.from(
     new Set([
       ...readStringListSearchParam(resolvedSearchParams?.capabilities),
@@ -149,6 +150,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           initialRequest={initialRequest}
           missingFields={missingFields}
           bridgeNonce={bridgeNonce}
+          bridgeMode={bridgeMode}
           requestId={requestId}
           targetOrigin={targetOrigin}
           workspaces={session.workspaces}

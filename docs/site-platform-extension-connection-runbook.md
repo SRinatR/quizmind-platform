@@ -197,7 +197,7 @@ Recommended extension action:
 - open a web page such as:
 
 ```text
-http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&requestId=bind_123&bridgeNonce=<nonce>
+http://localhost:3000/app/extension/connect?installationId=<id>&browser=chrome&extensionVersion=1.7.0&schemaVersion=2&buildId=dev-local&targetOrigin=chrome-extension://<extension-id>&requestId=bind_123&bridgeNonce=<nonce>&bridgeMode=fallback_code
 ```
 
 Required for hardened bridge exchange:
@@ -205,6 +205,7 @@ Required for hardened bridge exchange:
 - `targetOrigin`: strict receiver origin for `window.postMessage`
 - `requestId`: correlation id for bind request/response pairing
 - `bridgeNonce`: nonce echoed by the bridge in every outbound envelope
+- `bridgeMode`: optional bridge response mode (`fallback_code` is recommended for auto-redeem fallback)
 
 Current web bridge implementation:
 
@@ -256,6 +257,10 @@ Recommended payload returned from the bridge to the extension:
 One-time bind code fallback (when `postMessage` handoff fails):
 
 - bridge now returns `fallbackCode` with short TTL and redeem path
+- fallback codes are only issued when secure bridge headers are present together:
+  - `x-quizmind-bind-request-id`
+  - `x-quizmind-bridge-nonce`
+  - `x-quizmind-target-origin`
 - extension can redeem once through:
 - fallback codes are persisted in a Redis-backed shared store (with in-memory fallback if Redis is unavailable)
 
@@ -416,6 +421,7 @@ This bridge is now the main integration entrypoint between the signed-in site se
 4. Show usage and quota warnings
 5. Give operators a workspace-scoped extension fleet view in `/admin/extension-fleet`
 6. Let operators inspect recent installation token history there so reconnect and revoke churn is diagnosable
+7. Let operators with `installations:write` rotate or disconnect selected installations directly from `/admin/extension-fleet`
 
 ### Phase E. Production Hardening
 
@@ -424,6 +430,37 @@ This bridge is now the main integration entrypoint between the signed-in site se
 3. Add token rotation and revocation UX (`POST /extension/installations/rotate-session` + dashboard controls)
 4. Add installation disconnect flow
 5. Add audit events for bind, refresh failure, revoke, reconnect (persisted to audit/security/domain streams)
+
+Current implementation status:
+
+- token rotation and disconnect controls are available in user dashboard inventory: `/app/installations`
+- operator controls are also available in admin fleet view: `/admin/extension-fleet`
+- both surfaces use server-side permission checks; write actions require `installations:write`
+- admin fleet payload now carries an explicit `manageDecision` access result for write-action UX gating
+- admin logs explorer now includes extension lifecycle quick filters and event badges for:
+  - `extension.bootstrap_refresh_failed`
+  - `extension.installation_reconnect_requested`
+  - `extension.installation_reconnected`
+  - `extension.runtime_error`
+- admin security findings now expose dedicated lifecycle counters for:
+  - bootstrap refresh failures
+  - reconnect requests
+  - reconnect recoveries
+  - unresolved reconnects (request/recovery gap)
+  - installation session revocations
+  - installation session rotations
+  - runtime errors
+- `/admin/security` findings panel now includes quick-filter links that apply targeted `logSearch/logSeverity` combinations for auth failures and extension lifecycle incident triage, including:
+  - `extension.installation_reconnected`
+  - `extension.installation_session_revoked`
+  - `extension.installation_session_rotated`
+- `/admin/security` now also shows an extension lifecycle trend panel (24h window in 6h buckets) for:
+  - bootstrap refresh failures
+  - reconnect requests
+  - reconnect recoveries
+  - session revocations
+  - session rotations
+  - runtime errors
 
 ## Recommended Extension Modules
 

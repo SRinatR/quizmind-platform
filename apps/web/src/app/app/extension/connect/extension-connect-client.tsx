@@ -13,6 +13,7 @@ interface ExtensionConnectClientProps {
   initialRequest: ExtensionInstallationBindRequest | null;
   missingFields: string[];
   bridgeNonce?: string;
+  bridgeMode?: string;
   requestId?: string;
   targetOrigin?: string;
   workspaces: WorkspaceSummary[];
@@ -95,6 +96,7 @@ export function ExtensionConnectClient({
   initialRequest,
   missingFields,
   bridgeNonce,
+  bridgeMode,
   requestId,
   targetOrigin,
   workspaces,
@@ -118,6 +120,7 @@ export function ExtensionConnectClient({
   const autoBindAttemptedRef = useRef(false);
   const postedInitialErrorRef = useRef(false);
   const bridgeRequestIdRef = useRef<string>(requestId?.trim() || `bind_${Date.now()}`);
+  const bridgeModePreference = bridgeMode?.trim().toLowerCase() ?? 'bind_result';
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
   const resolvedBridgeNonce = normalizeBridgeNonce(bridgeNonce);
   const bridgeSecurityIssue =
@@ -221,17 +224,29 @@ export function ExtensionConnectClient({
       setBindResult(payload.data);
       setFallbackCode(payload.fallbackCode ?? null);
       setIsSubmitting(false);
+      const fallbackCodeForBridge = payload.fallbackCode ?? null;
+      const useFallbackEnvelope = bridgeModePreference === 'fallback_code' && fallbackCodeForBridge !== null;
       setStatusMessage(
-        window.opener
-          ? 'Extension connected. Returning the installation session to the opener...'
-          : 'Extension connected. You can return to the extension now.',
+        useFallbackEnvelope
+          ? window.opener
+            ? 'Extension connected. Returning a secure one-time bind code envelope to the opener...'
+            : 'Extension connected. A secure fallback envelope is ready for extension redeem.'
+          : window.opener
+            ? 'Extension connected. Returning the installation session to the opener...'
+            : 'Extension connected. You can return to the extension now.',
       );
 
-      const deliveredToBridge = postBridgeMessage({
-        type: 'quizmind.extension.bind_result',
-        requestId: bridgeRequestIdRef.current,
-        payload: payload.data,
-      });
+      const deliveredToBridge = useFallbackEnvelope && fallbackCodeForBridge
+        ? postBridgeMessage({
+            type: 'quizmind.extension.bind_fallback_code',
+            requestId: bridgeRequestIdRef.current,
+            fallbackCode: fallbackCodeForBridge,
+          })
+        : postBridgeMessage({
+            type: 'quizmind.extension.bind_result',
+            requestId: bridgeRequestIdRef.current,
+            payload: payload.data,
+          });
 
       if (hasBridgeTarget && !deliveredToBridge) {
         if (payload.fallbackCode) {
@@ -468,6 +483,9 @@ export function ExtensionConnectClient({
         </p>
         <p>
           Nonce: <span className="monospace">{resolvedBridgeNonce ?? 'missing/invalid'}</span>
+        </p>
+        <p>
+          Bridge mode: <span className="monospace">{bridgeModePreference}</span>
         </p>
       </div>
     </div>

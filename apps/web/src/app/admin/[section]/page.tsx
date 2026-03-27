@@ -7,8 +7,10 @@ import {
   type SupportTicketQueueFilters,
   type UsageEventPayload,
 } from '@quizmind/contracts';
+import Link from 'next/link';
 
 import { SiteShell } from '../../../components/site-shell';
+import { buildAdminSectionHref } from '../../../features/admin/admin-section-href';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAdminExtensionFleet,
@@ -75,6 +77,16 @@ function readIntegerSearchParam(
   const parsed = Number(rawValue);
 
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function formatTrendBucketLabel(bucketStart: string): string {
+  const timestamp = Date.parse(bucketStart);
+
+  if (!Number.isFinite(timestamp)) {
+    return bucketStart;
+  }
+
+  return `${bucketStart.slice(5, 16).replace('T', ' ')} UTC`;
 }
 
 function createInitialExtensionBootstrapRequest(input: {
@@ -220,12 +232,10 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       ? await simulateExtensionBootstrap(extensionBootstrapRequest, accessToken)
       : null;
   const isConnectedSession = session?.personaKey === 'connected-user';
-  const canEditFeatureFlags = Boolean(isConnectedSession && session?.permissions.includes('feature_flags:write'));
-  const canManagePlans = Boolean(isConnectedSession && session?.permissions.includes('plans:manage'));
-  const canExportAuditLogs = Boolean(isConnectedSession && session?.permissions.includes('audit_logs:export'));
-  const canExportUsage = Boolean(isConnectedSession && session?.permissions.includes('usage:export'));
+  const canEditFeatureFlags = Boolean(isConnectedSession && featureFlags?.writeDecision.allowed);
+  const canManagePlans = Boolean(isConnectedSession && adminPlans?.manageDecision.allowed);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const canManageSupportSessions = Boolean(isConnectedSession && session?.permissions.includes('support:impersonate'));
+  const canManageSupportSessions = Boolean(isConnectedSession && supportImpersonationSessions?.accessDecision.allowed);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleAdminSections(context, sessionWorkspaceId) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
@@ -381,7 +391,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             </section>
             {adminLogs ? (
                 <LogsExplorerClient
-                  canExportLogs={canExportAuditLogs}
+                  canExportLogs={adminLogs.exportDecision.allowed}
                   defaultStreamOnReset="all"
                   isConnectedSession={isConnectedSession}
                   snapshot={adminLogs}
@@ -441,6 +451,33 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                         {adminSecurity.findings.totalFailures === 1 ? '' : 's'} currently flagged.
                       </p>
                     </div>
+                    <div className="list-item">
+                      <strong>Extension lifecycle incidents</strong>
+                      <p>
+                        {adminSecurity.findings.extensionBootstrapRefreshFailures +
+                          adminSecurity.findings.extensionRuntimeErrors}{' '}
+                        failure
+                        {adminSecurity.findings.extensionBootstrapRefreshFailures +
+                          adminSecurity.findings.extensionRuntimeErrors ===
+                        1
+                          ? ''
+                          : 's'}{' '}
+                        with {adminSecurity.findings.extensionReconnectRequests} reconnect request
+                        {adminSecurity.findings.extensionReconnectRequests === 1 ? '' : 's'}, {adminSecurity.findings.extensionReconnectRecoveries}{' '}
+                        recovered session{adminSecurity.findings.extensionReconnectRecoveries === 1 ? '' : 's'}, and{' '}
+                        {adminSecurity.findings.extensionReconnectOutstanding} unresolved reconnect
+                        {adminSecurity.findings.extensionReconnectOutstanding === 1 ? '' : 's'}.
+                      </p>
+                    </div>
+                    <div className="list-item">
+                      <strong>Session token control actions</strong>
+                      <p>
+                        {adminSecurity.findings.extensionSessionRevocations} revocation action
+                        {adminSecurity.findings.extensionSessionRevocations === 1 ? '' : 's'} and{' '}
+                        {adminSecurity.findings.extensionSessionRotations} rotation
+                        {adminSecurity.findings.extensionSessionRotations === 1 ? '' : 's'}.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <p>Security admin state is unavailable for this environment.</p>
@@ -457,6 +494,163 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                     <span className="tag">impersonation {adminSecurity.findings.impersonationEvents}</span>
                     <span className="tag">provider credentials {adminSecurity.findings.providerCredentialEvents}</span>
                     <span className="tag">privileged actions {adminSecurity.findings.privilegedActionEvents}</span>
+                    <span className="tag warn">
+                      bootstrap refresh failures {adminSecurity.findings.extensionBootstrapRefreshFailures}
+                    </span>
+                    <span className="tag">
+                      reconnect requests {adminSecurity.findings.extensionReconnectRequests}
+                    </span>
+                    <span className="tag">reconnected {adminSecurity.findings.extensionReconnectRecoveries}</span>
+                    <span className={adminSecurity.findings.extensionReconnectOutstanding > 0 ? 'tag warn' : 'tag'}>
+                      unresolved reconnects {adminSecurity.findings.extensionReconnectOutstanding}
+                    </span>
+                    <span className="tag">session revocations {adminSecurity.findings.extensionSessionRevocations}</span>
+                    <span className="tag">session rotations {adminSecurity.findings.extensionSessionRotations}</span>
+                    <span className="tag warn">runtime errors {adminSecurity.findings.extensionRuntimeErrors}</span>
+                  </div>
+                  <div className="tag-row">
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'all',
+                          logSearch: undefined,
+                        },
+                      })}
+                    >
+                      all security signals ({adminSecurity.items.length})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'warn',
+                          logSearch: 'auth.login_failed',
+                        },
+                      })}
+                    >
+                      auth failures ({adminSecurity.findings.suspiciousAuthFailures})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'warn',
+                          logSearch: 'extension.bootstrap_refresh_failed',
+                        },
+                      })}
+                    >
+                      bootstrap refresh failures ({adminSecurity.findings.extensionBootstrapRefreshFailures})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'all',
+                          logSearch: 'extension.installation_reconnect_requested',
+                        },
+                      })}
+                    >
+                      reconnect requests ({adminSecurity.findings.extensionReconnectRequests})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'all',
+                          logSearch: 'extension.installation_reconnected',
+                        },
+                      })}
+                    >
+                      reconnected ({adminSecurity.findings.extensionReconnectRecoveries})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'all',
+                          logSearch: 'extension.installation_session_revoked',
+                        },
+                      })}
+                    >
+                      session revocations ({adminSecurity.findings.extensionSessionRevocations})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'all',
+                          logSearch: 'extension.installation_session_rotated',
+                        },
+                      })}
+                    >
+                      session rotations ({adminSecurity.findings.extensionSessionRotations})
+                    </Link>
+                    <Link
+                      className="btn-ghost"
+                      href={buildAdminSectionHref({
+                        section: resolvedParams.section,
+                        currentSearchParams: resolvedSearchParams,
+                        overrides: {
+                          logStream: 'security',
+                          logSeverity: 'warn',
+                          logSearch: 'extension.runtime_error',
+                        },
+                      })}
+                    >
+                      runtime errors ({adminSecurity.findings.extensionRuntimeErrors})
+                    </Link>
+                  </div>
+                </section>
+                <section className="panel">
+                  <span className="micro-label">Trend</span>
+                  <h2>
+                    Extension lifecycle trend ({adminSecurity.lifecycleTrend.windowHours}h window,{' '}
+                    {adminSecurity.lifecycleTrend.bucketHours}h buckets)
+                  </h2>
+                  <div className="tag-row">
+                    <span className="tag">
+                      {adminSecurity.lifecycleTrend.buckets.length} bucket
+                      {adminSecurity.lifecycleTrend.buckets.length === 1 ? '' : 's'}
+                    </span>
+                    <span className="tag">
+                      {adminSecurity.items.length} visible security event
+                      {adminSecurity.items.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <div className="list-stack">
+                    {adminSecurity.lifecycleTrend.buckets.map((bucket) => (
+                      <div className="list-item" key={bucket.bucketStart}>
+                        <strong>{formatTrendBucketLabel(bucket.bucketStart)}</strong>
+                        <p>
+                          failures {bucket.extensionBootstrapRefreshFailures + bucket.extensionRuntimeErrors}, reconnect
+                          requests {bucket.extensionReconnectRequests}, recoveries{' '}
+                          {bucket.extensionReconnectRecoveries}, revocations {bucket.extensionSessionRevocations},
+                          rotations {bucket.extensionSessionRotations}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </section>
                 <section className="panel">
@@ -475,7 +669,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   </div>
                 </section>
                 <LogsExplorerClient
-                  canExportLogs={canExportAuditLogs}
+                  canExportLogs={adminSecurity.exportDecision.allowed}
                   defaultStreamOnReset="security"
                   isConnectedSession={isConnectedSession}
                   snapshot={adminSecurity}
@@ -726,8 +920,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                     {usageSummary?.installations.length ?? 0} installation
                     {(usageSummary?.installations.length ?? 0) === 1 ? '' : 's'}
                   </span>
-                  <span className={canExportUsage ? 'tag' : 'tag warn'}>
-                    {canExportUsage ? 'export access' : 'read-only'}
+                  <span className={usageSummary?.exportDecision.allowed ? 'tag' : 'tag warn'}>
+                    {usageSummary?.exportDecision.allowed ? 'export access' : 'read-only'}
                   </span>
                 </div>
               </article>
@@ -762,7 +956,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             </section>
             {usageSummary ? (
               <UsageExplorerClient
-                canExportUsage={canExportUsage}
+                canExportUsage={usageSummary.exportDecision.allowed}
                 isConnectedSession={isConnectedSession}
                 usageSummary={usageSummary}
                 workspaceOptions={session.workspaces.map((workspace) => ({

@@ -3,10 +3,12 @@
 import {
   adminExtensionCompatibilityFilters,
   adminExtensionConnectionFilters,
+  type ExtensionInstallationDisconnectResult,
+  type ExtensionInstallationRotateSessionResult,
   type AdminExtensionFleetFilters,
 } from '@quizmind/contracts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
 import { type AdminExtensionFleetStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -20,6 +22,22 @@ interface WorkspaceOption {
 interface ExtensionFleetClientProps {
   snapshot: AdminExtensionFleetStateSnapshot;
   workspaceOptions: WorkspaceOption[];
+}
+
+interface DisconnectRouteResponse {
+  ok: boolean;
+  data?: ExtensionInstallationDisconnectResult;
+  error?: {
+    message?: string;
+  };
+}
+
+interface RotateSessionRouteResponse {
+  ok: boolean;
+  data?: ExtensionInstallationRotateSessionResult;
+  error?: {
+    message?: string;
+  };
 }
 
 function buildNextSearchParams(
@@ -98,7 +116,15 @@ export function ExtensionFleetClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
   const [searchDraft, setSearchDraft] = useState(snapshot.filters.search ?? '');
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingDisconnectInstallationId, setPendingDisconnectInstallationId] = useState<string | null>(null);
+  const [pendingRotateInstallationId, setPendingRotateInstallationId] = useState<string | null>(null);
+  const canManageInstallations = snapshot.manageDecision.allowed;
+  const manageBlockedReason = snapshot.manageDecision.reasons[0] ?? 'Missing permission: installations:write';
+  const selectedInstallation = snapshot.selectedInstallation;
 
   function pushFilters(next: Partial<AdminExtensionFleetFilters>) {
     const params = buildNextSearchParams(searchParams, next);
@@ -117,6 +143,80 @@ export function ExtensionFleetClient({
     pushFilters({
       installationId: snapshot.selectedInstallationId === installationId ? '' : installationId,
     });
+  }
+
+  async function handleDisconnect(installationId: string) {
+    setStatusMessage(null);
+    setErrorMessage(null);
+    setPendingDisconnectInstallationId(installationId);
+
+    try {
+      const response = await fetch('/api/extension/installations/disconnect', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          installationId,
+          workspaceId: snapshot.workspace.id,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as DisconnectRouteResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        setPendingDisconnectInstallationId(null);
+        setErrorMessage(payload?.error?.message ?? 'Unable to disconnect the installation right now.');
+        return;
+      }
+
+      setPendingDisconnectInstallationId(null);
+      setStatusMessage(
+        `${payload.data.installationId} disconnected. Revoked ${payload.data.revokedSessionCount} active installation session${payload.data.revokedSessionCount === 1 ? '' : 's'}.`,
+      );
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setPendingDisconnectInstallationId(null);
+      setErrorMessage('Unable to disconnect the installation right now.');
+    }
+  }
+
+  async function handleRotateSession(installationId: string) {
+    setStatusMessage(null);
+    setErrorMessage(null);
+    setPendingRotateInstallationId(installationId);
+
+    try {
+      const response = await fetch('/api/extension/installations/rotate-session', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          installationId,
+          workspaceId: snapshot.workspace.id,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as RotateSessionRouteResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.data) {
+        setPendingRotateInstallationId(null);
+        setErrorMessage(payload?.error?.message ?? 'Unable to rotate the installation session right now.');
+        return;
+      }
+
+      setPendingRotateInstallationId(null);
+      setStatusMessage(
+        `${payload.data.installationId} rotated. Revoked ${payload.data.revokedSessionCount} active installation session${payload.data.revokedSessionCount === 1 ? '' : 's'}.`,
+      );
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch {
+      setPendingRotateInstallationId(null);
+      setErrorMessage('Unable to rotate the installation session right now.');
+    }
   }
 
   return (
@@ -245,6 +345,9 @@ export function ExtensionFleetClient({
             <span className={snapshot.counts.unsupported > 0 ? 'tag warn' : 'tag'}>
               unsupported {snapshot.counts.unsupported}
             </span>
+            <span className={canManageInstallations ? 'tag' : 'tag warn'}>
+              {canManageInstallations ? 'write enabled' : 'read only'}
+            </span>
           </div>
           <div className="mini-list">
             <div className="list-item">
@@ -269,6 +372,13 @@ export function ExtensionFleetClient({
       <section className="panel">
         <span className="micro-label">Installations</span>
         <h2>Workspace extension fleet</h2>
+        {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
+        {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+        {!canManageInstallations ? (
+          <p className="admin-ticket-note">
+            This account can inspect fleet health but cannot rotate or disconnect sessions. {manageBlockedReason}
+          </p>
+        ) : null}
         {snapshot.items.length > 0 ? (
           <div className="settings-session-list">
             {snapshot.items.map((item) => (
@@ -295,6 +405,30 @@ export function ExtensionFleetClient({
                   <span className={item.requiresReconnect ? 'tag warn' : 'tag'}>
                     {item.requiresReconnect ? 'reconnect required' : `${item.activeSessionCount} active session${item.activeSessionCount === 1 ? '' : 's'}`}
                   </span>
+                  <button
+                    className="btn-ghost"
+                    disabled={!canManageInstallations || pendingRotateInstallationId === item.installationId}
+                    onClick={() => void handleRotateSession(item.installationId)}
+                    type="button"
+                  >
+                    {pendingRotateInstallationId === item.installationId ? 'Rotating...' : 'Rotate token'}
+                  </button>
+                  <button
+                    className="btn-ghost"
+                    disabled={
+                      !canManageInstallations ||
+                      item.activeSessionCount === 0 ||
+                      pendingDisconnectInstallationId === item.installationId
+                    }
+                    onClick={() => void handleDisconnect(item.installationId)}
+                    type="button"
+                  >
+                    {pendingDisconnectInstallationId === item.installationId
+                      ? 'Disconnecting...'
+                      : item.activeSessionCount === 0
+                        ? 'Disconnected'
+                        : 'Disconnect installation'}
+                  </button>
                   <button className="btn-ghost" onClick={() => toggleInstallationDetail(item.installationId)} type="button">
                     {snapshot.selectedInstallationId === item.installationId ? 'Hide history' : 'View history'}
                   </button>
@@ -307,51 +441,82 @@ export function ExtensionFleetClient({
         )}
       </section>
 
-      {snapshot.selectedInstallation ? (
+      {selectedInstallation ? (
         <section className="split-grid">
           <article className="panel">
             <span className="micro-label">Session Detail</span>
             <h2>Installation token lifecycle</h2>
             <div className="tag-row">
-              <span className="tag">total {snapshot.selectedInstallation.counts.total}</span>
-              <span className="tag">active {snapshot.selectedInstallation.counts.active}</span>
-              <span className={snapshot.selectedInstallation.counts.expired > 0 ? 'tag warn' : 'tag'}>
-                expired {snapshot.selectedInstallation.counts.expired}
+              <span className="tag">total {selectedInstallation.counts.total}</span>
+              <span className="tag">active {selectedInstallation.counts.active}</span>
+              <span className={selectedInstallation.counts.expired > 0 ? 'tag warn' : 'tag'}>
+                expired {selectedInstallation.counts.expired}
               </span>
-              <span className={snapshot.selectedInstallation.counts.revoked > 0 ? 'tag warn' : 'tag'}>
-                revoked {snapshot.selectedInstallation.counts.revoked}
+              <span className={selectedInstallation.counts.revoked > 0 ? 'tag warn' : 'tag'}>
+                revoked {selectedInstallation.counts.revoked}
               </span>
             </div>
             <div className="mini-list">
               <div className="list-item">
                 <strong>Installation</strong>
-                <p>{snapshot.selectedInstallation.installation.installationId}</p>
+                <p>{selectedInstallation.installation.installationId}</p>
               </div>
               <div className="list-item">
                 <strong>Operator context</strong>
                 <p>
-                  {snapshot.selectedInstallation.installation.browser} | v
-                  {snapshot.selectedInstallation.installation.extensionVersion} | schema{' '}
-                  {snapshot.selectedInstallation.installation.schemaVersion}
+                  {selectedInstallation.installation.browser} | v
+                  {selectedInstallation.installation.extensionVersion} | schema{' '}
+                  {selectedInstallation.installation.schemaVersion}
                 </p>
               </div>
               <div className="list-item">
                 <strong>Latest state</strong>
                 <p>
-                  {snapshot.selectedInstallation.installation.requiresReconnect
+                  {selectedInstallation.installation.requiresReconnect
                     ? 'Reconnect required'
                     : 'At least one active installation token still exists.'}
                 </p>
               </div>
+            </div>
+            <div className="admin-user-actions">
+              <button
+                className="btn-ghost"
+                disabled={
+                  !canManageInstallations ||
+                  pendingRotateInstallationId === selectedInstallation.installation.installationId
+                }
+                onClick={() => void handleRotateSession(selectedInstallation.installation.installationId)}
+                type="button"
+              >
+                {pendingRotateInstallationId === selectedInstallation.installation.installationId
+                  ? 'Rotating...'
+                  : 'Rotate selected token'}
+              </button>
+              <button
+                className="btn-ghost"
+                disabled={
+                  !canManageInstallations ||
+                  selectedInstallation.installation.activeSessionCount === 0 ||
+                  pendingDisconnectInstallationId === selectedInstallation.installation.installationId
+                }
+                onClick={() => void handleDisconnect(selectedInstallation.installation.installationId)}
+                type="button"
+              >
+                {pendingDisconnectInstallationId === selectedInstallation.installation.installationId
+                  ? 'Disconnecting...'
+                  : selectedInstallation.installation.activeSessionCount === 0
+                    ? 'Disconnected'
+                    : 'Disconnect selected installation'}
+              </button>
             </div>
           </article>
 
           <article className="panel">
             <span className="micro-label">History</span>
             <h2>Recent installation sessions</h2>
-            {snapshot.selectedInstallation.sessions.length > 0 ? (
+            {selectedInstallation.sessions.length > 0 ? (
               <div className="settings-session-list">
-                {snapshot.selectedInstallation.sessions.map((session) => (
+                {selectedInstallation.sessions.map((session) => (
                   <div className="settings-session-row" key={session.id}>
                     <div>
                       <strong>{session.id}</strong>

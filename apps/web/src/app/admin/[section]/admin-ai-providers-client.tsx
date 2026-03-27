@@ -79,8 +79,15 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
     secret: '',
   });
 
-  const canManagePlatform = governance.permissions.includes('ai_providers:manage');
-  const canRotate = governance.permissions.includes('credentials:rotate') || canManagePlatform;
+  const canManagePlatform = governance.accessDecision.allowed;
+  const canWriteCredentials = governance.writeDecision.allowed || canManagePlatform;
+  const canRotate = governance.rotateDecision.allowed || canManagePlatform;
+  const canSubmitCredential =
+    editingCredentialId !== null
+      ? canRotate
+      : credentialState.ownerType === 'platform'
+        ? canManagePlatform
+        : canWriteCredentials;
   const workspaceOverrideActive = governance.policy.scopeType === 'workspace' && Boolean(governance.workspace?.id);
 
   function updateWorkspaceScope(workspaceId: string) {
@@ -358,7 +365,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
             <label className="admin-ticket-field"><span className="micro-label">Secret</span><input type="password" onChange={(event) => setCredentialState((c) => ({ ...c, secret: event.target.value }))} value={credentialState.secret} /></label>
           </div>
           <div className="admin-user-actions">
-            <button className="btn-primary" disabled={isSubmittingCredential || !canManagePlatform} onClick={() => void submitCredential()} type="button">{isSubmittingCredential ? 'Saving...' : editingCredentialId ? 'Rotate key' : 'Save key'}</button>
+            <button className="btn-primary" disabled={isSubmittingCredential || !canSubmitCredential} onClick={() => void submitCredential()} type="button">{isSubmittingCredential ? 'Saving...' : editingCredentialId ? 'Rotate key' : 'Save key'}</button>
             {editingCredentialId ? <button className="btn-ghost" onClick={() => setEditingCredentialId(null)} type="button">Cancel rotation</button> : null}
           </div>
         </article>

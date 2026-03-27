@@ -105,6 +105,25 @@ function createInstallationAdminSessionSnapshot(): CurrentSessionSnapshot {
   };
 }
 
+function createInstallationReadOnlySessionSnapshot(): CurrentSessionSnapshot {
+  const session = createConnectedSessionSnapshot();
+
+  return {
+    ...session,
+    principal: {
+      ...session.principal,
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_viewer' }],
+    },
+    workspaces: [
+      {
+        ...session.workspaces[0],
+        role: 'workspace_viewer',
+      },
+    ],
+    permissions: ['installations:read', 'workspaces:read'],
+  };
+}
+
 function createInstallationRestrictedSessionSnapshot(): CurrentSessionSnapshot {
   const session = createConnectedSessionSnapshot();
 
@@ -660,6 +679,8 @@ test('PlatformService.listAdminLogsForCurrentSession maps persisted audit, secur
 
   assert.equal(result.personaKey, 'connected-user');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, false);
+  assert.match(result.exportDecision.reasons.join('; '), /Missing permission: audit_logs:export/);
   assert.equal(result.workspace?.id, 'ws_1');
   assert.deepEqual(result.streamCounts, {
     audit: 1,
@@ -748,6 +769,109 @@ test('PlatformService.listAdminSecurityForCurrentSession returns security findin
             name: 'Demo Workspace',
           },
         },
+        {
+          id: 'security_4',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'extension.bootstrap_refresh_failed',
+          severity: 'warn',
+          metadataJson: {
+            summary: 'Extension bootstrap refresh failed because the installation token expired.',
+            status: 'failure',
+            reason: 'token_expired',
+          },
+          createdAt: new Date('2026-03-24T11:35:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_5',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'extension.installation_reconnect_requested',
+          severity: 'info',
+          metadataJson: {
+            summary: 'Extension requested reconnect flow after receiving an unauthorized bootstrap response.',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T11:34:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_6',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'extension.runtime_error',
+          severity: 'warn',
+          metadataJson: {
+            summary: 'Extension runtime emitted a managed client error while handling a quiz event.',
+            status: 'failure',
+          },
+          createdAt: new Date('2026-03-24T11:33:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_7',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'extension.installation_reconnected',
+          severity: 'info',
+          metadataJson: {
+            summary: 'Extension reconnected after the user completed the bind bridge flow.',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T11:32:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_8',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'extension.installation_session_revoked',
+          severity: 'info',
+          metadataJson: {
+            summary: 'Operator disconnected an extension installation and revoked active sessions.',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T11:31:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+        {
+          id: 'security_9',
+          workspaceId: 'ws_1',
+          actorId: 'user_1',
+          eventType: 'extension.installation_session_rotated',
+          severity: 'info',
+          metadataJson: {
+            summary: 'Operator rotated installation session token after support review.',
+            status: 'success',
+          },
+          createdAt: new Date('2026-03-24T11:30:00.000Z'),
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
       ],
       domain: [],
       actors: [
@@ -768,22 +892,74 @@ test('PlatformService.listAdminSecurityForCurrentSession returns security findin
 
   assert.equal(result.personaKey, 'connected-user');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, false);
+  assert.match(result.exportDecision.reasons.join('; '), /Missing permission: audit_logs:export/);
   assert.equal(result.filters.stream, 'security');
   assert.deepEqual(result.streamCounts, {
     audit: 0,
     activity: 0,
-    security: 3,
+    security: 9,
     domain: 0,
   });
-  assert.equal(result.items.length, 3);
+  assert.equal(result.items.length, 9);
   assert.ok(result.items.every((entry) => entry.stream === 'security'));
   assert.deepEqual(result.findings, {
     suspiciousAuthFailures: 1,
     impersonationEvents: 1,
     providerCredentialEvents: 1,
     privilegedActionEvents: 2,
-    totalFailures: 2,
+    extensionBootstrapRefreshFailures: 1,
+    extensionReconnectRequests: 1,
+    extensionReconnectRecoveries: 1,
+    extensionReconnectOutstanding: 0,
+    extensionSessionRevocations: 1,
+    extensionSessionRotations: 1,
+    extensionRuntimeErrors: 1,
+    totalFailures: 4,
   });
+  assert.equal(result.lifecycleTrend.windowHours, 24);
+  assert.equal(result.lifecycleTrend.bucketHours, 6);
+  assert.equal(result.lifecycleTrend.buckets.length, 4);
+
+  const trendTotals = result.lifecycleTrend.buckets.reduce(
+    (accumulator, bucket) => ({
+      extensionBootstrapRefreshFailures:
+        accumulator.extensionBootstrapRefreshFailures + bucket.extensionBootstrapRefreshFailures,
+      extensionReconnectRequests: accumulator.extensionReconnectRequests + bucket.extensionReconnectRequests,
+      extensionReconnectRecoveries: accumulator.extensionReconnectRecoveries + bucket.extensionReconnectRecoveries,
+      extensionSessionRevocations: accumulator.extensionSessionRevocations + bucket.extensionSessionRevocations,
+      extensionSessionRotations: accumulator.extensionSessionRotations + bucket.extensionSessionRotations,
+      extensionRuntimeErrors: accumulator.extensionRuntimeErrors + bucket.extensionRuntimeErrors,
+    }),
+    {
+      extensionBootstrapRefreshFailures: 0,
+      extensionReconnectRequests: 0,
+      extensionReconnectRecoveries: 0,
+      extensionSessionRevocations: 0,
+      extensionSessionRotations: 0,
+      extensionRuntimeErrors: 0,
+    },
+  );
+
+  assert.deepEqual(trendTotals, {
+    extensionBootstrapRefreshFailures: 1,
+    extensionReconnectRequests: 1,
+    extensionReconnectRecoveries: 1,
+    extensionSessionRevocations: 1,
+    extensionSessionRotations: 1,
+    extensionRuntimeErrors: 1,
+  });
+  assert.ok(
+    result.lifecycleTrend.buckets.some(
+      (bucket) =>
+        bucket.extensionBootstrapRefreshFailures === 1 &&
+        bucket.extensionReconnectRequests === 1 &&
+        bucket.extensionReconnectRecoveries === 1 &&
+        bucket.extensionSessionRevocations === 1 &&
+        bucket.extensionSessionRotations === 1 &&
+        bucket.extensionRuntimeErrors === 1,
+    ),
+  );
   assert.deepEqual(
     result.controls.map((control) => control.id),
     ['admin_mfa', 'step_up_auth', 'secret_access_audit', 'risk_scoring'],
@@ -801,6 +977,30 @@ test('PlatformService.listAdminSecurityForCurrentSession denies principals witho
       return true;
     },
   );
+});
+
+test('PlatformService.listAdminLogsForCurrentSession exposes exportDecision for export-capable sessions', async () => {
+  const { service, adminLogRepository } = createPlatformService();
+
+  adminLogRepository.listRecent = async () =>
+    ({
+      audit: [],
+      activity: [],
+      security: [],
+      domain: [],
+      actors: [],
+    }) as any;
+
+  const result = await service.listAdminLogsForCurrentSession(createAuditLogExportSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    stream: 'all',
+    severity: 'all',
+    limit: 12,
+  });
+
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, true);
+  assert.deepEqual(result.exportDecision.reasons, []);
 });
 
 test('PlatformService.exportAdminLogsForCurrentSession exports filtered admin logs as JSON', async () => {
@@ -967,6 +1167,7 @@ test('PlatformService.listAdminExtensionFleetForCurrentSession maps installation
 
   assert.equal(result.personaKey, 'connected-user');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.manageDecision.allowed, true);
   assert.equal(result.workspace.id, 'ws_1');
   assert.deepEqual(result.counts, {
     total: 2,
@@ -1168,6 +1369,27 @@ test('PlatformService.listAdminExtensionFleetForCurrentSession denies principals
       return true;
     },
   );
+});
+
+test('PlatformService.listAdminExtensionFleetForCurrentSession returns read-only manageDecision without installations:write', async () => {
+  const {
+    service,
+    extensionCompatibilityRepository,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+  } = createPlatformService();
+
+  extensionCompatibilityRepository.findLatest = async () => null as any;
+  extensionInstallationRepository.listByWorkspaceId = async () => [] as any;
+  extensionInstallationSessionRepository.listActiveByInstallationIds = async () => [] as any;
+
+  const result = await service.listAdminExtensionFleetForCurrentSession(createInstallationReadOnlySessionSnapshot(), {
+    workspaceId: 'ws_1',
+  });
+
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.manageDecision.allowed, false);
+  assert.match(result.manageDecision.reasons.join('; '), /Missing permission: installations:write/);
 });
 
 test('PlatformService.listAdminWebhooksForCurrentSession maps persisted webhook deliveries and queue catalog', async () => {
@@ -1413,6 +1635,8 @@ test('PlatformService.getUsageForCurrentSession maps persisted usage counters an
 
   assert.equal(result.workspace.id, 'ws_1');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, false);
+  assert.match(result.exportDecision.reasons.join('; '), /Missing permission: usage:export/);
   assert.equal(result.planCode, 'pro');
   assert.equal(result.subscriptionStatus, 'active');
   assert.equal(result.quotas[0]?.key, 'limit.requests_per_day');
@@ -1438,6 +1662,23 @@ test('PlatformService.getUsageForCurrentSession maps persisted usage counters an
     dedupeKey: 'ws_1:limit.requests_per_day:2026-03-25T00:00:00.000Z',
     attempts: 3,
   });
+});
+
+test('PlatformService.getUsageForCurrentSession exposes exportDecision for usage exporters', async () => {
+  const { service, subscriptionRepository, usageRepository } = createPlatformService();
+
+  subscriptionRepository.findCurrentByWorkspaceId = async () => createUsageSubscriptionRecord();
+  usageRepository.listInstallationsByWorkspaceId = async () => [] as any;
+  usageRepository.listQuotaCountersByWorkspaceId = async () => [] as any;
+  usageRepository.listRecentTelemetryByWorkspaceId = async () => [] as any;
+  usageRepository.listRecentActivityByWorkspaceId = async () => [] as any;
+  usageRepository.listRecentAiRequestsByWorkspaceId = async () => [] as any;
+
+  const result = await service.getUsageForCurrentSession(createUsageExportSessionSnapshot(), 'ws_1');
+
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, true);
+  assert.deepEqual(result.exportDecision.reasons, []);
 });
 
 test('PlatformService.getUsageForCurrentSession denies principals without usage:read', async () => {
@@ -1509,6 +1750,8 @@ test('PlatformService.listUsageHistoryForCurrentSession returns filtered usage e
 
   assert.equal(result.workspace.id, 'ws_1');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, false);
+  assert.match(result.exportDecision.reasons.join('; '), /Missing permission: usage:export/);
   assert.equal(result.filters.source, 'telemetry');
   assert.equal(result.filters.installationId, 'inst_chrome_1');
   assert.equal(result.items.length, 1);
@@ -1574,12 +1817,33 @@ test('PlatformService.listUsageHistoryForCurrentSession returns filtered ai prox
   });
 
   assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.exportDecision.allowed, false);
+  assert.match(result.exportDecision.reasons.join('; '), /Missing permission: usage:export/);
   assert.equal(result.filters.source, 'ai');
   assert.equal(result.items.length, 1);
   assert.equal(result.items[0]?.source, 'ai');
   assert.equal(result.items[0]?.eventType, 'ai.proxy.failed');
   assert.equal(result.items[0]?.actorId, 'user_1');
   assert.equal((historyInput as any).actorId, 'user_1');
+});
+
+test('PlatformService.listUsageHistoryForCurrentSession exposes exportDecision for usage exporters', async () => {
+  const { service, usageRepository } = createPlatformService();
+
+  usageRepository.listTelemetryHistoryByWorkspaceId = async () => [] as any;
+  usageRepository.listActivityHistoryByWorkspaceId = async () => [] as any;
+  usageRepository.listAiRequestHistoryByWorkspaceId = async () => [] as any;
+
+  const result = await service.listUsageHistoryForCurrentSession(createUsageExportSessionSnapshot(), {
+    workspaceId: 'ws_1',
+    source: 'all',
+    limit: 10,
+  });
+
+  assert.equal(result.workspace.id, 'ws_1');
+  assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.exportDecision.allowed, true);
+  assert.deepEqual(result.exportDecision.reasons, []);
 });
 
 test('PlatformService.listUsageHistoryForCurrentSession denies principals without usage:read', async () => {
@@ -1800,12 +2064,12 @@ test('PlatformService.listFeatureFlagsForCurrentSession maps persisted feature f
       ...createConnectedSessionSnapshot().principal,
       systemRoles: ['platform_admin'],
     },
-    permissions: ['feature_flags:read', 'remote_config:publish'],
+    permissions: ['feature_flags:read', 'feature_flags:write'],
   });
 
   assert.equal(result.personaKey, 'connected-user');
-  assert.equal(result.publishDecision.allowed, true);
-  assert.deepEqual(result.permissions, ['feature_flags:read', 'remote_config:publish']);
+  assert.equal(result.writeDecision.allowed, true);
+  assert.deepEqual(result.permissions, ['feature_flags:read', 'feature_flags:write']);
   assert.deepEqual(result.flags, [
     {
       key: 'beta.remote-config-v2',

@@ -548,7 +548,7 @@ test('Prisma-backed feature flag listing returns persisted flags for connected a
   const createdFlags = result.flags.filter((flag) => flag.key.includes(harness.uniqueId));
 
   assert.equal(result.personaKey, 'connected-user');
-  assert.equal(result.publishDecision.allowed, true);
+  assert.equal(result.writeDecision.allowed, true);
   assert.ok(result.permissions.includes('feature_flags:read'));
   assert.deepEqual(createdFlags.map((flag) => flag.key), [
     remoteConfigFlag.key,
