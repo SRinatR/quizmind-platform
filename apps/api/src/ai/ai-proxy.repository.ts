@@ -404,23 +404,57 @@ export class AiProxyRepository {
     } satisfies Prisma.InputJsonObject;
     const durationMs = normalizeDurationMs(input.durationMs);
 
-    await this.prisma.aiRequest.create({
-      data: {
-        userId: input.userId,
-        workspaceId: input.workspaceId,
-        installationId: null,
-        provider: input.provider,
-        model: input.model,
-        promptTokens: 0,
-        completionTokens: 0,
-        totalTokens: 0,
-        keySource: input.keySource,
-        status: input.status,
-        errorCode: input.errorCode,
-        durationMs,
-        requestMetadata: metadata,
-        occurredAt: input.occurredAt,
-      },
+    await this.prisma.$transaction(async (transaction) => {
+      await transaction.aiRequest.create({
+        data: {
+          userId: input.userId,
+          workspaceId: input.workspaceId,
+          installationId: null,
+          provider: input.provider,
+          model: input.model,
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          keySource: input.keySource,
+          status: input.status,
+          errorCode: input.errorCode,
+          durationMs,
+          requestMetadata: metadata,
+          occurredAt: input.occurredAt,
+        },
+      });
+
+      await transaction.activityLog.create({
+        data: {
+          workspaceId: input.workspaceId,
+          actorId: input.userId,
+          eventType: 'ai.proxy.failed',
+          metadataJson: metadata,
+          createdAt: input.occurredAt,
+        },
+      });
+
+      await transaction.domainEvent.create({
+        data: {
+          workspaceId: input.workspaceId,
+          eventType: 'ai.proxy.failed',
+          payloadJson: metadata,
+          createdAt: input.occurredAt,
+        },
+      });
+
+      if (input.keySource === 'user') {
+        await transaction.securityEvent.create({
+          data: {
+            workspaceId: input.workspaceId,
+            actorId: input.userId,
+            eventType: 'ai.proxy.user_key_failed',
+            severity: 'warn',
+            metadataJson: toNullableJsonInput(metadata),
+            createdAt: input.occurredAt,
+          },
+        });
+      }
     });
   }
 }

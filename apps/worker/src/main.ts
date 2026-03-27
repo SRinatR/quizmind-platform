@@ -11,7 +11,7 @@ import {
 } from '@quizmind/contracts';
 import { createNoopEmailAdapter } from '@quizmind/email';
 import { queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
-import { createLogEvent } from '@quizmind/logger';
+import { createLogEvent, type StructuredLogEvent } from '@quizmind/logger';
 import { type Job, Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 
@@ -21,25 +21,34 @@ import { processBillingWebhookJob } from './jobs/process-billing-webhook';
 import {
   buildEmailJobFailedDomainEvent,
   buildEmailJobProcessedDomainEvent,
-  type EmailJobDomainEventInput,
-  type EmailQueueJobContext,
 } from './jobs/email-job-domain-event';
 import { processEmailJob } from './jobs/process-email';
 import { processEntitlementRefreshJob } from './jobs/process-entitlement-refresh';
 import { processQuotaResetJob } from './jobs/process-quota-reset';
 import { processUsageEvent, processUsageEventJob } from './jobs/process-usage-event';
+import { buildQueueJobFailedDomainEvent, buildQueueLogDomainEvent, type QueueJobContext } from './jobs/queue-log-domain-event';
 import { propagateRemoteConfigPublish } from './jobs/publish-remote-config';
 import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
-import { WorkerDomainEventRepository } from './repositories/domain-event.repository';
+import { type CreateWorkerDomainEventInput, WorkerDomainEventRepository } from './repositories/domain-event.repository';
 import { WorkerUsageProcessingRepository } from './repositories/usage-processing.repository';
 
-function resolveEmailQueueJobContext(job: Job<EmailQueueJobPayload>): EmailQueueJobContext {
+function resolveQueueJobContext(job: Job<unknown>): QueueJobContext {
   return {
-    queueName: job.queueName || 'emails',
+    queueName: job.queueName || 'unknown',
     queueJobId: typeof job.id === 'number' || typeof job.id === 'string' ? String(job.id) : 'unknown',
     attemptNumber: job.attemptsMade + 1,
     processedAt: new Date().toISOString(),
   };
+}
+
+function readWorkspaceIdFromQueuePayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object' || !('workspaceId' in payload)) {
+    return null;
+  }
+
+  const workspaceId = (payload as { workspaceId?: unknown }).workspaceId;
+
+  return typeof workspaceId === 'string' && workspaceId.trim().length > 0 ? workspaceId.trim() : null;
 }
 
 function readErrorMessage(error: unknown): string {
@@ -54,10 +63,10 @@ function readErrorMessage(error: unknown): string {
   return 'Unknown error';
 }
 
-async function persistEmailDomainEvent(
+async function persistDomainEvent(
   repository: WorkerDomainEventRepository,
-  domainEvent: EmailJobDomainEventInput,
-  queueContext: EmailQueueJobContext,
+  domainEvent: CreateWorkerDomainEventInput,
+  queueContext: QueueJobContext,
 ) {
   try {
     await repository.create(domainEvent);
@@ -85,6 +94,38 @@ async function persistEmailDomainEvent(
         }),
       ),
     );
+  }
+}
+
+interface QueueJobProcessingResult {
+  logEvent: StructuredLogEvent;
+}
+
+async function processQueueJobWithDomainLogging<T extends QueueJobProcessingResult>(
+  job: Job<unknown>,
+  domainEventRepository: WorkerDomainEventRepository,
+  processJob: () => Promise<T>,
+  failureWorkspaceId?: string | null,
+): Promise<T> {
+  const queueContext = resolveQueueJobContext(job);
+
+  try {
+    const result = await processJob();
+    const processedEvent = buildQueueLogDomainEvent(result.logEvent, queueContext);
+
+    await persistDomainEvent(domainEventRepository, processedEvent, queueContext);
+    console.log(JSON.stringify(result.logEvent));
+
+    return result;
+  } catch (error) {
+    const failedEvent = buildQueueJobFailedDomainEvent(
+      queueContext,
+      error,
+      failureWorkspaceId ?? readWorkspaceIdFromQueuePayload(job.data),
+    );
+
+    await persistDomainEvent(domainEventRepository, failedEvent, queueContext);
+    throw error;
   }
 }
 
@@ -150,12 +191,10 @@ async function bootstrap() {
       const queueWorkers = [
         new Worker(
           'billing-webhooks',
-          async (job) => {
-            const result = await processBillingWebhookJob(job.data, billingWebhookRepository);
-
-            console.log(JSON.stringify(result.logEvent));
-            return result;
-          },
+          async (job) =>
+            processQueueJobWithDomainLogging(job, domainEventRepository, async () =>
+              processBillingWebhookJob(job.data, billingWebhookRepository),
+            ),
           {
             connection: redisConnectionOptions,
           },
@@ -176,20 +215,20 @@ async function bootstrap() {
           'emails',
           async (job) => {
             const payload = job.data as EmailQueueJobPayload;
-            const queueContext = resolveEmailQueueJobContext(job as Job<EmailQueueJobPayload>);
+            const queueContext = resolveQueueJobContext(job as Job<EmailQueueJobPayload>);
 
             try {
               const result = await processEmailJob(payload, emailAdapter);
               const processedEvent = buildEmailJobProcessedDomainEvent(payload, result, queueContext);
 
-              await persistEmailDomainEvent(domainEventRepository, processedEvent, queueContext);
+              await persistDomainEvent(domainEventRepository, processedEvent, queueContext);
               console.log(JSON.stringify(result.logEvent));
 
               return result;
             } catch (error) {
               const failedEvent = buildEmailJobFailedDomainEvent(payload, error, queueContext);
 
-              await persistEmailDomainEvent(domainEventRepository, failedEvent, queueContext);
+              await persistDomainEvent(domainEventRepository, failedEvent, queueContext);
               console.log(
                 JSON.stringify(
                   createLogEvent({
@@ -224,17 +263,26 @@ async function bootstrap() {
         new Worker(
           'quota-resets',
           async (job) => {
-            const result = processQuotaResetJob(job.data as QuotaResetJobPayload);
-            await usageProcessingRepository.saveQuotaCounter({
-              workspaceId: result.nextCounter.workspaceId,
-              key: result.nextCounter.key,
-              consumed: result.nextCounter.consumed,
-              periodStart: new Date(result.nextCounter.periodStart),
-              periodEnd: new Date(result.nextCounter.periodEnd),
-            });
+            const payload = job.data as QuotaResetJobPayload;
 
-            console.log(JSON.stringify(result.logEvent));
-            return result;
+            return processQueueJobWithDomainLogging(
+              job,
+              domainEventRepository,
+              async () => {
+                const result = processQuotaResetJob(payload);
+
+                await usageProcessingRepository.saveQuotaCounter({
+                  workspaceId: result.nextCounter.workspaceId,
+                  key: result.nextCounter.key,
+                  consumed: result.nextCounter.consumed,
+                  periodStart: new Date(result.nextCounter.periodStart),
+                  periodEnd: new Date(result.nextCounter.periodEnd),
+                });
+
+                return result;
+              },
+              payload.workspaceId,
+            );
           },
           {
             connection: redisConnectionOptions,
@@ -243,10 +291,14 @@ async function bootstrap() {
         new Worker(
           'entitlement-refresh',
           async (job) => {
-            const result = processEntitlementRefreshJob(job.data as EntitlementRefreshJobPayload);
+            const payload = job.data as EntitlementRefreshJobPayload;
 
-            console.log(JSON.stringify(result.logEvent));
-            return result;
+            return processQueueJobWithDomainLogging(
+              job,
+              domainEventRepository,
+              async () => processEntitlementRefreshJob(payload),
+              payload.workspaceId,
+            );
           },
           {
             connection: redisConnectionOptions,
@@ -255,10 +307,14 @@ async function bootstrap() {
         new Worker(
           'config-publish',
           async (job) => {
-            const result = propagateRemoteConfigPublish(job.data as RemoteConfigPublishResult);
+            const payload = job.data as RemoteConfigPublishResult;
 
-            console.log(JSON.stringify(result.logEvent));
-            return result;
+            return processQueueJobWithDomainLogging(
+              job,
+              domainEventRepository,
+              async () => propagateRemoteConfigPublish(payload),
+              payload.workspaceId ?? null,
+            );
           },
           {
             connection: redisConnectionOptions,
@@ -267,10 +323,14 @@ async function bootstrap() {
         new Worker(
           'audit-exports',
           async (job) => {
-            const result = processAuditExportJob(job.data as AuditExportJobPayload);
+            const payload = job.data as AuditExportJobPayload;
 
-            console.log(JSON.stringify(result.logEvent));
-            return result;
+            return processQueueJobWithDomainLogging(
+              job,
+              domainEventRepository,
+              async () => processAuditExportJob(payload),
+              payload.workspaceId ?? null,
+            );
           },
           {
             connection: redisConnectionOptions,

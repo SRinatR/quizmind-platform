@@ -244,6 +244,81 @@ test('AiProxyService rejects BYOK requests when policy disables BYOK', async (t)
   assert.equal(fetchCalled, false);
 });
 
+test('AiProxyService enforces user_key_required mode for platform-managed requests', async (t) => {
+  const { service } = createService(undefined, {
+    mode: 'user_key_required',
+    providers: ['openrouter'],
+    defaultProvider: 'openrouter',
+    allowBringYourOwnKey: true,
+  });
+  let fetchCalled = false;
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async () => {
+    fetchCalled = true;
+    return new Response('{}', { status: 200 });
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  await assert.rejects(
+    () =>
+      service.proxyForCurrentSession(createSession(), {
+        model: 'openrouter/auto',
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello!',
+          },
+        ],
+      }),
+    /requires bring-your-own-key/i,
+  );
+  assert.equal(fetchCalled, false);
+});
+
+test('AiProxyService blocks vision models for BYOK when allowVisionOnUserKeys is disabled', async (t) => {
+  const { service } = createService(
+    {
+      findWorkspacePlanCode: async () => 'pro',
+    },
+    {
+      mode: 'user_key_optional',
+      providers: ['openrouter', 'openai'],
+      defaultProvider: 'openrouter',
+      allowBringYourOwnKey: true,
+      allowVisionOnUserKeys: false,
+    },
+  );
+  let fetchCalled = false;
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async () => {
+    fetchCalled = true;
+    return new Response('{}', { status: 200 });
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  await assert.rejects(
+    () =>
+      service.proxyForCurrentSession(createSession(), {
+        model: 'gpt-4.1-mini',
+        useOwnKey: true,
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello!',
+          },
+        ],
+      }),
+    /vision support.*disabled for user keys/i,
+  );
+  assert.equal(fetchCalled, false);
+});
+
 test('AiProxyService blocks proxy calls when requests-per-day quota is exhausted', async (t) => {
   let failureInput: unknown;
   const { service } = createService({
@@ -339,6 +414,42 @@ test('AiProxyService records upstream proxy failures in ai request telemetry', a
   assert.equal((failureInput as any).errorCode, 'upstream_bad_gateway');
   assert.equal(typeof (failureInput as any).durationMs, 'number');
   assert.ok((failureInput as any).durationMs >= 0);
+});
+
+test('AiProxyService rejects models that are not available for the workspace plan and policy', async (t) => {
+  const { service } = createService(
+    {
+      findWorkspacePlanCode: async () => 'free',
+    },
+    {
+      providers: ['openrouter', 'openai'],
+    },
+  );
+  let fetchCalled = false;
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async () => {
+    fetchCalled = true;
+    return new Response('{}', { status: 200 });
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  await assert.rejects(
+    () =>
+      service.proxyForCurrentSession(createSession(), {
+        model: 'gpt-4.1-mini',
+        messages: [
+          {
+            role: 'user',
+            content: 'Hello!',
+          },
+        ],
+      }),
+    /not available for the current plan and AI provider policy/i,
+  );
+  assert.equal(fetchCalled, false);
 });
 
 test('AiProxyService.listModelsForCurrentSession returns plan-aware models filtered by policy providers', async () => {

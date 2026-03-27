@@ -1,24 +1,13 @@
 import { type EmailQueueJobPayload } from '@quizmind/contracts';
 
+import { type CreateWorkerDomainEventInput } from '../repositories/domain-event.repository';
+
 import { type EmailJobResult } from './process-email';
-
-export interface EmailQueueJobContext {
-  queueName: string;
-  queueJobId: string;
-  attemptNumber: number;
-  processedAt: string;
-}
-
-export interface EmailJobDomainEventInput {
-  workspaceId: string | null;
-  eventType: 'email.job_processed' | 'email.job_failed';
-  payloadJson: Record<string, unknown>;
-  createdAt: Date;
-}
+import { type QueueJobContext } from './queue-log-domain-event';
 
 function buildBasePayload(
   payload: EmailQueueJobPayload,
-  context: EmailQueueJobContext,
+  context: QueueJobContext,
 ): Record<string, unknown> {
   return {
     queue: context.queueName,
@@ -65,8 +54,8 @@ function readErrorCode(error: unknown): string | null {
 export function buildEmailJobProcessedDomainEvent(
   payload: EmailQueueJobPayload,
   result: EmailJobResult,
-  context: EmailQueueJobContext,
-): EmailJobDomainEventInput {
+  context: QueueJobContext,
+): CreateWorkerDomainEventInput {
   return {
     workspaceId: payload.workspaceId ?? null,
     eventType: 'email.job_processed',
@@ -87,8 +76,8 @@ export function buildEmailJobProcessedDomainEvent(
 export function buildEmailJobFailedDomainEvent(
   payload: EmailQueueJobPayload,
   error: unknown,
-  context: EmailQueueJobContext,
-): EmailJobDomainEventInput {
+  context: QueueJobContext,
+): CreateWorkerDomainEventInput {
   return {
     workspaceId: payload.workspaceId ?? null,
     eventType: 'email.job_failed',

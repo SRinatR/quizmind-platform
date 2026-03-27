@@ -78,6 +78,15 @@ interface OpenRouterStreamInspection {
   model?: string;
 }
 
+interface WorkspaceAiCatalog {
+  planCode: string;
+  providers: AiModelsCatalogPayload['providers'];
+  models: AiModelsCatalogPayload['models'];
+  defaultProvider?: AiProvider;
+  defaultModel?: string;
+  allowedModelTags: string[];
+}
+
 export interface AiProxyStreamCompletion {
   requestId: string;
   workspaceId: string;
@@ -273,6 +282,10 @@ function trimTrailingSlash(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
+function modelSupportsVision(model: AiModelsCatalogPayload['models'][number]): boolean {
+  return model.capabilityTags.some((tag) => tag === 'vision');
+}
+
 function createRequestAbortSignal(input: {
   timeoutMs: number;
   abortController?: AbortController;
@@ -374,40 +387,16 @@ export class AiProxyService {
   ): Promise<AiModelsCatalogPayload> {
     const workspace = this.resolveWorkspace(session, workspaceId?.trim() || undefined);
     const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
-    const resolvedPlanCode = (await this.aiProxyRepository.findWorkspacePlanCode(workspace.id)) ?? 'free';
-    const planCode = resolvedPlanCode.trim().toLowerCase() || 'free';
-    const allowedModelTags = Array.from(
-      new Set(
-        (policy.allowedModelTags ?? [])
-          .map((tag) => tag.trim())
-          .filter((tag) => tag.length > 0),
-      ),
-    );
-    const catalog = getProviderCatalog();
-    const providers = catalog.providers.filter((entry) => policy.providers.includes(entry.provider));
-    const planModels = listAvailableModelsForPlan(planCode).filter((entry) => policy.providers.includes(entry.provider));
-    const models =
-      allowedModelTags.length > 0
-        ? planModels.filter((entry) => entry.capabilityTags.some((tag) => allowedModelTags.includes(tag)))
-        : planModels;
-    const defaultProvider =
-      policy.defaultProvider && providers.some((entry) => entry.provider === policy.defaultProvider)
-        ? policy.defaultProvider
-        : providers[0]?.provider;
-    const defaultModel =
-      typeof policy.defaultModel === 'string' &&
-      models.some((entry) => entry.modelId === policy.defaultModel)
-        ? policy.defaultModel
-        : models[0]?.modelId;
+    const catalog = await this.resolveWorkspaceCatalog(workspace.id, policy);
 
     return {
       workspaceId: workspace.id,
-      planCode,
-      providers,
-      models,
-      ...(defaultProvider ? { defaultProvider } : {}),
-      ...(defaultModel ? { defaultModel } : {}),
-      ...(allowedModelTags.length > 0 ? { allowedModelTags } : {}),
+      planCode: catalog.planCode,
+      providers: catalog.providers,
+      models: catalog.models,
+      ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
+      ...(catalog.defaultModel ? { defaultModel: catalog.defaultModel } : {}),
+      ...(catalog.allowedModelTags.length > 0 ? { allowedModelTags: catalog.allowedModelTags } : {}),
     };
   }
 
@@ -466,10 +455,19 @@ export class AiProxyService {
     const normalizedRequest = this.normalizeRequest(request);
     const workspace = this.resolveWorkspace(session, normalizedRequest.workspaceId);
     const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
-    const provider = (normalizedRequest.provider ?? policy.defaultProvider ?? policy.providers[0] ?? 'openrouter') as AiProvider;
+    const catalog = await this.resolveWorkspaceCatalog(workspace.id, policy);
+    const provider = (normalizedRequest.provider ?? catalog.defaultProvider ?? policy.providers[0] ?? 'openrouter') as AiProvider;
 
     if (!policy.providers.includes(provider)) {
       throw new ForbiddenException(`Provider "${provider}" is not enabled by the current AI policy.`);
+    }
+
+    const selectedModel = catalog.models.find((model) => model.modelId === normalizedRequest.model);
+
+    if (!selectedModel) {
+      throw new ForbiddenException(
+        `Model "${normalizedRequest.model}" is not available for the current plan and AI provider policy.`,
+      );
     }
 
     if (!supportedProxyProviders.has(provider)) {
@@ -498,6 +496,18 @@ export class AiProxyService {
     ]);
     const quotaCounter = activeCounter ?? quotaCounterFallback;
     const keySource = normalizedRequest.useOwnKey ? 'user' : 'platform';
+
+    if (policy.mode === 'user_key_required' && keySource !== 'user') {
+      throw new ForbiddenException(
+        policy.reason ?? 'This workspace requires bring-your-own-key for AI proxy requests.',
+      );
+    }
+
+    if (keySource === 'user' && modelSupportsVision(selectedModel) && !policy.allowVisionOnUserKeys) {
+      throw new ForbiddenException(
+        policy.reason ?? `Model "${selectedModel.modelId}" requires vision support that is disabled for user keys.`,
+      );
+    }
 
     const apiKey =
       keySource === 'user'
@@ -545,6 +555,46 @@ export class AiProxyService {
     }
 
     return invocation;
+  }
+
+  private async resolveWorkspaceCatalog(
+    workspaceId: string,
+    policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>,
+  ): Promise<WorkspaceAiCatalog> {
+    const resolvedPlanCode = (await this.aiProxyRepository.findWorkspacePlanCode(workspaceId)) ?? 'free';
+    const planCode = resolvedPlanCode.trim().toLowerCase() || 'free';
+    const allowedModelTags = Array.from(
+      new Set(
+        (policy.allowedModelTags ?? [])
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0),
+      ),
+    );
+    const providerCatalog = getProviderCatalog();
+    const providers = providerCatalog.providers.filter((entry) => policy.providers.includes(entry.provider));
+    const planModels = listAvailableModelsForPlan(planCode).filter((entry) => policy.providers.includes(entry.provider));
+    const models =
+      allowedModelTags.length > 0
+        ? planModels.filter((entry) => entry.capabilityTags.some((tag) => allowedModelTags.includes(tag)))
+        : planModels;
+    const defaultProvider =
+      policy.defaultProvider && providers.some((entry) => entry.provider === policy.defaultProvider)
+        ? policy.defaultProvider
+        : providers[0]?.provider;
+    const defaultModel =
+      typeof policy.defaultModel === 'string' &&
+      models.some((entry) => entry.modelId === policy.defaultModel)
+        ? policy.defaultModel
+        : models[0]?.modelId;
+
+    return {
+      planCode,
+      providers,
+      models,
+      ...(defaultProvider ? { defaultProvider } : {}),
+      ...(defaultModel ? { defaultModel } : {}),
+      allowedModelTags,
+    };
   }
 
   private normalizeRequest(request?: Partial<AiProxyRequest>): NormalizedProxyRequest {
