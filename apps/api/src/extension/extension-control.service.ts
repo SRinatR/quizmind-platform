@@ -81,6 +81,18 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
   return normalized;
 }
 
+const maxExtensionActionReasonLength = 500;
+
+function readRequiredActionReason(value: string | undefined): string {
+  const reason = readRequiredString(value, 'reason');
+
+  if (reason.length > maxExtensionActionReasonLength) {
+    throw new BadRequestException(`reason must be at most ${maxExtensionActionReasonLength} characters.`);
+  }
+
+  return reason;
+}
+
 function normalizeBrowser(value: string): CompatibilityHandshake['browser'] {
   return ['chrome', 'edge', 'brave', 'other'].includes(value)
     ? (value as CompatibilityHandshake['browser'])
@@ -172,6 +184,10 @@ export class ExtensionControlService {
       capabilities: normalizedRequest.handshake.capabilities,
       lastSeenAt: occurredAt,
     });
+    const revokedSessionCount = await this.extensionInstallationSessionRepository.revokeActiveByInstallationId(
+      installation.id,
+      occurredAt,
+    );
     const { sessionToken, tokenRecord } = await this.issueInstallationSession(installation, session.user.id);
     const bootstrap = await this.buildBootstrapPayload({
       installation,
@@ -226,6 +242,7 @@ export class ExtensionControlService {
         capabilities: normalizeCapabilities(installation.capabilitiesJson),
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
         refreshAfterSeconds: result.session.refreshAfterSeconds,
+        revokedSessionCount,
         previousWorkspaceId: existingInstallation?.workspaceId ?? null,
         previousUserId: existingInstallation?.userId ?? null,
       },
@@ -237,6 +254,7 @@ export class ExtensionControlService {
         workspaceId: installation.workspaceId ?? null,
         actorId: session.user.id,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+        revokedSessionCount,
       },
       occurredAt,
     });
@@ -480,6 +498,8 @@ export class ExtensionControlService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
+    const reason = readRequiredActionReason(request?.reason);
+
     const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
 
     if (!installation || installation.workspaceId !== requestedWorkspace.id) {
@@ -505,6 +525,7 @@ export class ExtensionControlService {
       metadata: {
         installationId: installation.installationId,
         workspaceId: installation.workspaceId ?? null,
+        reason,
         revokedSessionCount,
         requiresReconnect: true,
       },
@@ -513,6 +534,7 @@ export class ExtensionControlService {
         installationId: installation.installationId,
         workspaceId: installation.workspaceId ?? null,
         actorId: session.user.id,
+        reason,
         revokedSessionCount,
       },
       occurredAt: disconnectedAt,
@@ -538,6 +560,8 @@ export class ExtensionControlService {
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
+
+    const reason = readRequiredActionReason(request?.reason);
 
     const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
 
@@ -565,6 +589,7 @@ export class ExtensionControlService {
       metadata: {
         installationId: installation.installationId,
         workspaceId: installation.workspaceId ?? null,
+        reason,
         revokedSessionCount,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
         refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
@@ -574,6 +599,7 @@ export class ExtensionControlService {
         installationId: installation.installationId,
         workspaceId: installation.workspaceId ?? null,
         actorId: session.user.id,
+        reason,
         revokedSessionCount,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
       },

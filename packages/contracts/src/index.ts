@@ -984,6 +984,7 @@ export interface ExtensionInstallationInventorySnapshot {
 export interface ExtensionInstallationDisconnectRequest {
   installationId: string;
   workspaceId?: string;
+  reason: string;
 }
 
 export interface ExtensionInstallationDisconnectResult {
@@ -997,6 +998,7 @@ export interface ExtensionInstallationDisconnectResult {
 export interface ExtensionInstallationRotateSessionRequest {
   installationId: string;
   workspaceId?: string;
+  reason: string;
 }
 
 export interface ExtensionInstallationRotateSessionResult {

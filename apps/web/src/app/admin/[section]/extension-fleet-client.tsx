@@ -118,6 +118,7 @@ export function ExtensionFleetClient({
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
   const [searchDraft, setSearchDraft] = useState(snapshot.filters.search ?? '');
+  const [actionReason, setActionReason] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingDisconnectInstallationId, setPendingDisconnectInstallationId] = useState<string | null>(null);
@@ -125,6 +126,7 @@ export function ExtensionFleetClient({
   const canManageInstallations = snapshot.manageDecision.allowed;
   const manageBlockedReason = snapshot.manageDecision.reasons[0] ?? 'Missing permission: installations:write';
   const selectedInstallation = snapshot.selectedInstallation;
+  const normalizedActionReason = actionReason.trim();
 
   function pushFilters(next: Partial<AdminExtensionFleetFilters>) {
     const params = buildNextSearchParams(searchParams, next);
@@ -146,6 +148,11 @@ export function ExtensionFleetClient({
   }
 
   async function handleDisconnect(installationId: string) {
+    if (!normalizedActionReason) {
+      setErrorMessage('Provide an operator reason before disconnecting or rotating installation sessions.');
+      return;
+    }
+
     setStatusMessage(null);
     setErrorMessage(null);
     setPendingDisconnectInstallationId(installationId);
@@ -159,6 +166,7 @@ export function ExtensionFleetClient({
         body: JSON.stringify({
           installationId,
           workspaceId: snapshot.workspace.id,
+          reason: normalizedActionReason,
         }),
       });
       const payload = (await response.json().catch(() => null)) as DisconnectRouteResponse | null;
@@ -183,6 +191,11 @@ export function ExtensionFleetClient({
   }
 
   async function handleRotateSession(installationId: string) {
+    if (!normalizedActionReason) {
+      setErrorMessage('Provide an operator reason before disconnecting or rotating installation sessions.');
+      return;
+    }
+
     setStatusMessage(null);
     setErrorMessage(null);
     setPendingRotateInstallationId(installationId);
@@ -196,6 +209,7 @@ export function ExtensionFleetClient({
         body: JSON.stringify({
           installationId,
           workspaceId: snapshot.workspace.id,
+          reason: normalizedActionReason,
         }),
       });
       const payload = (await response.json().catch(() => null)) as RotateSessionRouteResponse | null;
@@ -379,6 +393,16 @@ export function ExtensionFleetClient({
             This account can inspect fleet health but cannot rotate or disconnect sessions. {manageBlockedReason}
           </p>
         ) : null}
+        <label className="admin-ticket-field">
+          <span className="micro-label">Operator reason (required for rotate/disconnect)</span>
+          <textarea
+            maxLength={500}
+            onChange={(event) => setActionReason(event.target.value)}
+            placeholder="Example: Rotating tokens after suspicious extension session activity."
+            rows={3}
+            value={actionReason}
+          />
+        </label>
         {snapshot.items.length > 0 ? (
           <div className="settings-session-list">
             {snapshot.items.map((item) => (
@@ -407,7 +431,11 @@ export function ExtensionFleetClient({
                   </span>
                   <button
                     className="btn-ghost"
-                    disabled={!canManageInstallations || pendingRotateInstallationId === item.installationId}
+                    disabled={
+                      !canManageInstallations ||
+                      normalizedActionReason.length === 0 ||
+                      pendingRotateInstallationId === item.installationId
+                    }
                     onClick={() => void handleRotateSession(item.installationId)}
                     type="button"
                   >
@@ -417,6 +445,7 @@ export function ExtensionFleetClient({
                     className="btn-ghost"
                     disabled={
                       !canManageInstallations ||
+                      normalizedActionReason.length === 0 ||
                       item.activeSessionCount === 0 ||
                       pendingDisconnectInstallationId === item.installationId
                     }
@@ -483,6 +512,7 @@ export function ExtensionFleetClient({
                 className="btn-ghost"
                 disabled={
                   !canManageInstallations ||
+                  normalizedActionReason.length === 0 ||
                   pendingRotateInstallationId === selectedInstallation.installation.installationId
                 }
                 onClick={() => void handleRotateSession(selectedInstallation.installation.installationId)}
@@ -496,6 +526,7 @@ export function ExtensionFleetClient({
                 className="btn-ghost"
                 disabled={
                   !canManageInstallations ||
+                  normalizedActionReason.length === 0 ||
                   selectedInstallation.installation.activeSessionCount === 0 ||
                   pendingDisconnectInstallationId === selectedInstallation.installation.installationId
                 }

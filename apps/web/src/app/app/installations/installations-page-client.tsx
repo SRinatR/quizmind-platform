@@ -48,6 +48,7 @@ function formatCompatibilityTone(status: string) {
 
 export function InstallationsPageClient({ snapshot }: InstallationsPageClientProps) {
   const router = useRouter();
+  const [actionReason, setActionReason] = useState('');
   const [pendingInstallationId, setPendingInstallationId] = useState<string | null>(null);
   const [pendingRotationInstallationId, setPendingRotationInstallationId] = useState<string | null>(null);
   const [rotatedSession, setRotatedSession] = useState<ExtensionInstallationRotateSessionResult | null>(null);
@@ -61,8 +62,14 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   const compatibilityWarningCount = snapshot.items.filter(
     (installation) => installation.compatibility.status !== 'supported',
   ).length;
+  const normalizedActionReason = actionReason.trim();
 
   async function handleDisconnect(installationId: string) {
+    if (!normalizedActionReason) {
+      setErrorMessage('Provide an operator reason before disconnecting or rotating installation sessions.');
+      return;
+    }
+
     setPendingInstallationId(installationId);
     setStatusMessage(null);
     setErrorMessage(null);
@@ -76,6 +83,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         body: JSON.stringify({
           installationId,
           workspaceId: snapshot.workspace.id,
+          reason: normalizedActionReason,
         }),
       });
       const payload = (await response.json().catch(() => null)) as DisconnectRouteResponse | null;
@@ -101,6 +109,11 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   }
 
   async function handleRotateSession(installationId: string) {
+    if (!normalizedActionReason) {
+      setErrorMessage('Provide an operator reason before disconnecting or rotating installation sessions.');
+      return;
+    }
+
     setPendingRotationInstallationId(installationId);
     setStatusMessage(null);
     setErrorMessage(null);
@@ -116,6 +129,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         body: JSON.stringify({
           installationId,
           workspaceId: snapshot.workspace.id,
+          reason: normalizedActionReason,
         }),
       });
       const payload = (await response.json().catch(() => null)) as RotateSessionRouteResponse | null;
@@ -203,6 +217,16 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         <p>
           Platform bind, compatibility, and installation session state are now visible in one workspace-scoped inventory.
         </p>
+        <label className="admin-ticket-field">
+          <span className="micro-label">Operator reason (required for rotate/disconnect)</span>
+          <textarea
+            maxLength={500}
+            onChange={(event) => setActionReason(event.target.value)}
+            placeholder="Example: Investigating suspicious token activity reported by support."
+            rows={3}
+            value={actionReason}
+          />
+        </label>
         {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
         {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
         {rotatedSession ? (
@@ -225,10 +249,12 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
           {snapshot.items.map((installation) => {
             const disconnectDisabled =
               !snapshot.disconnectDecision.allowed ||
+              normalizedActionReason.length === 0 ||
               installation.activeSessionCount === 0 ||
               pendingInstallationId === installation.installationId;
             const rotateDisabled =
               !snapshot.disconnectDecision.allowed ||
+              normalizedActionReason.length === 0 ||
               pendingRotationInstallationId === installation.installationId;
 
             return (

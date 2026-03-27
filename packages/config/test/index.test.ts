@@ -75,6 +75,22 @@ test('validateWorkerEnv enforces email provider settings for production queue de
   assert.ok(issues.some((issue) => issue.key === 'EMAIL_FROM'));
 });
 
+test('validateWorkerEnv rejects production mock mode and loopback API URL', () => {
+  const env = loadWorkerEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'mock',
+    API_URL: 'http://localhost:4000',
+    EMAIL_PROVIDER: 'resend',
+    RESEND_API_KEY: 'resend-key',
+    EMAIL_FROM: 'noreply@quizmind.dev',
+  });
+
+  const issues = validateWorkerEnv(env);
+
+  assert.ok(issues.some((issue) => issue.key === 'QUIZMIND_RUNTIME_MODE'));
+  assert.ok(issues.some((issue) => issue.key === 'API_URL' && issue.message.includes('localhost')));
+});
+
 test('validateApiEnv rejects insecure production URL and runtime settings', () => {
   const env = loadApiEnv({
     NODE_ENV: 'production',

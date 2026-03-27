@@ -14,6 +14,7 @@ interface ExtensionConnectClientProps {
   missingFields: string[];
   bridgeNonce?: string;
   bridgeMode?: string;
+  relayUrl?: string;
   requestId?: string;
   targetOrigin?: string;
   workspaces: WorkspaceSummary[];
@@ -73,6 +74,62 @@ function normalizeBridgeMode(value?: string): 'bind_result' | 'fallback_code' {
   return normalized === 'fallback_code' ? 'fallback_code' : 'bind_result';
 }
 
+function normalizeRelayUrl(value?: string, expectedTargetOrigin?: string | null): string | null {
+  const normalized = value?.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+
+    if (parsed.protocol !== 'chrome-extension:' && parsed.protocol !== 'moz-extension:') {
+      return null;
+    }
+
+    const relayOrigin = `${parsed.protocol}//${parsed.host}`;
+
+    if (expectedTargetOrigin && relayOrigin !== expectedTargetOrigin) {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function encodeBase64UrlJson(value: unknown): string {
+  const json = JSON.stringify(value);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function buildRelayRedirectUrl(input: {
+  relayUrl: string;
+  envelope: Record<string, unknown>;
+  requestId: string;
+  bridgeNonce?: string | null;
+}): string {
+  const relay = new URL(input.relayUrl);
+  relay.searchParams.set('quizmind_bridge_payload', encodeBase64UrlJson(input.envelope));
+  relay.searchParams.set('quizmind_bridge_payload_format', 'base64url-json');
+  relay.searchParams.set('requestId', input.requestId);
+
+  if (input.bridgeNonce) {
+    relay.searchParams.set('bridgeNonce', input.bridgeNonce);
+  }
+
+  return relay.toString();
+}
+
 function resolveBridgeTarget(): Window | null {
   if (typeof window === 'undefined') {
     return null;
@@ -103,6 +160,7 @@ export function ExtensionConnectClient({
   missingFields,
   bridgeNonce,
   bridgeMode,
+  relayUrl,
   requestId,
   targetOrigin,
   workspaces,
@@ -129,6 +187,7 @@ export function ExtensionConnectClient({
   const bridgeModePreference = normalizeBridgeMode(bridgeMode);
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
   const resolvedBridgeNonce = normalizeBridgeNonce(bridgeNonce);
+  const resolvedRelayUrl = normalizeRelayUrl(relayUrl, resolvedTargetOrigin);
   const bindRouteBridgeMode: 'bind_result' | 'fallback_code' =
     bridgeModePreference === 'fallback_code' && resolvedBridgeNonce && resolvedTargetOrigin
       ? 'fallback_code'
@@ -237,27 +296,47 @@ export function ExtensionConnectClient({
       setIsSubmitting(false);
       const fallbackCodeForBridge = payload.fallbackCode ?? null;
       const useFallbackEnvelope = bridgeModePreference === 'fallback_code' && fallbackCodeForBridge !== null;
-      setStatusMessage(
-        useFallbackEnvelope
-          ? window.opener
-            ? 'Extension connected. Returning a secure one-time bind code envelope to the opener...'
-            : 'Extension connected. A secure fallback envelope is ready for extension redeem.'
-          : window.opener
-            ? 'Extension connected. Returning the installation session to the opener...'
-            : 'Extension connected. You can return to the extension now.',
-      );
-
-      const deliveredToBridge = useFallbackEnvelope && fallbackCodeForBridge
-        ? postBridgeMessage({
+      const bridgeEnvelope: Record<string, unknown> = useFallbackEnvelope && fallbackCodeForBridge
+        ? {
             type: 'quizmind.extension.bind_fallback_code',
             requestId: bridgeRequestIdRef.current,
             fallbackCode: fallbackCodeForBridge,
-          })
-        : postBridgeMessage({
+          }
+        : {
             type: 'quizmind.extension.bind_result',
             requestId: bridgeRequestIdRef.current,
             payload: payload.data,
-          });
+          };
+      setStatusMessage(
+        useFallbackEnvelope
+          ? hasBridgeTarget
+            ? 'Extension connected. Returning a secure one-time bind code envelope to the opener...'
+            : resolvedRelayUrl
+              ? 'Extension connected. Returning a secure one-time bind code envelope through extension relay...'
+              : 'Extension connected. A secure fallback envelope is ready for extension redeem.'
+          : hasBridgeTarget
+            ? 'Extension connected. Returning the installation session to the opener...'
+            : resolvedRelayUrl
+              ? 'Extension connected. Returning the installation session through extension relay...'
+              : 'Extension connected. You can return to the extension now.',
+      );
+
+      const deliveredToBridge = postBridgeMessage(bridgeEnvelope);
+
+      if (!deliveredToBridge && resolvedRelayUrl) {
+        window.location.assign(
+          buildRelayRedirectUrl({
+            relayUrl: resolvedRelayUrl,
+            envelope: {
+              ...bridgeEnvelope,
+              ...(resolvedBridgeNonce ? { bridgeNonce: resolvedBridgeNonce } : {}),
+            },
+            requestId: bridgeRequestIdRef.current,
+            bridgeNonce: resolvedBridgeNonce,
+          }),
+        );
+        return;
+      }
 
       if (hasBridgeTarget && !deliveredToBridge) {
         if (payload.fallbackCode) {
@@ -270,7 +349,7 @@ export function ExtensionConnectClient({
         return;
       }
 
-      if (window.opener && deliveredToBridge) {
+      if (deliveredToBridge) {
         window.setTimeout(() => {
           window.close();
         }, 900);
@@ -499,6 +578,11 @@ export function ExtensionConnectClient({
           Bridge mode: <span className="monospace">{bridgeModePreference}</span>
           {' '}| Bind route mode: <span className="monospace">{bindRouteBridgeMode}</span>
         </p>
+        {resolvedRelayUrl ? (
+          <p>
+            Relay URL: <span className="monospace">{resolvedRelayUrl}</span>
+          </p>
+        ) : null}
       </div>
     </div>
   );

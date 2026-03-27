@@ -546,6 +546,17 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
   }
 
   if (env.nodeEnv === 'production') {
+    if (env.runtimeMode !== 'connected') {
+      issues.push({
+        key: 'QUIZMIND_RUNTIME_MODE',
+        message: 'QUIZMIND_RUNTIME_MODE must be "connected" in production for worker queue processing.',
+      });
+    }
+
+    if (isLoopbackUrl(env.apiUrl)) {
+      issues.push({ key: 'API_URL', message: 'API_URL must not target localhost in production.' });
+    }
+
     if (env.emailProvider !== 'resend') {
       issues.push({
         key: 'EMAIL_PROVIDER',

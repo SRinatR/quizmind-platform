@@ -438,6 +438,8 @@ Current implementation status:
 - token rotation and disconnect controls are available in user dashboard inventory: `/app/installations`
 - operator controls are also available in admin fleet view: `/admin/extension-fleet`
 - both surfaces use server-side permission checks; write actions require `installations:write`
+- rotate/disconnect write actions now require an explicit operator reason (`reason`) that is persisted in lifecycle audit/domain metadata
+- extension bind now revokes previous active installation sessions for the same installation before issuing a fresh token (single active session baseline per installation)
 - admin fleet payload now carries an explicit `manageDecision` access result for write-action UX gating
 - admin logs explorer now includes extension lifecycle quick filters and event badges for:
   - `extension.bootstrap_refresh_failed`
@@ -475,6 +477,9 @@ Current implementation status:
   - reconnect binds now auto-emit `extension.installation_reconnected` when reconnect context is detected
   - buffered telemetry flush is FIFO and now stops at the first failed event to preserve event order
   - buffered telemetry is flushed after reconnect bind by default
+- extension bridge page now accepts both CSV and JSON-array `capabilities` query payloads and normalizes malformed bracket/quote wrappers from external launchers
+- extension bridge unauthenticated auth intent now honors `mode=signup` vs `mode=login` and routes to register/login with `next` preservation
+- extension bridge can now return bind envelopes through extension relay navigation when `relayUrl` is present and opener/parent messaging is unavailable
 - API runtime now uses distributed Redis-backed rate limiting in connected mode:
   - global guard keeps per-route/per-identity limits consistent across multiple API instances
   - rate-limit identity now relies on trusted request/socket IP data instead of raw spoofable forwarded headers
@@ -487,6 +492,7 @@ Current implementation status:
   - spins up PostgreSQL + Redis services, applies Prisma migrations, boots API in connected mode
   - runs Prisma-backed integration tests (`prisma-auth`, `prisma-platform`) against live PostgreSQL before smoke checks
   - boots worker in connected mode and requires startup + queue-bind signals (`platform.worker_started`, `platform.worker_queues_bound`) with no fallback-mode event
+  - worker env validation now fails production startup when `QUIZMIND_RUNTIME_MODE` is not `connected` or `API_URL` targets localhost loopback
   - waits for strict API readiness via `/ready`
   - `/ready` now requires both database connectivity and schema readiness (`_prisma_migrations`, `User`, `Workspace`)
   - validates `/health` envelope in connected mode with zero env validation issues

@@ -8,6 +8,7 @@ import { AuthShell } from '../../../auth/auth-shell';
 import { readSearchParam } from '../../../auth/search-params';
 import { getSession } from '../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
+import { readStringListSearchParam, resolveAuthMode } from './connect-query';
 import { ExtensionConnectClient } from './extension-connect-client';
 
 interface ExtensionConnectPageProps {
@@ -20,19 +21,6 @@ function readTrimmedSearchParam(value: string | string[] | undefined): string | 
   const normalized = readSearchParam(value)?.trim();
 
   return normalized ? normalized : undefined;
-}
-
-function readStringListSearchParam(value: string | string[] | undefined): string[] {
-  const rawValues = Array.isArray(value) ? value : value ? [value] : [];
-
-  return Array.from(
-    new Set(
-      rawValues
-        .flatMap((item) => item.split(','))
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0),
-    ),
-  );
 }
 
 function readBrowserSearchParam(value: string | string[] | undefined): CompatibilityHandshake['browser'] | undefined {
@@ -81,6 +69,8 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
   const bridgeNonce = readTrimmedSearchParam(resolvedSearchParams?.bridgeNonce);
   const requestId = readTrimmedSearchParam(resolvedSearchParams?.requestId);
   const bridgeMode = readTrimmedSearchParam(resolvedSearchParams?.bridgeMode);
+  const relayUrl = readTrimmedSearchParam(resolvedSearchParams?.relayUrl);
+  const authMode = resolveAuthMode(resolvedSearchParams?.mode);
   const capabilities = Array.from(
     new Set([
       ...readStringListSearchParam(resolvedSearchParams?.capabilities),
@@ -115,6 +105,11 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
   const session = accessToken ? await getSession('platform-admin', accessToken) : null;
   const nextPath = buildCurrentPath(resolvedSearchParams);
   const loginHref = `/auth/login?next=${encodeURIComponent(nextPath)}`;
+  const registerHref = `/auth/register?next=${encodeURIComponent(nextPath)}`;
+  const primaryAuthHref = authMode === 'signup' ? registerHref : loginHref;
+  const secondaryAuthHref = authMode === 'signup' ? loginHref : registerHref;
+  const primaryAuthLabel = authMode === 'signup' ? 'Create account and continue' : 'Sign in and continue';
+  const secondaryAuthLabel = authMode === 'signup' ? 'Already have an account?' : 'Create account';
 
   return (
     <AuthShell
@@ -151,6 +146,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           missingFields={missingFields}
           bridgeNonce={bridgeNonce}
           bridgeMode={bridgeMode}
+          relayUrl={relayUrl}
           requestId={requestId}
           targetOrigin={targetOrigin}
           workspaces={session.workspaces}
@@ -192,11 +188,11 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           ) : null}
 
           <div className="auth-form-actions">
-            <Link className="btn-primary" href={loginHref}>
-              Sign in and continue
+            <Link className="btn-primary" href={primaryAuthHref}>
+              {primaryAuthLabel}
             </Link>
-            <Link className="btn-ghost" href="/auth/login">
-              Open login
+            <Link className="btn-ghost" href={secondaryAuthHref}>
+              {secondaryAuthLabel}
             </Link>
           </div>
         </div>

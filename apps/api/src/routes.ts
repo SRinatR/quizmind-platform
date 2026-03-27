@@ -177,13 +177,13 @@ export const apiRoutes: ApiRouteDefinition[] = [
   {
     method: 'POST',
     path: '/extension/installations/disconnect',
-    summary: 'Revoke active installation sessions for a workspace installation so the extension must reconnect.',
+    summary: 'Revoke active installation sessions for a workspace installation so the extension must reconnect (operator reason required).',
     permission: 'installations:write',
   },
   {
     method: 'POST',
     path: '/extension/installations/rotate-session',
-    summary: 'Rotate the active installation session token for a workspace installation and revoke previous sessions.',
+    summary: 'Rotate the active installation session token for a workspace installation and revoke previous sessions (operator reason required).',
     permission: 'installations:write',
   },
   {

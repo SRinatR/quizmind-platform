@@ -26,6 +26,7 @@ function createValidRequestBody(overrides?: Partial<Record<string, unknown>>) {
   return {
     installationId: 'inst_123',
     workspaceId: 'ws_123',
+    reason: 'Rotating installation token after operator review.',
     ...(overrides ?? {}),
   };
 }
@@ -97,6 +98,41 @@ test('extension rotate-session route validates installationId before upstream pr
   assert.equal(response.status, 400);
   assert.equal(payload.ok, false);
   assert.equal(payload.error?.message, 'installationId is required.');
+  assert.equal(fetchCalled, false);
+});
+
+test('extension rotate-session route validates reason before upstream proxying', async () => {
+  let fetchCalled = false;
+
+  setRotateSessionRouteDependenciesForTests({
+    readAccessToken: async () => 'token_123',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      throw new Error('fetch should not be called for invalid payload');
+    },
+  });
+
+  const response = await POST(
+    new Request('http://localhost/api/extension/installations/rotate-session', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(
+        createValidRequestBody({
+          reason: '',
+        }),
+      ),
+    }),
+  );
+  const payload = (await response.json()) as {
+    ok: boolean;
+    error?: { message?: string };
+  };
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error?.message, 'reason is required.');
   assert.equal(fetchCalled, false);
 });
 

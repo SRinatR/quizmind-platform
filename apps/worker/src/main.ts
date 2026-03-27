@@ -164,6 +164,7 @@ async function bootstrap() {
 
   let redisConnection: IORedis | null = null;
   let prisma: PrismaClient | null = null;
+  let connectedStartupFailureMessage: string | null = null;
 
   if (env.runtimeMode === 'connected') {
     try {
@@ -360,6 +361,7 @@ async function bootstrap() {
         ),
       );
     } catch (error) {
+      connectedStartupFailureMessage = error instanceof Error ? error.message : 'Unknown Redis connection failure';
       console.log(
         JSON.stringify(
           createLogEvent({
@@ -371,10 +373,11 @@ async function bootstrap() {
             targetId: env.redisUrl,
             occurredAt: new Date().toISOString(),
             category: 'system',
-            severity: 'warn',
+            severity: 'error',
             status: 'failure',
             metadata: {
-              message: error instanceof Error ? error.message : 'Unknown Redis connection failure',
+              message: connectedStartupFailureMessage,
+              runtimeMode: env.runtimeMode,
             },
           }),
         ),
@@ -382,7 +385,13 @@ async function bootstrap() {
     }
   }
 
-  if (!redisConnection) {
+  if (env.runtimeMode === 'connected' && !redisConnection) {
+    throw new Error(
+      `Connected worker startup failed: ${connectedStartupFailureMessage ?? 'Redis/Prisma initialization failed.'}`,
+    );
+  }
+
+  if (env.runtimeMode !== 'connected' && !redisConnection) {
     await runDryRun();
   }
 

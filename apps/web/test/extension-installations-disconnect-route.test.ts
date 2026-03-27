@@ -22,6 +22,7 @@ function createValidRequestBody(overrides?: Partial<Record<string, unknown>>) {
   return {
     installationId: 'inst_123',
     workspaceId: 'ws_123',
+    reason: 'Investigating suspicious extension token activity.',
     ...(overrides ?? {}),
   };
 }
@@ -93,6 +94,41 @@ test('extension disconnect route validates installationId before upstream proxyi
   assert.equal(response.status, 400);
   assert.equal(payload.ok, false);
   assert.equal(payload.error?.message, 'installationId is required.');
+  assert.equal(fetchCalled, false);
+});
+
+test('extension disconnect route validates reason before upstream proxying', async () => {
+  let fetchCalled = false;
+
+  setDisconnectRouteDependenciesForTests({
+    readAccessToken: async () => 'token_123',
+    fetchImpl: async () => {
+      fetchCalled = true;
+      throw new Error('fetch should not be called for invalid payload');
+    },
+  });
+
+  const response = await POST(
+    new Request('http://localhost/api/extension/installations/disconnect', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(
+        createValidRequestBody({
+          reason: '   ',
+        }),
+      ),
+    }),
+  );
+  const payload = (await response.json()) as {
+    ok: boolean;
+    error?: { message?: string };
+  };
+
+  assert.equal(response.status, 400);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error?.message, 'reason is required.');
   assert.equal(fetchCalled, false);
 });
 
