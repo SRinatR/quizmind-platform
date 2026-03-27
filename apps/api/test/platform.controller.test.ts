@@ -2773,6 +2773,59 @@ test('PlatformController.getHealth returns an ok envelope from platform service'
   assert.equal(result.data.status, 'ok');
 });
 
+test('PlatformController.getReady returns an ok envelope when runtime is ready', async () => {
+  let getReadyCalled = false;
+  const authService = {
+    async getCurrentSession() {
+      return createSession();
+    },
+  };
+  const platformService = {
+    async getReady() {
+      getReadyCalled = true;
+      return {
+        status: 'ready',
+        timestamp: '2026-03-24T12:00:00.000Z',
+      };
+    },
+  };
+  const controller = new PlatformController(authService as any, platformService as any);
+  const result = await controller.getReady();
+
+  assert.equal(getReadyCalled, true);
+  assert.equal(result.ok, true);
+  assert.equal(result.data.status, 'ready');
+});
+
+test('PlatformController.getReady throws ServiceUnavailableException when runtime is not ready', async () => {
+  const authService = {
+    async getCurrentSession() {
+      return createSession();
+    },
+  };
+  const platformService = {
+    async getReady() {
+      return {
+        status: 'not_ready',
+        timestamp: '2026-03-24T12:00:00.000Z',
+        failures: [{ key: 'postgres', message: 'PostgreSQL is not reachable.' }],
+      };
+    },
+  };
+  const controller = new PlatformController(authService as any, platformService as any);
+
+  await assert.rejects(
+    () => controller.getReady(),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      const response = (error as ServiceUnavailableException).getResponse();
+
+      assert.match(JSON.stringify(response), /not_ready/);
+      return true;
+    },
+  );
+});
+
 test('PlatformController.getFoundation returns an ok envelope from platform service', () => {
   let getFoundationCalled = false;
   const authService = {

@@ -50,6 +50,17 @@ export class PlatformController {
     return ok(await this.platformService.getHealth());
   }
 
+  @Get('ready')
+  async getReady() {
+    const readiness = await this.platformService.getReady();
+
+    if (readiness.status !== 'ready') {
+      throw new ServiceUnavailableException(readiness);
+    }
+
+    return ok(readiness);
+  }
+
   @Get('foundation')
   getFoundation() {
     return ok(this.platformService.getFoundation());

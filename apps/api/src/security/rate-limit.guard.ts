@@ -1,10 +1,9 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
 
-import { InMemoryRateLimitService } from './rate-limit.service';
+import { DistributedRateLimitService } from './rate-limit.service';
 
 interface RateLimitedRequest {
-  headers?: Record<string, string | string[] | undefined>;
   ip?: string;
   method?: string;
   originalUrl?: string;
@@ -29,11 +28,11 @@ export class RateLimitGuard implements CanActivate {
   private readonly env = loadApiEnv();
 
   constructor(
-    @Inject(InMemoryRateLimitService)
-    private readonly rateLimitService: InMemoryRateLimitService,
+    @Inject(DistributedRateLimitService)
+    private readonly rateLimitService: DistributedRateLimitService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RateLimitedRequest>();
     const response = context.switchToHttp().getResponse<RateLimitedResponse>();
 
@@ -50,7 +49,11 @@ export class RateLimitGuard implements CanActivate {
     }
 
     const identity = this.resolveIdentity(request);
-    const decision = this.rateLimitService.consume(`${policy.key}:${identity}`, policy.maxRequests, policy.windowMs);
+    const decision = await this.rateLimitService.consume(
+      `${policy.key}:${identity}`,
+      policy.maxRequests,
+      policy.windowMs,
+    );
 
     response.setHeader?.('X-RateLimit-Limit', String(decision.limit));
     response.setHeader?.('X-RateLimit-Remaining', String(decision.remaining));
@@ -64,7 +67,7 @@ export class RateLimitGuard implements CanActivate {
   }
 
   private resolvePolicy(method: string, path: string): RateLimitPolicy | null {
-    if (path === '/health') {
+    if (path === '/health' || path === '/ready') {
       return null;
     }
 
@@ -90,10 +93,9 @@ export class RateLimitGuard implements CanActivate {
   }
 
   private resolveIdentity(request: RateLimitedRequest): string {
-    const forwardedFor = request.headers?.['x-forwarded-for'];
-    const forwardedValue = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
-    const forwardedIp = forwardedValue?.split(',', 1)[0]?.trim();
+    const requestIp = request.ip?.trim();
+    const remoteIp = request.socket?.remoteAddress?.trim();
 
-    return forwardedIp || request.ip || request.socket?.remoteAddress || 'anonymous';
+    return requestIp || remoteIp || 'anonymous';
   }
 }

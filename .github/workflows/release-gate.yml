@@ -1,0 +1,318 @@
+name: Release Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Deployed API base URL (public https:// URL, for example https://api.quizmind.app)'
+        required: true
+        type: string
+      web_url:
+        description: 'Deployed Web base URL (public https:// URL, for example https://quizmind.app)'
+        required: false
+        default: ''
+        type: string
+      timeout_seconds:
+        description: 'Remote smoke timeout in seconds (10-1800)'
+        required: false
+        default: '180'
+        type: string
+      run_connected_smoke:
+        description: 'Run connected runtime smoke (Postgres + Redis + API boot)'
+        required: false
+        default: true
+        type: boolean
+      run_remote_smoke:
+        description: 'Run remote smoke checks against deployed URLs'
+        required: false
+        default: true
+        type: boolean
+      rollback_webhook_url:
+        description: 'Optional rollback webhook URL triggered when remote smoke fails'
+        required: false
+        default: ''
+        type: string
+      rollback_on_remote_smoke_failure:
+        description: 'Trigger rollback webhook automatically when remote smoke fails'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate release gate inputs
+        run: |
+          set -euo pipefail
+
+          validate_public_https_url() {
+            local flag_name="$1"
+            local raw_value="$2"
+            local required="$3"
+            local value
+            value="$(echo "${raw_value}" | xargs)"
+
+            if [ "${required}" = "true" ] && [ -z "${value}" ]; then
+              echo "${flag_name} is required."
+              exit 1
+            fi
+
+            if [ -z "${value}" ]; then
+              return
+            fi
+
+            local normalized
+            normalized="$(echo "${value}" | tr '[:upper:]' '[:lower:]')"
+
+            if [[ "${normalized}" != https://* ]]; then
+              echo "${flag_name} must use https://."
+              exit 1
+            fi
+
+            if [[ "${normalized}" =~ ^https://(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?(/|$) ]]; then
+              echo "${flag_name} must not target localhost loopback."
+              exit 1
+            fi
+          }
+
+          if [ "${{ inputs.run_connected_smoke }}" != "true" ] && [ "${{ inputs.run_remote_smoke }}" != "true" ]; then
+            echo "At least one smoke stage must be enabled (run_connected_smoke or run_remote_smoke)."
+            exit 1
+          fi
+
+          if [ "${{ inputs.run_remote_smoke }}" = "true" ]; then
+            validate_public_https_url "api_url" "${{ inputs.api_url }}" "true"
+            validate_public_https_url "web_url" "${{ inputs.web_url }}" "false"
+          fi
+
+          if [ "${{ inputs.rollback_on_remote_smoke_failure }}" = "true" ]; then
+            if [ "${{ inputs.run_remote_smoke }}" != "true" ]; then
+              echo "rollback_on_remote_smoke_failure=true requires run_remote_smoke=true."
+              exit 1
+            fi
+
+            if [ -z "${{ inputs.rollback_webhook_url }}" ]; then
+              echo "rollback_on_remote_smoke_failure=true requires rollback_webhook_url."
+              exit 1
+            fi
+
+            validate_public_https_url "rollback_webhook_url" "${{ inputs.rollback_webhook_url }}" "true"
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  connected-smoke:
+    runs-on: ubuntu-latest
+    needs: preflight
+    if: ${{ inputs.run_connected_smoke == true }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: quizmind
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d quizmind"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      NODE_ENV: development
+      QUIZMIND_RUNTIME_MODE: connected
+      API_PORT: 4000
+      API_URL: http://127.0.0.1:4000
+      APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:4000
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/quizmind
+      REDIS_URL: redis://127.0.0.1:6379
+      JWT_SECRET: release-gate-jwt-secret
+      JWT_REFRESH_SECRET: release-gate-jwt-refresh-secret
+      EXTENSION_TOKEN_SECRET: release-gate-extension-token-secret
+      PROVIDER_CREDENTIAL_SECRET: release-gate-provider-credential-secret
+      EMAIL_PROVIDER: noop
+      EMAIL_FROM: noreply@quizmind.local
+      BILLING_PROVIDER: manual
+      OPENROUTER_API_URL: https://openrouter.ai/api/v1
+      OPENROUTER_APP_NAME: QuizMind Release Gate
+      OPENROUTER_TIMEOUT_MS: 45000
+      CORS_ALLOWED_ORIGINS: http://127.0.0.1:3000
+      TRUST_PROXY_HOPS: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply database migrations
+        run: corepack pnpm --filter @quizmind/database db:migrate:deploy
+
+      - name: Prisma integration tests (connected runtime)
+        run: |
+          node --import tsx --test \
+            apps/api/test/prisma-auth.integration.test.ts \
+            apps/api/test/prisma-platform.integration.test.ts
+
+      - name: API connected runtime smoke
+        run: |
+          set -euo pipefail
+          corepack pnpm --filter @quizmind/worker start > worker-connected-smoke.log 2>&1 &
+          WORKER_PID=$!
+          corepack pnpm --filter @quizmind/api start > api-connected-smoke.log 2>&1 &
+          API_PID=$!
+          cleanup() {
+            if kill -0 "$WORKER_PID" 2>/dev/null; then
+              kill "$WORKER_PID"
+              wait "$WORKER_PID" || true
+            fi
+            if kill -0 "$API_PID" 2>/dev/null; then
+              kill "$API_PID"
+              wait "$API_PID" || true
+            fi
+          }
+          trap cleanup EXIT
+
+          node scripts/release/worker-smoke-check.mjs \
+            --log-file "worker-connected-smoke.log" \
+            --timeout-seconds "120" \
+            --require-queue-bind "true" \
+            --forbid-fallback "true"
+
+          node scripts/release/smoke-check.mjs \
+            --api-url "http://127.0.0.1:4000" \
+            --timeout-seconds "180" \
+            --require-connected "true" \
+            --require-zero-validation-issues "true" \
+            --require-rate-limit-headers "true"
+
+      - name: Upload connected smoke log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-api-connected-smoke-log
+          path: api-connected-smoke.log
+
+      - name: Upload connected worker log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-worker-connected-smoke-log
+          path: worker-connected-smoke.log
+
+  remote-smoke:
+    runs-on: ubuntu-latest
+    needs:
+      - preflight
+      - connected-smoke
+    if: ${{ always() && inputs.run_remote_smoke == true && needs.preflight.result == 'success' && (needs.connected-smoke.result == 'success' || needs.connected-smoke.result == 'skipped') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Post-deploy remote smoke checks
+        run: |
+          set -euo pipefail
+          CMD=(node scripts/release/smoke-check.mjs --api-url "${{ inputs.api_url }}" --timeout-seconds "${{ inputs.timeout_seconds }}" --require-connected "true" --require-zero-validation-issues "true" --require-rate-limit-headers "true" --require-https "true" --reject-loopback "true")
+          if [ -n "${{ inputs.web_url }}" ]; then
+            CMD+=(--web-url "${{ inputs.web_url }}")
+          fi
+          "${CMD[@]}" | tee remote-smoke.log
+
+      - name: Upload remote smoke log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-remote-smoke-log
+          path: remote-smoke.log
+
+  rollback-on-remote-smoke-failure:
+    runs-on: ubuntu-latest
+    needs:
+      - remote-smoke
+    if: ${{ always() && inputs.rollback_on_remote_smoke_failure == true && inputs.rollback_webhook_url != '' && needs.remote-smoke.result == 'failure' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Trigger rollback webhook
+        env:
+          ROLLBACK_WEBHOOK_TOKEN: ${{ secrets.RELEASE_ROLLBACK_TOKEN }}
+        run: |
+          set -euo pipefail
+          node scripts/release/trigger-rollback.mjs \
+            --webhook-url "${{ inputs.rollback_webhook_url }}" \
+            --require-https "true" \
+            --reject-loopback "true" \
+            --reason "remote_smoke_failed" \
+            --api-url "${{ inputs.api_url }}" \
+            --web-url "${{ inputs.web_url }}" \
+            --release-ref "${{ github.ref }}" \
+            --release-sha "${{ github.sha }}" \
+            --run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --source "release-gate"

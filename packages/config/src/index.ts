@@ -56,6 +56,7 @@ export function loadPlatformEnv(source: EnvSource = process.env): PlatformEnv {
 
 export interface ApiEnv extends PlatformEnv {
   port: number;
+  trustProxyHops: number;
   corsAllowedOrigins: string[];
   jwtSecret: string;
   jwtRefreshSecret: string;
@@ -111,6 +112,23 @@ function isValidUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return Boolean(url.protocol && url.host);
+  } catch {
+    return false;
+  }
+}
+
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isLoopbackUrl(value: string): boolean {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   } catch {
     return false;
   }
@@ -174,6 +192,7 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
   return {
     ...platformEnv,
     port: readNumberEnv(source, 'API_PORT', 4000),
+    trustProxyHops: readNumberEnv(source, 'TRUST_PROXY_HOPS', 0),
     corsAllowedOrigins: loadCorsAllowedOrigins(source, platformEnv.appUrl),
     jwtSecret: source.JWT_SECRET ?? 'replace-me',
     jwtRefreshSecret: source.JWT_REFRESH_SECRET ?? 'replace-me-refresh',
@@ -254,6 +273,13 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
 
   if (!Number.isInteger(env.port) || env.port < 1 || env.port > 65535) {
     issues.push({ key: 'API_PORT', message: 'API_PORT must be an integer between 1 and 65535.' });
+  }
+
+  if (!Number.isInteger(env.trustProxyHops) || env.trustProxyHops < 0) {
+    issues.push({
+      key: 'TRUST_PROXY_HOPS',
+      message: 'TRUST_PROXY_HOPS must be an integer of 0 or greater.',
+    });
   }
 
   if (!env.jwtSecret || env.jwtSecret === 'replace-me') {
@@ -361,6 +387,61 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
   }
 
   if (env.nodeEnv === 'production') {
+    if (env.runtimeMode !== 'connected') {
+      issues.push({
+        key: 'QUIZMIND_RUNTIME_MODE',
+        message: 'QUIZMIND_RUNTIME_MODE must be "connected" in production.',
+      });
+    }
+
+    if (!isHttpsUrl(env.apiUrl)) {
+      issues.push({ key: 'API_URL', message: 'API_URL must use https:// in production.' });
+    }
+
+    if (!isHttpsUrl(env.appUrl)) {
+      issues.push({ key: 'APP_URL', message: 'APP_URL must use https:// in production.' });
+    }
+
+    if (!isHttpsUrl(env.jwtIssuer)) {
+      issues.push({ key: 'JWT_ISSUER', message: 'JWT_ISSUER must use https:// in production.' });
+    }
+
+    if (!isHttpsUrl(env.jwtAudience)) {
+      issues.push({ key: 'JWT_AUDIENCE', message: 'JWT_AUDIENCE must use https:// in production.' });
+    }
+
+    if (isLoopbackUrl(env.apiUrl)) {
+      issues.push({ key: 'API_URL', message: 'API_URL must not target localhost in production.' });
+    }
+
+    if (isLoopbackUrl(env.appUrl)) {
+      issues.push({ key: 'APP_URL', message: 'APP_URL must not target localhost in production.' });
+    }
+
+    if (isLoopbackUrl(env.jwtIssuer)) {
+      issues.push({ key: 'JWT_ISSUER', message: 'JWT_ISSUER must not target localhost in production.' });
+    }
+
+    if (isLoopbackUrl(env.jwtAudience)) {
+      issues.push({ key: 'JWT_AUDIENCE', message: 'JWT_AUDIENCE must not target localhost in production.' });
+    }
+
+    for (const origin of env.corsAllowedOrigins) {
+      if (isLoopbackUrl(origin)) {
+        issues.push({
+          key: 'CORS_ALLOWED_ORIGINS',
+          message: `CORS origin "${origin}" must not target localhost in production.`,
+        });
+      }
+
+      if (!isHttpsUrl(origin)) {
+        issues.push({
+          key: 'CORS_ALLOWED_ORIGINS',
+          message: `CORS origin "${origin}" must use https:// in production.`,
+        });
+      }
+    }
+
     if (env.emailProvider !== 'resend') {
       issues.push({
         key: 'EMAIL_PROVIDER',
@@ -474,6 +555,46 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
 
     if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
       issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production.' });
+    }
+  }
+
+  return issues;
+}
+
+export function validateWebEnv(env: WebEnv): EnvValidationIssue[] {
+  const issues: EnvValidationIssue[] = [];
+
+  if (isBlank(env.appUrl)) {
+    issues.push({ key: 'APP_URL', message: 'APP_URL must be defined.' });
+  } else if (!isValidUrl(env.appUrl)) {
+    issues.push({ key: 'APP_URL', message: 'APP_URL must be a valid absolute URL.' });
+  }
+
+  if (isBlank(env.apiUrl)) {
+    issues.push({ key: 'API_URL', message: 'API_URL must be defined.' });
+  } else if (!isValidUrl(env.apiUrl)) {
+    issues.push({ key: 'API_URL', message: 'API_URL must be a valid absolute URL.' });
+  }
+
+  if (isBlank(env.defaultPersona)) {
+    issues.push({ key: 'DEFAULT_PERSONA', message: 'DEFAULT_PERSONA must be defined.' });
+  }
+
+  if (env.nodeEnv === 'production') {
+    if (!isHttpsUrl(env.appUrl)) {
+      issues.push({ key: 'APP_URL', message: 'APP_URL must use https:// in production.' });
+    }
+
+    if (!isHttpsUrl(env.apiUrl)) {
+      issues.push({ key: 'API_URL', message: 'API_URL must use https:// in production.' });
+    }
+
+    if (isLoopbackUrl(env.appUrl)) {
+      issues.push({ key: 'APP_URL', message: 'APP_URL must not target localhost in production.' });
+    }
+
+    if (isLoopbackUrl(env.apiUrl)) {
+      issues.push({ key: 'API_URL', message: 'API_URL must not target localhost in production.' });
     }
   }
 

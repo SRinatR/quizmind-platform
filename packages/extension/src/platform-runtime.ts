@@ -2,6 +2,7 @@ import {
   type CompatibilityHandshake,
   type ExtensionBootstrapPayloadV2,
   type ExtensionInstallationBindResult,
+  type ExtensionInstallationTokenSession,
   type UsageEventIngestResult,
   type UsageEventPayload,
   type UsageEventSeverity,
@@ -39,19 +40,128 @@ export interface PlatformBootstrapRefreshResult {
   backendUnavailable: boolean;
 }
 
-function createReconnectRequiredError(): PlatformRequestError {
-  return new PlatformRequestError('Installation session is missing. Reconnect required.', 401, false);
+function isSessionExpired(expiresAt: string | undefined, nowMs = Date.now()): boolean {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const expiresAtMs = Date.parse(expiresAt);
+
+  if (!Number.isFinite(expiresAtMs)) {
+    return false;
+  }
+
+  return expiresAtMs <= nowMs;
+}
+
+function createReconnectRequiredError(reason: 'missing' | 'expired' = 'missing'): PlatformRequestError {
+  return new PlatformRequestError(
+    reason === 'expired'
+      ? 'Installation session expired. Reconnect required.'
+      : 'Installation session is missing. Reconnect required.',
+    401,
+    false,
+  );
 }
 
 export class PlatformRuntimeClient {
   constructor(private readonly options: PlatformRuntimeOptions) {}
 
+  private async resolveSessionState(): Promise<{
+    session?: ExtensionInstallationTokenSession;
+    expired: boolean;
+  }> {
+    const session = await this.options.state.getInstallationSession();
+
+    if (!session) {
+      return {
+        expired: false,
+      };
+    }
+
+    if (!isSessionExpired(session.expiresAt)) {
+      return {
+        session,
+        expired: false,
+      };
+    }
+
+    await this.options.state.clearInstallationSession();
+
+    return {
+      expired: true,
+    };
+  }
+
+  private async hasBufferedReconnectRequestedLifecycleEvent(): Promise<boolean> {
+    const bufferedEvents = await this.options.state.getBufferedEvents();
+
+    return bufferedEvents.some(
+      (event) => event.eventType === 'extension.installation_reconnect_requested',
+    );
+  }
+
+  private async bufferLifecycleEvent(input: {
+    eventType: string;
+    payload: Record<string, unknown>;
+    occurredAt?: string;
+    workspaceId?: string;
+  }): Promise<void> {
+    const installationId = await this.options.state.getOrCreateInstallationId();
+    const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
+
+    await this.options.state.appendBufferedEvent({
+      installationId,
+      ...(workspaceId ? { workspaceId } : {}),
+      eventType: input.eventType,
+      occurredAt: input.occurredAt ?? new Date().toISOString(),
+      payload: input.payload,
+    });
+  }
+
+  private async bufferReconnectRequestedLifecycleEvent(input: {
+    reason: string;
+    message?: string;
+    status?: number;
+    sourceEventType?: string;
+    occurredAt?: string;
+    workspaceId?: string;
+    skipIfAlreadyBuffered?: boolean;
+  }): Promise<void> {
+    if (
+      input.skipIfAlreadyBuffered !== false &&
+      (await this.hasBufferedReconnectRequestedLifecycleEvent())
+    ) {
+      return;
+    }
+
+    await this.bufferLifecycleEvent({
+      eventType: 'extension.installation_reconnect_requested',
+      occurredAt: input.occurredAt,
+      workspaceId: input.workspaceId,
+      payload: {
+        reason: input.reason,
+        ...(input.message ? { message: input.message } : {}),
+        ...(typeof input.status === 'number' ? { status: input.status } : {}),
+        ...(input.sourceEventType ? { sourceEventType: input.sourceEventType } : {}),
+      },
+    });
+  }
+
   async connectToPlatform(input?: {
     workspaceId?: string;
     requestId?: string;
     bridgeNonce?: string;
+    flushBufferedEventsOnConnect?: boolean;
   }): Promise<ExtensionInstallationBindResult> {
-    return connectToPlatform({
+    const { session: previousSession } = await this.resolveSessionState();
+    const bootstrapCache = await this.options.state.getBootstrapCache();
+    const bufferedEvents = await this.options.state.getBufferedEvents();
+    const hasReconnectRequestBuffered = bufferedEvents.some(
+      (event) => event.eventType === 'extension.installation_reconnect_requested',
+    );
+    const shouldEmitReconnectedEvent = !previousSession && (Boolean(bootstrapCache?.payload) || hasReconnectRequestBuffered);
+    const result = await connectToPlatform({
       siteUrl: this.options.siteUrl,
       environment: this.options.environment,
       handshake: this.options.handshake,
@@ -63,6 +173,21 @@ export class PlatformRuntimeClient {
       ...(input?.requestId ? { requestId: input.requestId } : {}),
       ...(input?.bridgeNonce ? { bridgeNonce: input.bridgeNonce } : {}),
     });
+
+    if (shouldEmitReconnectedEvent) {
+      await this.sendReconnectedEvent({
+        workspaceId: result.installation.workspaceId,
+        extra: {
+          source: 'connect_to_platform',
+        },
+      }).catch(() => undefined);
+    }
+
+    if (input?.flushBufferedEventsOnConnect !== false) {
+      await this.flushBufferedEventsFromState().catch(() => undefined);
+    }
+
+    return result;
   }
 
   async redeemBindFallbackCode(input: {
@@ -90,13 +215,24 @@ export class PlatformRuntimeClient {
 
   async refreshBootstrap(input?: {
     allowCacheFallback?: boolean;
+    bufferLifecycleTelemetryOnFailure?: boolean;
   }): Promise<PlatformBootstrapRefreshResult> {
     const allowCacheFallback = input?.allowCacheFallback !== false;
+    const bufferLifecycleTelemetryOnFailure = input?.bufferLifecycleTelemetryOnFailure !== false;
     const installationId = await this.options.state.getOrCreateInstallationId();
-    const session = await this.options.state.getInstallationSession();
+    const { session, expired } = await this.resolveSessionState();
     const cache = await this.options.state.getBootstrapCache();
 
     if (!session) {
+      if (bufferLifecycleTelemetryOnFailure) {
+        await this.bufferReconnectRequestedLifecycleEvent({
+          reason: expired ? 'installation_session_expired' : 'installation_session_missing',
+          message: expired
+            ? 'Installation session expired. Reconnect required.'
+            : 'Installation session is missing. Reconnect required.',
+        }).catch(() => undefined);
+      }
+
       if (allowCacheFallback && cache?.payload) {
         return {
           bootstrap: cache.payload,
@@ -106,7 +242,7 @@ export class PlatformRuntimeClient {
         };
       }
 
-      throw createReconnectRequiredError();
+      throw createReconnectRequiredError(expired ? 'expired' : 'missing');
     }
 
     try {
@@ -131,6 +267,29 @@ export class PlatformRuntimeClient {
     } catch (error) {
       if (!(error instanceof PlatformRequestError)) {
         throw error;
+      }
+
+      if (bufferLifecycleTelemetryOnFailure) {
+        const occurredAt = new Date().toISOString();
+
+        await this.bufferLifecycleEvent({
+          eventType: 'extension.bootstrap_refresh_failed',
+          occurredAt,
+          payload: {
+            message: error.message,
+            status: error.status,
+            retryable: error.retryable,
+          },
+        }).catch(() => undefined);
+
+        if (error.status === 401) {
+          await this.bufferReconnectRequestedLifecycleEvent({
+            occurredAt,
+            reason: 'installation_session_invalid',
+            message: error.message,
+            status: error.status,
+          }).catch(() => undefined);
+        }
       }
 
       if (error.status === 401) {
@@ -164,22 +323,37 @@ export class PlatformRuntimeClient {
     payload: Record<string, unknown>;
     occurredAt?: string;
     workspaceId?: string;
+    bufferOnFailure?: boolean;
   }): Promise<UsageEventIngestResult> {
     const installationId = await this.options.state.getOrCreateInstallationId();
-    const session = await this.options.state.getInstallationSession();
+    const { session, expired } = await this.resolveSessionState();
     const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
-
-    if (!session) {
-      throw createReconnectRequiredError();
-    }
-
+    const shouldBuffer = input.bufferOnFailure !== false;
+    const occurredAt = input.occurredAt ?? new Date().toISOString();
     const event: UsageEventPayload = {
       installationId,
       ...(workspaceId ? { workspaceId } : {}),
       eventType: input.eventType,
-      occurredAt: input.occurredAt ?? new Date().toISOString(),
+      occurredAt,
       payload: input.payload,
     };
+
+    if (!session) {
+      if (shouldBuffer) {
+        await this.options.state.appendBufferedEvent(event);
+        await this.bufferReconnectRequestedLifecycleEvent({
+          occurredAt,
+          workspaceId,
+          reason: expired ? 'installation_session_expired' : 'installation_session_missing',
+          message: expired
+            ? 'Installation session expired. Reconnect required.'
+            : 'Installation session is missing. Reconnect required.',
+          sourceEventType: event.eventType,
+        }).catch(() => undefined);
+      }
+
+      throw createReconnectRequiredError(expired ? 'expired' : 'missing');
+    }
 
     try {
       return await sendUsageEventRequest({
@@ -189,8 +363,31 @@ export class PlatformRuntimeClient {
         fetcher: this.options.fetcher,
       });
     } catch (error) {
-      if (error instanceof PlatformRequestError && error.status === 401) {
-        await this.options.state.clearInstallationSession();
+      if (error instanceof PlatformRequestError) {
+        if (error.status === 401) {
+          await this.options.state.clearInstallationSession();
+        }
+
+        if (shouldBuffer && (error.retryable || error.status === 401)) {
+          await this.options.state.appendBufferedEvent(event);
+        }
+
+        if (shouldBuffer && error.status === 401) {
+          await this.bufferReconnectRequestedLifecycleEvent({
+            occurredAt: event.occurredAt,
+            workspaceId,
+            reason: 'installation_session_invalid',
+            message: error.message,
+            status: error.status,
+            sourceEventType: event.eventType,
+          }).catch(() => undefined);
+        }
+
+        throw error;
+      }
+
+      if (shouldBuffer) {
+        await this.options.state.appendBufferedEvent(event);
       }
 
       throw error;
@@ -206,13 +403,43 @@ export class PlatformRuntimeClient {
     occurredAt?: string;
     extra?: Record<string, unknown>;
     workspaceId?: string;
+    bufferOnFailure?: boolean;
   }): Promise<UsageEventIngestResult> {
     const installationId = await this.options.state.getOrCreateInstallationId();
-    const session = await this.options.state.getInstallationSession();
+    const { session, expired } = await this.resolveSessionState();
     const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
+    const shouldBuffer = input.bufferOnFailure !== false;
+    const occurredAt = input.occurredAt ?? new Date().toISOString();
+    const event: UsageEventPayload = {
+      installationId,
+      ...(workspaceId ? { workspaceId } : {}),
+      eventType: 'extension.runtime_error',
+      occurredAt,
+      payload: {
+        surface: input.surface,
+        message: input.message,
+        ...(input.stackPreview ? { stackPreview: input.stackPreview } : {}),
+        ...(input.feature ? { feature: input.feature } : {}),
+        ...(input.severity ? { severity: input.severity } : {}),
+        ...(input.extra ?? {}),
+      },
+    };
 
     if (!session) {
-      throw createReconnectRequiredError();
+      if (shouldBuffer) {
+        await this.options.state.appendBufferedEvent(event);
+        await this.bufferReconnectRequestedLifecycleEvent({
+          occurredAt,
+          workspaceId,
+          reason: expired ? 'installation_session_expired' : 'installation_session_missing',
+          message: expired
+            ? 'Installation session expired. Reconnect required.'
+            : 'Installation session is missing. Reconnect required.',
+          sourceEventType: event.eventType,
+        }).catch(() => undefined);
+      }
+
+      throw createReconnectRequiredError(expired ? 'expired' : 'missing');
     }
 
     try {
@@ -226,13 +453,36 @@ export class PlatformRuntimeClient {
         ...(input.stackPreview ? { stackPreview: input.stackPreview } : {}),
         ...(input.severity ? { severity: input.severity } : {}),
         ...(input.feature ? { feature: input.feature } : {}),
-        ...(input.occurredAt ? { occurredAt: input.occurredAt } : {}),
+        occurredAt,
         ...(input.extra ? { extra: input.extra } : {}),
         fetcher: this.options.fetcher,
       });
     } catch (error) {
-      if (error instanceof PlatformRequestError && error.status === 401) {
-        await this.options.state.clearInstallationSession();
+      if (error instanceof PlatformRequestError) {
+        if (error.status === 401) {
+          await this.options.state.clearInstallationSession();
+        }
+
+        if (shouldBuffer && (error.retryable || error.status === 401)) {
+          await this.options.state.appendBufferedEvent(event);
+        }
+
+        if (shouldBuffer && error.status === 401) {
+          await this.bufferReconnectRequestedLifecycleEvent({
+            occurredAt: event.occurredAt,
+            workspaceId,
+            reason: 'installation_session_invalid',
+            message: error.message,
+            status: error.status,
+            sourceEventType: event.eventType,
+          }).catch(() => undefined);
+        }
+
+        throw error;
+      }
+
+      if (shouldBuffer) {
+        await this.options.state.appendBufferedEvent(event);
       }
 
       throw error;
@@ -248,10 +498,10 @@ export class PlatformRuntimeClient {
     }>;
     remaining: UsageEventPayload[];
   }> {
-    const session = await this.options.state.getInstallationSession();
+    const { session, expired } = await this.resolveSessionState();
 
     if (!session) {
-      throw createReconnectRequiredError();
+      throw createReconnectRequiredError(expired ? 'expired' : 'missing');
     }
 
     return flushBufferedEventsRequest({
@@ -260,6 +510,29 @@ export class PlatformRuntimeClient {
       events: input.events,
       fetcher: this.options.fetcher,
     });
+  }
+
+  async flushBufferedEventsFromState(): Promise<{
+    delivered: Array<{
+      event: UsageEventPayload;
+      result: UsageEventIngestResult;
+    }>;
+    remaining: UsageEventPayload[];
+  }> {
+    const events = await this.options.state.getBufferedEvents();
+
+    if (events.length === 0) {
+      return {
+        delivered: [],
+        remaining: [],
+      };
+    }
+
+    const flushed = await this.flushBufferedEvents({ events });
+
+    await this.options.state.setBufferedEvents(flushed.remaining);
+
+    return flushed;
   }
 
   async sendBootstrapRefreshFailedEvent(input: {

@@ -96,6 +96,97 @@ function createPlatformService() {
   };
 }
 
+test('PlatformService.getReady returns ready when connected runtime has healthy dependencies', async () => {
+  const { service } = createPlatformService();
+  const platformService = service as any;
+
+  platformService.env.runtimeMode = 'connected';
+  platformService.getHealth = async () => ({
+    timestamp: '2026-03-27T12:00:00.000Z',
+    configuration: {
+      validationIssues: [],
+    },
+    infrastructure: [
+      {
+        service: 'postgres',
+        status: 'reachable',
+      },
+      {
+        service: 'redis',
+        status: 'reachable',
+      },
+      {
+        service: 'postgres_schema',
+        status: 'reachable',
+      },
+    ],
+  });
+
+  const readiness = await service.getReady();
+
+  assert.equal(readiness.status, 'ready');
+  assert.deepEqual(readiness.checks, {
+    runtimeConnected: true,
+    validationIssues: true,
+    postgresReachable: true,
+    postgresSchemaReady: true,
+    redisReachable: true,
+  });
+  assert.deepEqual(readiness.validationIssues, []);
+  assert.deepEqual(readiness.failures, []);
+});
+
+test('PlatformService.getReady surfaces all failing checks when runtime is not ready', async () => {
+  const { service } = createPlatformService();
+  const platformService = service as any;
+
+  platformService.env.runtimeMode = 'mock';
+  platformService.getHealth = async () => ({
+    timestamp: '2026-03-27T12:00:00.000Z',
+    configuration: {
+      validationIssues: [{ key: 'JWT_SECRET', message: 'JWT_SECRET must be set.' }],
+    },
+    infrastructure: [
+      {
+        service: 'postgres',
+        status: 'unreachable',
+        error: 'connect ECONNREFUSED',
+      },
+      {
+        service: 'redis',
+        status: 'unreachable',
+      },
+      {
+        service: 'postgres_schema',
+        status: 'unreachable',
+        error: 'Required tables are missing: _prisma_migrations, User, Workspace.',
+      },
+    ],
+  });
+
+  const readiness = await service.getReady();
+
+  assert.equal(readiness.status, 'not_ready');
+  assert.deepEqual(readiness.checks, {
+    runtimeConnected: false,
+    validationIssues: false,
+    postgresReachable: false,
+    postgresSchemaReady: false,
+    redisReachable: false,
+  });
+  assert.equal(readiness.failures.length, 5);
+  assert.deepEqual(
+    readiness.failures.map((failure) => failure.key),
+    ['runtime_mode', 'configuration', 'postgres', 'postgres_schema', 'redis'],
+  );
+  assert.equal(readiness.failures[2]?.message, 'connect ECONNREFUSED');
+  assert.equal(
+    readiness.failures[3]?.message,
+    'Required tables are missing: _prisma_migrations, User, Workspace.',
+  );
+  assert.equal(readiness.failures[4]?.message, 'Redis is not reachable.');
+});
+
 function createInstallationAdminSessionSnapshot(): CurrentSessionSnapshot {
   const session = createConnectedSessionSnapshot();
 

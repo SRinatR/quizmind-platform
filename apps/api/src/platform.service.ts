@@ -367,8 +367,9 @@ export class PlatformService {
   ) {}
 
   async getHealth() {
-    const [postgresHealth, redisHealth] = await Promise.all([
+    const [postgresHealth, postgresSchemaHealth, redisHealth] = await Promise.all([
       this.infrastructureHealthService.checkDatabaseConnection(this.env.runtimeMode),
+      this.infrastructureHealthService.checkDatabaseSchema(this.env.runtimeMode),
       this.infrastructureHealthService.checkTcpConnection(this.env.redisUrl, this.env.runtimeMode),
     ]);
 
@@ -381,6 +382,7 @@ export class PlatformService {
         apiUrl: this.env.apiUrl,
         appUrl: this.env.appUrl,
         port: this.env.port,
+        trustProxyHops: this.env.trustProxyHops,
       },
       configuration: {
         runtimeMode: this.env.runtimeMode,
@@ -412,6 +414,13 @@ export class PlatformService {
           url: this.env.redisUrl,
           latencyMs: redisHealth.latencyMs,
           error: redisHealth.error,
+        },
+        {
+          service: 'postgres_schema',
+          status: postgresSchemaHealth.status,
+          url: this.env.databaseUrl,
+          latencyMs: postgresSchemaHealth.latencyMs,
+          error: postgresSchemaHealth.error,
         },
         {
           service: 'queues',
@@ -3637,6 +3646,72 @@ export class PlatformService {
         },
         ...(fallbackTicket.timeline ?? []),
       ],
+    };
+  }
+
+  async getReady() {
+    const health = await this.getHealth();
+    const validationIssues = health.configuration.validationIssues;
+    const postgres = health.infrastructure.find((item) => item.service === 'postgres');
+    const postgresSchema = health.infrastructure.find((item) => item.service === 'postgres_schema');
+    const redis = health.infrastructure.find((item) => item.service === 'redis');
+    const runtimeConnected = this.env.runtimeMode === 'connected';
+    const checks = {
+      runtimeConnected,
+      validationIssues: validationIssues.length === 0,
+      postgresReachable: postgres?.status === 'reachable',
+      postgresSchemaReady: postgresSchema?.status === 'reachable',
+      redisReachable: redis?.status === 'reachable',
+    };
+    const failures = [
+      ...(!checks.runtimeConnected
+        ? [
+            {
+              key: 'runtime_mode',
+              message: 'QUIZMIND_RUNTIME_MODE must be "connected" for readiness.',
+            },
+          ]
+        : []),
+      ...(!checks.validationIssues
+        ? [
+            {
+              key: 'configuration',
+              message: 'API environment validation issues must be resolved before readiness.',
+            },
+          ]
+        : []),
+      ...(!checks.postgresReachable
+        ? [
+            {
+              key: 'postgres',
+              message: postgres?.error ?? 'PostgreSQL is not reachable.',
+            },
+          ]
+        : []),
+      ...(!checks.postgresSchemaReady
+        ? [
+            {
+              key: 'postgres_schema',
+              message: postgresSchema?.error ?? 'PostgreSQL schema is not ready. Apply Prisma migrations.',
+            },
+          ]
+        : []),
+      ...(!checks.redisReachable
+        ? [
+            {
+              key: 'redis',
+              message: redis?.error ?? 'Redis is not reachable.',
+            },
+          ]
+        : []),
+    ];
+
+    return {
+      status: failures.length === 0 ? 'ready' : 'not_ready',
+      timestamp: health.timestamp,
+      checks,
+      validationIssues,
+      failures,
     };
   }
 

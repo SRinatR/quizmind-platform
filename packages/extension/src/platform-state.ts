@@ -2,6 +2,7 @@ import {
   type ExtensionBootstrapPayloadV2,
   type ExtensionInstallationBindResult,
   type ExtensionInstallationTokenSession,
+  type UsageEventPayload,
 } from '@quizmind/contracts';
 
 export interface PlatformStateStore {
@@ -38,6 +39,38 @@ function parseJsonValue<T>(value: string | null): T | undefined {
   } catch {
     return undefined;
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeBufferedUsageEvent(value: unknown): UsageEventPayload | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const installationId = normalizeTrimmedValue(
+    typeof value.installationId === 'string' ? value.installationId : undefined,
+  );
+  const eventType = normalizeTrimmedValue(typeof value.eventType === 'string' ? value.eventType : undefined);
+  const occurredAt = normalizeTrimmedValue(typeof value.occurredAt === 'string' ? value.occurredAt : undefined);
+  const workspaceId = normalizeTrimmedValue(
+    typeof value.workspaceId === 'string' ? value.workspaceId : undefined,
+  );
+  const payload = isRecord(value.payload) ? (value.payload as Record<string, unknown>) : undefined;
+
+  if (!installationId || !eventType || !occurredAt || !payload) {
+    return undefined;
+  }
+
+  return {
+    installationId,
+    ...(workspaceId ? { workspaceId } : {}),
+    eventType,
+    occurredAt,
+    payload,
+  };
 }
 
 function randomBytesHex(bytes = 16): string {
@@ -115,6 +148,8 @@ export class PlatformStateManager {
 
   private readonly bootstrapFetchedAtKey: string;
 
+  private readonly bufferedEventsKey: string;
+
   constructor(
     private readonly store: PlatformStateStore,
     namespace = 'quizmind.platform',
@@ -126,6 +161,7 @@ export class PlatformStateManager {
     this.installationSessionKey = `${normalizedNamespace}.installation_session`;
     this.bootstrapCacheKey = `${normalizedNamespace}.bootstrap_cache`;
     this.bootstrapFetchedAtKey = `${normalizedNamespace}.bootstrap_fetched_at`;
+    this.bufferedEventsKey = `${normalizedNamespace}.telemetry_buffer`;
   }
 
   async getInstallationId(): Promise<string | undefined> {
@@ -210,6 +246,40 @@ export class PlatformStateManager {
     await this.store.removeItem(this.bootstrapFetchedAtKey);
   }
 
+  async getBufferedEvents(): Promise<UsageEventPayload[]> {
+    const parsed = parseJsonValue<unknown[]>(await this.store.getItem(this.bufferedEventsKey));
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed
+      .map((item) => normalizeBufferedUsageEvent(item))
+      .filter((item): item is UsageEventPayload => Boolean(item));
+  }
+
+  async setBufferedEvents(events: UsageEventPayload[]): Promise<void> {
+    if (events.length === 0) {
+      await this.store.removeItem(this.bufferedEventsKey);
+      return;
+    }
+
+    await this.store.setItem(this.bufferedEventsKey, JSON.stringify(events));
+  }
+
+  async appendBufferedEvent(event: UsageEventPayload, options?: { maxItems?: number }): Promise<void> {
+    const maxItems = Math.max(1, Math.floor(options?.maxItems ?? 100));
+    const current = await this.getBufferedEvents();
+    const next = [...current, event];
+    const trimmed = next.length > maxItems ? next.slice(next.length - maxItems) : next;
+
+    await this.setBufferedEvents(trimmed);
+  }
+
+  async clearBufferedEvents(): Promise<void> {
+    await this.store.removeItem(this.bufferedEventsKey);
+  }
+
   async saveBindResult(result: ExtensionInstallationBindResult): Promise<void> {
     await this.setWorkspaceId(result.installation.workspaceId);
     await this.saveInstallationSession(result.session);
@@ -219,6 +289,7 @@ export class PlatformStateManager {
   async clearRuntimeState(options?: { keepInstallationId?: boolean }): Promise<void> {
     await this.clearInstallationSession();
     await this.clearBootstrapCache();
+    await this.clearBufferedEvents();
     await this.setWorkspaceId(undefined);
 
     if (!options?.keepInstallationId) {

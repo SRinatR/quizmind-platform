@@ -8,6 +8,11 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
+    path: '/ready',
+    summary: 'Return strict deploy readiness status (connected mode + env validation + infra reachability).',
+  },
+  {
+    method: 'GET',
     path: '/foundation',
     summary: 'Return monorepo foundation metadata, route inventory, and platform capabilities.',
   },

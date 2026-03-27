@@ -21,6 +21,11 @@ async function bootstrap() {
     rawBody: true,
   });
 
+  const httpAdapterInstance = app.getHttpAdapter().getInstance() as {
+    set?: (name: string, value: unknown) => void;
+  };
+
+  httpAdapterInstance.set?.('trust proxy', env.trustProxyHops);
   app.enableCors(buildCorsOptions(env));
   app.useGlobalGuards(app.get(RateLimitGuard));
 
@@ -44,6 +49,7 @@ async function bootstrap() {
       appUrl: env.appUrl,
       port: env.port,
       runtimeMode: env.runtimeMode,
+      trustProxyHops: env.trustProxyHops,
     },
   });
 

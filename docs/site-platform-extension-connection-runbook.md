@@ -126,6 +126,7 @@ Verify:
 ```bash
 docker compose ps
 curl http://localhost:4000/health
+curl http://localhost:4000/ready
 curl http://localhost:4000/foundation
 ```
 
@@ -393,7 +394,7 @@ Existing useful endpoints:
 
 1. Start Docker stack
 2. Verify `web`, `api`, `worker`, `postgres`, and `redis`
-3. Verify `/health` and `/foundation`
+3. Verify `/health`, `/ready`, and `/foundation`
 
 ### Phase B. Web-To-Extension Auth Bridge
 
@@ -464,6 +465,39 @@ Current implementation status:
   - session revocations
   - session rotations
   - runtime errors
+- `packages/extension` runtime now includes persisted telemetry buffering and reconnect-time flush helpers:
+  - failed retryable usage/runtime telemetry is buffered in extension state
+  - missing-session usage/runtime telemetry is buffered locally and marks reconnect-required lifecycle state
+  - locally expired installation sessions are cleared preflight and treated as reconnect-required before network calls
+  - reconnect-request lifecycle buffering is deduplicated while reconnect is still pending
+  - bootstrap refresh failures now auto-buffer lifecycle telemetry (`extension.bootstrap_refresh_failed`)
+  - auth-invalid bootstrap refreshes also auto-buffer reconnect requests (`extension.installation_reconnect_requested`)
+  - reconnect binds now auto-emit `extension.installation_reconnected` when reconnect context is detected
+  - buffered telemetry flush is FIFO and now stops at the first failed event to preserve event order
+  - buffered telemetry is flushed after reconnect bind by default
+- API runtime now uses distributed Redis-backed rate limiting in connected mode:
+  - global guard keeps per-route/per-identity limits consistent across multiple API instances
+  - rate-limit identity now relies on trusted request/socket IP data instead of raw spoofable forwarded headers
+  - API runtime exposes `TRUST_PROXY_HOPS` so Express can resolve client IP correctly behind reverse proxies
+  - in-memory fallback remains active in mock mode and as a degraded fallback if Redis is unavailable
+- web runtime now validates `APP_URL` / `API_URL` config at startup and fails fast on invalid production values:
+  - production URLs must use HTTPS and must not target localhost loopback
+  - this prevents silent fallback to local API endpoints during production boot
+- CI now includes a connected-runtime smoke gate:
+  - spins up PostgreSQL + Redis services, applies Prisma migrations, boots API in connected mode
+  - runs Prisma-backed integration tests (`prisma-auth`, `prisma-platform`) against live PostgreSQL before smoke checks
+  - boots worker in connected mode and requires startup + queue-bind signals (`platform.worker_started`, `platform.worker_queues_bound`) with no fallback-mode event
+  - waits for strict API readiness via `/ready`
+  - `/ready` now requires both database connectivity and schema readiness (`_prisma_migrations`, `User`, `Workspace`)
+  - validates `/health` envelope in connected mode with zero env validation issues
+  - verifies `/foundation`, unauthenticated `/workspaces` rejection, and strict `/auth/login` invalid-payload rejection (`400/401/403/422/429`) with rate-limit headers before merge
+- a manual `Release Gate` workflow is also available for production rollouts:
+  - reruns preflight quality checks (lint, typecheck, tests, build)
+  - supports optional connected-runtime smoke and remote post-deploy smoke checks against provided API/Web URLs
+  - remote smoke now enforces public HTTPS targets and rejects localhost loopback URLs
+  - rollback webhook execution now also enforces HTTPS and rejects localhost loopback URLs
+  - workflow input guardrails now fail fast for conflicting rollout options and invalid URLs (non-HTTPS or localhost loopback targets)
+  - can trigger an optional rollback webhook automatically when remote smoke fails
 
 ## Recommended Extension Modules
 

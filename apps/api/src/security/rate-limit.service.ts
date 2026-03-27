@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
+import { loadApiEnv } from '@quizmind/config';
+import IORedis from 'ioredis';
 
 interface RateLimitBucket {
   count: number;
@@ -12,8 +14,41 @@ export interface RateLimitDecision {
   retryAfterSeconds: number;
 }
 
+export interface RateLimitStore {
+  consume(key: string, limit: number, windowMs: number, now?: number): RateLimitDecision | Promise<RateLimitDecision>;
+}
+
+const redisRateLimitScript = `
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+local ttl = redis.call('PTTL', KEYS[1])
+if ttl < 0 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+  ttl = tonumber(ARGV[1])
+end
+return { current, ttl }
+`;
+
+function parseRedisNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
 @Injectable()
-export class InMemoryRateLimitService {
+export class InMemoryRateLimitService implements RateLimitStore {
   private readonly buckets = new Map<string, RateLimitBucket>();
 
   consume(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitDecision {
@@ -39,5 +74,74 @@ export class InMemoryRateLimitService {
       remaining,
       retryAfterSeconds,
     };
+  }
+}
+
+@Injectable()
+export class DistributedRateLimitService implements RateLimitStore, OnModuleDestroy {
+  private readonly env = loadApiEnv();
+  private readonly redisKeyPrefix = 'quizmind:rate-limit';
+  private readonly redisClient: IORedis | null;
+
+  constructor(
+    @Inject(InMemoryRateLimitService)
+    private readonly fallbackStore: InMemoryRateLimitService,
+  ) {
+    this.redisClient =
+      this.env.runtimeMode === 'connected'
+        ? new IORedis(this.env.redisUrl, {
+            enableReadyCheck: false,
+            lazyConnect: true,
+            maxRetriesPerRequest: null,
+          })
+        : null;
+  }
+
+  async consume(key: string, limit: number, windowMs: number, now = Date.now()): Promise<RateLimitDecision> {
+    if (!this.redisClient) {
+      return this.fallbackStore.consume(key, limit, windowMs, now);
+    }
+
+    const bucketKey = `${this.redisKeyPrefix}:${key}`;
+
+    try {
+      if (this.redisClient.status === 'wait') {
+        await this.redisClient.connect();
+      }
+
+      const evaluation = (await this.redisClient.eval(
+        redisRateLimitScript,
+        1,
+        bucketKey,
+        String(windowMs),
+      )) as unknown;
+      const values = Array.isArray(evaluation) ? evaluation : [];
+      const count = Math.max(parseRedisNumber(values[0], 0), 0);
+      const ttlMs = Math.max(parseRedisNumber(values[1], windowMs), 0);
+      const remaining = Math.max(limit - count, 0);
+      const allowed = count <= limit;
+      const retryAfterSeconds = allowed ? 0 : Math.max(Math.ceil(ttlMs / 1000), 1);
+
+      return {
+        allowed,
+        limit,
+        remaining,
+        retryAfterSeconds,
+      };
+    } catch {
+      return this.fallbackStore.consume(key, limit, windowMs, now);
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    if (!this.redisClient) {
+      return;
+    }
+
+    try {
+      await this.redisClient.quit();
+    } catch {
+      this.redisClient.disconnect();
+    }
   }
 }

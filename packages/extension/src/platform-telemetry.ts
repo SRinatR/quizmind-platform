@@ -129,7 +129,9 @@ export async function flushBufferedEvents(input: {
   }> = [];
   const remaining: UsageEventPayload[] = [];
 
-  for (const event of input.events) {
+  for (let index = 0; index < input.events.length; index += 1) {
+    const event = input.events[index];
+
     try {
       const result = await sendUsageEvent({
         apiUrl: input.apiUrl,
@@ -143,7 +145,8 @@ export async function flushBufferedEvents(input: {
         result,
       });
     } catch {
-      remaining.push(event);
+      remaining.push(...input.events.slice(index));
+      break;
     }
   }
 

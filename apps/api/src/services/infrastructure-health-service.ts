@@ -46,6 +46,61 @@ export class InfrastructureHealthService {
     }
   }
 
+  async checkDatabaseSchema(mode: 'mock' | 'connected'): Promise<ConnectionCheckResult> {
+    if (mode !== 'connected') {
+      return { status: 'mock' };
+    }
+
+    const startedAt = Date.now();
+
+    try {
+      const checks = await this.prismaService.$queryRaw<
+        Array<{
+          migrationsTable: string | null;
+          userTable: string | null;
+          workspaceTable: string | null;
+        }>
+      >`
+        SELECT
+          to_regclass('public."_prisma_migrations"')::text AS "migrationsTable",
+          to_regclass('public."User"')::text AS "userTable",
+          to_regclass('public."Workspace"')::text AS "workspaceTable"
+      `;
+
+      const snapshot = checks[0];
+      const missingTables: string[] = [];
+
+      if (!snapshot?.migrationsTable) {
+        missingTables.push('_prisma_migrations');
+      }
+
+      if (!snapshot?.userTable) {
+        missingTables.push('User');
+      }
+
+      if (!snapshot?.workspaceTable) {
+        missingTables.push('Workspace');
+      }
+
+      if (missingTables.length > 0) {
+        return {
+          status: 'unreachable',
+          error: `Required tables are missing: ${missingTables.join(', ')}.`,
+        };
+      }
+
+      return {
+        status: 'reachable',
+        latencyMs: Date.now() - startedAt,
+      };
+    } catch (error) {
+      return {
+        status: 'unreachable',
+        error: error instanceof Error ? error.message : 'Unknown Prisma schema check failure',
+      };
+    }
+  }
+
   async checkTcpConnection(rawUrl: string, mode: 'mock' | 'connected'): Promise<ConnectionCheckResult> {
     if (mode !== 'connected') {
       return { status: 'mock' };

@@ -35,7 +35,7 @@ import { QueueDispatchService } from './queue/queue-dispatch.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
 import { RequestLoggingInterceptor } from './request-logging.interceptor';
 import { RateLimitGuard } from './security/rate-limit.guard';
-import { InMemoryRateLimitService } from './security/rate-limit.service';
+import { DistributedRateLimitService, InMemoryRateLimitService } from './security/rate-limit.service';
 import { InfrastructureHealthService } from './services/infrastructure-health-service';
 import { SupportImpersonationRepository } from './support/support-impersonation.repository';
 import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-preset-favorite.repository';
@@ -78,6 +78,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     ProviderCredentialService,
     QueueDispatchService,
     RateLimitGuard,
+    DistributedRateLimitService,
     RemoteConfigRepository,
     RequestLoggingInterceptor,
     SessionRepository,
