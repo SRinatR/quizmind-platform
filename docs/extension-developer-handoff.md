@@ -104,6 +104,10 @@ The extension must provide:
 - `handshake.capabilities`
 - `handshake.browser`
 
+Environment format requirement:
+
+- `environment` must be a token-safe value (`1-64` chars using `A-Z`, `a-z`, `0-9`, `.`, `_`, `-`)
+
 ### Installation ID
 
 Requirements:

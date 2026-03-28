@@ -190,6 +190,7 @@ The extension should also know:
 
 - platform web URL: `http://localhost:3000`
 - platform API URL: `http://localhost:4000`
+- environment token format for bind/bootstrap payloads: `1-64` chars using `A-Z`, `a-z`, `0-9`, `.`, `_`, `-`
 
 ## Step 4. Web Bridge Opens From Extension
 
