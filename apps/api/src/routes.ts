@@ -207,6 +207,31 @@ export const apiRoutes: ApiRouteDefinition[] = [
     summary: 'Ingest extension telemetry using an installation-authenticated session.',
   },
   {
+    method: 'GET',
+    path: '/extension/ai/models',
+    summary: 'Return extension-managed AI model catalog for installation-authenticated runtime clients.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/answer',
+    summary: 'Proxy extension answer requests through the installation-authenticated AI runtime bridge.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/chat',
+    summary: 'Proxy extension chat requests through the installation-authenticated AI runtime bridge.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/screenshot',
+    summary: 'Proxy extension screenshot requests through the installation-authenticated AI runtime bridge.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/ai/multicheck',
+    summary: 'Proxy extension multicheck requests through the installation-authenticated AI runtime bridge.',
+  },
+  {
     method: 'POST',
     path: '/ai/proxy',
     summary: 'Proxy AI chat-completion requests with policy, quota, and BYOK enforcement.',

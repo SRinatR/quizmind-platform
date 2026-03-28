@@ -80,6 +80,9 @@ export interface ApiEnv extends PlatformEnv {
   openRouterApiKey?: string;
   openRouterAppName: string;
   openRouterTimeoutMs: number;
+  polzaApiUrl: string;
+  polzaApiKey?: string;
+  polzaTimeoutMs: number;
   rateLimitWindowMs: number;
   rateLimitMaxRequests: number;
   authRateLimitWindowMs: number;
@@ -127,6 +130,15 @@ function isHttpsUrl(value: string): boolean {
   }
 }
 
+function isExtensionOrigin(value: string): boolean {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === 'chrome-extension:' || protocol === 'moz-extension:';
+  } catch {
+    return false;
+  }
+}
+
 function isLoopbackUrl(value: string): boolean {
   try {
     const hostname = new URL(value).hostname.toLowerCase();
@@ -153,6 +165,10 @@ function normalizeOrigin(value: string): string | null {
 
     if (!url.protocol || !url.host) {
       return null;
+    }
+
+    if (url.protocol === 'chrome-extension:' || url.protocol === 'moz-extension:') {
+      return `${url.protocol}//${url.host}`;
     }
 
     return url.origin;
@@ -218,6 +234,9 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     openRouterApiKey: source.OPENROUTER_API_KEY,
     openRouterAppName: source.OPENROUTER_APP_NAME ?? 'QuizMind Platform',
     openRouterTimeoutMs: readNumberEnv(source, 'OPENROUTER_TIMEOUT_MS', 45000),
+    polzaApiUrl: source.POLZA_API_URL ?? 'https://api.polza.ai/v1',
+    polzaApiKey: source.POLZA_API_KEY,
+    polzaTimeoutMs: readNumberEnv(source, 'POLZA_TIMEOUT_MS', 45000),
     rateLimitWindowMs: readNumberEnv(source, 'RATE_LIMIT_WINDOW_MS', 60_000),
     rateLimitMaxRequests: readNumberEnv(source, 'RATE_LIMIT_MAX_REQUESTS', 120),
     authRateLimitWindowMs: readNumberEnv(source, 'AUTH_RATE_LIMIT_WINDOW_MS', 900_000),
@@ -342,6 +361,19 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
     });
   }
 
+  if (isBlank(env.polzaApiUrl)) {
+    issues.push({ key: 'POLZA_API_URL', message: 'POLZA_API_URL must be defined.' });
+  } else if (!isValidUrl(env.polzaApiUrl)) {
+    issues.push({ key: 'POLZA_API_URL', message: 'POLZA_API_URL must be a valid absolute URL.' });
+  }
+
+  if (!Number.isInteger(env.polzaTimeoutMs) || env.polzaTimeoutMs < 1_000) {
+    issues.push({
+      key: 'POLZA_TIMEOUT_MS',
+      message: 'POLZA_TIMEOUT_MS must be an integer of at least 1000 milliseconds.',
+    });
+  }
+
   if (env.corsAllowedOrigins.length === 0) {
     issues.push({ key: 'CORS_ALLOWED_ORIGINS', message: 'At least one CORS origin must be configured.' });
   }
@@ -440,7 +472,7 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
         });
       }
 
-      if (!isHttpsUrl(origin)) {
+      if (!isExtensionOrigin(origin) && !isHttpsUrl(origin)) {
         issues.push({
           key: 'CORS_ALLOWED_ORIGINS',
           message: `CORS origin "${origin}" must use https:// in production.`,

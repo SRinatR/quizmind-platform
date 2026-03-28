@@ -449,6 +449,71 @@ test('ExtensionControlService.bootstrapInstallationSession refreshes bootstrap f
   assert.equal(result.refreshAfterSeconds, 900);
 });
 
+test('ExtensionControlService.bootstrapInstallationSession falls back to persisted handshake fields when request handshake is partial', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionCompatibilityRepository,
+    featureFlagRepository,
+    remoteConfigRepository,
+    subscriptionRepository,
+    usageRepository,
+  } = createService();
+  let capturedUpsertInput: any = null;
+
+  extensionInstallationRepository.upsertBoundInstallation = async (input) => {
+    capturedUpsertInput = input;
+    return ({
+      id: 'inst_record_1',
+      userId: input.userId,
+      workspaceId: input.workspaceId ?? null,
+      installationId: input.installationId,
+      browser: input.browser,
+      extensionVersion: input.extensionVersion,
+      schemaVersion: input.schemaVersion,
+      capabilitiesJson: input.capabilities,
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T12:05:00.000Z'),
+      lastSeenAt: input.lastSeenAt,
+    }) as any;
+  };
+  extensionCompatibilityRepository.findLatest = async () => null;
+  featureFlagRepository.findAll = async () => [] as any;
+  remoteConfigRepository.findActiveLayers = async () => [] as any;
+  subscriptionRepository.findCurrentByWorkspaceId = async () => null as any;
+  usageRepository.listQuotaCountersByWorkspaceId = async () => [] as any;
+
+  const result = await service.bootstrapInstallationSession(
+    {
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_local_browser',
+        browser: 'chrome',
+        extensionVersion: '1.6.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'runtime.chat'],
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    } as any,
+    {
+      installationId: 'inst_local_browser',
+      handshake: {
+        extensionVersion: '1.6.1',
+        schemaVersion: '2',
+      } as any,
+    },
+  );
+
+  assert.equal(capturedUpsertInput?.browser, 'chrome');
+  assert.deepEqual(capturedUpsertInput?.capabilities, ['quiz-capture', 'runtime.chat']);
+  assert.equal(result.installationId, 'inst_local_browser');
+  assert.equal(result.compatibility.status, 'supported');
+});
+
 test('ExtensionControlService.bootstrapInstallationSession rejects invalid environment format', async () => {
   const {
     service,

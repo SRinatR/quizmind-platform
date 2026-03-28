@@ -31,6 +31,13 @@ export const providerRegistry: ProviderRegistryEntry[] = [
     supportsBringYourOwnKey: true,
   },
   {
+    provider: 'polza',
+    displayName: 'Polza AI',
+    availability: 'beta',
+    supportsProxy: true,
+    supportsBringYourOwnKey: true,
+  },
+  {
     provider: 'internal',
     displayName: 'QuizMind Gateway',
     availability: 'beta',
@@ -66,6 +73,15 @@ export const providerModelCatalog: ProviderModelCatalogEntry[] = [
     availability: 'beta',
     latencyClass: 'standard',
     planAvailability: ['business'],
+  },
+  {
+    provider: 'polza',
+    modelId: 'polza/gpt-4o-mini',
+    displayName: 'Polza GPT-4o Mini',
+    capabilityTags: ['text', 'vision'],
+    availability: 'beta',
+    latencyClass: 'standard',
+    planAvailability: ['free', 'pro', 'business'],
   },
 ];
 
@@ -175,6 +191,14 @@ export function validateProviderSecretShape(
     return {
       valid: false,
       reason: 'OpenRouter keys usually start with "sk-or-".',
+    };
+  }
+
+  // Polza keys have multiple formats across environments; keep this check permissive.
+  if (provider === 'polza' && normalizedSecret.length < 16) {
+    return {
+      valid: false,
+      reason: 'Polza keys usually have at least 16 characters.',
     };
   }
 

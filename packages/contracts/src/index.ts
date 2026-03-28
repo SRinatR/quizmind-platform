@@ -68,7 +68,7 @@ export const platformQueues = [
 ] as const;
 export const billingProviders = ['mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
 export const billingIntervals = ['monthly', 'yearly'] as const;
-export const aiProviders = ['openai', 'anthropic', 'openrouter', 'internal'] as const;
+export const aiProviders = ['openai', 'anthropic', 'openrouter', 'polza', 'internal'] as const;
 export const credentialOwnerTypes = ['platform', 'workspace', 'user'] as const;
 export const credentialValidationStatuses = ['pending', 'valid', 'invalid', 'revoked'] as const;
 export const aiAccessPolicyModes = [

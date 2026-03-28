@@ -11,6 +11,15 @@ import {
   type RedisConnectionOptions,
 } from '@quizmind/queue';
 
+function toBullMqJobId(jobId: string): string {
+  /*
+   * BullMQ custom job ids cannot contain ":".
+   * We keep domain-level queue job ids untouched and only encode the id
+   * at the BullMQ boundary so dedupe semantics stay deterministic.
+   */
+  return encodeURIComponent(jobId);
+}
+
 @Injectable()
 export class QueueDispatchService implements OnModuleDestroy {
   private readonly env = loadApiEnv();
@@ -30,7 +39,7 @@ export class QueueDispatchService implements OnModuleDestroy {
     const queue = this.getQueue(job.queue);
     const options: JobsOptions = {
       attempts: runtimeOptions.attempts,
-      jobId: job.id,
+      jobId: toBullMqJobId(job.id),
       removeOnComplete: runtimeOptions.removeOnComplete,
       removeOnFail: runtimeOptions.removeOnFail,
     };

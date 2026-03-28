@@ -28,6 +28,11 @@ The current repo already has the core control-plane endpoints:
 - `POST /extension/installations/rotate-session`
 - `POST /extension/bootstrap/v2`
 - `POST /extension/usage-events/v2`
+- `GET /extension/ai/models`
+- `POST /extension/ai/answer`
+- `POST /extension/ai/chat`
+- `POST /extension/ai/screenshot`
+- `POST /extension/ai/multicheck`
 
 The implementation lives in:
 
@@ -103,6 +108,17 @@ Do not pass the raw user access token into the extension as the normal steady-st
 - Extension sends usage and runtime events to `POST /extension/usage-events/v2`
 - API enqueues usage work to the worker
 - Worker updates counters and downstream logs
+
+### 4.1 Extension AI Runtime
+
+- Extension fetches model inventory from `GET /extension/ai/models`
+- Extension sends runtime requests to:
+  - `POST /extension/ai/answer`
+  - `POST /extension/ai/chat`
+  - `POST /extension/ai/screenshot`
+  - `POST /extension/ai/multicheck`
+- API validates installation session token and proxies requests through policy-aware AI proxy routing
+- Provider policy and BYOK credentials remain platform-controlled (extension never stores raw provider keys)
 
 ### 5. Re-auth / Rebind
 
@@ -411,6 +427,29 @@ Existing useful endpoints:
 - `GET /admin/compatibility`
 - `GET /admin/logs`
 - `GET /admin/webhooks`
+
+## Step 9. Add Providers And API Keys From Site
+
+To manage extension/runtime providers fully from the site control plane:
+
+1. Open admin provider governance:
+   - `/admin/ai-providers?workspaceId=<workspace_id>`
+2. In **Persisted AI provider policy**, set:
+   - `mode`: `user_key_optional` (or stricter mode you need)
+   - `allowBringYourOwnKey`: `true`
+   - `providers`: include both `openrouter` and `polza`
+   - `defaultProvider`: your preferred default (`openrouter` or `polza`)
+3. Save policy.
+4. Add encrypted keys in site UI:
+   - user/workspace context: `/app/settings` -> **AI keys** -> **Add provider credential**
+   - platform/shared admin context: `/admin/ai-providers` -> **Create provider credential**
+5. Add credentials for:
+   - `openrouter` (OpenRouter API key)
+   - `polza` (Polza API key)
+6. Confirm keys appear in inventory with non-revoked status and successful validation.
+7. Keep extension in managed mode:
+   - extension should call only `/extension/bootstrap/v2`, `/extension/usage-events/v2`, and `/extension/ai/*`
+   - provider keys remain site/platform-governed; extension never stores raw provider secrets.
 
 ## Required Implementation Plan To Finish The Link
 

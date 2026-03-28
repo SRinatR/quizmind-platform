@@ -31,7 +31,7 @@ import {
 } from './ai-proxy.repository';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
-const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'openai']);
+const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'openai', 'polza']);
 const knownProviders = new Set<AiProvider>(providerRegistry.map((provider) => provider.provider));
 const supportedMessageRoles = new Set(['system', 'user', 'assistant', 'tool']);
 const openAiApiUrl = 'https://api.openai.com/v1';
@@ -283,6 +283,16 @@ function trimTrailingSlash(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
 }
 
+function resolveProviderModelForUpstream(provider: AiProvider, model: string): string {
+  const normalized = model.trim();
+
+  if (provider === 'polza' && normalized.toLowerCase().startsWith('polza/')) {
+    return normalized.slice('polza/'.length);
+  }
+
+  return normalized;
+}
+
 function modelSupportsVision(model: AiModelsCatalogPayload['models'][number]): boolean {
   return model.capabilityTags.some((tag) => tag === 'vision');
 }
@@ -363,6 +373,14 @@ export class AiProxyService {
                 temperature: invocation.request.temperature,
                 maxTokens: invocation.request.maxTokens,
               })
+            : invocation.provider === 'polza'
+              ? await this.invokePolza({
+                  apiKey: invocation.apiKey,
+                  model: invocation.request.model,
+                  messages: invocation.request.messages,
+                  temperature: invocation.request.temperature,
+                  maxTokens: invocation.request.maxTokens,
+                })
             : (() => {
                 throw new BadRequestException(
                   `Provider "${invocation.provider}" proxy routing is not supported yet.`,
@@ -444,6 +462,14 @@ export class AiProxyService {
                 temperature: invocation.request.temperature,
                 maxTokens: invocation.request.maxTokens,
               })
+            : invocation.provider === 'polza'
+              ? await this.invokePolzaStream({
+                  apiKey: invocation.apiKey,
+                  model: invocation.request.model,
+                  messages: invocation.request.messages,
+                  temperature: invocation.request.temperature,
+                  maxTokens: invocation.request.maxTokens,
+                })
             : (() => {
                 throw new BadRequestException(
                   `Provider "${invocation.provider}" proxy routing is not supported yet.`,
@@ -851,6 +877,50 @@ export class AiProxyService {
     return payload as OpenRouterResponsePayload;
   }
 
+  private async invokePolza(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterResponsePayload> {
+    const endpoint = `${trimTrailingSlash(this.env.polzaApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: resolveProviderModelForUpstream('polza', input.model),
+      messages: input.messages,
+      stream: false,
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.polzaTimeoutMs,
+      }),
+    });
+    const rawResponseText = await response.text();
+    const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+
+    if (!response.ok) {
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      throw new BadGatewayException(
+        `Polza request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new BadGatewayException('Polza returned a non-object response payload.');
+    }
+
+    return payload as OpenRouterResponsePayload;
+  }
+
   private async invokeOpenRouterStream(input: {
     apiKey: string;
     model: string;
@@ -954,6 +1024,63 @@ export class AiProxyService {
 
     if (!response.body) {
       throw new BadGatewayException('OpenAI returned an empty streaming payload.');
+    }
+
+    return {
+      stream: response.body,
+      contentType: response.headers.get('content-type')?.trim() || 'text/event-stream; charset=utf-8',
+      abort: () => {
+        if (!abortController.signal.aborted) {
+          abortController.abort('stream-aborted');
+        }
+      },
+    };
+  }
+
+  private async invokePolzaStream(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterStreamInvocationResult> {
+    const endpoint = `${trimTrailingSlash(this.env.polzaApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: resolveProviderModelForUpstream('polza', input.model),
+      messages: input.messages,
+      stream: true,
+      stream_options: {
+        include_usage: true,
+      },
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const abortController = new AbortController();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.polzaTimeoutMs,
+        abortController,
+      }),
+    });
+
+    if (!response.ok) {
+      const rawResponseText = await response.text();
+      const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      throw new BadGatewayException(
+        `Polza request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new BadGatewayException('Polza returned an empty streaming payload.');
     }
 
     return {

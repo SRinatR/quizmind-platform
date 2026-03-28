@@ -319,7 +319,8 @@ export class ExtensionControlService {
       throw new UnauthorizedException('Installation session does not match the requested installation.');
     }
 
-    const handshake = this.normalizeHandshake(request?.handshake);
+    const environment = readRequiredEnvironment(request?.environment ?? 'production', 'environment');
+    const handshake = this.normalizeBootstrapHandshake(request?.handshake, installationSession.installation);
     const installation = await this.extensionInstallationRepository.upsertBoundInstallation({
       userId: installationSession.installation.userId,
       ...(installationSession.installation.workspaceId ? { workspaceId: installationSession.installation.workspaceId } : {}),
@@ -333,7 +334,7 @@ export class ExtensionControlService {
 
     return this.buildBootstrapPayload({
       installation,
-      environment: readRequiredEnvironment(request?.environment ?? 'production', 'environment'),
+      environment,
       handshake,
       refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
     });
@@ -804,6 +805,24 @@ export class ExtensionControlService {
       browser,
       ...(handshake?.buildId?.trim() ? { buildId: handshake.buildId.trim() } : {}),
     };
+  }
+
+  private normalizeBootstrapHandshake(
+    handshake: Partial<CompatibilityHandshake> | undefined,
+    installation: ExtensionInstallationSessionRecord['installation'],
+  ): CompatibilityHandshake {
+    const normalizedCapabilities = normalizeCapabilities(handshake?.capabilities);
+    const fallbackCapabilities = normalizeCapabilities(installation.capabilitiesJson);
+
+    return this.normalizeHandshake({
+      extensionVersion: handshake?.extensionVersion ?? installation.extensionVersion,
+      schemaVersion: handshake?.schemaVersion ?? installation.schemaVersion,
+      capabilities: normalizedCapabilities.length > 0 ? normalizedCapabilities : fallbackCapabilities,
+      browser:
+        (handshake?.browser as CompatibilityHandshake['browser'] | undefined) ??
+        normalizeBrowser(installation.browser),
+      ...(handshake?.buildId?.trim() ? { buildId: handshake.buildId.trim() } : {}),
+    });
   }
 
   private async recordLifecycleEventSafely(input: {

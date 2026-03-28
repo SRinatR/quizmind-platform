@@ -19,6 +19,23 @@ test('loadApiEnv derives strict CORS and JWT defaults from app and api URLs', ()
   assert.equal(env.trustProxyHops, 0);
 });
 
+test('loadApiEnv keeps browser extension origins in CORS allowlist', () => {
+  const env = loadApiEnv({
+    NODE_ENV: 'development',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    APP_URL: 'http://localhost:3000',
+    API_URL: 'http://localhost:4000',
+    CORS_ALLOWED_ORIGINS: 'http://localhost:3000, chrome-extension://ohglblaobifcglkcijfmmhgpkeknfmai',
+    JWT_SECRET: 'super-secret',
+    JWT_REFRESH_SECRET: 'refresh-secret',
+  });
+
+  assert.deepEqual(env.corsAllowedOrigins, [
+    'http://localhost:3000',
+    'chrome-extension://ohglblaobifcglkcijfmmhgpkeknfmai',
+  ]);
+});
+
 test('validateApiEnv rejects wildcard CORS and prod placeholder providers', () => {
   const env = loadApiEnv({
     NODE_ENV: 'production',
