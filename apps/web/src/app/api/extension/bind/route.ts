@@ -30,7 +30,14 @@ interface RouteSuccessPayload {
   };
 }
 
-const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
+const validBrowsers = new Set<CompatibilityHandshake['browser']>([
+  'chrome',
+  'edge',
+  'brave',
+  'firefox',
+  'safari',
+  'other',
+]);
 const validBridgeModes = new Set(['bind_result', 'fallback_code']);
 const maxEnvironmentLength = 64;
 const environmentTokenPattern = /^[A-Za-z0-9._-]+$/;

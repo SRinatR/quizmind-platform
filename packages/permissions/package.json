@@ -12,6 +12,6 @@
     "build": "echo 'permissions build placeholder'",
     "lint": "echo 'permissions lint placeholder'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test test/**/*.test.ts"
+    "test": "node --import tsx --test \"test/**/*.test.ts\""
   }
 }

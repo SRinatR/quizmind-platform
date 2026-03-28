@@ -10,6 +10,7 @@ import { createOpaqueToken, hashOpaqueToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { buildExtensionBootstrapV2, evaluateCompatibility } from '@quizmind/extension';
 import { createAuditLogEvent, createLogEvent, createSecurityLogEvent } from '@quizmind/logger';
+import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
 import { createQueueDispatchRequest } from '@quizmind/queue';
 import { buildQuotaHint } from '@quizmind/usage';
 import {
@@ -83,6 +84,14 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
 
 const maxEnvironmentLength = 64;
 const environmentTokenPattern = /^[A-Za-z0-9._-]+$/;
+const supportedHandshakeBrowsers: CompatibilityHandshake['browser'][] = [
+  'chrome',
+  'edge',
+  'brave',
+  'firefox',
+  'safari',
+  'other',
+];
 
 function readRequiredEnvironment(value: string | undefined, fieldName: string): string {
   const environment = readRequiredString(value, fieldName);
@@ -109,7 +118,7 @@ function readRequiredActionReason(value: string | undefined): string {
 }
 
 function normalizeBrowser(value: string): CompatibilityHandshake['browser'] {
-  return ['chrome', 'edge', 'brave', 'other'].includes(value)
+  return supportedHandshakeBrowsers.includes(value as CompatibilityHandshake['browser'])
     ? (value as CompatibilityHandshake['browser'])
     : 'other';
 }
@@ -321,23 +330,43 @@ export class ExtensionControlService {
 
     const environment = readRequiredEnvironment(request?.environment ?? 'production', 'environment');
     const handshake = this.normalizeBootstrapHandshake(request?.handshake, installationSession.installation);
-    const installation = await this.extensionInstallationRepository.upsertBoundInstallation({
-      userId: installationSession.installation.userId,
-      ...(installationSession.installation.workspaceId ? { workspaceId: installationSession.installation.workspaceId } : {}),
-      installationId,
-      browser: handshake.browser,
-      extensionVersion: handshake.extensionVersion,
-      schemaVersion: handshake.schemaVersion,
-      capabilities: handshake.capabilities,
-      lastSeenAt: new Date(),
-    });
+    const now = new Date();
+    let installation: ExtensionInstallationRecord = {
+      ...installationSession.installation,
+      lastSeenAt: now,
+    };
 
-    return this.buildBootstrapPayload({
-      installation,
-      environment,
-      handshake,
-      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
-    });
+    try {
+      installation = await this.extensionInstallationRepository.upsertBoundInstallation({
+        userId: installationSession.installation.userId,
+        ...(installationSession.installation.workspaceId ? { workspaceId: installationSession.installation.workspaceId } : {}),
+        installationId,
+        browser: handshake.browser,
+        extensionVersion: handshake.extensionVersion,
+        schemaVersion: handshake.schemaVersion,
+        capabilities: handshake.capabilities,
+        lastSeenAt: now,
+      });
+    } catch (error) {
+      console.error('Failed to refresh extension installation metadata during bootstrap. Serving degraded bootstrap payload.', error);
+    }
+
+    try {
+      return await this.buildBootstrapPayload({
+        installation,
+        environment,
+        handshake,
+        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      });
+    } catch (error) {
+      console.error('Failed to build extension bootstrap payload. Serving degraded bootstrap payload.', error);
+
+      return this.buildDegradedBootstrapPayload({
+        installation,
+        environment,
+        handshake,
+      });
+    }
   }
 
   async ingestUsageEventForInstallationSession(
@@ -360,12 +389,55 @@ export class ExtensionControlService {
       },
     };
 
-    const queueJob = await this.queueDispatchService.dispatch(
-      createQueueDispatchRequest({
-        queue: 'usage-events',
-        payload: usageEvent,
-      }),
-    );
+    let queueJob: Awaited<ReturnType<QueueDispatchService['dispatch']>>;
+
+    try {
+      queueJob = await this.queueDispatchService.dispatch(
+        createQueueDispatchRequest({
+          queue: 'usage-events',
+          payload: usageEvent,
+        }),
+      );
+    } catch (error) {
+      const occurredAt = new Date().toISOString();
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      await this.recordUsageLifecycleEventIfNeeded({
+        installation: installationSession.installation,
+        usageEvent,
+      });
+      await this.recordLifecycleEventSafely({
+        workspaceId: usageEvent.workspaceId ?? installationSession.installation.workspaceId ?? undefined,
+        actorId: installationSession.installation.userId,
+        targetType: 'extension_installation',
+        targetId: installationSession.installation.installationId,
+        auditEventType: 'extension.usage_event_queue_failed',
+        securityEventType: 'extension.usage_event_queue_failed',
+        securitySeverity: 'error',
+        status: 'failure',
+        summary: 'extension usage event queue dispatch failed',
+        metadata: {
+          installationId: usageEvent.installationId,
+          workspaceId: usageEvent.workspaceId ?? installationSession.installation.workspaceId ?? null,
+          sourceEventType: usageEvent.eventType,
+          errorMessage,
+        },
+        domainEventType: 'extension.usage_event_queue_failed',
+        domainPayload: {
+          installationId: usageEvent.installationId,
+          workspaceId: usageEvent.workspaceId ?? installationSession.installation.workspaceId ?? null,
+          sourceEventType: usageEvent.eventType,
+          errorMessage,
+        },
+      });
+      console.error('Failed to dispatch extension usage event to queue. Returning degraded ingest result.', error);
+
+      return this.buildDegradedUsageIngestResult({
+        usageEvent,
+        occurredAt,
+      });
+    }
+
     const logEvent = createLogEvent({
       eventId: `usage:${usageEvent.installationId}:${usageEvent.occurredAt}`,
       eventType: 'extension.usage_queued',
@@ -401,6 +473,63 @@ export class ExtensionControlService {
         eventType: logEvent.eventType,
         occurredAt: logEvent.occurredAt,
         status: logEvent.status ?? 'success',
+      },
+    };
+  }
+
+  private buildDegradedBootstrapPayload(input: {
+    installation: ExtensionInstallationRecord;
+    environment: string;
+    handshake: CompatibilityHandshake;
+  }): ExtensionBootstrapPayloadV2 {
+    return buildExtensionBootstrapV2({
+      installationId: input.installation.installationId,
+      workspaceId: input.installation.workspaceId ?? undefined,
+      handshake: input.handshake,
+      compatibilityPolicy: defaultCompatibilityPolicy,
+      flagDefinitions: [],
+      remoteConfigLayers: [],
+      entitlements: [],
+      quotaHints: [],
+      aiAccessPolicy: buildDefaultAiAccessPolicy({
+        mode: 'platform_only',
+        providers: ['openrouter'],
+        defaultProvider: 'openrouter',
+        defaultModel: 'openrouter/auto',
+        reason:
+          'Fallback bootstrap policy is active because the connected bootstrap services are temporarily unavailable.',
+      }),
+      context: {
+        environment: input.environment,
+        workspaceId: input.installation.workspaceId ?? undefined,
+        userId: input.installation.userId,
+        buildId: input.handshake.buildId,
+      },
+      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+    });
+  }
+
+  private buildDegradedUsageIngestResult(input: {
+    usageEvent: UsageEventPayload;
+    occurredAt: string;
+  }): UsageEventIngestResult {
+    const fallbackJobId = `usage-events:degraded:${input.usageEvent.installationId}:${Date.now().toString()}`;
+
+    return {
+      queued: false,
+      queue: 'usage-events',
+      job: {
+        id: fallbackJobId,
+        queue: 'usage-events',
+        createdAt: input.occurredAt,
+        attempts: 0,
+      },
+      handler: 'worker.process-usage-event',
+      logEvent: {
+        eventId: `usage:degraded:${input.usageEvent.installationId}:${input.occurredAt}`,
+        eventType: 'extension.usage_queue_degraded',
+        occurredAt: input.occurredAt,
+        status: 'failure',
       },
     };
   }
@@ -794,8 +923,10 @@ export class ExtensionControlService {
 
     const browser = handshake?.browser;
 
-    if (!browser || !['chrome', 'edge', 'brave', 'other'].includes(browser)) {
-      throw new BadRequestException('handshake.browser must be one of chrome, edge, brave, or other.');
+    if (!browser || !supportedHandshakeBrowsers.includes(browser)) {
+      throw new BadRequestException(
+        `handshake.browser must be one of ${supportedHandshakeBrowsers.join(', ')}.`,
+      );
     }
 
     return {

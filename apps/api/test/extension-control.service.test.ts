@@ -565,6 +565,65 @@ test('ExtensionControlService.bootstrapInstallationSession rejects invalid envir
   assert.equal(upsertCalled, false);
 });
 
+test('ExtensionControlService.bootstrapInstallationSession returns a degraded payload when connected bootstrap dependencies fail', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionCompatibilityRepository,
+    featureFlagRepository,
+    remoteConfigRepository,
+    subscriptionRepository,
+    usageRepository,
+  } = createService();
+
+  extensionInstallationRepository.upsertBoundInstallation = async () => {
+    throw new Error('database temporarily unavailable');
+  };
+  extensionCompatibilityRepository.findLatest = async () => {
+    throw new Error('compatibility repository is unavailable');
+  };
+  featureFlagRepository.findAll = async () => [] as any;
+  remoteConfigRepository.findActiveLayers = async () => [] as any;
+  subscriptionRepository.findCurrentByWorkspaceId = async () => null as any;
+  usageRepository.listQuotaCountersByWorkspaceId = async () => [] as any;
+
+  const result = await service.bootstrapInstallationSession(
+    {
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_local_browser',
+        browser: 'chrome',
+        extensionVersion: '1.6.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture'],
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    } as any,
+    {
+      installationId: 'inst_local_browser',
+      environment: 'production',
+      handshake: {
+        extensionVersion: '1.6.1',
+        schemaVersion: '2',
+        capabilities: ['quiz-capture'],
+        browser: 'chrome',
+      },
+    },
+  );
+
+  assert.equal(result.installationId, 'inst_local_browser');
+  assert.equal(result.aiAccessPolicy.mode, 'platform_only');
+  assert.equal(result.featureFlags.length, 0);
+  assert.match(
+    result.aiAccessPolicy.reason ?? '',
+    /fallback bootstrap policy is active/i,
+  );
+});
+
 test('ExtensionControlService.ingestUsageEventForInstallationSession queues workspace-derived telemetry', async () => {
   const { service, queueDispatchService } = createService();
   let capturedPayload: any = null;
@@ -703,6 +762,44 @@ test('ExtensionControlService.ingestUsageEventForInstallationSession skips lifec
   );
 
   assert.equal(lifecycleEventCount, 0);
+});
+
+test('ExtensionControlService.ingestUsageEventForInstallationSession returns degraded result when queue dispatch fails', async () => {
+  const { service, queueDispatchService } = createService();
+
+  queueDispatchService.dispatch = async () => {
+    throw new Error('redis not reachable');
+  };
+
+  const result = await service.ingestUsageEventForInstallationSession(
+    {
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: 'ws_1',
+        installationId: 'inst_local_browser',
+        browser: 'chrome',
+        extensionVersion: '1.6.0',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture', 'history-sync'],
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    } as any,
+    {
+      eventType: 'extension.quiz_answer_requested',
+      occurredAt: '2026-03-24T12:15:00.000Z',
+      payload: {
+        questionType: 'multiple_choice',
+      },
+    },
+  );
+
+  assert.equal(result.queued, false);
+  assert.equal(result.queue, 'usage-events');
+  assert.equal(result.logEvent.eventType, 'extension.usage_queue_degraded');
+  assert.equal(result.logEvent.status, 'failure');
 });
 
 test('ExtensionControlService.resolveInstallationSession records refresh failure lifecycle events for invalid tokens', async () => {

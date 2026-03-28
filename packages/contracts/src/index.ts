@@ -210,7 +210,7 @@ export interface CompatibilityHandshake {
   buildId?: string;
   schemaVersion: string;
   capabilities: string[];
-  browser: 'chrome' | 'edge' | 'brave' | 'other';
+  browser: 'chrome' | 'edge' | 'brave' | 'firefox' | 'safari' | 'other';
 }
 
 export interface CompatibilityResult {

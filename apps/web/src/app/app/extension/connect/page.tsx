@@ -22,7 +22,14 @@ interface ExtensionConnectPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
+const validBrowsers = new Set<CompatibilityHandshake['browser']>([
+  'chrome',
+  'edge',
+  'brave',
+  'firefox',
+  'safari',
+  'other',
+]);
 
 function readTrimmedSearchParam(value: string | string[] | undefined): string | undefined {
   const normalized = readSearchParam(value)?.trim();

@@ -15,7 +15,14 @@ interface RouteErrorPayload {
   };
 }
 
-const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
+const validBrowsers = new Set<CompatibilityHandshake['browser']>([
+  'chrome',
+  'edge',
+  'brave',
+  'firefox',
+  'safari',
+  'other',
+]);
 
 function badRequest(message: string, status = 400) {
   return NextResponse.json<RouteErrorPayload>(

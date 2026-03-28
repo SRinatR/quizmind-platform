@@ -12,6 +12,6 @@
     "build": "echo 'billing build placeholder'",
     "lint": "echo 'billing lint placeholder'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test test/**/*.test.ts"
+    "test": "node --import tsx --test \"test/**/*.test.ts\""
   }
 }
