@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import './globals.css';
+import '../lib/web-env';
 
 export const metadata: Metadata = {
   title: 'QuizMind',

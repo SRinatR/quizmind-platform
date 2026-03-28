@@ -21,3 +21,12 @@ export function readBooleanSearchParam(value: string | string[] | undefined): bo
 
   return normalized === '1' || normalized === 'true' || normalized === 'yes';
 }
+
+export function withNextPath(path: string, nextPath: string): string {
+  if (!nextPath || !nextPath.startsWith('/') || nextPath.startsWith('//')) {
+    return path;
+  }
+
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}next=${encodeURIComponent(nextPath)}`;
+}

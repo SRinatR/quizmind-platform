@@ -27,6 +27,8 @@ type VerifyPhase = 'idle' | 'verifying' | 'verified' | 'error';
 
 export function VerifyClient({ email, initialVerified, initialSent, nextPath, token }: VerifyClientProps) {
   const router = useRouter();
+  const loginHref = `/auth/login?next=${encodeURIComponent(nextPath)}`;
+  const registerHref = `/auth/register?next=${encodeURIComponent(nextPath)}`;
   const [phase, setPhase] = useState<VerifyPhase>(initialVerified ? 'verified' : initialSent ? 'idle' : 'idle');
   const [statusMessage, setStatusMessage] = useState<string | null>(
     initialVerified ? 'Email verified. Your account is ready to use.' : null,
@@ -110,7 +112,7 @@ export function VerifyClient({ email, initialVerified, initialSent, nextPath, to
           <Link className="btn-primary" href={nextPath}>
             Continue
           </Link>
-          <Link className="btn-ghost" href="/auth/login">
+          <Link className="btn-ghost" href={loginHref}>
             Sign in
           </Link>
         </div>
@@ -130,10 +132,10 @@ export function VerifyClient({ email, initialVerified, initialSent, nextPath, to
         {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
 
         <div className="auth-form-actions">
-          <Link className="btn-primary" href="/auth/login">
+          <Link className="btn-primary" href={loginHref}>
             Sign in
           </Link>
-          <Link className="btn-ghost" href="/auth/register">
+          <Link className="btn-ghost" href={registerHref}>
             Create account again
           </Link>
         </div>
@@ -161,7 +163,7 @@ export function VerifyClient({ email, initialVerified, initialSent, nextPath, to
           <Link className="btn-primary" href={nextPath}>
             Open app anyway
           </Link>
-          <Link className="btn-ghost" href="/auth/login">
+          <Link className="btn-ghost" href={loginHref}>
             Back to sign in
           </Link>
         </div>
@@ -178,10 +180,10 @@ export function VerifyClient({ email, initialVerified, initialSent, nextPath, to
       </p>
 
       <div className="auth-form-actions">
-        <Link className="btn-primary" href="/auth/register">
+        <Link className="btn-primary" href={registerHref}>
           Create account
         </Link>
-        <Link className="btn-ghost" href="/auth/login">
+        <Link className="btn-ghost" href={loginHref}>
           Sign in
         </Link>
       </div>

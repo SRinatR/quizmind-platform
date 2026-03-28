@@ -205,7 +205,7 @@ Required for hardened bridge exchange:
 
 - `targetOrigin`: strict receiver origin for `window.postMessage`
 - `relayUrl`: extension relay callback URL; must have the same extension origin as `targetOrigin`
-- `requestId`: correlation id for bind request/response pairing
+- `requestId`: correlation id for bind request/response pairing (`8-160` chars; `A-Z`, `a-z`, `0-9`, `_`, `-`, `.`, `:`)
 - `bridgeNonce`: nonce echoed by the bridge in every outbound envelope
 - `bridgeMode`: optional bridge response mode (`fallback_code` is recommended for auto-redeem fallback)
 
@@ -214,6 +214,7 @@ Fail-closed behavior in the site bridge:
 - bind is blocked when no automatic return channel exists (no opener/parent and no valid `relayUrl`)
 - bind is blocked when secure bridge headers are incomplete for return delivery (`targetOrigin` or `bridgeNonce` missing)
 - bind is blocked when secure bridge launch does not include `requestId`
+- bind is blocked when secure bridge `requestId` format is invalid (must match token-safe `8-160` chars)
 - bind is blocked when `relayUrl` origin does not match `targetOrigin`
 
 Current web bridge implementation:
@@ -283,7 +284,10 @@ One-time bind code fallback (when `postMessage` handoff fails):
   - `x-quizmind-bridge-nonce`
   - `x-quizmind-target-origin`
 - extension can redeem once through:
-- fallback codes are persisted in a Redis-backed shared store (with in-memory fallback if Redis is unavailable)
+- fallback codes are persisted in a Redis-backed shared store
+- in production, shared-store availability is required for fallback code issuance/redeem (`NODE_ENV=production` or `QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE=required`)
+- when shared store is unavailable, bind still succeeds and bridge falls back to direct `bind_result` envelope (no fallback code issued)
+- local in-memory fallback remains available only in optional mode (`QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE=optional`) for local/dev usage
 
 ```http
 POST /api/extension/bind/redeem
@@ -502,7 +506,16 @@ Current implementation status:
 - extension bridge now fails closed when secure return prerequisites are broken:
   - blocks bind when neither opener/parent nor valid `relayUrl` is present
   - blocks bind when secure headers are incomplete for return delivery (`targetOrigin`/`bridgeNonce`)
+  - blocks bind when secure bridge launch does not include `requestId`
   - blocks bind when `relayUrl` origin does not match `targetOrigin`
+  - blocks bind in strict mode when `platformOrigin` from extension launch URL does not match the configured site origin (`APP_URL` / `NEXT_PUBLIC_APP_URL`)
+  - strict mode defaults to enabled in production; can be overridden with `QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN=true|false`
+- extension relay redirect now includes `platformBaseUrl` query param for backward compatibility with older relay implementations that still call `buildConnectUrl()` during query-payload handling
+- `@quizmind/extension` `connectToPlatform()` now accepts relay query-payload URL responses directly (`quizmind_bridge_payload` with `base64url-json`) so bind can complete without custom relay parsing glue in runtime callers
+- bind fallback code storage now supports strict shared-store mode for production:
+  - `QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE=required` enforces Redis-backed issue/redeem and fails closed when unavailable
+  - when strict mode blocks fallback code issuance, bind route still returns success so bridge can return direct `bind_result` envelopes
+  - `QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE=optional` keeps local-memory fallback for local/dev workflows
 - API runtime now uses distributed Redis-backed rate limiting in connected mode:
   - global guard keeps per-route/per-identity limits consistent across multiple API instances
   - rate-limit identity now relies on trusted request/socket IP data instead of raw spoofable forwarded headers
@@ -514,16 +527,26 @@ Current implementation status:
 - CI now includes a connected-runtime smoke gate:
   - spins up PostgreSQL + Redis services, applies Prisma migrations, boots API in connected mode
   - runs Prisma-backed integration tests (`prisma-auth`, `prisma-platform`) against live PostgreSQL before smoke checks
+  - boots web app in CI and validates extension bridge signup entrypoint end-to-end:
+    - `/app/extension/connect?...&mode=signup` returns unauthenticated sign-in prompt
+    - register link preserves `next` and keeps `mode=signup` intent for post-auth return flow
+    - strict `platformOrigin` mismatch renders blocked bridge state (fail-closed) when `QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN=true`
   - boots worker in connected mode and requires startup + queue-bind signals (`platform.worker_started`, `platform.worker_queues_bound`) with no fallback-mode event
   - worker env validation now fails production startup when `QUIZMIND_RUNTIME_MODE` is not `connected` or `API_URL` targets localhost loopback
   - waits for strict API readiness via `/ready`
   - `/ready` now requires both database connectivity and schema readiness (`_prisma_migrations`, `User`, `Workspace`)
   - validates `/health` envelope in connected mode with zero env validation issues
   - verifies `/foundation`, unauthenticated `/workspaces` rejection, and strict `/auth/login` invalid-payload rejection (`400/401/403/422/429`) with rate-limit headers before merge
+  - verifies extension control-plane endpoints reject unauthenticated requests with safe client-error statuses:
+    - `POST /extension/installations/bind`
+    - `POST /extension/bootstrap/v2`
 - a manual `Release Gate` workflow is also available for production rollouts:
   - reruns preflight quality checks (lint, typecheck, tests, build)
   - supports optional connected-runtime smoke and remote post-deploy smoke checks against provided API/Web URLs
   - remote smoke now enforces public HTTPS targets and rejects localhost loopback URLs
+  - when `web_url` is provided, remote smoke also validates unauthenticated extension bridge entrypoint:
+    - `/app/extension/connect?...&mode=signup` returns a sign-in prompt
+    - signup intent preserves `next` and keeps `mode=signup` for auth routing
   - rollback webhook execution now also enforces HTTPS and rejects localhost loopback URLs
   - workflow input guardrails now fail fast for conflicting rollout options and invalid URLs (non-HTTPS or localhost loopback targets)
   - can trigger an optional rollback webhook automatically when remote smoke fails

@@ -93,6 +93,8 @@ export interface WebEnv {
   appUrl: string;
   apiUrl: string;
   defaultPersona: string;
+  extensionBindCodeStoreModeRaw?: string;
+  extensionStrictPlatformOriginRaw?: string;
 }
 
 export interface WorkerEnv extends PlatformEnv {
@@ -227,12 +229,16 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
 
 export function loadWebEnv(source: EnvSource = process.env): WebEnv {
   const platformEnv = loadPlatformEnv(source);
+  const extensionBindCodeStoreModeRaw = source.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE?.trim();
+  const extensionStrictPlatformOriginRaw = source.QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN?.trim();
 
   return {
     nodeEnv: platformEnv.nodeEnv,
     appUrl: platformEnv.appUrl,
     apiUrl: platformEnv.apiUrl,
     defaultPersona: source.DEFAULT_PERSONA ?? 'platform-admin',
+    ...(extensionBindCodeStoreModeRaw ? { extensionBindCodeStoreModeRaw } : {}),
+    ...(extensionStrictPlatformOriginRaw ? { extensionStrictPlatformOriginRaw } : {}),
   };
 }
 
@@ -589,6 +595,31 @@ export function validateWebEnv(env: WebEnv): EnvValidationIssue[] {
 
   if (isBlank(env.defaultPersona)) {
     issues.push({ key: 'DEFAULT_PERSONA', message: 'DEFAULT_PERSONA must be defined.' });
+  }
+
+  if (!isBlank(env.extensionBindCodeStoreModeRaw)) {
+    const normalizedMode = env.extensionBindCodeStoreModeRaw!.toLowerCase();
+    const validModes = new Set(['required', 'optional']);
+
+    if (!validModes.has(normalizedMode)) {
+      issues.push({
+        key: 'QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE',
+        message: 'QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE must be either "required" or "optional".',
+      });
+    }
+  }
+
+  if (!isBlank(env.extensionStrictPlatformOriginRaw)) {
+    const normalizedStrictMode = env.extensionStrictPlatformOriginRaw!.toLowerCase();
+    const validStrictModes = new Set(['1', '0', 'true', 'false', 'yes', 'no']);
+
+    if (!validStrictModes.has(normalizedStrictMode)) {
+      issues.push({
+        key: 'QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN',
+        message:
+          'QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN must be one of: true, false, 1, 0, yes, no.',
+      });
+    }
   }
 
   if (env.nodeEnv === 'production') {

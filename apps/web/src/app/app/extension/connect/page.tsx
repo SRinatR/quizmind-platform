@@ -8,7 +8,14 @@ import { AuthShell } from '../../../auth/auth-shell';
 import { readSearchParam } from '../../../auth/search-params';
 import { getSession } from '../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
-import { readStringListSearchParam, resolveAuthMode } from './connect-query';
+import { WEB_ENV } from '../../../../lib/web-env';
+import {
+  normalizeHttpOriginSearchParam,
+  readStringListSearchParam,
+  resolveAuthMode,
+  resolvePlatformOriginValidation,
+  resolveStrictPlatformOriginMode,
+} from './connect-query';
 import { ExtensionConnectClient } from './extension-connect-client';
 
 interface ExtensionConnectPageProps {
@@ -31,26 +38,6 @@ function readBrowserSearchParam(value: string | string[] | undefined): Compatibi
   }
 
   return normalized as CompatibilityHandshake['browser'];
-}
-
-function normalizeHttpOrigin(value: string | undefined): string | undefined {
-  const normalized = value?.trim();
-
-  if (!normalized) {
-    return undefined;
-  }
-
-  try {
-    const parsed = new URL(normalized);
-
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return undefined;
-    }
-
-    return parsed.origin;
-  } catch {
-    return undefined;
-  }
 }
 
 function buildCurrentPath(searchParams?: Record<string, string | string[] | undefined>) {
@@ -84,18 +71,23 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
   const browser = readBrowserSearchParam(resolvedSearchParams?.browser);
   const environment =
     readTrimmedSearchParam(resolvedSearchParams?.environment) ??
-    (process.env.NODE_ENV === 'production' ? 'production' : 'development');
+    (WEB_ENV.nodeEnv === 'production' ? 'production' : 'development');
   const targetOrigin = readTrimmedSearchParam(resolvedSearchParams?.targetOrigin);
   const bridgeNonce = readTrimmedSearchParam(resolvedSearchParams?.bridgeNonce);
   const requestId = readTrimmedSearchParam(resolvedSearchParams?.requestId);
   const bridgeMode = readTrimmedSearchParam(resolvedSearchParams?.bridgeMode);
   const relayUrl = readTrimmedSearchParam(resolvedSearchParams?.relayUrl);
-  const platformOrigin = normalizeHttpOrigin(readTrimmedSearchParam(resolvedSearchParams?.platformOrigin));
-  const configuredPlatformOrigin = normalizeHttpOrigin(process.env.APP_URL ?? process.env.NEXT_PUBLIC_APP_URL);
-  const platformOriginWarning =
-    platformOrigin && configuredPlatformOrigin && platformOrigin !== configuredPlatformOrigin
-      ? `Bridge URL declares platformOrigin=${platformOrigin}, but the site is configured as ${configuredPlatformOrigin}. Keep one environment origin for extension launch and auth redirect.`
-      : null;
+  const platformOrigin = normalizeHttpOriginSearchParam(resolvedSearchParams?.platformOrigin);
+  const configuredPlatformOrigin = normalizeHttpOriginSearchParam(WEB_ENV.appUrl);
+  const strictPlatformOriginMode = resolveStrictPlatformOriginMode(
+    WEB_ENV.extensionStrictPlatformOriginRaw,
+    WEB_ENV.nodeEnv,
+  );
+  const platformOriginValidation = resolvePlatformOriginValidation({
+    declaredPlatformOrigin: platformOrigin,
+    configuredPlatformOrigin,
+    strictMode: strictPlatformOriginMode,
+  });
   const authMode = resolveAuthMode(resolvedSearchParams?.mode);
   const capabilities = Array.from(
     new Set([
@@ -172,7 +164,8 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           missingFields={missingFields}
           bridgeNonce={bridgeNonce}
           bridgeMode={bridgeMode}
-          platformOriginWarning={platformOriginWarning}
+          platformOriginWarning={platformOriginValidation.warning}
+          platformOriginSecurityIssue={platformOriginValidation.securityIssue}
           relayUrl={relayUrl}
           requestId={requestId}
           targetOrigin={targetOrigin}
@@ -214,11 +207,19 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
             </div>
           ) : null}
 
-          {platformOriginWarning ? (
+          {platformOriginValidation.warning ? (
             <div className="auth-highlight">
               <span className="micro-label">Bridge origin</span>
               <strong>Bridge launch origin mismatch detected.</strong>
-              <p>{platformOriginWarning}</p>
+              <p>{platformOriginValidation.warning}</p>
+            </div>
+          ) : null}
+
+          {platformOriginValidation.securityIssue ? (
+            <div className="auth-highlight">
+              <span className="micro-label">Bridge security</span>
+              <strong>Bridge launch origin mismatch blocked.</strong>
+              <p>{platformOriginValidation.securityIssue}</p>
             </div>
           ) : null}
 

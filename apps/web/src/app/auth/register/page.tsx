@@ -1,5 +1,5 @@
 import { AuthShell } from '../auth-shell';
-import { resolveNextPath } from '../search-params';
+import { resolveNextPath, withNextPath } from '../search-params';
 import { getSession } from '../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { RegisterClient } from './register-client';
@@ -37,7 +37,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
       ]}
       links={[
         { href: '/', label: 'Back to landing' },
-        { href: '/auth/login', label: 'Sign in' },
+        { href: withNextPath('/auth/login', nextPath), label: 'Sign in' },
         { href: '/pricing', label: 'View pricing' },
       ]}
       title="Create the first secure session."

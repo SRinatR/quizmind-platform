@@ -1,5 +1,9 @@
 export type BridgeMode = 'bind_result' | 'fallback_code';
 
+const BRIDGE_REQUEST_ID_MIN_LENGTH = 8;
+const BRIDGE_REQUEST_ID_MAX_LENGTH = 160;
+const BRIDGE_TOKEN_PATTERN = /^[A-Za-z0-9:_\-.]+$/;
+
 export function normalizeTargetOrigin(value?: string): string | null {
   const normalized = value?.trim();
 
@@ -32,6 +36,16 @@ export function normalizeBridgeNonce(value?: string): string | null {
   }
 
   return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : null;
+}
+
+export function normalizeBridgeRequestId(value?: string): string | null {
+  const normalized = value?.trim();
+
+  if (!normalized || normalized.length < BRIDGE_REQUEST_ID_MIN_LENGTH || normalized.length > BRIDGE_REQUEST_ID_MAX_LENGTH) {
+    return null;
+  }
+
+  return BRIDGE_TOKEN_PATTERN.test(normalized) ? normalized : null;
 }
 
 export function normalizeBridgeMode(value?: string): BridgeMode {
@@ -125,7 +139,8 @@ export function buildRelayRedirectUrl(input: {
 
 interface ResolveBridgeIssuesInput {
   hasBridgeTarget: boolean;
-  requestId?: string;
+  rawRequestId?: string;
+  resolvedRequestId: string | null;
   rawRelayUrl?: string;
   resolvedRelayUrl: string | null;
   resolvedTargetOrigin: string | null;
@@ -139,8 +154,17 @@ interface ResolveBridgeIssuesOutput {
 
 export function resolveBridgeIssues(input: ResolveBridgeIssuesInput): ResolveBridgeIssuesOutput {
   const relayRequested = Boolean(input.rawRelayUrl?.trim());
-  const requestId = input.requestId?.trim();
+  const hasRawRequestId = Boolean(input.rawRequestId?.trim());
+  const requestId = input.resolvedRequestId;
   const secureReturnRequested = input.hasBridgeTarget || relayRequested;
+
+  if (hasRawRequestId && !requestId) {
+    return {
+      bridgeSecurityIssue:
+        'Secure bridge requestId must be 8-160 characters using A-Z, a-z, 0-9, "_", "-", ".", or ":".',
+      bridgeReturnChannelIssue: null,
+    };
+  }
 
   if (secureReturnRequested && !input.resolvedTargetOrigin) {
     return {

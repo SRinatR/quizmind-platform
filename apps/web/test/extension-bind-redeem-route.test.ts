@@ -8,6 +8,9 @@ import {
   resetBindFallbackCodesForTests,
 } from '../src/lib/extension-bind-code-store';
 
+const originalRedisUrl = process.env.REDIS_URL;
+const originalBindCodeStoreMode = process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE;
+
 function createBindResult(): ExtensionInstallationBindResult {
   return {
     installation: {
@@ -62,7 +65,22 @@ function createBindResult(): ExtensionInstallationBindResult {
 
 test.beforeEach(async () => {
   delete process.env.REDIS_URL;
+  delete process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE;
   await resetBindFallbackCodesForTests();
+});
+
+test.after(() => {
+  if (typeof originalRedisUrl === 'string') {
+    process.env.REDIS_URL = originalRedisUrl;
+  } else {
+    delete process.env.REDIS_URL;
+  }
+
+  if (typeof originalBindCodeStoreMode === 'string') {
+    process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE = originalBindCodeStoreMode;
+  } else {
+    delete process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE;
+  }
 });
 
 test('extension bind redeem route returns bind payload and CORS headers for valid fallback code', async () => {
@@ -168,6 +186,38 @@ test('extension bind redeem route returns 404 for invalid or expired fallback co
   assert.equal(payload.ok, false);
   assert.equal(payload.error?.code, 'invalid_or_expired');
   assert.equal(response.headers.get('access-control-allow-origin'), null);
+});
+
+test('extension bind redeem route returns 503 when shared bind code store is required but unavailable', async () => {
+  process.env.REDIS_URL = 'redis://127.0.0.1:6399';
+  process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE = 'required';
+  await resetBindFallbackCodesForTests();
+
+  const origin = 'chrome-extension://abcdefghijklmnopabcdefghijklmnop';
+  const response = await POST(
+    new Request('http://localhost/api/extension/bind/redeem', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin,
+      },
+      body: JSON.stringify({
+        code: 'bindc_unavailable',
+      }),
+    }),
+  );
+  const payload = (await response.json()) as {
+    ok: boolean;
+    error?: {
+      code: string;
+      message: string;
+    };
+  };
+
+  assert.equal(response.status, 503);
+  assert.equal(payload.ok, false);
+  assert.equal(payload.error?.code, 'store_unavailable');
+  assert.equal(response.headers.get('access-control-allow-origin'), origin);
 });
 
 test('extension bind redeem OPTIONS responds with CORS metadata for valid extension origins', async () => {

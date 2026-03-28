@@ -3,6 +3,7 @@ import test from 'node:test';
 import { type ExtensionInstallationBindResult } from '@quizmind/contracts';
 
 import {
+  BindCodeStoreUnavailableError,
   extensionBindFallbackRedeemPath,
   issueBindFallbackCode,
   redeemBindFallbackCode,
@@ -10,6 +11,7 @@ import {
 } from '../src/lib/extension-bind-code-store';
 
 const originalRedisUrl = process.env.REDIS_URL;
+const originalBindCodeStoreMode = process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE;
 
 function createBindResult(): ExtensionInstallationBindResult {
   return {
@@ -65,16 +67,22 @@ function createBindResult(): ExtensionInstallationBindResult {
 
 test.beforeEach(async () => {
   delete process.env.REDIS_URL;
+  delete process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE;
   await resetBindFallbackCodesForTests();
 });
 
 test.after(() => {
   if (typeof originalRedisUrl === 'string') {
     process.env.REDIS_URL = originalRedisUrl;
-    return;
+  } else {
+    delete process.env.REDIS_URL;
   }
 
-  delete process.env.REDIS_URL;
+  if (typeof originalBindCodeStoreMode === 'string') {
+    process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE = originalBindCodeStoreMode;
+  } else {
+    delete process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE;
+  }
 });
 
 test('issueBindFallbackCode creates a redeemable one-time bind code', async () => {
@@ -191,4 +199,36 @@ test('bind fallback codes stay redeemable when redis is configured but unavailab
   });
 
   assert.equal(redeemed.ok, true);
+});
+
+test('issueBindFallbackCode fails closed in required shared-store mode when redis is unavailable', async () => {
+  process.env.REDIS_URL = 'redis://127.0.0.1:6399';
+  process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE = 'required';
+  await resetBindFallbackCodesForTests();
+
+  await assert.rejects(
+    () =>
+      issueBindFallbackCode({
+        result: createBindResult(),
+        installationId: 'inst_123',
+        nowMs: Date.UTC(2026, 2, 27, 10, 0, 0),
+      }),
+    (error: unknown) => error instanceof BindCodeStoreUnavailableError,
+  );
+});
+
+test('redeemBindFallbackCode reports store_unavailable in required shared-store mode when redis is unavailable', async () => {
+  process.env.REDIS_URL = 'redis://127.0.0.1:6399';
+  process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE = 'required';
+  await resetBindFallbackCodesForTests();
+
+  const result = await redeemBindFallbackCode({
+    code: 'bindc_missing',
+    nowMs: Date.UTC(2026, 2, 27, 10, 0, 0),
+  });
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.code, 'store_unavailable');
+  }
 });

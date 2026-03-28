@@ -11,6 +11,7 @@ import {
   buildRelayRedirectUrl,
   normalizeBridgeMode,
   normalizeBridgeNonce,
+  normalizeBridgeRequestId,
   normalizeRelayUrl,
   normalizeTargetOrigin,
   resolveBridgeIssues,
@@ -23,6 +24,7 @@ interface ExtensionConnectClientProps {
   bridgeNonce?: string;
   bridgeMode?: string;
   platformOriginWarning?: string | null;
+  platformOriginSecurityIssue?: string | null;
   relayUrl?: string;
   requestId?: string;
   targetOrigin?: string;
@@ -74,6 +76,7 @@ export function ExtensionConnectClient({
   bridgeNonce,
   bridgeMode,
   platformOriginWarning,
+  platformOriginSecurityIssue,
   relayUrl,
   requestId,
   targetOrigin,
@@ -97,7 +100,8 @@ export function ExtensionConnectClient({
   const [hasBridgeTarget, setHasBridgeTarget] = useState(false);
   const autoBindAttemptedRef = useRef(false);
   const postedInitialErrorRef = useRef(false);
-  const bridgeRequestIdRef = useRef<string>(requestId?.trim() || `bind_${Date.now()}`);
+  const resolvedRequestId = normalizeBridgeRequestId(requestId);
+  const bridgeRequestIdRef = useRef<string>(resolvedRequestId ?? `bind_${Date.now()}`);
   const bridgeModePreference = normalizeBridgeMode(bridgeMode);
   const resolvedTargetOrigin = normalizeTargetOrigin(targetOrigin);
   const resolvedBridgeNonce = normalizeBridgeNonce(bridgeNonce);
@@ -108,18 +112,20 @@ export function ExtensionConnectClient({
       : 'bind_result';
   const { bridgeSecurityIssue, bridgeReturnChannelIssue } = resolveBridgeIssues({
     hasBridgeTarget,
-    requestId,
+    rawRequestId: requestId,
+    resolvedRequestId,
     rawRelayUrl: relayUrl,
     resolvedRelayUrl,
     resolvedTargetOrigin,
     resolvedBridgeNonce,
   });
+  const effectiveBridgeSecurityIssue = platformOriginSecurityIssue ?? bridgeSecurityIssue;
 
   const canConnect =
     Boolean(initialRequest) &&
     missingFields.length === 0 &&
     !isSubmitting &&
-    !bridgeSecurityIssue &&
+    !effectiveBridgeSecurityIssue &&
     !bridgeReturnChannelIssue;
   const resultChannelLabel = hasBridgeTarget
     ? 'window.postMessage'
@@ -162,8 +168,8 @@ export function ExtensionConnectClient({
       return;
     }
 
-    if (bridgeSecurityIssue) {
-      setErrorMessage(bridgeSecurityIssue);
+    if (effectiveBridgeSecurityIssue) {
+      setErrorMessage(effectiveBridgeSecurityIssue);
       setStatusMessage(null);
       return;
     }
@@ -347,13 +353,13 @@ export function ExtensionConnectClient({
   }, []);
 
   useEffect(() => {
-    if (!bridgeSecurityIssue) {
+    if (!effectiveBridgeSecurityIssue) {
       return;
     }
 
     setStatusMessage(null);
-    setErrorMessage(bridgeSecurityIssue);
-  }, [bridgeSecurityIssue]);
+    setErrorMessage(effectiveBridgeSecurityIssue);
+  }, [effectiveBridgeSecurityIssue]);
 
   useEffect(() => {
     if (!bridgeReturnChannelIssue) {
@@ -369,7 +375,7 @@ export function ExtensionConnectClient({
       autoBindAttemptedRef.current ||
       !initialRequest ||
       missingFields.length > 0 ||
-      bridgeSecurityIssue ||
+      effectiveBridgeSecurityIssue ||
       bridgeReturnChannelIssue
     ) {
       return;
@@ -381,7 +387,7 @@ export function ExtensionConnectClient({
 
     autoBindAttemptedRef.current = true;
     void handleConnect();
-  }, [bridgeReturnChannelIssue, bridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
+  }, [bridgeReturnChannelIssue, effectiveBridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
 
   return (
     <div className="auth-form-shell">
@@ -446,11 +452,11 @@ export function ExtensionConnectClient({
         </div>
       ) : null}
 
-      {bridgeSecurityIssue ? (
+      {effectiveBridgeSecurityIssue ? (
         <div className="auth-highlight">
           <span className="micro-label">Bridge security</span>
           <strong>Secure bridge parameters are missing or invalid.</strong>
-          <p>{bridgeSecurityIssue}</p>
+          <p>{effectiveBridgeSecurityIssue}</p>
         </div>
       ) : null}
 

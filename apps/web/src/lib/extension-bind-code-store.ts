@@ -28,7 +28,7 @@ export interface RedeemBindFallbackCodeInput {
   nowMs?: number;
 }
 
-export type BindCodeRedeemFailureCode = 'invalid_or_expired' | 'context_mismatch';
+export type BindCodeRedeemFailureCode = 'invalid_or_expired' | 'context_mismatch' | 'store_unavailable';
 
 export type RedeemBindFallbackCodeResult =
   | {
@@ -61,6 +61,13 @@ const REDIS_KEY_PREFIX = 'quizmind:extension:bind_fallback:';
 const REDIS_CONNECT_TIMEOUT_MS = 900;
 const REDIS_FAILURE_COOLDOWN_MS = 30_000;
 export const extensionBindFallbackRedeemPath = '/api/extension/bind/redeem';
+
+export class BindCodeStoreUnavailableError extends Error {
+  constructor(message = 'Shared bind code store is unavailable.') {
+    super(message);
+    this.name = 'BindCodeStoreUnavailableError';
+  }
+}
 
 // Redis shared store is the primary source for multi-instance environments.
 // In-memory storage remains as a local fallback when Redis is unavailable.
@@ -154,6 +161,20 @@ function resolveRedisUrl(): string | undefined {
   const normalized = process.env.REDIS_URL?.trim();
 
   return normalized ? normalized : undefined;
+}
+
+function isSharedStoreRequired(): boolean {
+  const mode = process.env.QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE?.trim().toLowerCase();
+
+  if (mode === 'required') {
+    return true;
+  }
+
+  if (mode === 'optional') {
+    return false;
+  }
+
+  return process.env.NODE_ENV === 'production';
 }
 
 function buildRedisKey(code: string): string {
@@ -319,6 +340,11 @@ export async function issueBindFallbackCode(input: IssueBindFallbackCodeInput): 
   if (storedInRedis) {
     // When shared store write succeeds, Redis becomes source of truth for this code.
     bindCodeRecords.delete(code);
+  } else if (isSharedStoreRequired()) {
+    bindCodeRecords.delete(code);
+    throw new BindCodeStoreUnavailableError(
+      'Shared bind code store is required but unavailable. Retry the extension bind flow in a healthy environment.',
+    );
   }
 
   return {
@@ -416,6 +442,15 @@ export async function redeemBindFallbackCode(
       ok: false,
       code: 'invalid_or_expired',
       message: 'Bind code is invalid or expired.',
+    };
+  }
+
+  if (isSharedStoreRequired()) {
+    bindCodeRecords.delete(code);
+    return {
+      ok: false,
+      code: 'store_unavailable',
+      message: 'Shared bind code store is unavailable. Reconnect the extension and retry.',
     };
   }
 

@@ -350,6 +350,41 @@ test('ExtensionControlService.bindInstallationForCurrentSession records reconnec
   assert.equal(capturedMetadata?.revokedSessionCount, 3);
 });
 
+test('ExtensionControlService.bindInstallationForCurrentSession rejects invalid environment format', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+  } = createService();
+  let upsertCalled = false;
+
+  extensionInstallationRepository.upsertBoundInstallation = async () => {
+    upsertCalled = true;
+    throw new Error('upsert should not be called for invalid environment');
+  };
+
+  await assert.rejects(
+    () =>
+      service.bindInstallationForCurrentSession(createConnectedSession(), {
+        installationId: 'inst_local_browser',
+        workspaceId: 'ws_1',
+        environment: 'prod environment',
+        handshake: {
+          extensionVersion: '1.6.1',
+          schemaVersion: '2',
+          capabilities: ['quiz-capture', 'history-sync'],
+          browser: 'chrome',
+        },
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof BadRequestException);
+      assert.match((error as Error).message, /environment must be 1-64 characters/i);
+      return true;
+    },
+  );
+
+  assert.equal(upsertCalled, false);
+});
+
 test('ExtensionControlService.bootstrapInstallationSession refreshes bootstrap for a valid installation session', async () => {
   const {
     service,
@@ -412,6 +447,57 @@ test('ExtensionControlService.bootstrapInstallationSession refreshes bootstrap f
   assert.equal(result.installationId, 'inst_local_browser');
   assert.equal(result.compatibility.status, 'supported');
   assert.equal(result.refreshAfterSeconds, 900);
+});
+
+test('ExtensionControlService.bootstrapInstallationSession rejects invalid environment format', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+  } = createService();
+  let upsertCalled = false;
+
+  extensionInstallationRepository.upsertBoundInstallation = async () => {
+    upsertCalled = true;
+    throw new Error('upsert should not be called for invalid environment');
+  };
+
+  await assert.rejects(
+    () =>
+      service.bootstrapInstallationSession(
+        {
+          installation: {
+            id: 'inst_record_1',
+            userId: 'user_1',
+            workspaceId: 'ws_1',
+            installationId: 'inst_local_browser',
+            browser: 'chrome',
+            extensionVersion: '1.6.0',
+            schemaVersion: '2',
+            capabilitiesJson: ['quiz-capture'],
+            createdAt: new Date('2026-03-24T12:00:00.000Z'),
+            updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+            lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+          },
+        } as any,
+        {
+          installationId: 'inst_local_browser',
+          environment: 'prod environment',
+          handshake: {
+            extensionVersion: '1.6.1',
+            schemaVersion: '2',
+            capabilities: ['quiz-capture'],
+            browser: 'chrome',
+          },
+        },
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof BadRequestException);
+      assert.match((error as Error).message, /environment must be 1-64 characters/i);
+      return true;
+    },
+  );
+
+  assert.equal(upsertCalled, false);
 });
 
 test('ExtensionControlService.ingestUsageEventForInstallationSession queues workspace-derived telemetry', async () => {

@@ -16,7 +16,7 @@ interface RedeemBindCodeBody {
 interface RouteErrorPayload {
   ok: false;
   error: {
-    code: 'invalid_or_expired' | 'context_mismatch';
+    code: 'invalid_or_expired' | 'context_mismatch' | 'store_unavailable';
     message: string;
   };
 }
@@ -70,7 +70,12 @@ export async function POST(request: Request) {
         },
       },
       {
-        status: result.code === 'invalid_or_expired' ? 404 : 403,
+        status:
+          result.code === 'invalid_or_expired'
+            ? 404
+            : result.code === 'context_mismatch'
+              ? 403
+              : 503,
         headers: buildCorsHeaders(requestOrigin),
       },
     );

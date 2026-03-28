@@ -27,6 +27,15 @@ This file is intentionally implementation-focused so it can be used as a working
 
 Production and staging URLs must be injected through environment-specific configuration.
 
+Extension launcher requirement:
+
+- `DEFAULT_PLATFORM_BASE_URL` in production builds must point to the real platform domain, never `http://localhost:3000`.
+- if a production base URL is not embedded at build time, extension runtime must require explicit override through `qm_dev_platform_url` before opening connect/auth flows.
+- SDK helpers in `@quizmind/extension`:
+  - `resolvePlatformSiteUrl(...)` enforces HTTPS + non-loopback origin in production and provides local default in development
+  - `buildRecommendedHandshakeCapabilities(...)` includes required bridge/runtime capabilities (including `quiz-capture`) and deduplicates extras
+  - `connectToPlatform(...)` / `buildExtensionConnectUrl(...)` now reject invalid `requestId`/`bridgeNonce` formats early (token charset + length constraints)
+
 ## What Already Exists In Platform
 
 Available platform endpoints:
@@ -335,15 +344,21 @@ Bridge security requirements:
 
 - validate `origin` on both sides
 - include both `requestId` and `bridgeNonce`
+- `requestId` should use token format accepted by site-side secure header validation: `8-160` chars, `A-Z`, `a-z`, `0-9`, `_`, `-`, `.`, `:`
 - do not broadcast to `*` when a strict target origin is known
 - close the bridge window after success or terminal failure
 - when opening the bridge URL, prefer `bridgeMode=fallback_code` so extension runtime can auto-redeem one-time bind codes
 - `requestId` returned from relay/payload must match `pendingBindRequestId` created by `openAuthPage()`; mismatches should be treated as bind context violations
+- `platformOrigin` in bridge launch URL must match the configured site origin in production; mismatch is treated as a blocked bridge security condition unless explicitly overridden by platform runtime configuration
+- extension SDK `connectToPlatform()` now accepts relay query-payload responses directly (`quizmind_bridge_payload`, `base64url-json`) in addition to plain message envelopes
 
 ### One-time bind code fallback
 
 If `window.postMessage` delivery fails, the bridge can return a temporary `fallbackCode` payload.
-Current fallback code storage is in-memory in the web runtime; switch to a shared store for multi-instance production deploys.
+Fallback codes are stored in Redis (shared store) when available.
+Production now fails closed by default when shared store is unavailable (`NODE_ENV=production` or `QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE=required`), so fallback codes are not issued from local memory across multiple instances.
+Local fallback remains available for development when `QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE=optional`.
+When fallback code issuance is skipped because shared store is unavailable, the bridge still returns a direct `quizmind.extension.bind_result` envelope.
 
 Redeem once through:
 
@@ -710,6 +725,12 @@ Use this manual verification sequence:
 8. Send one usage event and confirm platform accepts it.
 9. Expire or clear the installation token and confirm reconnect prompt appears.
 10. Simulate API outage and confirm extension falls back safely.
+
+CI coverage note:
+
+- connected-runtime CI smoke now also checks unauthenticated extension bridge signup entry:
+  - `/app/extension/connect?...&mode=signup` must render sign-in prompt
+  - register intent must preserve `next` and `mode=signup`
 
 ## Short Implementation Brief
 

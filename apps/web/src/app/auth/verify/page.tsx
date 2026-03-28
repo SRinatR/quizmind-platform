@@ -1,5 +1,5 @@
 import { AuthShell } from '../auth-shell';
-import { readBooleanSearchParam, readSearchParam, resolveNextPath } from '../search-params';
+import { readBooleanSearchParam, readSearchParam, resolveNextPath, withNextPath } from '../search-params';
 import { VerifyClient } from './verify-client';
 
 interface VerifyPageProps {
@@ -37,8 +37,8 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
       ]}
       links={[
         { href: '/', label: 'Back to landing' },
-        { href: '/auth/login', label: 'Sign in' },
-        { href: '/auth/register', label: 'Create account' },
+        { href: withNextPath('/auth/login', nextPath), label: 'Sign in' },
+        { href: withNextPath('/auth/register', nextPath), label: 'Create account' },
       ]}
       title="Confirm inbox ownership before deeper access."
     >

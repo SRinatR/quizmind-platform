@@ -150,3 +150,34 @@ test('validateWebEnv accepts secure production URLs', () => {
 
   assert.equal(issues.length, 0);
 });
+
+test('validateWebEnv rejects invalid extension bridge env toggles', () => {
+  const env = loadWebEnv({
+    NODE_ENV: 'production',
+    NEXT_PUBLIC_APP_URL: 'https://app.quizmind.dev',
+    NEXT_PUBLIC_API_URL: 'https://api.quizmind.dev',
+    DEFAULT_PERSONA: 'platform-admin',
+    QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE: 'strict',
+    QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN: 'maybe',
+  });
+
+  const issues = validateWebEnv(env);
+
+  assert.ok(issues.some((issue) => issue.key === 'QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE'));
+  assert.ok(issues.some((issue) => issue.key === 'QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN'));
+});
+
+test('validateWebEnv accepts supported extension bridge env toggles', () => {
+  const env = loadWebEnv({
+    NODE_ENV: 'production',
+    NEXT_PUBLIC_APP_URL: 'https://app.quizmind.dev',
+    NEXT_PUBLIC_API_URL: 'https://api.quizmind.dev',
+    DEFAULT_PERSONA: 'platform-admin',
+    QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE: 'required',
+    QUIZMIND_EXTENSION_STRICT_PLATFORM_ORIGIN: 'yes',
+  });
+
+  const issues = validateWebEnv(env);
+
+  assert.equal(issues.length, 0);
+});

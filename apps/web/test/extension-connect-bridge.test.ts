@@ -5,6 +5,7 @@ import {
   buildRelayRedirectUrl,
   normalizeBridgeMode,
   normalizeBridgeNonce,
+  normalizeBridgeRequestId,
   normalizeRelayUrl,
   normalizeTargetOrigin,
   resolveBridgeIssues,
@@ -23,6 +24,12 @@ test('normalizeBridgeNonce enforces length and charset', () => {
   assert.equal(normalizeBridgeNonce('nonce_12345'), 'nonce_12345');
   assert.equal(normalizeBridgeNonce('short'), null);
   assert.equal(normalizeBridgeNonce('nonce with spaces'), null);
+});
+
+test('normalizeBridgeRequestId enforces length and charset', () => {
+  assert.equal(normalizeBridgeRequestId('bind_12345'), 'bind_12345');
+  assert.equal(normalizeBridgeRequestId('short'), null);
+  assert.equal(normalizeBridgeRequestId('bind request id'), null);
 });
 
 test('normalizeBridgeMode falls back to bind_result', () => {
@@ -50,6 +57,8 @@ test('normalizeRelayUrl requires target origin and exact extension origin match'
 test('resolveBridgeIssues flags missing secure headers when relay is requested', () => {
   const result = resolveBridgeIssues({
     hasBridgeTarget: false,
+    rawRequestId: undefined,
+    resolvedRequestId: null,
     rawRelayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
     resolvedRelayUrl: null,
     resolvedTargetOrigin: null,
@@ -63,6 +72,8 @@ test('resolveBridgeIssues flags missing secure headers when relay is requested',
 test('resolveBridgeIssues reports no return channel when opener and relay are absent', () => {
   const result = resolveBridgeIssues({
     hasBridgeTarget: false,
+    rawRequestId: undefined,
+    resolvedRequestId: null,
     rawRelayUrl: undefined,
     resolvedRelayUrl: null,
     resolvedTargetOrigin: null,
@@ -79,7 +90,8 @@ test('resolveBridgeIssues reports no return channel when opener and relay are ab
 test('resolveBridgeIssues passes when secure relay context is complete', () => {
   const result = resolveBridgeIssues({
     hasBridgeTarget: false,
-    requestId: 'bind_123',
+    rawRequestId: 'bind_123',
+    resolvedRequestId: 'bind_123',
     rawRelayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
     resolvedRelayUrl: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap/relay.html',
     resolvedTargetOrigin: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap',
@@ -93,7 +105,8 @@ test('resolveBridgeIssues passes when secure relay context is complete', () => {
 test('resolveBridgeIssues flags missing requestId for secure return flows', () => {
   const result = resolveBridgeIssues({
     hasBridgeTarget: true,
-    requestId: undefined,
+    rawRequestId: undefined,
+    resolvedRequestId: null,
     rawRelayUrl: undefined,
     resolvedRelayUrl: null,
     resolvedTargetOrigin: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap',
@@ -101,6 +114,24 @@ test('resolveBridgeIssues flags missing requestId for secure return flows', () =
   });
 
   assert.equal(result.bridgeSecurityIssue, 'Secure bridge requires requestId query parameter from extension launcher.');
+  assert.equal(result.bridgeReturnChannelIssue, null);
+});
+
+test('resolveBridgeIssues flags invalid requestId format before secure return checks', () => {
+  const result = resolveBridgeIssues({
+    hasBridgeTarget: true,
+    rawRequestId: 'invalid request id',
+    resolvedRequestId: null,
+    rawRelayUrl: undefined,
+    resolvedRelayUrl: null,
+    resolvedTargetOrigin: 'chrome-extension://eeepcibgelnbhbnebmemabobdcnoliap',
+    resolvedBridgeNonce: 'nonce_12345',
+  });
+
+  assert.equal(
+    result.bridgeSecurityIssue,
+    'Secure bridge requestId must be 8-160 characters using A-Z, a-z, 0-9, "_", "-", ".", or ":".',
+  );
   assert.equal(result.bridgeReturnChannelIssue, null);
 });
 

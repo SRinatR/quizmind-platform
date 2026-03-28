@@ -1,21 +1,12 @@
 import Link from 'next/link';
 
+import { resolveNextPath } from '../search-params';
 import { getSession } from '../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { LoginClient } from './login-client';
 
 interface LoginPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}
-
-function resolveNextPath(rawValue: string | string[] | undefined): string {
-  const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
-
-  if (!value || !value.startsWith('/') || value.startsWith('//')) {
-    return '/app';
-  }
-
-  return value;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {

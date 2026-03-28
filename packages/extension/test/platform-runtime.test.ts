@@ -4,6 +4,7 @@ import test from 'node:test';
 import { createHandshake } from '../../testing/src';
 import {
   buildExtensionBootstrapV2,
+  buildRecommendedHandshakeCapabilities,
   buildExtensionConnectUrl,
   connectToPlatform,
   createInMemoryPlatformStateStore,
@@ -15,6 +16,7 @@ import {
   PlatformStateManager,
   redeemBindFallbackCode,
   refreshBootstrap,
+  resolvePlatformSiteUrl,
   resolveBootstrapRefreshDelayMs,
   sendRuntimeError,
   sendUsageEvent,
@@ -93,6 +95,14 @@ function createUsageEvent(eventType: string, occurredAt: string): UsageEventPayl
   };
 }
 
+function encodeBase64UrlJson(value: unknown): string {
+  return Buffer.from(JSON.stringify(value), 'utf8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
 test('PlatformStateManager persists installation id, bind session, and bootstrap cache', async () => {
   const store = createInMemoryPlatformStateStore();
   const state = new PlatformStateManager(store);
@@ -154,6 +164,7 @@ test('buildExtensionConnectUrl and connectToPlatform produce/consume secure brid
     environment: 'development',
     handshake,
     targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    relayUrl: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/relay.html',
     requestId,
     bridgeNonce,
     workspaceId: 'ws_1',
@@ -165,6 +176,11 @@ test('buildExtensionConnectUrl and connectToPlatform produce/consume secure brid
   assert.equal(parsedUrl.searchParams.get('bridgeNonce'), bridgeNonce);
   assert.equal(parsedUrl.searchParams.get('bridgeMode'), 'fallback_code');
   assert.equal(
+    parsedUrl.searchParams.get('relayUrl'),
+    'chrome-extension://abcdefghijklmnopabcdefghijklmnop/relay.html',
+  );
+  assert.equal(parsedUrl.searchParams.get('platformOrigin'), 'http://localhost:3000');
+  assert.equal(
     parsedUrl.searchParams.get('targetOrigin'),
     'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
   );
@@ -174,25 +190,161 @@ test('buildExtensionConnectUrl and connectToPlatform produce/consume secure brid
   });
   const state = new PlatformStateManager(store);
   const bindResult = createBindResult();
+  let openedBridgeUrl: string | null = null;
   const connected = await connectToPlatform({
     siteUrl: 'http://localhost:3000',
     environment: 'development',
     handshake,
     targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    relayUrl: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/relay.html',
     requestId,
     bridgeNonce,
     state,
     workspaceId: 'ws_1',
-    openBridge: ({ requestId: envelopeRequestId, bridgeNonce: envelopeNonce }) => ({
-      type: 'quizmind.extension.bind_result',
-      requestId: envelopeRequestId,
-      bridgeNonce: envelopeNonce,
-      payload: bindResult,
-    }),
+    openBridge: ({ url, requestId: envelopeRequestId, bridgeNonce: envelopeNonce }) => {
+      openedBridgeUrl = url;
+
+      return {
+        type: 'quizmind.extension.bind_result',
+        requestId: envelopeRequestId,
+        bridgeNonce: envelopeNonce,
+        payload: bindResult,
+      };
+    },
   });
 
   assert.equal(connected.session.token, 'tok_demo_123');
   assert.equal((await state.getInstallationSession())?.token, 'tok_demo_123');
+  assert.equal(new URL(String(openedBridgeUrl)).searchParams.get('requestId'), requestId);
+  assert.equal(
+    new URL(String(openedBridgeUrl)).searchParams.get('relayUrl'),
+    'chrome-extension://abcdefghijklmnopabcdefghijklmnop/relay.html',
+  );
+});
+
+test('buildRecommendedHandshakeCapabilities includes quiz-capture and relay capabilities', () => {
+  const capabilities = buildRecommendedHandshakeCapabilities([
+    'runtime.chat',
+    ' custom.capability ',
+    '',
+  ]);
+
+  assert.ok(capabilities.includes('quiz-capture'));
+  assert.ok(capabilities.includes('relay.query_payload'));
+  assert.ok(capabilities.includes('relay.postmessage_payload'));
+  assert.ok(capabilities.includes('runtime.chat'));
+  assert.ok(capabilities.includes('custom.capability'));
+  assert.equal(capabilities.filter((capability) => capability === 'runtime.chat').length, 1);
+});
+
+test('resolvePlatformSiteUrl defaults to localhost for development and normalizes URL origin', () => {
+  assert.equal(resolvePlatformSiteUrl(), 'http://localhost:3000');
+  assert.equal(
+    resolvePlatformSiteUrl({
+      nodeEnv: 'development',
+      devOverrideSiteUrl: 'http://localhost:3000/app/extension/connect?mode=signup',
+    }),
+    'http://localhost:3000',
+  );
+});
+
+test('resolvePlatformSiteUrl enforces secure non-loopback production URL', () => {
+  assert.equal(
+    resolvePlatformSiteUrl({
+      nodeEnv: 'production',
+      productionSiteUrl: 'https://quizmind.app/connect?flow=extension',
+    }),
+    'https://quizmind.app',
+  );
+
+  assert.throws(
+    () =>
+      resolvePlatformSiteUrl({
+        nodeEnv: 'production',
+      }),
+    /required/i,
+  );
+
+  assert.throws(
+    () =>
+      resolvePlatformSiteUrl({
+        nodeEnv: 'production',
+        productionSiteUrl: 'http://quizmind.app',
+      }),
+    /https/i,
+  );
+
+  assert.throws(
+    () =>
+      resolvePlatformSiteUrl({
+        nodeEnv: 'production',
+        productionSiteUrl: 'https://localhost:3000',
+      }),
+    /localhost/i,
+  );
+});
+
+test('buildExtensionConnectUrl rejects relay URLs that do not match targetOrigin', () => {
+  const handshake = createHandshake({
+    extensionVersion: '1.7.0',
+    schemaVersion: '2',
+    capabilities: ['quiz-capture', 'history-sync'],
+    browser: 'chrome',
+    buildId: 'dev-local',
+  });
+
+  assert.throws(
+    () =>
+      buildExtensionConnectUrl({
+        siteUrl: 'http://localhost:3000',
+        installationId: 'inst_demo',
+        environment: 'development',
+        handshake,
+        targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+        relayUrl: 'chrome-extension://aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/relay.html',
+        requestId: 'bind_req_1',
+        bridgeNonce: 'nonce_abc12345',
+      }),
+    /relayUrl origin must match targetOrigin/i,
+  );
+});
+
+test('buildExtensionConnectUrl rejects invalid bridge request metadata format', () => {
+  const handshake = createHandshake({
+    extensionVersion: '1.7.0',
+    schemaVersion: '2',
+    capabilities: ['quiz-capture', 'history-sync'],
+    browser: 'chrome',
+    buildId: 'dev-local',
+  });
+
+  assert.throws(
+    () =>
+      buildExtensionConnectUrl({
+        siteUrl: 'http://localhost:3000',
+        installationId: 'inst_demo',
+        environment: 'development',
+        handshake,
+        targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+        requestId: 'invalid request id',
+        bridgeNonce: 'nonce_abc12345',
+      }),
+    /requestId must be/i,
+  );
+
+  assert.throws(
+    () =>
+      buildExtensionConnectUrl({
+        siteUrl: 'http://localhost:3000',
+        installationId: 'inst_demo',
+        environment: 'development',
+        handshake,
+        targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+        requestId: 'bind_req_valid_1',
+        bridgeNonce: 'nonce invalid',
+      }),
+    /bridgeNonce must be/i,
+  );
 });
 
 test('connectToPlatform rejects bridge nonce mismatches', async () => {
@@ -226,6 +378,61 @@ test('connectToPlatform rejects bridge nonce mismatches', async () => {
       return true;
     },
   );
+});
+
+test('connectToPlatform rejects invalid requestId and bridgeNonce before opening bridge', async () => {
+  const state = new PlatformStateManager(
+    createInMemoryPlatformStateStore({
+      'quizmind.platform.installation_id': 'inst_demo',
+    }),
+  );
+  const handshake = createHandshake();
+  let openBridgeCalled = false;
+
+  await assert.rejects(
+    () =>
+      connectToPlatform({
+        siteUrl: 'http://localhost:3000',
+        environment: 'development',
+        handshake,
+        targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+        requestId: 'invalid request id',
+        state,
+        openBridge: () => {
+          openBridgeCalled = true;
+          return createBindResult();
+        },
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof PlatformBridgeError);
+      assert.equal(error.code, 'invalid_request_id');
+      return true;
+    },
+  );
+  assert.equal(openBridgeCalled, false);
+
+  await assert.rejects(
+    () =>
+      connectToPlatform({
+        siteUrl: 'http://localhost:3000',
+        environment: 'development',
+        handshake,
+        targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+        requestId: 'bind_req_valid_1',
+        bridgeNonce: 'nonce invalid',
+        state,
+        openBridge: () => {
+          openBridgeCalled = true;
+          return createBindResult();
+        },
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof PlatformBridgeError);
+      assert.equal(error.code, 'invalid_bridge_nonce');
+      return true;
+    },
+  );
+  assert.equal(openBridgeCalled, false);
 });
 
 test('redeemBindFallbackCode exchanges one-time fallback code for bind result', async () => {
@@ -319,6 +526,95 @@ test('connectToPlatform redeems bridge fallback code envelopes and saves session
     installationId: 'inst_demo',
     requestId: 'bind_req_4',
     bridgeNonce: 'nonce_expected',
+  });
+  assert.equal((await state.getInstallationSession())?.token, 'tok_demo_123');
+});
+
+test('connectToPlatform accepts relay.query_payload bind_result URL responses', async () => {
+  const store = createInMemoryPlatformStateStore({
+    'quizmind.platform.installation_id': 'inst_demo',
+  });
+  const state = new PlatformStateManager(store);
+  const handshake = createHandshake();
+  const bindResult = createBindResult();
+  const requestId = 'bind_req_query_payload_1';
+  const bridgeNonce = 'nonce_query_payload_12345';
+  const envelope = {
+    type: 'quizmind.extension.bind_result',
+    requestId,
+    payload: bindResult,
+  };
+  const encodedPayload = encodeBase64UrlJson(envelope);
+
+  const connected = await connectToPlatform({
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake,
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    requestId,
+    bridgeNonce,
+    state,
+    openBridge: () =>
+      `chrome-extension://abcdefghijklmnopabcdefghijklmnop/relay.html?quizmind_bridge_payload=${encodedPayload}&quizmind_bridge_payload_format=base64url-json&requestId=${requestId}&bridgeNonce=${bridgeNonce}`,
+  });
+
+  assert.equal(connected.session.token, 'tok_demo_123');
+  assert.equal((await state.getInstallationSession())?.token, 'tok_demo_123');
+});
+
+test('connectToPlatform redeems fallback codes from relay.query_payload URL responses', async () => {
+  const store = createInMemoryPlatformStateStore({
+    'quizmind.platform.installation_id': 'inst_demo',
+  });
+  const state = new PlatformStateManager(store);
+  const handshake = createHandshake();
+  const bindResult = createBindResult();
+  const requestId = 'bind_req_query_payload_2';
+  const bridgeNonce = 'nonce_query_payload_67890';
+  const envelope = {
+    type: 'quizmind.extension.bind_fallback_code',
+    requestId,
+    fallbackCode: {
+      code: 'bindc_query_payload_123',
+    },
+  };
+  const encodedPayload = encodeBase64UrlJson(envelope);
+  let capturedRedeemBody: Record<string, unknown> | null = null;
+
+  const connected = await connectToPlatform({
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake,
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    requestId,
+    bridgeNonce,
+    state,
+    openBridge: () =>
+      `chrome-extension://abcdefghijklmnopabcdefghijklmnop/relay.html?quizmind_bridge_payload=${encodedPayload}&quizmind_bridge_payload_format=base64url-json&requestId=${requestId}&bridgeNonce=${bridgeNonce}`,
+    fetcher: (async (_input, init) => {
+      capturedRedeemBody = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: bindResult,
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  assert.equal(connected.session.token, 'tok_demo_123');
+  assert.deepEqual(capturedRedeemBody, {
+    code: 'bindc_query_payload_123',
+    installationId: 'inst_demo',
+    requestId,
+    bridgeNonce,
   });
   assert.equal((await state.getInstallationSession())?.token, 'tok_demo_123');
 });

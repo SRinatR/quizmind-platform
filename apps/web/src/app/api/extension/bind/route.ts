@@ -7,6 +7,7 @@ import {
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
 import {
+  BindCodeStoreUnavailableError,
   issueBindFallbackCode,
   normalizeBridgeOrigin,
 } from '../../../../lib/extension-bind-code-store';
@@ -31,6 +32,8 @@ interface RouteSuccessPayload {
 
 const validBrowsers = new Set<CompatibilityHandshake['browser']>(['chrome', 'edge', 'brave', 'other']);
 const validBridgeModes = new Set(['bind_result', 'fallback_code']);
+const maxEnvironmentLength = 64;
+const environmentTokenPattern = /^[A-Za-z0-9._-]+$/;
 type BridgeMode = 'bind_result' | 'fallback_code';
 
 interface BindRouteDependencies {
@@ -93,6 +96,16 @@ function normalizeBridgeNonce(value: string | undefined): string | undefined {
   return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : undefined;
 }
 
+function normalizeBridgeRequestId(value: string | undefined): string | undefined {
+  const normalized = value?.trim();
+
+  if (!normalized || normalized.length < 8 || normalized.length > 160) {
+    return undefined;
+  }
+
+  return /^[A-Za-z0-9:_\-.]+$/.test(normalized) ? normalized : undefined;
+}
+
 function normalizeBridgeMode(value: string | undefined): BridgeMode | undefined {
   const normalized = value?.trim().toLowerCase();
 
@@ -101,6 +114,20 @@ function normalizeBridgeMode(value: string | undefined): BridgeMode | undefined 
   }
 
   return validBridgeModes.has(normalized) ? (normalized as BridgeMode) : undefined;
+}
+
+function normalizeEnvironment(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized || normalized.length > maxEnvironmentLength) {
+    return null;
+  }
+
+  return environmentTokenPattern.test(normalized) ? normalized : null;
 }
 
 function normalizeHandshake(value: unknown): CompatibilityHandshake | null {
@@ -136,9 +163,11 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Partial<ExtensionInstallationBindRequest> | null;
   const installationId = typeof body?.installationId === 'string' ? body.installationId.trim() : '';
   const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
-  const environment = typeof body?.environment === 'string' ? body.environment.trim() : '';
+  const rawEnvironment = typeof body?.environment === 'string' ? body.environment : undefined;
+  const environment = normalizeEnvironment(body?.environment);
   const handshake = normalizeHandshake(body?.handshake);
-  const requestId = request.headers.get('x-quizmind-bind-request-id')?.trim() || undefined;
+  const rawRequestId = request.headers.get('x-quizmind-bind-request-id')?.trim() || undefined;
+  const requestId = normalizeBridgeRequestId(rawRequestId);
   const rawBridgeNonce = request.headers.get('x-quizmind-bridge-nonce')?.trim() || undefined;
   const bridgeNonce = normalizeBridgeNonce(rawBridgeNonce);
   const rawTargetOrigin = request.headers.get('x-quizmind-target-origin')?.trim() || undefined;
@@ -146,12 +175,22 @@ export async function POST(request: Request) {
   const rawBridgeMode = request.headers.get('x-quizmind-bridge-mode')?.trim() || undefined;
   const bridgeMode = normalizeBridgeMode(rawBridgeMode) ?? 'bind_result';
 
+  if (rawEnvironment && !environment) {
+    return badRequest(
+      `environment must be 1-${String(maxEnvironmentLength)} characters using A-Z, a-z, 0-9, ".", "_", or "-".`,
+    );
+  }
+
   if (!installationId || !environment || !handshake) {
     return badRequest('installationId, environment, and a valid handshake are required.');
   }
 
   if (rawBridgeNonce && !bridgeNonce) {
     return badRequest('x-quizmind-bridge-nonce must be 8-128 characters using A-Z, a-z, 0-9, "_", "-", ".", or ":".');
+  }
+
+  if (rawRequestId && !requestId) {
+    return badRequest('x-quizmind-bind-request-id must be 8-160 characters using A-Z, a-z, 0-9, "_", "-", ".", or ":".');
   }
 
   if (rawTargetOrigin && !targetOrigin) {
@@ -176,20 +215,26 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = await bindRouteDependencies.fetchImpl(`${bindRouteDependencies.apiUrl}/extension/installations/bind`, {
-    method: 'POST',
-    cache: 'no-store',
-    headers: {
-      authorization: `Bearer ${accessToken}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      installationId,
-      environment,
-      handshake,
-      ...(workspaceId ? { workspaceId } : {}),
-    } satisfies ExtensionInstallationBindRequest),
-  });
+  let response: Response;
+
+  try {
+    response = await bindRouteDependencies.fetchImpl(`${bindRouteDependencies.apiUrl}/extension/installations/bind`, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        installationId,
+        environment,
+        handshake,
+        ...(workspaceId ? { workspaceId } : {}),
+      } satisfies ExtensionInstallationBindRequest),
+    });
+  } catch {
+    return badRequest('Platform bind service is unavailable right now.', 503);
+  }
 
   const payload = (await response.json().catch(() => null)) as
     | ApiEnvelope<ExtensionInstallationBindResult>
@@ -207,16 +252,23 @@ export async function POST(request: Request) {
     return badRequest(fallbackMessage ?? 'Unable to bind the extension installation right now.', response.status || 500);
   }
 
-  const fallbackCode =
-    bridgeMode === 'fallback_code' && requestId && bridgeNonce && targetOrigin
-      ? await bindRouteDependencies.issueFallbackCode({
-          installationId,
-          requestId,
-          bridgeNonce,
-          targetOrigin,
-          result: payload.data,
-        })
-      : undefined;
+  let fallbackCode: RouteSuccessPayload['fallbackCode'];
+
+  if (bridgeMode === 'fallback_code' && requestId && bridgeNonce && targetOrigin) {
+    try {
+      fallbackCode = await bindRouteDependencies.issueFallbackCode({
+        installationId,
+        requestId,
+        bridgeNonce,
+        targetOrigin,
+        result: payload.data,
+      });
+    } catch (error) {
+      if (!(error instanceof BindCodeStoreUnavailableError)) {
+        return badRequest('Unable to issue secure fallback bind code right now.', 503);
+      }
+    }
+  }
 
   return NextResponse.json<RouteSuccessPayload>(
     {

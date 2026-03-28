@@ -315,6 +315,111 @@ async function assertAuthLoginHealth(apiUrl, options) {
   console.log(`[OK] Auth login endpoint rejected invalid payload as expected: ${url} -> ${response.status}`);
 }
 
+async function assertExtensionEndpointRequiresAuth(apiUrl, path, body) {
+  const url = `${apiUrl}${path}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'user-agent': 'quizmind-release-smoke-check/1.0',
+    },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.text();
+  const validClientErrorStatuses = new Set([400, 401, 403, 422, 429]);
+
+  if (response.status >= 500) {
+    throw new Error(`[FAILED] ${url} returned ${response.status}. Body: ${payload.slice(0, 300)}`);
+  }
+
+  if (!validClientErrorStatuses.has(response.status)) {
+    throw new Error(
+      `[FAILED] ${url} returned unexpected status ${response.status}. Expected one of: ${Array.from(validClientErrorStatuses).join(', ')}.`,
+    );
+  }
+
+  console.log(`[OK] Extension endpoint enforces auth/validation: ${url} -> ${response.status}`);
+}
+
+async function assertWebExtensionConnectSignupEntry(webUrl) {
+  const params = new URLSearchParams({
+    mode: 'signup',
+    installationId: 'inst_smoke_check',
+    extensionVersion: '1.7.0',
+    schemaVersion: '2',
+    capabilities: 'runtime.chat',
+    browser: 'chrome',
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    requestId: 'bind_smoke_123',
+    bridgeNonce: 'nonce_smoke_12345',
+  });
+  const url = `${webUrl}/app/extension/connect?${params.toString()}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    redirect: 'follow',
+    headers: {
+      'user-agent': 'quizmind-release-smoke-check/1.0',
+    },
+  });
+  const body = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`[FAILED] ${url} returned ${response.status}.`);
+  }
+
+  if (!body.includes('Sign in required')) {
+    throw new Error('[FAILED] Extension connect page did not render unauthenticated sign-in prompt.');
+  }
+
+  if (!body.includes('/auth/register?next=')) {
+    throw new Error('[FAILED] Extension connect signup intent link is missing next-preserving register URL.');
+  }
+
+  if (!body.includes('mode%3Dsignup')) {
+    throw new Error('[FAILED] Extension connect signup intent did not preserve mode=signup in next URL.');
+  }
+
+  console.log(`[OK] Extension connect signup entry validated: ${url}`);
+}
+
+async function assertWebExtensionConnectOriginMismatchBlocked(webUrl) {
+  const params = new URLSearchParams({
+    mode: 'signup',
+    installationId: 'inst_smoke_check_mismatch',
+    extensionVersion: '1.7.0',
+    schemaVersion: '2',
+    capabilities: 'runtime.chat',
+    browser: 'chrome',
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    requestId: 'bind_smoke_origin_mismatch_123',
+    bridgeNonce: 'nonce_smoke_origin_mismatch_12345',
+    platformOrigin: 'https://quizmind.app',
+  });
+  const url = `${webUrl}/app/extension/connect?${params.toString()}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    redirect: 'follow',
+    headers: {
+      'user-agent': 'quizmind-release-smoke-check/1.0',
+    },
+  });
+  const body = await response.text();
+
+  if (!response.ok) {
+    throw new Error(`[FAILED] ${url} returned ${response.status}.`);
+  }
+
+  if (!body.includes('Bridge launch origin mismatch blocked.')) {
+    throw new Error('[FAILED] Extension connect page did not render strict platformOrigin mismatch blocking state.');
+  }
+
+  if (!body.includes('Bridge connect is blocked')) {
+    throw new Error('[FAILED] Extension connect strict mismatch message does not include explicit blocked guidance.');
+  }
+
+  console.log(`[OK] Extension connect strict origin mismatch blocking validated: ${url}`);
+}
+
 async function main() {
   const args = parseArgs(process.argv);
   const requireHttps = normalizeBoolean(args['require-https'], false);
@@ -333,6 +438,7 @@ async function main() {
   const requireConnected = normalizeBoolean(args['require-connected'], true);
   const requireZeroValidationIssues = normalizeBoolean(args['require-zero-validation-issues'], true);
   const requireRateLimitHeaders = normalizeBoolean(args['require-rate-limit-headers'], true);
+  const requireBridgeOriginBlock = normalizeBoolean(args['require-bridge-origin-block'], false);
   const timeoutMs = timeoutSeconds * 1000;
 
   console.log(`Running release smoke checks with timeout=${timeoutSeconds}s`);
@@ -346,9 +452,33 @@ async function main() {
   await assertAuthLoginHealth(apiUrl, {
     requireRateLimitHeaders,
   });
+  await assertExtensionEndpointRequiresAuth(apiUrl, '/extension/installations/bind', {
+    installationId: 'inst_smoke_check',
+    environment: 'production',
+    handshake: {
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilities: ['runtime.chat'],
+      browser: 'chrome',
+    },
+  });
+  await assertExtensionEndpointRequiresAuth(apiUrl, '/extension/bootstrap/v2', {
+    installationId: 'inst_smoke_check',
+    environment: 'production',
+    handshake: {
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilities: ['runtime.chat'],
+      browser: 'chrome',
+    },
+  });
 
   if (webUrl) {
     await waitForHttpOk(`${webUrl}/`, timeoutMs, 'Web root');
+    await assertWebExtensionConnectSignupEntry(webUrl);
+    if (requireBridgeOriginBlock) {
+      await assertWebExtensionConnectOriginMismatchBlocked(webUrl);
+    }
   }
 
   console.log('Release smoke checks passed.');

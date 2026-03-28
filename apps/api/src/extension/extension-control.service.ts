@@ -81,6 +81,21 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
   return normalized;
 }
 
+const maxEnvironmentLength = 64;
+const environmentTokenPattern = /^[A-Za-z0-9._-]+$/;
+
+function readRequiredEnvironment(value: string | undefined, fieldName: string): string {
+  const environment = readRequiredString(value, fieldName);
+
+  if (environment.length > maxEnvironmentLength || !environmentTokenPattern.test(environment)) {
+    throw new BadRequestException(
+      `${fieldName} must be 1-${String(maxEnvironmentLength)} characters using A-Z, a-z, 0-9, ".", "_", or "-".`,
+    );
+  }
+
+  return environment;
+}
+
 const maxExtensionActionReasonLength = 500;
 
 function readRequiredActionReason(value: string | undefined): string {
@@ -318,7 +333,7 @@ export class ExtensionControlService {
 
     return this.buildBootstrapPayload({
       installation,
-      environment: readRequiredString(request?.environment ?? 'production', 'environment'),
+      environment: readRequiredEnvironment(request?.environment ?? 'production', 'environment'),
       handshake,
       refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
     });
@@ -755,7 +770,7 @@ export class ExtensionControlService {
     request?: Partial<ExtensionInstallationBindRequest>,
   ): ExtensionInstallationBindRequest {
     const installationId = readRequiredString(request?.installationId, 'installationId');
-    const environment = readRequiredString(request?.environment ?? 'production', 'environment');
+    const environment = readRequiredEnvironment(request?.environment ?? 'production', 'environment');
     const handshake = this.normalizeHandshake(request?.handshake);
     const workspaceId = request?.workspaceId?.trim() || session.workspaces[0]?.id;
 
