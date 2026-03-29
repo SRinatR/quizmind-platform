@@ -635,8 +635,8 @@ export async function getWalletTopUps(workspaceId: string, accessToken: string):
   return readApiData<WalletTopUpsPayload>(path, withAccessToken(undefined, accessToken));
 }
 
-export function personaHref(pathname: string, persona: string) {
-  return withPersona(pathname, persona);
+export function personaHref(pathname: string, _persona: string) {
+  return pathname;
 }
 
 export function resolvePersona(
