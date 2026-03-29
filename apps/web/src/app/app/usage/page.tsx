@@ -55,13 +55,13 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Quota counters, extension activity, and installation health now come from a dedicated usage snapshot instead of a placeholder route."
       eyebrow="Usage"
       pathname="/app/usage"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Workspace usage and telemetry"
     >
       {session && workspaceId && usage ? (
@@ -181,3 +181,6 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
     </SiteShell>
   );
 }
+
+
+

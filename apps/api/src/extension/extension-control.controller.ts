@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Headers,
+  HttpException,
   Inject,
   Post,
   Query,
@@ -372,30 +373,43 @@ export class ExtensionControlController {
     const installationSession = await this.requireInstallationSession(authorization);
     const workspaceId = installationSession.installation.workspaceId;
 
-    if (!workspaceId) {
-      throw new UnauthorizedException(
-        'Installation is not bound to a workspace yet. Reconnect from extension settings.',
-      );
+    try {
+      if (!workspaceId) {
+        throw new UnauthorizedException(
+          'Installation is not bound to a workspace yet. Reconnect from extension settings.',
+        );
+      }
+
+      const session = buildInstallationRuntimeSession(installationSession);
+      const catalog = await this.aiProxyService.listModelsForCurrentSession(session, workspaceId);
+      const typeFilter = (type ?? '').trim().toLowerCase();
+      const filtered = catalog.models.filter((entry) => {
+        if (typeFilter === 'image') {
+          return entry.capabilityTags.includes('vision') || entry.capabilityTags.includes('image');
+        }
+
+        if (typeFilter === 'chat') {
+          return entry.capabilityTags.includes('text');
+        }
+
+        return true;
+      });
+
+      return ok({
+        models: filtered.map((entry) => mapProviderModelToExtensionShape(entry)),
+      });
+    } catch (error) {
+      this.logExtensionAiFailure({
+        action: 'models',
+        installationId: installationSession.installation.installationId,
+        workspaceId,
+        input: {
+          type,
+        },
+        error,
+      });
+      throw error;
     }
-
-    const session = buildInstallationRuntimeSession(installationSession);
-    const catalog = await this.aiProxyService.listModelsForCurrentSession(session, workspaceId);
-    const typeFilter = (type ?? '').trim().toLowerCase();
-    const filtered = catalog.models.filter((entry) => {
-      if (typeFilter === 'image') {
-        return entry.capabilityTags.includes('vision') || entry.capabilityTags.includes('image');
-      }
-
-      if (typeFilter === 'chat') {
-        return entry.capabilityTags.includes('text');
-      }
-
-      return true;
-    });
-
-    return ok({
-      models: filtered.map((entry) => mapProviderModelToExtensionShape(entry)),
-    });
   }
 
   private async requireConnectedSession(authorization?: string): Promise<CurrentSessionSnapshot> {
@@ -426,39 +440,82 @@ export class ExtensionControlController {
     const installationSession = await this.requireInstallationSession(authorization);
     const workspaceId = installationSession.installation.workspaceId;
 
-    if (!workspaceId) {
-      throw new UnauthorizedException(
-        'Installation is not bound to a workspace yet. Reconnect from extension settings.',
-      );
+    try {
+      if (!workspaceId) {
+        throw new UnauthorizedException(
+          'Installation is not bound to a workspace yet. Reconnect from extension settings.',
+        );
+      }
+
+      const session = buildInstallationRuntimeSession(installationSession);
+      const normalizedRequest = normalizeExtensionAiRequest(request, workspaceId);
+      const proxyResult = await this.aiProxyService.proxyForCurrentSession(session, normalizedRequest);
+      const upstreamResponse =
+        proxyResult.response && typeof proxyResult.response === 'object'
+          ? (proxyResult.response as Record<string, unknown>)
+          : {};
+      const choices = Array.isArray(upstreamResponse.choices) ? upstreamResponse.choices : [];
+      const usage =
+        upstreamResponse.usage && typeof upstreamResponse.usage === 'object'
+          ? upstreamResponse.usage
+          : proxyResult.usage;
+
+      return {
+        id:
+          typeof upstreamResponse.id === 'string' && upstreamResponse.id.trim().length > 0
+            ? upstreamResponse.id
+            : proxyResult.requestId,
+        model:
+          typeof upstreamResponse.model === 'string' && upstreamResponse.model.trim().length > 0
+            ? upstreamResponse.model
+            : proxyResult.model,
+        provider: proxyResult.provider,
+        keySource: proxyResult.keySource,
+        choices,
+        ...(usage ? { usage } : {}),
+        quota: proxyResult.quota,
+      };
+    } catch (error) {
+      this.logExtensionAiFailure({
+        action: 'proxy',
+        installationId: installationSession.installation.installationId,
+        workspaceId,
+        input: {
+          provider: request?.provider,
+          model: request?.model,
+          useOwnKey: request?.useOwnKey ?? request?.options?.useOwnKey,
+          messageCount: Array.isArray(request?.messages) ? request?.messages.length : undefined,
+        },
+        error,
+      });
+      throw error;
     }
+  }
 
-    const session = buildInstallationRuntimeSession(installationSession);
-    const normalizedRequest = normalizeExtensionAiRequest(request, workspaceId);
-    const proxyResult = await this.aiProxyService.proxyForCurrentSession(session, normalizedRequest);
-    const upstreamResponse =
-      proxyResult.response && typeof proxyResult.response === 'object'
-        ? (proxyResult.response as Record<string, unknown>)
-        : {};
-    const choices = Array.isArray(upstreamResponse.choices) ? upstreamResponse.choices : [];
-    const usage =
-      upstreamResponse.usage && typeof upstreamResponse.usage === 'object'
-        ? upstreamResponse.usage
-        : proxyResult.usage;
+  private logExtensionAiFailure(input: {
+    action: 'models' | 'proxy';
+    installationId: string;
+    workspaceId?: string | null;
+    input?: Record<string, unknown>;
+    error: unknown;
+  }): void {
+    const status = input.error instanceof HttpException ? input.error.getStatus() : undefined;
+    const message =
+      input.error instanceof Error
+        ? input.error.message.trim().slice(0, 512)
+        : 'Unknown extension AI error.';
 
-    return {
-      id:
-        typeof upstreamResponse.id === 'string' && upstreamResponse.id.trim().length > 0
-          ? upstreamResponse.id
-          : proxyResult.requestId,
-      model:
-        typeof upstreamResponse.model === 'string' && upstreamResponse.model.trim().length > 0
-          ? upstreamResponse.model
-          : proxyResult.model,
-      provider: proxyResult.provider,
-      keySource: proxyResult.keySource,
-      choices,
-      ...(usage ? { usage } : {}),
-      quota: proxyResult.quota,
-    };
+    console.warn(
+      JSON.stringify({
+        eventType: 'extension.ai_request_failed',
+        action: input.action,
+        installationId: input.installationId,
+        workspaceId: input.workspaceId ?? null,
+        ...(input.input ? { input: input.input } : {}),
+        errorMessage: message,
+        ...(typeof status === 'number' ? { status } : {}),
+        occurredAt: new Date().toISOString(),
+      }),
+    );
   }
 }

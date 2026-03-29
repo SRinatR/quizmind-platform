@@ -43,7 +43,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <div className="auth-highlight">
               <span className="micro-label">After login</span>
               <strong>Dashboard uses bearer auth</strong>
-              <p>`/app` and `/admin` now read the connected session cookie before falling back to personas.</p>
+              <p>`/app` and `/admin` now read the connected session cookie and call protected API routes directly.</p>
             </div>
           </div>
 

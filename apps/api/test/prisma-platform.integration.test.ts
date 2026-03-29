@@ -212,6 +212,7 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
 
   assert.equal(result.personaKey, 'connected-user');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.writeDecision.allowed, true);
   assert.equal(createdUsers.length, 2);
   assert.ok(createdUsers.some((item) => item.email === adminEmail && item.systemRoles.includes('platform_admin')));
   assert.ok(createdUsers.some((item) => item.email === supportEmail && item.systemRoles.includes('support_admin')));

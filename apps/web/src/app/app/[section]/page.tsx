@@ -27,13 +27,13 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Each dashboard route can be opened directly, but its availability still follows the permission and entitlement model."
       eyebrow="App Route"
       pathname={`/app/${resolvedParams.section}`}
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title={section?.title ?? 'Section unavailable'}
     >
       {section && session ? (
@@ -69,3 +69,6 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
     </SiteShell>
   );
 }
+
+
+

@@ -211,7 +211,7 @@ export default function HomePage() {
             <Link href="/roadmap">Roadmap</Link>
             <Link href="/faq">FAQ</Link>
             <Link href="/auth/login">Sign in</Link>
-            <Link href="/app?persona=platform-admin">Dashboard</Link>
+            <Link href="/app">Dashboard</Link>
           </div>
           <span className="lp-footer-copy">© 2025 QuizMind</span>
         </div>

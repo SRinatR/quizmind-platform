@@ -55,6 +55,30 @@ function normalizeScopes(value: string): string[] {
   ).sort();
 }
 
+function describePolicyKeyBehavior(input?: {
+  mode?: string;
+  allowBringYourOwnKey?: boolean;
+  requireAdminApproval?: boolean;
+}): string {
+  if (!input) {
+    return 'Policy is not loaded yet.';
+  }
+
+  if (!input.allowBringYourOwnKey || input.mode === 'platform_only') {
+    return 'platform-managed only. Stored user/workspace keys are not used for managed AI runtime requests.';
+  }
+
+  if (input.requireAdminApproval) {
+    return 'BYOK is enabled in principle, but blocked until admin approval is disabled for this workspace.';
+  }
+
+  if (input.mode === 'user_key_required') {
+    return 'user key required. Managed requests must run with useOwnKey=true and an active user credential.';
+  }
+
+  return 'BYOK is active. Stored user/workspace credentials can be used by runtime requests that opt into own-key mode.';
+}
+
 export function AiAccessClient({
   currentWorkspaceId,
   isConnectedSession,
@@ -80,6 +104,11 @@ export function AiAccessClient({
 
   const credentials = providerCredentialInventory?.items ?? [];
   const policy = providerCredentialInventory?.policy ?? null;
+  const policyBehavior = describePolicyKeyBehavior({
+    mode: providerCredentialInventory?.aiAccessPolicy.mode,
+    allowBringYourOwnKey: providerCredentialInventory?.aiAccessPolicy.allowBringYourOwnKey,
+    requireAdminApproval: providerCredentialInventory?.policy.requireAdminApproval,
+  });
   const canWrite = Boolean(
     providerCredentialInventory?.writeDecision.allowed &&
       providerCredentialInventory.aiAccessPolicy.allowBringYourOwnKey &&
@@ -108,7 +137,7 @@ export function AiAccessClient({
       setErrorMessage(
         providerCredentialInventory?.policy.requireAdminApproval
           ? 'Bring-your-own-key is currently gated behind admin approval for this workspace.'
-          : 'This workspace context is read-only for provider credentials.',
+          : `This workspace policy does not allow effective BYOK writes right now (${providerCredentialInventory?.aiAccessPolicy.mode ?? 'unknown_mode'}).`,
       );
       return;
     }
@@ -283,6 +312,10 @@ export function AiAccessClient({
                 <p>{providerCredentialInventory.aiAccessPolicy.mode}</p>
               </div>
               <div className="list-item">
+                <strong>Effective key behavior</strong>
+                <p>{policyBehavior}</p>
+              </div>
+              <div className="list-item">
                 <strong>Default provider</strong>
                 <p>{providerCredentialInventory.aiAccessPolicy.defaultProvider ?? 'platform-selected'}</p>
               </div>
@@ -312,6 +345,10 @@ export function AiAccessClient({
                 <strong>Allowed model tags</strong>
                 <p>{(providerCredentialInventory.policy.allowedModelTags ?? []).join(', ') || 'No model-tag restriction.'}</p>
               </div>
+              <div className="list-item">
+                <strong>Validation depth</strong>
+                <p>Stored key validation here is local shape-check only; provider acceptance is verified on real runtime calls.</p>
+              </div>
             </div>
           ) : (
             <div className="empty-state">
@@ -334,11 +371,16 @@ export function AiAccessClient({
           <h2>{editingCredentialId ? 'Rotate provider credential' : 'Add provider credential'}</h2>
           {isConnectedSession && providerCredentialInventory ? (
             <>
+              {!canWrite ? (
+                <p className="list-muted">
+                  Key writes are currently blocked by policy. Effective behavior: {policyBehavior}
+                </p>
+              ) : null}
               <div className="admin-ticket-editor">
                 <label className="admin-ticket-field">
                   <span className="micro-label">Provider</span>
                   <select
-                    disabled={Boolean(editingCredentialId)}
+                    disabled={!canWrite || Boolean(editingCredentialId)}
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
@@ -357,7 +399,7 @@ export function AiAccessClient({
                 <label className="admin-ticket-field">
                   <span className="micro-label">Ownership</span>
                   <select
-                    disabled={Boolean(editingCredentialId)}
+                    disabled={!canWrite || Boolean(editingCredentialId)}
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
@@ -375,7 +417,7 @@ export function AiAccessClient({
                 <label className="admin-ticket-field">
                   <span className="micro-label">Workspace</span>
                   <select
-                    disabled={Boolean(editingCredentialId)}
+                    disabled={!canWrite || Boolean(editingCredentialId)}
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
@@ -394,6 +436,7 @@ export function AiAccessClient({
                 <label className="admin-ticket-field">
                   <span className="micro-label">Scopes</span>
                   <input
+                    disabled={!canWrite}
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
@@ -407,6 +450,7 @@ export function AiAccessClient({
                 <label className="admin-ticket-field">
                   <span className="micro-label">Secret</span>
                   <input
+                    disabled={!canWrite}
                     onChange={(event) =>
                       setFormState((current) => ({
                         ...current,
@@ -420,7 +464,7 @@ export function AiAccessClient({
                 </label>
               </div>
               <div className="admin-user-actions">
-                <button className="btn-primary" disabled={isSubmitting} onClick={() => void handleSubmit()} type="button">
+                <button className="btn-primary" disabled={isSubmitting || !canWrite} onClick={() => void handleSubmit()} type="button">
                   {isSubmitting ? (editingCredentialId ? 'Rotating...' : 'Saving...') : editingCredentialId ? 'Rotate key' : 'Save key'}
                 </button>
                 {editingCredentialId ? (

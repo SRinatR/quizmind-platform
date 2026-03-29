@@ -10,6 +10,9 @@ import {
   type AdminWebhookFilters,
   type AdminWebhooksSnapshot,
   type AdminUserDirectorySnapshot,
+  type AdminUserCreateRequest,
+  type AdminUserAccessUpdateRequest,
+  type AdminUserMutationResult,
   type CompatibilityRulesSnapshot,
   type BillingAdminPlansPayload,
   type BillingCheckoutResult,
@@ -164,6 +167,8 @@ export type ProviderCatalogSnapshot = ProviderCatalogPayload;
 export type ProviderCredentialInventorySnapshot = ProviderCredentialInventory;
 export type AdminProviderGovernanceStateSnapshot = AdminProviderGovernanceSnapshot;
 export type UserProfileSnapshot = UserProfilePayload;
+export type AdminUserCreateMutationSnapshot = AdminUserMutationResult;
+export type AdminUserAccessUpdateMutationSnapshot = AdminUserMutationResult;
 
 function resolveApiUrl(): string {
   const internalApiUrl = process.env.API_INTERNAL_URL?.trim();
@@ -183,17 +188,11 @@ function resolveApiUrl(): string {
 export const API_URL = resolveApiUrl();
 
 export const demoPersonas = [
-  { key: 'platform-admin', label: 'Platform Admin' },
-  { key: 'support-admin', label: 'Support Admin' },
-  { key: 'workspace-viewer', label: 'Workspace Viewer' },
+  { key: 'connected-user', label: 'Connected Session' },
 ] as const;
 
-function withPersona(path: string, persona?: string) {
-  if (!persona) {
-    return path;
-  }
-
-  return `${path}${path.includes('?') ? '&' : '?'}persona=${persona}`;
+function withPersona(path: string, _persona?: string) {
+  return path;
 }
 
 function withQuery(path: string, query?: Record<string, string | number | undefined | null>) {
@@ -288,10 +287,8 @@ function withAccessToken(init: RequestInit | undefined, accessToken?: string | n
   };
 }
 
-export async function getSession(persona: string, accessToken?: string | null) {
-  const path = accessToken ? '/auth/me' : withPersona('/auth/me', persona);
-
-  return readApiData<SessionSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function getSession(_persona: string, accessToken?: string | null) {
+  return readApiData<SessionSnapshot>('/auth/me', withAccessToken(undefined, accessToken));
 }
 
 export async function getUserProfile(accessToken?: string | null) {
@@ -341,14 +338,12 @@ export async function getAuthSessions(accessToken?: string | null) {
   return readApiData<AuthSessionsSnapshot>('/auth/sessions', withAccessToken(undefined, accessToken));
 }
 
-export async function getWorkspaces(persona: string, accessToken?: string | null) {
-  const path = accessToken ? '/workspaces' : withPersona('/workspaces', persona);
-
-  return readApiData<WorkspaceListSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function getWorkspaces(_persona: string, accessToken?: string | null) {
+  return readApiData<WorkspaceListSnapshot>('/workspaces', withAccessToken(undefined, accessToken));
 }
 
-export async function getSubscription(persona: string, workspaceId?: string, accessToken?: string | null) {
-  const basePath = accessToken ? '/billing/subscription' : withPersona('/billing/subscription', persona);
+export async function getSubscription(_persona: string, workspaceId?: string, accessToken?: string | null) {
+  const basePath = '/billing/subscription';
   const path = workspaceId
     ? `${basePath}${basePath.includes('?') ? '&' : '?'}workspaceId=${workspaceId}`
     : basePath;
@@ -406,11 +401,11 @@ export async function getAdminPlans(accessToken?: string | null) {
 }
 
 export async function getAdminExtensionFleet(
-  persona: string,
+  _persona: string,
   filters?: Partial<AdminExtensionFleetFilters>,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/admin/installations' : withPersona('/admin/installations', persona);
+  const basePath = '/admin/installations';
   const path = withQuery(basePath, {
     workspaceId: filters?.workspaceId,
     installationId: filters?.installationId,
@@ -423,10 +418,11 @@ export async function getAdminExtensionFleet(
   return readApiData<AdminExtensionFleetStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getCompatibilityRules(persona: string, accessToken?: string | null) {
-  const path = accessToken ? '/admin/compatibility' : withPersona('/admin/compatibility', persona);
-
-  return readApiData<CompatibilityRulesStateSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function getCompatibilityRules(_persona: string, accessToken?: string | null) {
+  return readApiData<CompatibilityRulesStateSnapshot>(
+    '/admin/compatibility',
+    withAccessToken(undefined, accessToken),
+  );
 }
 
 export async function getBillingInvoices(workspaceId: string, accessToken?: string | null) {
@@ -438,11 +434,11 @@ export async function getBillingInvoices(workspaceId: string, accessToken?: stri
 }
 
 export async function getUsageSummary(
-  persona: string,
+  _persona: string,
   workspaceId?: string,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/usage/summary' : withPersona('/usage/summary', persona);
+  const basePath = '/usage/summary';
   const path = withQuery(basePath, {
     workspaceId,
   });
@@ -451,11 +447,11 @@ export async function getUsageSummary(
 }
 
 export async function getUsageHistory(
-  persona: string,
+  _persona: string,
   request?: Partial<UsageHistoryRequest>,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/usage/history' : withPersona('/usage/history', persona);
+  const basePath = '/usage/history';
   const path = withQuery(basePath, {
     workspaceId: request?.workspaceId,
     source: request?.source,
@@ -483,18 +479,19 @@ export async function getExtensionInstallationInventory(
   return readApiData<ExtensionInstallationInventoryStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getFeatureFlags(persona: string, accessToken?: string | null) {
-  const path = accessToken ? '/admin/feature-flags' : withPersona('/admin/feature-flags', persona);
-
-  return readApiData<FeatureFlagsSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function getFeatureFlags(_persona: string, accessToken?: string | null) {
+  return readApiData<FeatureFlagsSnapshot>(
+    '/admin/feature-flags',
+    withAccessToken(undefined, accessToken),
+  );
 }
 
 export async function getRemoteConfigState(
-  persona: string,
+  _persona: string,
   workspaceId?: string,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/admin/remote-config' : withPersona('/admin/remote-config', persona);
+  const basePath = '/admin/remote-config';
   const path = withQuery(basePath, {
     workspaceId,
   });
@@ -524,18 +521,46 @@ export async function ingestUsageEvent(
   );
 }
 
-export async function getAdminUsers(persona: string, accessToken?: string | null) {
-  const path = accessToken ? '/admin/users' : withPersona('/admin/users', persona);
+export async function getAdminUsers(_persona: string, accessToken?: string | null) {
+  return readApiData<AdminUsersSnapshot>('/admin/users', withAccessToken(undefined, accessToken));
+}
 
-  return readApiData<AdminUsersSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function createAdminUser(
+  request: AdminUserCreateRequest,
+  accessToken?: string | null,
+) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return writeApiData<AdminUserCreateMutationSnapshot>(
+    '/admin/users/create',
+    request,
+    withAccessToken(undefined, accessToken),
+  );
+}
+
+export async function updateAdminUserAccess(
+  request: AdminUserAccessUpdateRequest,
+  accessToken?: string | null,
+) {
+  if (!accessToken) {
+    return null;
+  }
+
+  return writeApiData<AdminUserAccessUpdateMutationSnapshot>(
+    '/admin/users/update-access',
+    request,
+    withAccessToken(undefined, accessToken),
+  );
 }
 
 export async function getAdminLogs(
-  persona: string,
+  _persona: string,
   filters?: Partial<AdminLogFilters>,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/admin/logs' : withPersona('/admin/logs', persona);
+  const basePath = '/admin/logs';
   const path = withQuery(basePath, {
     workspaceId: filters?.workspaceId,
     stream: filters?.stream,
@@ -548,11 +573,11 @@ export async function getAdminLogs(
 }
 
 export async function getAdminSecurity(
-  persona: string,
+  _persona: string,
   filters?: Partial<AdminLogFilters>,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/admin/security' : withPersona('/admin/security', persona);
+  const basePath = '/admin/security';
   const path = withQuery(basePath, {
     workspaceId: filters?.workspaceId,
     severity: filters?.severity,
@@ -564,11 +589,11 @@ export async function getAdminSecurity(
 }
 
 export async function getAdminWebhooks(
-  persona: string,
+  _persona: string,
   filters?: Partial<AdminWebhookFilters>,
   accessToken?: string | null,
 ) {
-  const basePath = accessToken ? '/admin/webhooks' : withPersona('/admin/webhooks', persona);
+  const basePath = '/admin/webhooks';
   const path = withQuery(basePath, {
     provider: filters?.provider,
     status: filters?.status,
@@ -579,20 +604,19 @@ export async function getAdminWebhooks(
   return readApiData<AdminWebhooksStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getSupportImpersonationSessions(persona: string, accessToken?: string | null) {
-  const path = accessToken
-    ? '/support/impersonation-sessions'
-    : withPersona('/support/impersonation-sessions', persona);
-
-  return readApiData<SupportImpersonationSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function getSupportImpersonationSessions(_persona: string, accessToken?: string | null) {
+  return readApiData<SupportImpersonationSnapshot>(
+    '/support/impersonation-sessions',
+    withAccessToken(undefined, accessToken),
+  );
 }
 
 export async function getSupportTickets(
-  persona: string,
+  _persona: string,
   accessToken?: string | null,
   filters?: Partial<SupportTicketQueueFilters>,
 ) {
-  const basePath = accessToken ? '/support/tickets' : withPersona('/support/tickets', persona);
+  const basePath = '/support/tickets';
   const path = withQuery(basePath, {
     preset: filters?.preset,
     status: filters?.status,
@@ -610,14 +634,8 @@ export function personaHref(pathname: string, persona: string) {
 }
 
 export function resolvePersona(
-  searchParams?: Record<string, string | string[] | undefined>,
-  fallback = 'platform-admin',
+  _searchParams?: Record<string, string | string[] | undefined>,
+  fallback = 'connected-user',
 ) {
-  const rawValue = searchParams?.persona;
-
-  if (Array.isArray(rawValue)) {
-    return rawValue[0] ?? fallback;
-  }
-
-  return rawValue ?? fallback;
+  return fallback;
 }

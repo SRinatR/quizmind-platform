@@ -37,27 +37,18 @@ function createSession(): CurrentSessionSnapshot {
   };
 }
 
-test('PlatformController.listAdminSecurity uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedFilters: unknown;
+test('PlatformController.listAdminSecurity requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listAdminSecurity(persona?: string, filters?: unknown) {
-      capturedPersona = persona;
-      capturedFilters = filters;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        filters,
-      };
+    listAdminSecurity() {
+      return null;
     },
     async listAdminSecurityForCurrentSession() {
-      throw new Error('listAdminSecurityForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -66,18 +57,14 @@ test('PlatformController.listAdminSecurity uses persona mode when runtime is not
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listAdminSecurity('platform-admin', 'ws_1', 'warn', 'auth.login', '20');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedFilters, {
-    workspaceId: 'ws_1',
-    stream: 'security',
-    severity: 'warn',
-    search: 'auth.login',
-    limit: 20,
-  });
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.listAdminSecurity('platform-admin', 'ws_1', 'warn', 'auth.login', '20'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.listAdminSecurity uses connected session flow and forces security stream', async () => {
@@ -162,41 +149,18 @@ test('PlatformController.listAdminSecurity rejects missing bearer token in conne
   );
 });
 
-test('PlatformController.listAdminExtensionFleet uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedFilters: unknown;
+test('PlatformController.listAdminExtensionFleet requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listAdminExtensionFleet(persona?: string, filters?: unknown) {
-      capturedPersona = persona;
-      capturedFilters = filters;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        accessDecision: { allowed: true, reasons: [] },
-        manageDecision: { allowed: true, reasons: [] },
-        workspace: { id: 'ws_1', slug: 'demo-workspace', name: 'Demo Workspace', role: 'workspace_owner' },
-        filters,
-        items: [],
-        counts: {
-          total: 0,
-          connected: 0,
-          reconnectRequired: 0,
-          supported: 0,
-          supportedWithWarnings: 0,
-          deprecated: 0,
-          unsupported: 0,
-        },
-        permissions: ['installations:read', 'installations:write'],
-      };
+    listAdminExtensionFleet() {
+      return null;
     },
     async listAdminExtensionFleetForCurrentSession() {
-      throw new Error('listAdminExtensionFleetForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -205,28 +169,23 @@ test('PlatformController.listAdminExtensionFleet uses persona mode when runtime 
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listAdminExtensionFleet(
-    'platform-admin',
-    'ws_1',
-    'inst_chrome_primary',
-    'supported_with_warnings',
-    'connected',
-    'chrome',
-    '20',
+  await assert.rejects(
+    () =>
+      controller.listAdminExtensionFleet(
+        'platform-admin',
+        'ws_1',
+        'inst_chrome_primary',
+        'supported_with_warnings',
+        'connected',
+        'chrome',
+        '20',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedFilters, {
-    workspaceId: 'ws_1',
-    installationId: 'inst_chrome_primary',
-    compatibility: 'supported_with_warnings',
-    connection: 'connected',
-    search: 'chrome',
-    limit: 20,
-  });
-  assert.equal(result.ok, true);
-  assert.equal(result.data.manageDecision.allowed, true);
 });
 
 test('PlatformController.listAdminExtensionFleet uses connected session flow and returns manageDecision', async () => {
@@ -342,27 +301,18 @@ test('PlatformController.listAdminExtensionFleet rejects missing bearer token in
   );
 });
 
-test('PlatformController.listAdminLogs uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedFilters: unknown;
+test('PlatformController.listAdminLogs requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listAdminLogs(persona?: string, filters?: unknown) {
-      capturedPersona = persona;
-      capturedFilters = filters;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        filters,
-      };
+    listAdminLogs() {
+      return null;
     },
     async listAdminLogsForCurrentSession() {
-      throw new Error('listAdminLogsForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -371,25 +321,22 @@ test('PlatformController.listAdminLogs uses persona mode when runtime is not con
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listAdminLogs(
-    'platform-admin',
-    'ws_1',
-    'domain',
-    'warn',
-    'extension.lifecycle',
-    '30',
+  await assert.rejects(
+    () =>
+      controller.listAdminLogs(
+        'platform-admin',
+        'ws_1',
+        'domain',
+        'warn',
+        'extension.lifecycle',
+        '30',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedFilters, {
-    workspaceId: 'ws_1',
-    stream: 'domain',
-    severity: 'warn',
-    search: 'extension.lifecycle',
-    limit: 30,
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.listAdminLogs uses connected session flow', async () => {
@@ -475,27 +422,18 @@ test('PlatformController.listAdminLogs rejects missing bearer token in connected
   );
 });
 
-test('PlatformController.listAdminWebhooks uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedFilters: unknown;
+test('PlatformController.listAdminWebhooks requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listAdminWebhooks(persona?: string, filters?: unknown) {
-      capturedPersona = persona;
-      capturedFilters = filters;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        filters,
-      };
+    listAdminWebhooks() {
+      return null;
     },
     async listAdminWebhooksForCurrentSession() {
-      throw new Error('listAdminWebhooksForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -504,23 +442,21 @@ test('PlatformController.listAdminWebhooks uses persona mode when runtime is not
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listAdminWebhooks(
-    'platform-admin',
-    'stripe',
-    'failed',
-    'invoice',
-    '14',
+  await assert.rejects(
+    () =>
+      controller.listAdminWebhooks(
+        'platform-admin',
+        'stripe',
+        'failed',
+        'invoice',
+        '14',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedFilters, {
-    provider: 'stripe',
-    status: 'failed',
-    search: 'invoice',
-    limit: 14,
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.listAdminWebhooks uses connected session flow', async () => {
@@ -604,28 +540,18 @@ test('PlatformController.listAdminWebhooks rejects missing bearer token in conne
   );
 });
 
-test('PlatformController.exportUsage uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedRequest: unknown;
+test('PlatformController.exportUsage requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    exportUsage(persona?: string, request?: unknown) {
-      capturedPersona = persona;
-      capturedRequest = request;
-      return {
-        workspaceId: 'ws_1',
-        format: 'json',
-        scope: 'summary',
-      };
+    exportUsage() {
+      return null;
     },
     async exportUsageForCurrentSession() {
-      throw new Error('exportUsageForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -634,23 +560,22 @@ test('PlatformController.exportUsage uses persona mode when runtime is not conne
     runtimeMode: 'mock',
   };
 
-  const result = await controller.exportUsage(
-    {
-      workspaceId: 'ws_1',
-      format: 'json',
-      scope: 'summary',
+  await assert.rejects(
+    () =>
+      controller.exportUsage(
+        {
+          workspaceId: 'ws_1',
+          format: 'json',
+          scope: 'summary',
+        },
+        'platform-admin',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    'platform-admin',
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedRequest, {
-    workspaceId: 'ws_1',
-    format: 'json',
-    scope: 'summary',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.exportUsage uses connected session flow', async () => {
@@ -744,7 +669,7 @@ test('PlatformController.exportUsage rejects missing bearer token in connected m
   );
 });
 
-test('PlatformController.retryAdminWebhook requires connected admin auth in persona mode', async () => {
+test('PlatformController.retryAdminWebhook requires connected runtime in persona mode', async () => {
   const authService = {
     async getCurrentSession() {
       return createSession();
@@ -766,8 +691,8 @@ test('PlatformController.retryAdminWebhook requires connected admin auth in pers
   await assert.rejects(
     () => controller.retryAdminWebhook({ webhookEventId: 'wh_1' }, undefined),
     (error: unknown) => {
-      assert.ok(error instanceof UnauthorizedException);
-      assert.match((error as Error).message, /Connected admin authentication is required/);
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
       return true;
     },
   );
@@ -816,28 +741,18 @@ test('PlatformController.retryAdminWebhook uses connected session flow', async (
   assert.equal(result.ok, true);
 });
 
-test('PlatformController.exportAdminLogs uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedRequest: unknown;
+test('PlatformController.exportAdminLogs requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    exportAdminLogs(persona?: string, request?: unknown) {
-      capturedPersona = persona;
-      capturedRequest = request;
-      return {
-        workspaceId: 'ws_1',
-        format: 'json',
-        itemCount: 1,
-      };
+    exportAdminLogs() {
+      return null;
     },
     async exportAdminLogsForCurrentSession() {
-      throw new Error('exportAdminLogsForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -846,29 +761,25 @@ test('PlatformController.exportAdminLogs uses persona mode when runtime is not c
     runtimeMode: 'mock',
   };
 
-  const result = await controller.exportAdminLogs(
-    {
-      workspaceId: 'ws_1',
-      stream: 'security',
-      severity: 'warn',
-      search: 'auth',
-      limit: 20,
-      format: 'json',
+  await assert.rejects(
+    () =>
+      controller.exportAdminLogs(
+        {
+          workspaceId: 'ws_1',
+          stream: 'security',
+          severity: 'warn',
+          search: 'auth',
+          limit: 20,
+          format: 'json',
+        },
+        'platform-admin',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    'platform-admin',
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedRequest, {
-    workspaceId: 'ws_1',
-    stream: 'security',
-    severity: 'warn',
-    search: 'auth',
-    limit: 20,
-    format: 'json',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.exportAdminLogs uses connected session flow', async () => {
@@ -969,25 +880,18 @@ test('PlatformController.exportAdminLogs rejects missing bearer token in connect
   );
 });
 
-test('PlatformController.listSupportImpersonationSessions uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
+test('PlatformController.listSupportImpersonationSessions requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listSupportImpersonationSessions(persona?: string) {
-      capturedPersona = persona;
-      return {
-        personaKey: persona ?? 'support-admin',
-        items: [],
-      };
+    listSupportImpersonationSessions() {
+      return null;
     },
     async listSupportImpersonationSessionsForCurrentSession() {
-      throw new Error('listSupportImpersonationSessionsForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -996,11 +900,14 @@ test('PlatformController.listSupportImpersonationSessions uses persona mode when
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listSupportImpersonationSessions('support-admin');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'support-admin');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.listSupportImpersonationSessions('support-admin'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.listSupportImpersonationSessions uses connected session flow', async () => {
@@ -1068,28 +975,18 @@ test('PlatformController.listSupportImpersonationSessions rejects missing bearer
   );
 });
 
-test('PlatformController.listSupportTickets uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedFilters: unknown;
+test('PlatformController.listSupportTickets requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listSupportTickets(persona?: string, filters?: unknown) {
-      capturedPersona = persona;
-      capturedFilters = filters;
-      return {
-        personaKey: persona ?? 'support-admin',
-        filters,
-        items: [],
-      };
+    listSupportTickets() {
+      return null;
     },
     async listSupportTicketsForCurrentSession() {
-      throw new Error('listSupportTicketsForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1098,27 +995,23 @@ test('PlatformController.listSupportTickets uses persona mode when runtime is no
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listSupportTickets(
-    'support-admin',
-    'my_active',
-    'open',
-    'mine',
-    'invoice',
-    '16',
-    '8',
+  await assert.rejects(
+    () =>
+      controller.listSupportTickets(
+        'support-admin',
+        'my_active',
+        'open',
+        'mine',
+        'invoice',
+        '16',
+        '8',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'support-admin');
-  assert.deepEqual(capturedFilters, {
-    preset: 'my_active',
-    status: 'open',
-    ownership: 'mine',
-    search: 'invoice',
-    limit: 16,
-    timelineLimit: 8,
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.listSupportTickets uses connected session flow', async () => {
@@ -1216,24 +1109,18 @@ test('PlatformController.listSupportTickets rejects missing bearer token in conn
   );
 });
 
-test('PlatformController.startSupportImpersonation uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.startSupportImpersonation requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    startSupportImpersonation(request?: unknown) {
-      capturedRequest = request;
-      return {
-        sessionId: 'imp_1',
-      };
+    startSupportImpersonation() {
+      return null;
     },
     async startSupportImpersonationForCurrentSession() {
-      throw new Error('startSupportImpersonationForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1242,24 +1129,23 @@ test('PlatformController.startSupportImpersonation uses persona mode when runtim
     runtimeMode: 'mock',
   };
 
-  const result = await controller.startSupportImpersonation(
-    {
-      supportActorId: 'user_support_1',
-      targetUserId: 'user_2',
-      workspaceId: 'ws_1',
-      reason: 'Investigate ticket escalation.',
+  await assert.rejects(
+    () =>
+      controller.startSupportImpersonation(
+        {
+          supportActorId: 'user_support_1',
+          targetUserId: 'user_2',
+          workspaceId: 'ws_1',
+          reason: 'Investigate ticket escalation.',
+        },
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    supportActorId: 'user_support_1',
-    targetUserId: 'user_2',
-    workspaceId: 'ws_1',
-    reason: 'Investigate ticket escalation.',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.startSupportImpersonation uses connected session flow', async () => {
@@ -1353,24 +1239,18 @@ test('PlatformController.startSupportImpersonation rejects missing bearer token 
   );
 });
 
-test('PlatformController.updateSupportTicket uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.updateSupportTicket requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    updateSupportTicket(request?: unknown) {
-      capturedRequest = request;
-      return {
-        ticketId: 'ticket_1',
-      };
+    updateSupportTicket() {
+      return null;
     },
     async updateSupportTicketForCurrentSession() {
-      throw new Error('updateSupportTicketForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1379,22 +1259,22 @@ test('PlatformController.updateSupportTicket uses persona mode when runtime is n
     runtimeMode: 'mock',
   };
 
-  const result = await controller.updateSupportTicket(
-    {
-      supportTicketId: 'ticket_1',
-      status: 'resolved',
-      handoffNote: 'Issue validated and resolved.',
+  await assert.rejects(
+    () =>
+      controller.updateSupportTicket(
+        {
+          supportTicketId: 'ticket_1',
+          status: 'resolved',
+          handoffNote: 'Issue validated and resolved.',
+        },
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    supportTicketId: 'ticket_1',
-    status: 'resolved',
-    handoffNote: 'Issue validated and resolved.',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.updateSupportTicket uses connected session flow', async () => {
@@ -1478,27 +1358,18 @@ test('PlatformController.updateSupportTicket rejects missing bearer token in con
   );
 });
 
-test('PlatformController.updateSupportTicketPresetFavorite uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedRequest: unknown;
+test('PlatformController.updateSupportTicketPresetFavorite requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    updateSupportTicketPresetFavorite(persona?: string, request?: unknown) {
-      capturedPersona = persona;
-      capturedRequest = request;
-      return {
-        preset: 'my_open',
-        isFavorite: true,
-      };
+    updateSupportTicketPresetFavorite() {
+      return null;
     },
     async updateSupportTicketPresetFavoriteForCurrentSession() {
-      throw new Error('updateSupportTicketPresetFavoriteForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1507,22 +1378,22 @@ test('PlatformController.updateSupportTicketPresetFavorite uses persona mode whe
     runtimeMode: 'mock',
   };
 
-  const result = await controller.updateSupportTicketPresetFavorite(
-    {
-      preset: 'my_active',
-      favorite: true,
+  await assert.rejects(
+    () =>
+      controller.updateSupportTicketPresetFavorite(
+        {
+          preset: 'my_active',
+          favorite: true,
+        },
+        'support-admin',
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    'support-admin',
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'support-admin');
-  assert.deepEqual(capturedRequest, {
-    preset: 'my_active',
-    favorite: true,
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.updateSupportTicketPresetFavorite uses connected session flow', async () => {
@@ -1614,25 +1485,18 @@ test('PlatformController.updateSupportTicketPresetFavorite rejects missing beare
   );
 });
 
-test('PlatformController.endSupportImpersonation uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.endSupportImpersonation requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    endSupportImpersonation(request?: unknown) {
-      capturedRequest = request;
-      return {
-        sessionId: 'imp_1',
-        endedAt: '2026-03-24T13:00:00.000Z',
-      };
+    endSupportImpersonation() {
+      return null;
     },
     async endSupportImpersonationForCurrentSession() {
-      throw new Error('endSupportImpersonationForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1641,20 +1505,21 @@ test('PlatformController.endSupportImpersonation uses persona mode when runtime 
     runtimeMode: 'mock',
   };
 
-  const result = await controller.endSupportImpersonation(
-    {
-      impersonationSessionId: 'imp_1',
-      closeReason: 'Investigation complete.',
+  await assert.rejects(
+    () =>
+      controller.endSupportImpersonation(
+        {
+          impersonationSessionId: 'imp_1',
+          closeReason: 'Investigation complete.',
+        },
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    impersonationSessionId: 'imp_1',
-    closeReason: 'Investigation complete.',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.endSupportImpersonation uses connected session flow', async () => {
@@ -1737,9 +1602,8 @@ test('PlatformController.endSupportImpersonation rejects missing bearer token in
   );
 });
 
-test('PlatformController.listUsers uses persona mode when runtime is not connected', async () => {
+test('PlatformController.listUsers requires connected runtime and does not expose persona mock fallback', async () => {
   let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
   const authService = {
     async getCurrentSession() {
       getCurrentSessionCalled = true;
@@ -1747,15 +1611,8 @@ test('PlatformController.listUsers uses persona mode when runtime is not connect
     },
   };
   const platformService = {
-    listUsers(persona?: string) {
-      capturedPersona = persona;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        items: [],
-      };
-    },
     async listUsersForCurrentSession() {
-      throw new Error('listUsersForCurrentSession should not be called in persona mode');
+      throw new Error('listUsersForCurrentSession should not be called when runtime is not connected');
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1764,11 +1621,15 @@ test('PlatformController.listUsers uses persona mode when runtime is not connect
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listUsers('platform-admin');
-
+  await assert.rejects(
+    () => controller.listUsers('platform-admin'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/i);
+      return true;
+    },
+  );
   assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.listUsers uses connected session flow', async () => {
@@ -1836,25 +1697,18 @@ test('PlatformController.listUsers rejects missing bearer token in connected mod
   );
 });
 
-test('PlatformController.listFeatureFlags uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
+test('PlatformController.listFeatureFlags requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listFeatureFlags(persona?: string) {
-      capturedPersona = persona;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        flags: [],
-      };
+    listFeatureFlags() {
+      return null;
     },
     async listFeatureFlagsForCurrentSession() {
-      throw new Error('listFeatureFlagsForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1863,11 +1717,14 @@ test('PlatformController.listFeatureFlags uses persona mode when runtime is not 
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listFeatureFlags('platform-admin');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.listFeatureFlags('platform-admin'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.listFeatureFlags uses connected session flow', async () => {
@@ -1935,25 +1792,18 @@ test('PlatformController.listFeatureFlags rejects missing bearer token in connec
   );
 });
 
-test('PlatformController.listCompatibilityRules uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
+test('PlatformController.listCompatibilityRules requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listCompatibilityRules(persona?: string) {
-      capturedPersona = persona;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        items: [],
-      };
+    listCompatibilityRules() {
+      return null;
     },
     async listCompatibilityRulesForCurrentSession() {
-      throw new Error('listCompatibilityRulesForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -1962,11 +1812,14 @@ test('PlatformController.listCompatibilityRules uses persona mode when runtime i
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listCompatibilityRules('platform-admin');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.listCompatibilityRules('platform-admin'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.listCompatibilityRules uses connected session flow', async () => {
@@ -2034,26 +1887,18 @@ test('PlatformController.listCompatibilityRules rejects missing bearer token in 
   );
 });
 
-test('PlatformController.publishCompatibilityRule uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.publishCompatibilityRule requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    publishCompatibilityRule(request?: unknown) {
-      capturedRequest = request;
-      return {
-        rule: {
-          id: 'compat_rule_1',
-        },
-      };
+    publishCompatibilityRule() {
+      return null;
     },
     async publishCompatibilityRuleForCurrentSession() {
-      throw new Error('publishCompatibilityRuleForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2062,28 +1907,25 @@ test('PlatformController.publishCompatibilityRule uses persona mode when runtime
     runtimeMode: 'mock',
   };
 
-  const result = await controller.publishCompatibilityRule(
-    {
-      minimumVersion: '1.6.0',
-      recommendedVersion: '1.7.0',
-      supportedSchemaVersions: ['2'],
-      requiredCapabilities: ['quiz-capture'],
-      resultStatus: 'supported_with_warnings',
-      reason: 'Planned staged rollout.',
+  await assert.rejects(
+    () =>
+      controller.publishCompatibilityRule(
+        {
+          minimumVersion: '1.6.0',
+          recommendedVersion: '1.7.0',
+          supportedSchemaVersions: ['2'],
+          requiredCapabilities: ['quiz-capture'],
+          resultStatus: 'supported_with_warnings',
+          reason: 'Planned staged rollout.',
+        },
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    minimumVersion: '1.6.0',
-    recommendedVersion: '1.7.0',
-    supportedSchemaVersions: ['2'],
-    requiredCapabilities: ['quiz-capture'],
-    resultStatus: 'supported_with_warnings',
-    reason: 'Planned staged rollout.',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.publishCompatibilityRule uses connected session flow', async () => {
@@ -2182,26 +2024,18 @@ test('PlatformController.publishCompatibilityRule rejects missing bearer token i
   );
 });
 
-test('PlatformController.updateFeatureFlag uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.updateFeatureFlag requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    updateFeatureFlag(request?: unknown) {
-      capturedRequest = request;
-      return {
-        flag: {
-          key: 'feature.test',
-        },
-      };
+    updateFeatureFlag() {
+      return null;
     },
     async updateFeatureFlagForCurrentSession() {
-      throw new Error('updateFeatureFlagForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2210,30 +2044,26 @@ test('PlatformController.updateFeatureFlag uses persona mode when runtime is not
     runtimeMode: 'mock',
   };
 
-  const result = await controller.updateFeatureFlag(
-    {
-      key: 'feature.test',
-      enabled: true,
-      status: 'active',
-      description: 'Enable test feature.',
-      rolloutPercentage: 25,
-      allowPlans: ['pro'],
-      allowWorkspaces: ['ws_1'],
+  await assert.rejects(
+    () =>
+      controller.updateFeatureFlag(
+        {
+          key: 'feature.test',
+          enabled: true,
+          status: 'active',
+          description: 'Enable test feature.',
+          rolloutPercentage: 25,
+          allowPlans: ['pro'],
+          allowWorkspaces: ['ws_1'],
+        },
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    key: 'feature.test',
-    enabled: true,
-    status: 'active',
-    description: 'Enable test feature.',
-    rolloutPercentage: 25,
-    allowPlans: ['pro'],
-    allowWorkspaces: ['ws_1'],
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.updateFeatureFlag uses connected session flow', async () => {
@@ -2330,27 +2160,18 @@ test('PlatformController.updateFeatureFlag rejects missing bearer token in conne
   );
 });
 
-test('PlatformController.listRemoteConfig uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedWorkspaceId: string | undefined;
+test('PlatformController.listRemoteConfig requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listRemoteConfig(persona?: string, workspaceId?: string) {
-      capturedPersona = persona;
-      capturedWorkspaceId = workspaceId;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        activeLayers: [],
-      };
+    listRemoteConfig() {
+      return null;
     },
     async listRemoteConfigForCurrentSession() {
-      throw new Error('listRemoteConfigForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2359,12 +2180,14 @@ test('PlatformController.listRemoteConfig uses persona mode when runtime is not 
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listRemoteConfig('platform-admin', 'ws_1');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(capturedWorkspaceId, 'ws_1');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.listRemoteConfig('platform-admin', 'ws_1'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.listRemoteConfig uses connected session flow', async () => {
@@ -2438,26 +2261,18 @@ test('PlatformController.listRemoteConfig rejects missing bearer token in connec
   );
 });
 
-test('PlatformController.publishRemoteConfig uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.publishRemoteConfig requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    publishRemoteConfig(request?: unknown) {
-      capturedRequest = request;
-      return {
-        publishResult: {
-          versionLabel: 'v1',
-        },
-      };
+    publishRemoteConfig() {
+      return null;
     },
     async publishRemoteConfigForCurrentSession() {
-      throw new Error('publishRemoteConfigForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2466,48 +2281,35 @@ test('PlatformController.publishRemoteConfig uses persona mode when runtime is n
     runtimeMode: 'mock',
   };
 
-  const result = await controller.publishRemoteConfig(
-    {
-      versionLabel: 'v1',
-      actorId: 'user_1',
-      workspaceId: 'ws_1',
-      layers: [
+  await assert.rejects(
+    () =>
+      controller.publishRemoteConfig(
         {
-          id: 'layer_1',
-          scope: 'workspace',
-          priority: 100,
-          conditions: {
-            workspaceId: 'ws_1',
-          },
-          values: {
-            allowByok: true,
-          },
-        },
-      ],
-    },
-    undefined,
-  );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    versionLabel: 'v1',
-    actorId: 'user_1',
-    workspaceId: 'ws_1',
-    layers: [
-      {
-        id: 'layer_1',
-        scope: 'workspace',
-        priority: 100,
-        conditions: {
+          versionLabel: 'v1',
+          actorId: 'user_1',
           workspaceId: 'ws_1',
+          layers: [
+            {
+              id: 'layer_1',
+              scope: 'workspace',
+              priority: 100,
+              conditions: {
+                workspaceId: 'ws_1',
+              },
+              values: {
+                allowByok: true,
+              },
+            },
+          ],
         },
-        values: {
-          allowByok: true,
-        },
-      },
-    ],
-  });
-  assert.equal(result.ok, true);
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.publishRemoteConfig uses connected session flow', async () => {
@@ -2621,26 +2423,18 @@ test('PlatformController.publishRemoteConfig rejects missing bearer token in con
   );
 });
 
-test('PlatformController.activateRemoteConfigVersion uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedRequest: unknown;
+test('PlatformController.activateRemoteConfigVersion requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    activateRemoteConfigVersion(request?: unknown) {
-      capturedRequest = request;
-      return {
-        version: {
-          id: 'rcv_1',
-        },
-      };
+    activateRemoteConfigVersion() {
+      return null;
     },
     async activateRemoteConfigVersionForCurrentSession() {
-      throw new Error('activateRemoteConfigVersionForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2649,18 +2443,20 @@ test('PlatformController.activateRemoteConfigVersion uses persona mode when runt
     runtimeMode: 'mock',
   };
 
-  const result = await controller.activateRemoteConfigVersion(
-    {
-      versionId: 'rcv_1',
+  await assert.rejects(
+    () =>
+      controller.activateRemoteConfigVersion(
+        {
+          versionId: 'rcv_1',
+        },
+        undefined,
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
     },
-    undefined,
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.deepEqual(capturedRequest, {
-    versionId: 'rcv_1',
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.activateRemoteConfigVersion uses connected session flow', async () => {
@@ -2850,25 +2646,18 @@ test('PlatformController.getFoundation returns an ok envelope from platform serv
   assert.equal(result.data.name, 'QuizMind Platform');
 });
 
-test('PlatformController.listWorkspaces uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
+test('PlatformController.listWorkspaces requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listWorkspaces(persona?: string) {
-      capturedPersona = persona;
-      return {
-        personaKey: persona ?? 'platform-admin',
-        items: [],
-      };
+    listWorkspaces() {
+      return null;
     },
     async listWorkspacesForCurrentSession() {
-      throw new Error('listWorkspacesForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2877,11 +2666,14 @@ test('PlatformController.listWorkspaces uses persona mode when runtime is not co
     runtimeMode: 'mock',
   };
 
-  const result = await controller.listWorkspaces('platform-admin');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.listWorkspaces('platform-admin'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.listWorkspaces uses connected session flow', async () => {
@@ -2949,28 +2741,18 @@ test('PlatformController.listWorkspaces rejects missing bearer token in connecte
   );
 });
 
-test('PlatformController.getWorkspace uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedWorkspaceId: string | undefined;
+test('PlatformController.getWorkspace requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    getWorkspace(persona?: string, workspaceId?: string) {
-      capturedPersona = persona;
-      capturedWorkspaceId = workspaceId;
-      return {
-        workspace: {
-          id: workspaceId,
-        },
-      };
+    getWorkspace() {
+      return null;
     },
     async getWorkspaceForCurrentSession() {
-      throw new Error('getWorkspaceForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -2979,12 +2761,14 @@ test('PlatformController.getWorkspace uses persona mode when runtime is not conn
     runtimeMode: 'mock',
   };
 
-  const result = await controller.getWorkspace('ws_1', 'platform-admin');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(capturedWorkspaceId, 'ws_1');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.getWorkspace('ws_1', 'platform-admin'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.getWorkspace uses connected session flow', async () => {
@@ -3251,28 +3035,18 @@ test('PlatformController.updateUserProfile rejects in persona mode because conne
   );
 });
 
-test('PlatformController.getSubscription uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedWorkspaceId: string | undefined;
+test('PlatformController.getSubscription requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    getSubscription(persona?: string, workspaceId?: string) {
-      capturedPersona = persona;
-      capturedWorkspaceId = workspaceId;
-      return {
-        workspace: {
-          id: workspaceId,
-        },
-      };
+    getSubscription() {
+      return null;
     },
     async getSubscriptionForCurrentSession() {
-      throw new Error('getSubscriptionForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -3281,12 +3055,14 @@ test('PlatformController.getSubscription uses persona mode when runtime is not c
     runtimeMode: 'mock',
   };
 
-  const result = await controller.getSubscription('platform-admin', 'ws_1');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(capturedWorkspaceId, 'ws_1');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.getSubscription('platform-admin', 'ws_1'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.getSubscription uses connected session flow', async () => {
@@ -3358,28 +3134,18 @@ test('PlatformController.getSubscription rejects missing bearer token in connect
   );
 });
 
-test('PlatformController.getUsage uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedWorkspaceId: string | undefined;
+test('PlatformController.getUsage requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    getUsage(persona?: string, workspaceId?: string) {
-      capturedPersona = persona;
-      capturedWorkspaceId = workspaceId;
-      return {
-        workspace: {
-          id: workspaceId,
-        },
-      };
+    getUsage() {
+      return null;
     },
     async getUsageForCurrentSession() {
-      throw new Error('getUsageForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -3388,12 +3154,14 @@ test('PlatformController.getUsage uses persona mode when runtime is not connecte
     runtimeMode: 'mock',
   };
 
-  const result = await controller.getUsage('platform-admin', 'ws_1');
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.equal(capturedWorkspaceId, 'ws_1');
-  assert.equal(result.ok, true);
+  await assert.rejects(
+    () => controller.getUsage('platform-admin', 'ws_1'),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
+  );
 });
 
 test('PlatformController.getUsage uses connected session flow', async () => {
@@ -3465,26 +3233,18 @@ test('PlatformController.getUsage rejects missing bearer token in connected mode
   );
 });
 
-test('PlatformController.getUsageHistory uses persona mode when runtime is not connected', async () => {
-  let getCurrentSessionCalled = false;
-  let capturedPersona: string | undefined;
-  let capturedRequest: unknown;
+test('PlatformController.getUsageHistory requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {
-      getCurrentSessionCalled = true;
       return createSession();
     },
   };
   const platformService = {
-    listUsageHistory(persona?: string, request?: unknown) {
-      capturedPersona = persona;
-      capturedRequest = request;
-      return {
-        items: [],
-      };
+    listUsageHistory() {
+      return null;
     },
     async listUsageHistoryForCurrentSession() {
-      throw new Error('listUsageHistoryForCurrentSession should not be called in persona mode');
+      return null;
     },
   };
   const controller = new PlatformController(authService as any, platformService as any);
@@ -3493,27 +3253,23 @@ test('PlatformController.getUsageHistory uses persona mode when runtime is not c
     runtimeMode: 'mock',
   };
 
-  const result = await controller.getUsageHistory(
-    'platform-admin',
-    'ws_1',
-    'ai',
-    'ai.proxy.completed',
-    'inst_1',
-    'user_1',
-    '50',
+  await assert.rejects(
+    () =>
+      controller.getUsageHistory(
+        'platform-admin',
+        'ws_1',
+        'ai',
+        'ai.proxy.completed',
+        'inst_1',
+        'user_1',
+        '50',
+      ),
+    (error: unknown) => {
+      assert.ok(error instanceof ServiceUnavailableException);
+      assert.match((error as Error).message, /QUIZMIND_RUNTIME_MODE=connected/);
+      return true;
+    },
   );
-
-  assert.equal(getCurrentSessionCalled, false);
-  assert.equal(capturedPersona, 'platform-admin');
-  assert.deepEqual(capturedRequest, {
-    workspaceId: 'ws_1',
-    source: 'ai',
-    eventType: 'ai.proxy.completed',
-    installationId: 'inst_1',
-    actorId: 'user_1',
-    limit: 50,
-  });
-  assert.equal(result.ok, true);
 });
 
 test('PlatformController.getUsageHistory uses connected session flow', async () => {

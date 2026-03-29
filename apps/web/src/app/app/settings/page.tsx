@@ -44,13 +44,13 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Account security, AI access policy, and provider key inventory now come from the live control plane instead of local-only extension state."
       eyebrow="Settings"
       pathname="/app/settings"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Account and workspace settings"
     >
       {session ? (
@@ -75,3 +75,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     </SiteShell>
   );
 }
+
+
+

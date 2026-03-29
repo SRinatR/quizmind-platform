@@ -17,6 +17,10 @@ export function buildAdminSectionHref(input: {
   const params = new URLSearchParams();
 
   for (const [key, value] of Object.entries(input.currentSearchParams ?? {})) {
+    if (key === 'persona') {
+      continue;
+    }
+
     const normalizedValue = readSearchParamValue(value)?.trim();
 
     if (!normalizedValue) {

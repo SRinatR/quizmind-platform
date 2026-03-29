@@ -26,13 +26,13 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Role-aware dashboard sections are computed from the same permissions, roles, entitlements, and usage signals used by the backend."
       eyebrow="Dashboard"
       pathname="/app"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Workspace control surface"
     >
       {session ? (
@@ -185,3 +185,6 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
     </SiteShell>
   );
 }
+
+
+

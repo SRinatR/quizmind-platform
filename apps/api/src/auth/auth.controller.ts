@@ -24,7 +24,6 @@ import {
 } from '@quizmind/contracts';
 import { loadApiEnv } from '@quizmind/config';
 
-import { PlatformService } from '../platform.service';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -41,12 +40,7 @@ function ok<T>(data: T): ApiSuccess<T> {
 export class AuthController {
   private readonly env = loadApiEnv();
 
-  constructor(
-    @Inject(AuthService)
-    private readonly authService: AuthService,
-    @Inject(PlatformService)
-    private readonly platformService: PlatformService,
-  ) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post('register')
   async register(
@@ -64,11 +58,8 @@ export class AuthController {
     @Ip() ipAddress?: string,
     @Headers('user-agent') userAgent?: string,
   ) {
+    this.assertConnectedMode();
     const payload = this.requireBody(request, 'login');
-
-    if (this.env.runtimeMode !== 'connected') {
-      return ok(await this.platformService.login(payload));
-    }
 
     return ok(await this.authService.login(payload, { ipAddress, userAgent }));
   }
@@ -146,13 +137,8 @@ export class AuthController {
   }
 
   @Get('me')
-  async getCurrentSession(
-    @Headers('authorization') authorization?: string,
-    @Query('persona') persona?: string,
-  ) {
-    if (this.env.runtimeMode !== 'connected') {
-      return ok(this.platformService.getCurrentSession(persona));
-    }
+  async getCurrentSession(@Headers('authorization') authorization?: string) {
+    this.assertConnectedMode();
 
     const accessToken = parseBearerToken(authorization);
 

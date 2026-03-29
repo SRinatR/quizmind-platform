@@ -205,7 +205,7 @@ export function validateProviderSecretShape(
   return {
     valid: true,
     normalizedSecret,
-    reason: 'Provider secret passed local shape validation.',
+    reason: 'Provider secret passed local shape validation (format check only; upstream acceptance is verified on live requests).',
   };
 }
 

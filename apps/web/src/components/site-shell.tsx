@@ -2,9 +2,6 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { adminNavigation, dashboardNavigation, publicNavigation } from '@quizmind/ui';
 
-import { personaHref } from '../lib/api';
-import { PersonaSwitcher } from './persona-switcher';
-
 interface SiteShellProps {
   apiState: string;
   children: ReactNode;
@@ -19,14 +16,13 @@ interface SiteShellProps {
 function renderNavGroup(input: {
   title: string;
   items: Array<{ href: string; label: string }>;
-  persona: string;
 }) {
   return (
     <div className="nav-group">
       <span className="micro-label">{input.title}</span>
       <div className="nav-links">
         {input.items.map((item) => (
-          <Link href={personaHref(item.href, input.persona)} key={`${input.title}:${item.href}`}>
+          <Link href={item.href} key={`${input.title}:${item.href}`}>
             {item.label}
           </Link>
         ))}
@@ -38,11 +34,11 @@ function renderNavGroup(input: {
 export function SiteShell({
   apiState,
   children,
-  currentPersona,
+  currentPersona: _currentPersona,
   description,
   eyebrow,
-  pathname,
-  showPersonaSwitcher = true,
+  pathname: _pathname,
+  showPersonaSwitcher: _showPersonaSwitcher = true,
   title,
 }: SiteShellProps) {
   return (
@@ -55,23 +51,19 @@ export function SiteShell({
         </div>
         <div className="hero-actions">
           <div className="status-pill">{apiState}</div>
-          {showPersonaSwitcher ? <PersonaSwitcher currentPersona={currentPersona} pathname={pathname} /> : null}
         </div>
         <div className="nav-cluster">
           {renderNavGroup({
             title: 'Public',
             items: publicNavigation,
-            persona: currentPersona,
           })}
           {renderNavGroup({
             title: 'Dashboard',
             items: dashboardNavigation,
-            persona: currentPersona,
           })}
           {renderNavGroup({
             title: 'Admin',
             items: adminNavigation,
-            persona: currentPersona,
           })}
         </div>
       </header>

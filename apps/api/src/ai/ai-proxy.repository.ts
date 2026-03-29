@@ -41,6 +41,10 @@ interface FindUserCredentialInput {
   allowWorkspaceShared: boolean;
 }
 
+interface FindPlatformCredentialInput {
+  provider: string;
+}
+
 interface RecordProxyEventInput {
   workspaceId: string;
   userId: string;
@@ -287,6 +291,20 @@ export class AiProxyRepository {
     });
 
     return sorted[0] ?? null;
+  }
+
+  findLatestPlatformCredential(input: FindPlatformCredentialInput): Promise<AiProxyCredentialRecord | null> {
+    return this.prisma.providerCredential.findFirst({
+      where: {
+        provider: input.provider,
+        ownerType: 'platform',
+        validationStatus: 'valid',
+        revokedAt: null,
+        disabledAt: null,
+      },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      select: credentialSelect,
+    });
   }
 
   async recordProxyEvent(input: RecordProxyEventInput): Promise<AiProxyQuotaCounterRecord | null> {

@@ -6,6 +6,8 @@ import {
   type AdminExtensionFleetFilters,
   type AdminLogFilters,
   type AdminLogExportRequest,
+  type AdminUserAccessUpdateRequest,
+  type AdminUserCreateRequest,
   type AdminWebhookFilters,
   type AdminWebhookRetryRequest,
   type CompatibilityRulePublishRequest,
@@ -71,12 +73,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listWorkspaces(persona));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listWorkspacesForCurrentSession(session));
   }
 
@@ -86,12 +84,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.getWorkspace(persona, workspaceId));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.getWorkspaceForCurrentSession(session, workspaceId));
   }
 
@@ -119,12 +113,8 @@ export class PlatformController {
     @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.getSubscription(persona, workspaceId));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.getSubscriptionForCurrentSession(session, workspaceId));
   }
 
@@ -134,12 +124,8 @@ export class PlatformController {
     @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.getUsage(persona, workspaceId));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.getUsageForCurrentSession(session, workspaceId));
   }
 
@@ -162,12 +148,8 @@ export class PlatformController {
       ...(actorId ? { actorId } : {}),
       ...(limit ? { limit: Number(limit) } : {}),
     };
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listUsageHistory(persona, request));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listUsageHistoryForCurrentSession(session, request));
   }
 
@@ -190,12 +172,8 @@ export class PlatformController {
       ...(search ? { search } : {}),
       ...(limit ? { limit: Number(limit) } : {}),
     };
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listAdminExtensionFleet(persona, filters));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listAdminExtensionFleetForCurrentSession(session, filters));
   }
 
@@ -216,12 +194,8 @@ export class PlatformController {
       ...(search ? { search } : {}),
       ...(limit ? { limit: Number(limit) } : {}),
     };
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listAdminLogs(persona, filters));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listAdminLogsForCurrentSession(session, filters));
   }
 
@@ -241,12 +215,8 @@ export class PlatformController {
       ...(search ? { search } : {}),
       ...(limit ? { limit: Number(limit) } : {}),
     };
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listAdminSecurity(persona, filters));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listAdminSecurityForCurrentSession(session, filters));
   }
 
@@ -265,12 +235,8 @@ export class PlatformController {
       ...(search ? { search } : {}),
       ...(limit ? { limit: Number(limit) } : {}),
     };
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listAdminWebhooks(persona, filters));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listAdminWebhooksForCurrentSession(session, filters));
   }
 
@@ -279,12 +245,7 @@ export class PlatformController {
     @Body() request?: Partial<AdminWebhookRetryRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      throw new UnauthorizedException('Connected admin authentication is required to retry webhook deliveries.');
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.retryAdminWebhookForCurrentSession(session, request));
   }
 
@@ -293,13 +254,26 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
+    void persona;
+    return ok(await this.platformService.listUsersForCurrentSession(await this.requireStrictConnectedSession(authorization)));
+  }
 
-    if (!session) {
-      return ok(this.platformService.listUsers(persona));
-    }
+  @Post('admin/users/create')
+  async createUser(
+    @Body() request?: Partial<AdminUserCreateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.createUserForCurrentSession(session, request));
+  }
 
-    return ok(await this.platformService.listUsersForCurrentSession(session));
+  @Post('admin/users/update-access')
+  async updateUserAccess(
+    @Body() request?: Partial<AdminUserAccessUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.updateUserAccessForCurrentSession(session, request));
   }
 
   @Get('admin/feature-flags')
@@ -307,12 +281,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listFeatureFlags(persona));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listFeatureFlagsForCurrentSession(session));
   }
 
@@ -321,12 +291,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listCompatibilityRules(persona));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listCompatibilityRulesForCurrentSession(session));
   }
 
@@ -335,12 +301,7 @@ export class PlatformController {
     @Body() request?: Partial<CompatibilityRulePublishRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.publishCompatibilityRule(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.publishCompatibilityRuleForCurrentSession(session, request));
   }
 
@@ -349,12 +310,7 @@ export class PlatformController {
     @Body() request?: Partial<FeatureFlagUpdateRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.updateFeatureFlag(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.updateFeatureFlagForCurrentSession(session, request));
   }
 
@@ -364,12 +320,8 @@ export class PlatformController {
     @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listRemoteConfig(persona, workspaceId));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listRemoteConfigForCurrentSession(session, workspaceId));
   }
 
@@ -378,12 +330,7 @@ export class PlatformController {
     @Body() request?: Partial<RemoteConfigPublishRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.publishRemoteConfig(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.publishRemoteConfigForCurrentSession(session, request));
   }
 
@@ -392,12 +339,7 @@ export class PlatformController {
     @Body() request?: Partial<RemoteConfigActivateVersionRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.activateRemoteConfigVersion(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.activateRemoteConfigVersionForCurrentSession(session, request));
   }
 
@@ -417,12 +359,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.exportUsage(persona, request));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.exportUsageForCurrentSession(session, request));
   }
 
@@ -432,12 +370,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.exportAdminLogs(persona, request));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.exportAdminLogsForCurrentSession(session, request));
   }
 
@@ -446,12 +380,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listSupportImpersonationSessions(persona));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listSupportImpersonationSessionsForCurrentSession(session));
   }
 
@@ -474,12 +404,8 @@ export class PlatformController {
       ...(limit ? { limit: Number(limit) } : {}),
       ...(timelineLimit ? { timelineLimit: Number(timelineLimit) } : {}),
     };
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.listSupportTickets(persona, filters));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listSupportTicketsForCurrentSession(session, filters));
   }
 
@@ -488,12 +414,7 @@ export class PlatformController {
     @Body() request?: Partial<SupportImpersonationRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.startSupportImpersonation(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.startSupportImpersonationForCurrentSession(session, request));
   }
 
@@ -502,12 +423,7 @@ export class PlatformController {
     @Body() request?: Partial<SupportTicketWorkflowUpdateRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.updateSupportTicket(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.updateSupportTicketForCurrentSession(session, request));
   }
 
@@ -517,12 +433,8 @@ export class PlatformController {
     @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.updateSupportTicketPresetFavorite(persona, request));
-    }
-
+    void persona;
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.updateSupportTicketPresetFavoriteForCurrentSession(session, request));
   }
 
@@ -531,12 +443,7 @@ export class PlatformController {
     @Body() request?: Partial<SupportImpersonationEndRequest>,
     @Headers('authorization') authorization?: string,
   ) {
-    const session = await this.requireConnectedSession(authorization);
-
-    if (!session) {
-      return ok(this.platformService.endSupportImpersonation(request));
-    }
-
+    const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.endSupportImpersonationForCurrentSession(session, request));
   }
 
@@ -558,7 +465,7 @@ export class PlatformController {
     const session = await this.requireConnectedSession(authorization);
 
     if (!session) {
-      throw new ServiceUnavailableException('User profile endpoints require QUIZMIND_RUNTIME_MODE=connected.');
+      throw new ServiceUnavailableException('This endpoint requires QUIZMIND_RUNTIME_MODE=connected.');
     }
 
     return session;

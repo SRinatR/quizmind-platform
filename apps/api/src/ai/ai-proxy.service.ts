@@ -4,6 +4,7 @@ import {
   BadGatewayException,
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Inject,
   Injectable,
   NotFoundException,
@@ -349,7 +350,19 @@ export class AiProxyService {
     session: CurrentSessionSnapshot,
     request?: Partial<AiProxyRequest>,
   ): Promise<AiProxyResult> {
-    const invocation = await this.prepareProxyInvocation(session, request);
+    let invocation: PreparedProxyInvocation;
+
+    try {
+      invocation = await this.prepareProxyInvocation(session, request);
+    } catch (error) {
+      this.logProxyPreflightFailure({
+        surface: 'proxy',
+        session,
+        request,
+        error,
+      });
+      throw error;
+    }
 
     if (invocation.request.stream) {
       throw new BadRequestException('Use stream=true only when handling an SSE response transport.');
@@ -419,26 +432,65 @@ export class AiProxyService {
     session: CurrentSessionSnapshot,
     workspaceId?: string,
   ): Promise<AiModelsCatalogPayload> {
-    const workspace = this.resolveWorkspace(session, workspaceId?.trim() || undefined);
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
-    const catalog = await this.resolveWorkspaceCatalog(workspace.id, policy);
+    try {
+      const workspace = this.resolveWorkspace(session, workspaceId?.trim() || undefined);
+      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
+      const catalog = await this.resolveWorkspaceCatalog(workspace.id, policy);
 
-    return {
-      workspaceId: workspace.id,
-      planCode: catalog.planCode,
-      providers: catalog.providers,
-      models: catalog.models,
-      ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
-      ...(catalog.defaultModel ? { defaultModel: catalog.defaultModel } : {}),
-      ...(catalog.allowedModelTags.length > 0 ? { allowedModelTags: catalog.allowedModelTags } : {}),
-    };
+      if (catalog.providers.length === 0 || catalog.models.length === 0) {
+        console.warn(
+          JSON.stringify({
+            eventType: 'ai_proxy.models_catalog_empty',
+            occurredAt: new Date().toISOString(),
+            userId: session.user.id,
+            workspaceId: workspace.id,
+            planCode: catalog.planCode,
+            policyMode: policy.mode,
+            policyProviders: policy.providers,
+            allowedModelTags: policy.allowedModelTags ?? [],
+            providerCount: catalog.providers.length,
+            modelCount: catalog.models.length,
+          }),
+        );
+      }
+
+      return {
+        workspaceId: workspace.id,
+        planCode: catalog.planCode,
+        providers: catalog.providers,
+        models: catalog.models,
+        ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
+        ...(catalog.defaultModel ? { defaultModel: catalog.defaultModel } : {}),
+        ...(catalog.allowedModelTags.length > 0 ? { allowedModelTags: catalog.allowedModelTags } : {}),
+      };
+    } catch (error) {
+      this.logProxyPreflightFailure({
+        surface: 'models',
+        session,
+        request: workspaceId ? { workspaceId } : undefined,
+        error,
+      });
+      throw error;
+    }
   }
 
   async proxyStreamForCurrentSession(
     session: CurrentSessionSnapshot,
     request?: Partial<AiProxyRequest>,
   ): Promise<AiProxyStreamResult> {
-    const invocation = await this.prepareProxyInvocation(session, request);
+    let invocation: PreparedProxyInvocation;
+
+    try {
+      invocation = await this.prepareProxyInvocation(session, request);
+    } catch (error) {
+      this.logProxyPreflightFailure({
+        surface: 'stream',
+        session,
+        request,
+        error,
+      });
+      throw error;
+    }
 
     if (!invocation.request.stream) {
       throw new BadRequestException('stream=true is required for streaming AI proxy responses.');
@@ -594,7 +646,7 @@ export class AiProxyService {
             workspaceId: workspace.id,
             policy,
           })
-        : this.resolvePlatformKey({
+        : await this.resolvePlatformKey({
             provider,
             policy,
           });
@@ -719,10 +771,10 @@ export class AiProxyService {
     return workspace;
   }
 
-  private resolvePlatformKey(input: {
+  private async resolvePlatformKey(input: {
     provider: AiProvider;
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
-  }): string {
+  }): Promise<string> {
     if (!input.policy.allowPlatformManaged) {
       throw new ForbiddenException(
         input.policy.reason ?? 'Platform-managed provider routing is disabled for this workspace.',
@@ -736,8 +788,16 @@ export class AiProxyService {
     const apiKey = this.env.openRouterApiKey?.trim();
 
     if (!apiKey) {
+      const persistedPlatformCredential = await this.aiProxyRepository.findLatestPlatformCredential({
+        provider: input.provider,
+      });
+
+      if (persistedPlatformCredential) {
+        return this.decryptCredential(persistedPlatformCredential);
+      }
+
       throw new ServiceUnavailableException(
-        'Platform OpenRouter credentials are not configured. Add OPENROUTER_API_KEY or use useOwnKey=true.',
+        'Platform OpenRouter credentials are not configured. Add OPENROUTER_API_KEY, store a platform credential, or use useOwnKey=true.',
       );
     }
 
@@ -1301,6 +1361,41 @@ export class AiProxyService {
     }
 
     return undefined;
+  }
+
+  private logProxyPreflightFailure(input: {
+    surface: 'proxy' | 'stream' | 'models';
+    session: CurrentSessionSnapshot;
+    request?: Partial<AiProxyRequest>;
+    error: unknown;
+  }): void {
+    const requestedWorkspaceId =
+      typeof input.request?.workspaceId === 'string' ? input.request.workspaceId.trim() : undefined;
+    const requestedProvider =
+      typeof input.request?.provider === 'string' ? input.request.provider.trim() : undefined;
+    const requestedModel =
+      typeof input.request?.model === 'string' ? input.request.model.trim() : undefined;
+    const messageCount = Array.isArray(input.request?.messages) ? input.request?.messages.length : undefined;
+    const status =
+      input.error instanceof HttpException ? input.error.getStatus() : undefined;
+
+    console.warn(
+      JSON.stringify({
+        eventType: 'ai_proxy.preflight_failed',
+        surface: input.surface,
+        occurredAt: new Date().toISOString(),
+        userId: input.session.user.id,
+        sessionPersona: input.session.personaKey,
+        requestedWorkspaceId,
+        requestedProvider,
+        requestedModel,
+        useOwnKey: input.request?.useOwnKey === true,
+        messageCount,
+        errorCode: this.resolveProxyFailureCode(input.error),
+        errorMessage: this.resolveProxyFailureMessage(input.error),
+        ...(typeof status === 'number' ? { status } : {}),
+      }),
+    );
   }
 
   private resolveDurationMs(startedAt: Date): number {

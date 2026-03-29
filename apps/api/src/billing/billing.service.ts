@@ -46,7 +46,6 @@ import {
 import { mapAdminPlanCatalogRecordToSnapshot, mapPlanCatalogRecordToEntry } from '../services/billing-service';
 import { BillingRepository, type BillingInvoiceRecord, type BillingWorkspaceContextRecord } from './billing.repository';
 import { BillingWebhookRepository } from './billing-webhook.repository';
-import { mockBillingPlans } from './mock-plan-catalog';
 import {
   createStripeBillingPortalSession,
   createStripeCheckoutSession,
@@ -319,7 +318,7 @@ export class BillingService {
 
   async listPlans(): Promise<BillingPlansPayload> {
     if (this.env.runtimeMode !== 'connected') {
-      return mockBillingPlans;
+      throw new ServiceUnavailableException('Billing plans require QUIZMIND_RUNTIME_MODE=connected.');
     }
 
     const plans = await this.billingRepository.listActivePlans();

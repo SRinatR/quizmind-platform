@@ -78,6 +78,7 @@ function createService(
         updatedAt: new Date('2026-03-24T12:00:00.000Z'),
       }) as any,
     findBestUserCredential: async () => null,
+    findLatestPlatformCredential: async () => null,
     recordProxyFailure: async () => undefined,
     recordProxyEvent: async () =>
       ({
@@ -209,6 +210,78 @@ test('AiProxyService proxies via platform key and increments quota', async (t) =
   assert.equal((recordInput as any).consumeQuota, true);
   assert.equal(typeof (recordInput as any).durationMs, 'number');
   assert.ok((recordInput as any).durationMs >= 0);
+});
+
+test('AiProxyService falls back to persisted platform credential when env key is missing', async (t) => {
+  let observedAuthorization = '';
+  const credentialEnvelope = encryptSecret({
+    plaintext: 'sk-or-persisted_987654321',
+    secret: 'provider-secret',
+  });
+  const { service } = createService({
+    findLatestPlatformCredential: async () =>
+      ({
+        id: 'cred_platform_1',
+        provider: 'openrouter',
+        ownerType: 'platform',
+        ownerId: 'platform',
+        userId: null,
+        workspaceId: null,
+        encryptedSecretJson: credentialEnvelope,
+        createdAt: new Date('2026-03-24T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+      }) as any,
+  });
+  (service as any).env.openRouterApiKey = undefined;
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async (_url, init) => {
+    const headers = init?.headers as Record<string, string> | undefined;
+    observedAuthorization = headers?.Authorization ?? headers?.authorization ?? '';
+
+    return new Response(
+      JSON.stringify({
+        id: 'gen_credential_1',
+        model: 'openrouter/auto',
+        usage: {
+          prompt_tokens: 3,
+          completion_tokens: 4,
+          total_tokens: 7,
+        },
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Hi.',
+            },
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      },
+    );
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  const result = await service.proxyForCurrentSession(createSession(), {
+    model: 'openrouter/auto',
+    messages: [
+      {
+        role: 'user',
+        content: 'Hello!',
+      },
+    ],
+  });
+
+  assert.equal(result.provider, 'openrouter');
+  assert.equal(result.keySource, 'platform');
+  assert.match(observedAuthorization, /^Bearer sk-or-persisted_/);
 });
 
 test('AiProxyService rejects BYOK requests when policy disables BYOK', async (t) => {

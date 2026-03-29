@@ -59,6 +59,29 @@ function createPolicyState(governance: AdminProviderGovernanceStateSnapshot, wor
   };
 }
 
+function resolveCredentialPolicyBlockReason(input: {
+  ownerType: CredentialOwnerType;
+  policy: AdminProviderGovernanceStateSnapshot['policy'];
+}): string | null {
+  if (input.ownerType === 'platform') {
+    return null;
+  }
+
+  if (!input.policy.allowBringYourOwnKey || input.policy.mode === 'platform_only') {
+    return `Current mode is ${input.policy.mode}. Non-platform credentials are not effective until BYOK is enabled.`;
+  }
+
+  if (input.policy.requireAdminApproval) {
+    return 'BYOK policy is currently blocked by required admin approval.';
+  }
+
+  if (input.ownerType === 'workspace' && !input.policy.allowWorkspaceSharedCredentials) {
+    return 'Workspace-shared credentials are disabled by policy.';
+  }
+
+  return null;
+}
+
 export function AdminAiProvidersClient({ governance, isConnectedSession, workspaceOptions }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -82,12 +105,16 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
   const canManagePlatform = governance.accessDecision.allowed;
   const canWriteCredentials = governance.writeDecision.allowed || canManagePlatform;
   const canRotate = governance.rotateDecision.allowed || canManagePlatform;
+  const credentialPolicyBlockReason = resolveCredentialPolicyBlockReason({
+    ownerType: credentialState.ownerType,
+    policy: governance.policy,
+  });
   const canSubmitCredential =
     editingCredentialId !== null
-      ? canRotate
+      ? canRotate && !credentialPolicyBlockReason
       : credentialState.ownerType === 'platform'
         ? canManagePlatform
-        : canWriteCredentials;
+        : canWriteCredentials && !credentialPolicyBlockReason;
   const workspaceOverrideActive = governance.policy.scopeType === 'workspace' && Boolean(governance.workspace?.id);
 
   function updateWorkspaceScope(workspaceId: string) {
@@ -357,12 +384,13 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
         <article className="panel">
           <span className="micro-label">Credentials</span>
           <h2>{editingCredentialId ? 'Rotate provider credential' : 'Create provider credential'}</h2>
+          {credentialPolicyBlockReason ? <p className="list-muted">{credentialPolicyBlockReason}</p> : null}
           <div className="admin-ticket-editor">
             <label className="admin-ticket-field"><span className="micro-label">Provider</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, provider: event.target.value as AiProvider }))} value={credentialState.provider}>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
-            <label className="admin-ticket-field"><span className="micro-label">Ownership</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, ownerType: event.target.value as CredentialOwnerType }))} value={credentialState.ownerType}><option value="platform">platform</option><option value="workspace">workspace</option>{editingCredentialId && credentialState.ownerType === 'user' ? <option value="user">user</option> : null}</select></label>
+            <label className="admin-ticket-field"><span className="micro-label">Ownership</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, ownerType: event.target.value as CredentialOwnerType }))} value={credentialState.ownerType}><option value="platform">platform</option><option disabled={!governance.policy.allowBringYourOwnKey || governance.policy.requireAdminApproval || !governance.policy.allowWorkspaceSharedCredentials} value="workspace">workspace</option>{editingCredentialId && credentialState.ownerType === 'user' ? <option value="user">user</option> : null}</select></label>
             <label className="admin-ticket-field"><span className="micro-label">Workspace</span><select disabled={Boolean(editingCredentialId) || credentialState.ownerType === 'platform'} onChange={(event) => setCredentialState((c) => ({ ...c, workspaceId: event.target.value }))} value={credentialState.workspaceId}>{workspaceOptions.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select></label>
-            <label className="admin-ticket-field"><span className="micro-label">Scopes</span><input onChange={(event) => setCredentialState((c) => ({ ...c, scopes: event.target.value }))} value={credentialState.scopes} /></label>
-            <label className="admin-ticket-field"><span className="micro-label">Secret</span><input type="password" onChange={(event) => setCredentialState((c) => ({ ...c, secret: event.target.value }))} value={credentialState.secret} /></label>
+            <label className="admin-ticket-field"><span className="micro-label">Scopes</span><input disabled={Boolean(credentialPolicyBlockReason)} onChange={(event) => setCredentialState((c) => ({ ...c, scopes: event.target.value }))} value={credentialState.scopes} /></label>
+            <label className="admin-ticket-field"><span className="micro-label">Secret</span><input disabled={Boolean(credentialPolicyBlockReason)} type="password" onChange={(event) => setCredentialState((c) => ({ ...c, secret: event.target.value }))} value={credentialState.secret} /></label>
           </div>
           <div className="admin-user-actions">
             <button className="btn-primary" disabled={isSubmittingCredential || !canSubmitCredential} onClick={() => void submitCredential()} type="button">{isSubmittingCredential ? 'Saving...' : editingCredentialId ? 'Rotate key' : 'Save key'}</button>

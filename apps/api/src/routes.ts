@@ -319,6 +319,18 @@ export const apiRoutes: ApiRouteDefinition[] = [
     permission: 'users:read',
   },
   {
+    method: 'POST',
+    path: '/admin/users/create',
+    summary: 'Create a user account with initial system roles and workspace memberships.',
+    permission: 'users:update',
+  },
+  {
+    method: 'POST',
+    path: '/admin/users/update-access',
+    summary: 'Update a user access profile including system roles, workspace memberships, and suspension state.',
+    permission: 'users:update',
+  },
+  {
     method: 'GET',
     path: '/admin/installations',
     summary: 'Inspect workspace-scoped extension installation fleet health, compatibility state, and installation token activity.',

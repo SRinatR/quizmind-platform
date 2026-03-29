@@ -44,13 +44,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Admin routes are intentionally stricter: some personas can inspect users, others can publish control-plane changes, and viewers are blocked entirely."
       eyebrow="Admin"
       pathname="/admin"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Platform administration"
     >
       {session ? (
@@ -199,3 +199,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     </SiteShell>
   );
 }
+
+
+

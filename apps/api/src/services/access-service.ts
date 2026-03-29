@@ -42,6 +42,14 @@ export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   });
 }
 
+export function canUpdateUsers(principal: SessionPrincipal): AccessDecision {
+  const context = buildAccessContext(principal);
+
+  return evaluateAccess(context, {
+    permission: 'users:update',
+  });
+}
+
 export function canReadAuditLogs(principal: SessionPrincipal, workspaceId?: string): AccessDecision {
   const context = buildAccessContext(principal);
 

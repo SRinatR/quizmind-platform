@@ -239,7 +239,17 @@ export async function POST(request: Request) {
         ...(workspaceId ? { workspaceId } : {}),
       } satisfies ExtensionInstallationBindRequest),
     });
-  } catch {
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        eventType: 'extension.bind_proxy_request_failed',
+        occurredAt: new Date().toISOString(),
+        installationId,
+        workspaceId: workspaceId || null,
+        environment,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      }),
+    );
     return badRequest('Platform bind service is unavailable right now.', 503);
   }
 
@@ -255,6 +265,18 @@ export async function POST(request: Request) {
           ? payload.message[0]
           : payload.message
         : 'Unable to bind the extension installation right now.';
+
+    console.warn(
+      JSON.stringify({
+        eventType: 'extension.bind_proxy_upstream_failed',
+        occurredAt: new Date().toISOString(),
+        installationId,
+        workspaceId: workspaceId || null,
+        environment,
+        status: response.status,
+        errorMessage: fallbackMessage ?? 'Unable to bind the extension installation right now.',
+      }),
+    );
 
     return badRequest(fallbackMessage ?? 'Unable to bind the extension installation right now.', response.status || 500);
   }

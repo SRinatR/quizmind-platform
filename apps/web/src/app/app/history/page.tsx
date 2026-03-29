@@ -52,12 +52,8 @@ function normalizeFilterText(value: string | undefined): string | undefined {
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function buildHistoryHref(query: { persona?: string; workspaceId?: string }): string {
+function buildHistoryHref(query: { workspaceId?: string }): string {
   const params = new URLSearchParams();
-
-  if (query.persona) {
-    params.set('persona', query.persona);
-  }
 
   if (query.workspaceId) {
     params.set('workspaceId', query.workspaceId);
@@ -104,7 +100,6 @@ function buildHistoryCsv(items: Array<{
 }
 
 function buildQueryParams(input: {
-  persona?: string;
   workspaceId?: string;
   source: UsageHistorySourceFilter;
   eventType?: string;
@@ -114,10 +109,6 @@ function buildQueryParams(input: {
   page: number;
 }) {
   const params = new URLSearchParams();
-
-  if (input.persona) {
-    params.set('persona', input.persona);
-  }
 
   if (input.workspaceId) {
     params.set('workspaceId', input.workspaceId);
@@ -185,7 +176,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     ? history.items.length > sliceEnd || (history.items.length === fetchLimit && fetchLimit < maxHistoryFetchLimit)
     : false;
   const queryParams = buildQueryParams({
-    ...(isConnectedSession ? {} : { persona }),
     workspaceId,
     source,
     eventType,
@@ -215,20 +205,19 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
   const canExportCsv = Boolean(history?.exportDecision.allowed && visibleItems.length > 0);
   const clearHref = buildHistoryHref({
-    ...(isConnectedSession ? {} : { persona }),
     ...(workspaceId ? { workspaceId } : {}),
   });
 
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="History mode gives a filterable event stream for telemetry, workspace activity, and AI proxy requests so teams can debug usage quickly."
       eyebrow="History"
       pathname="/app/history"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Usage history and event timeline"
     >
       {session && workspaceId && history ? (
@@ -264,7 +253,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
             <span className="micro-label">Filters</span>
             <h2>Query history</h2>
             <form className="history-filter-form" method="get">
-              {!isConnectedSession ? <input name="persona" type="hidden" value={persona} /> : null}
               <div className="history-filter-grid">
                 <label className="history-filter-field">
                   <span>Workspace</span>
@@ -423,3 +411,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     </SiteShell>
   );
 }
+
+
+

@@ -627,6 +627,7 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
 
   assert.equal(result.personaKey, 'connected-user');
   assert.equal(result.accessDecision.allowed, true);
+  assert.equal(result.writeDecision.allowed, true);
   assert.deepEqual(result.items, [
     {
       id: 'user_1',
@@ -669,6 +670,167 @@ test('PlatformService.listUsersForCurrentSession denies principals without users
       return true;
     },
   );
+});
+
+test('PlatformService.createUserForCurrentSession creates a user with requested roles and memberships', async () => {
+  const { service, userRepository, workspaceRepository } = createPlatformService();
+  let capturedCreateData: any = null;
+
+  workspaceRepository.findById = async (workspaceId: string) =>
+    ({
+      id: workspaceId,
+      slug: workspaceId === 'ws_1' ? 'demo-workspace' : 'analytics-lab',
+      name: workspaceId === 'ws_1' ? 'Demo Workspace' : 'Analytics Lab',
+      memberships: [],
+    }) as any;
+  userRepository.create = async (data: any) => {
+    capturedCreateData = data;
+
+    return createConnectedUserRecord({
+      id: 'user_created',
+      email: 'new.admin@quizmind.dev',
+      displayName: 'New Admin',
+      systemRoleAssignments: [{ role: 'platform_admin' }],
+      memberships: [
+        {
+          workspaceId: 'ws_1',
+          role: 'workspace_admin',
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      updatedAt: new Date('2026-03-29T10:00:00.000Z'),
+    });
+  };
+
+  const result = await service.createUserForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        systemRoles: ['platform_admin'],
+      },
+      permissions: ['users:read', 'users:update', 'workspaces:read'],
+    },
+    {
+      email: '  NEW.ADMIN@quizmind.dev ',
+      password: 'correct-horse-battery-staple',
+      displayName: '  New Admin  ',
+      systemRoles: ['platform_admin'],
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_admin' }],
+      emailVerified: true,
+    },
+  );
+
+  assert.equal(capturedCreateData.email, 'new.admin@quizmind.dev');
+  assert.equal(typeof capturedCreateData.passwordHash, 'string');
+  assert.notEqual(capturedCreateData.passwordHash, 'correct-horse-battery-staple');
+  assert.equal(capturedCreateData.displayName, 'New Admin');
+  assert.deepEqual(capturedCreateData.systemRoleAssignments.create, [{ role: 'platform_admin' }]);
+  assert.deepEqual(capturedCreateData.memberships.create, [
+    {
+      role: 'workspace_admin',
+      workspace: {
+        connect: {
+          id: 'ws_1',
+        },
+      },
+    },
+  ]);
+  assert.equal(result.user.id, 'user_created');
+  assert.deepEqual(result.user.systemRoles, ['platform_admin']);
+  assert.equal(result.updatedAt, '2026-03-29T10:00:00.000Z');
+});
+
+test('PlatformService.updateUserAccessForCurrentSession updates role assignments and suspension state', async () => {
+  const { service, userRepository, workspaceRepository } = createPlatformService();
+  let capturedUpdateData: any = null;
+
+  workspaceRepository.findById = async (workspaceId: string) =>
+    ({
+      id: workspaceId,
+      slug: workspaceId === 'ws_1' ? 'demo-workspace' : 'analytics-lab',
+      name: workspaceId === 'ws_1' ? 'Demo Workspace' : 'Analytics Lab',
+      memberships: [],
+    }) as any;
+  userRepository.findById = async (userId: string) =>
+    createConnectedUserRecord({
+      id: userId,
+      email: 'editor@quizmind.dev',
+      displayName: 'Editor User',
+      systemRoleAssignments: [],
+      memberships: [],
+    });
+  userRepository.update = async (_userId: string, data: any) => {
+    capturedUpdateData = data;
+
+    return createConnectedUserRecord({
+      id: 'user_editor',
+      email: 'editor@quizmind.dev',
+      displayName: 'Editor User Updated',
+      systemRoleAssignments: [{ role: 'billing_admin' }],
+      memberships: [
+        {
+          workspaceId: 'ws_1',
+          role: 'workspace_billing_manager',
+          workspace: {
+            id: 'ws_1',
+            slug: 'demo-workspace',
+            name: 'Demo Workspace',
+          },
+        },
+      ],
+      suspendedAt: new Date('2026-03-29T10:30:00.000Z'),
+      suspendReason: 'Role migration freeze.',
+      updatedAt: new Date('2026-03-29T10:30:00.000Z'),
+    });
+  };
+
+  const result = await service.updateUserAccessForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        systemRoles: ['platform_admin'],
+      },
+      permissions: ['users:read', 'users:update', 'workspaces:read'],
+    },
+    {
+      userId: 'user_editor',
+      displayName: 'Editor User Updated',
+      systemRoles: ['billing_admin'],
+      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_billing_manager' }],
+      suspend: true,
+      suspendReason: 'Role migration freeze.',
+    },
+  );
+
+  assert.equal(capturedUpdateData.displayName, 'Editor User Updated');
+  assert.deepEqual(capturedUpdateData.systemRoleAssignments, {
+    deleteMany: {},
+    create: [{ role: 'billing_admin' }],
+  });
+  assert.deepEqual(capturedUpdateData.memberships, {
+    deleteMany: {},
+    create: [
+      {
+        role: 'workspace_billing_manager',
+        workspace: {
+          connect: {
+            id: 'ws_1',
+          },
+        },
+      },
+    ],
+  });
+  assert.equal(capturedUpdateData.suspendReason, 'Role migration freeze.');
+  assert.ok(capturedUpdateData.suspendedAt instanceof Date);
+  assert.equal(result.user.id, 'user_editor');
+  assert.equal(result.user.suspendedAt, '2026-03-29T10:30:00.000Z');
+  assert.equal(result.updatedAt, '2026-03-29T10:30:00.000Z');
 });
 
 test('PlatformService.listAdminLogsForCurrentSession maps persisted audit, security, activity, and domain events', async () => {

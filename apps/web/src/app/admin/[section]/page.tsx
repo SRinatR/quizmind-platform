@@ -236,6 +236,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const canManagePlans = Boolean(isConnectedSession && adminPlans?.manageDecision.allowed);
   const sessionLabel = session?.user.displayName || session?.user.email;
   const canManageSupportSessions = Boolean(isConnectedSession && supportImpersonationSessions?.accessDecision.allowed);
+  const canManageUserAccess = Boolean(isConnectedSession && adminUsers?.writeDecision.allowed);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleAdminSections(context, sessionWorkspaceId) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
@@ -253,13 +254,13 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Admin detail routes reuse the same gating rules as the parent admin shell."
       eyebrow="Admin Route"
       pathname={`/admin/${resolvedParams.section}`}
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title={section?.title ?? 'Admin route unavailable'}
     >
       {section && session ? (
@@ -330,10 +331,16 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               <h2>Connected user directory</h2>
               {adminUsers ? (
                 <UsersDirectoryClient
+                  canManageUserAccess={canManageUserAccess}
                   canStartSupportSessions={canManageSupportSessions}
                   currentUserId={session.user.id}
                   isConnectedSession={isConnectedSession}
                   items={adminUsers.items}
+                  workspaceOptions={session.workspaces.map((workspace) => ({
+                    id: workspace.id,
+                    name: workspace.name,
+                    role: workspace.role,
+                  }))}
                 />
               ) : (
                 <p>No users are available in the directory for this environment.</p>
@@ -1224,3 +1231,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     </SiteShell>
   );
 }
+
+
+

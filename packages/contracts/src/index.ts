@@ -453,6 +453,11 @@ export interface AdminUserWorkspaceMembership {
   role: WorkspaceRole;
 }
 
+export interface AdminUserWorkspaceMembershipInput {
+  workspaceId: string;
+  role: WorkspaceRole;
+}
+
 export interface AdminUserDirectoryEntry {
   id: string;
   email: string;
@@ -464,9 +469,33 @@ export interface AdminUserDirectoryEntry {
   workspaces: AdminUserWorkspaceMembership[];
 }
 
+export interface AdminUserCreateRequest {
+  email: string;
+  password: string;
+  displayName?: string;
+  systemRoles?: SystemRole[];
+  workspaceMemberships?: AdminUserWorkspaceMembershipInput[];
+  emailVerified?: boolean;
+}
+
+export interface AdminUserAccessUpdateRequest {
+  userId: string;
+  displayName?: string | null;
+  systemRoles?: SystemRole[];
+  workspaceMemberships?: AdminUserWorkspaceMembershipInput[];
+  suspend?: boolean;
+  suspendReason?: string | null;
+}
+
+export interface AdminUserMutationResult {
+  user: AdminUserDirectoryEntry;
+  updatedAt: string;
+}
+
 export interface AdminUserDirectorySnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
+  writeDecision: AccessDecision;
   items: AdminUserDirectoryEntry[];
   permissions: string[];
 }

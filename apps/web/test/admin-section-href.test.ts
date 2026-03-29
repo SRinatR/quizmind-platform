@@ -21,7 +21,7 @@ test('buildAdminSectionHref preserves existing params and applies overrides', ()
 
   assert.equal(
     href,
-    '/admin/security?persona=platform-admin&workspaceId=ws_1&logSearch=extension.runtime_error&logSeverity=warn&logStream=security',
+    '/admin/security?workspaceId=ws_1&logSearch=extension.runtime_error&logSeverity=warn&logStream=security',
   );
 });
 
@@ -59,6 +59,6 @@ test('buildAdminSectionHref reads first value from array params and supports rem
 
   assert.equal(
     href,
-    '/admin/security?persona=support-admin&workspaceId=ws_1&logSearch=extension.bootstrap_refresh_failed',
+    '/admin/security?workspaceId=ws_1&logSearch=extension.bootstrap_refresh_failed',
   );
 });

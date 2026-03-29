@@ -4,7 +4,7 @@ import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 import { createLogEvent } from '@quizmind/logger';
 import { createQueueDispatchRequest, listQueueDefinitions } from '@quizmind/queue';
-import { type SessionPrincipal } from '@quizmind/auth';
+import { assertPasswordPolicy, hashPassword, type SessionPrincipal } from '@quizmind/auth';
 import {
   adminExtensionCompatibilityFilters,
   adminExtensionConnectionFilters,
@@ -37,7 +37,10 @@ import {
   type CompatibilityRulePublishRequest,
   type CompatibilityRulePublishResult,
   type CompatibilityRulesSnapshot,
+  type AdminUserCreateRequest,
   type AdminUserDirectorySnapshot,
+  type AdminUserAccessUpdateRequest,
+  type AdminUserMutationResult,
   type AuthLoginRequest,
   type ExtensionBootstrapRequest,
   type FeatureFlagUpdateRequest,
@@ -70,8 +73,12 @@ import {
   type UsageEventIngestResult,
   type UsageEventPayload,
   type WorkspaceDetailSnapshot,
+  type WorkspaceRole,
   type WorkspaceUsageHistorySnapshot,
   type WorkspaceUsageSnapshot,
+  type SystemRole,
+  systemRoles,
+  workspaceRoles,
 } from '@quizmind/contracts';
 
 import {
@@ -88,6 +95,7 @@ import {
   canReadSupportTickets,
   canReadUsage,
   canReadUsers,
+  canUpdateUsers,
   canRetryJobs,
   canWriteFeatureFlags,
   canStartSupportImpersonation,
@@ -187,6 +195,209 @@ const maxProfileAvatarUrlLength = 2048;
 const defaultUsageHistoryLimit = 25;
 const maxUsageHistoryLimit = 200;
 const validUsageHistorySources = new Set<UsageHistorySourceFilter>(['all', 'telemetry', 'activity', 'ai']);
+const maxAdminUserDisplayNameLength = 120;
+const maxAdminSuspendReasonLength = 500;
+const adminUserEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const validSystemRoles = new Set<SystemRole>(systemRoles);
+const validWorkspaceRoles = new Set<WorkspaceRole>(workspaceRoles);
+
+function normalizeAdminEmail(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new BadRequestException('email is required.');
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (!normalized) {
+    throw new BadRequestException('email is required.');
+  }
+
+  if (!adminUserEmailPattern.test(normalized)) {
+    throw new BadRequestException('email must be a valid email address.');
+  }
+
+  return normalized;
+}
+
+function normalizeAdminPassword(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new BadRequestException('password is required.');
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    throw new BadRequestException('password is required.');
+  }
+
+  try {
+    assertPasswordPolicy(normalized);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'password does not satisfy policy.';
+    throw new BadRequestException(message);
+  }
+
+  return normalized;
+}
+
+function normalizeAdminDisplayName(
+  value: unknown,
+  fieldName: string,
+  allowNull: boolean,
+): string | null | undefined {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+
+  if (value === null) {
+    if (allowNull) {
+      return null;
+    }
+
+    throw new BadRequestException(`${fieldName} must be a non-empty string.`);
+  }
+
+  if (typeof value !== 'string') {
+    throw new BadRequestException(`${fieldName} must be a string.`);
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    if (allowNull) {
+      return null;
+    }
+
+    return undefined;
+  }
+
+  if (normalized.length > maxAdminUserDisplayNameLength) {
+    throw new BadRequestException(
+      `${fieldName} must be at most ${maxAdminUserDisplayNameLength} characters.`,
+    );
+  }
+
+  return normalized;
+}
+
+function normalizeAdminSuspendReason(value: unknown): string | null | undefined {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw new BadRequestException('suspendReason must be a string or null.');
+  }
+
+  const normalized = value.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.length > maxAdminSuspendReasonLength) {
+    throw new BadRequestException(
+      `suspendReason must be at most ${maxAdminSuspendReasonLength} characters.`,
+    );
+  }
+
+  return normalized;
+}
+
+function normalizeAdminSystemRoles(value: unknown, fieldName: string): SystemRole[] {
+  if (!Array.isArray(value)) {
+    throw new BadRequestException(`${fieldName} must be an array of system roles.`);
+  }
+
+  const roles: SystemRole[] = [];
+  const seen = new Set<SystemRole>();
+
+  for (const entry of value) {
+    if (typeof entry !== 'string') {
+      throw new BadRequestException(`${fieldName} must contain role ids.`);
+    }
+
+    const role = entry.trim() as SystemRole;
+
+    if (!validSystemRoles.has(role)) {
+      throw new BadRequestException(`${fieldName} contains unknown role "${entry}".`);
+    }
+
+    if (!seen.has(role)) {
+      seen.add(role);
+      roles.push(role);
+    }
+  }
+
+  return roles;
+}
+
+function normalizeAdminWorkspaceMemberships(
+  value: unknown,
+  fieldName: string,
+): Array<{ workspaceId: string; role: WorkspaceRole }> {
+  if (!Array.isArray(value)) {
+    throw new BadRequestException(`${fieldName} must be an array of workspace assignments.`);
+  }
+
+  const membershipsByWorkspaceId = new Map<string, WorkspaceRole>();
+
+  for (const [index, entry] of value.entries()) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new BadRequestException(`${fieldName}[${index}] must be an object.`);
+    }
+
+    const candidate = entry as {
+      workspaceId?: unknown;
+      role?: unknown;
+    };
+    const workspaceId = typeof candidate.workspaceId === 'string' ? candidate.workspaceId.trim() : '';
+
+    if (!workspaceId) {
+      throw new BadRequestException(`${fieldName}[${index}].workspaceId is required.`);
+    }
+
+    if (typeof candidate.role !== 'string') {
+      throw new BadRequestException(`${fieldName}[${index}].role is required.`);
+    }
+
+    const role = candidate.role.trim() as WorkspaceRole;
+
+    if (!validWorkspaceRoles.has(role)) {
+      throw new BadRequestException(`${fieldName}[${index}].role "${candidate.role}" is not supported.`);
+    }
+
+    membershipsByWorkspaceId.set(workspaceId, role);
+  }
+
+  return Array.from(membershipsByWorkspaceId.entries()).map(([workspaceId, role]) => ({
+    workspaceId,
+    role,
+  }));
+}
+
+function normalizeOptionalAdminSystemRoles(value: unknown, fieldName: string): SystemRole[] | undefined {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+
+  return normalizeAdminSystemRoles(value, fieldName);
+}
+
+function normalizeOptionalAdminWorkspaceMemberships(
+  value: unknown,
+  fieldName: string,
+): Array<{ workspaceId: string; role: WorkspaceRole }> | undefined {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+
+  return normalizeAdminWorkspaceMemberships(value, fieldName);
+}
 
 function normalizeInstallationCapabilities(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -512,6 +723,39 @@ export class PlatformService {
       accessDecision: canReadWorkspace(persona.principal as SessionPrincipal, workspace.id),
       permissions: listPrincipalPermissions(persona.principal, workspace.id),
     };
+  }
+
+  private async assertWorkspaceMembershipsExist(
+    memberships: Array<{ workspaceId: string; role: WorkspaceRole }>,
+  ): Promise<void> {
+    if (memberships.length === 0) {
+      return;
+    }
+
+    const uniqueWorkspaceIds = Array.from(
+      new Set(memberships.map((membership) => membership.workspaceId)),
+    );
+    const lookupResults = await Promise.all(
+      uniqueWorkspaceIds.map(async (workspaceId) => ({
+        workspaceId,
+        workspace: await this.workspaceRepository.findById(workspaceId),
+      })),
+    );
+    const missingWorkspaceId = lookupResults.find((entry) => !entry.workspace)?.workspaceId;
+
+    if (missingWorkspaceId) {
+      throw new NotFoundException(`Workspace "${missingWorkspaceId}" not found.`);
+    }
+  }
+
+  private logAdminUserMutation(eventType: string, metadata: Record<string, unknown>): void {
+    console.info(
+      JSON.stringify({
+        eventType,
+        occurredAt: new Date().toISOString(),
+        ...metadata,
+      }),
+    );
   }
 
   private buildFoundationRemoteConfigVersions(
@@ -1507,10 +1751,12 @@ export class PlatformService {
   listUsers(personaKey?: string): AdminUserDirectorySnapshot {
     const persona = getPersona(personaKey);
     const accessDecision = canReadUsers(persona.principal);
+    const writeDecision = canUpdateUsers(persona.principal);
 
     return {
       personaKey: persona.key,
       accessDecision,
+      writeDecision,
       items: accessDecision.allowed ? listFoundationUsers() : [],
       permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
     };
@@ -1518,6 +1764,7 @@ export class PlatformService {
 
   async listUsersForCurrentSession(session: CurrentSessionSnapshot): Promise<AdminUserDirectorySnapshot> {
     const accessDecision = canReadUsers(session.principal as SessionPrincipal);
+    const writeDecision = canUpdateUsers(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -1528,9 +1775,229 @@ export class PlatformService {
     return {
       personaKey: 'connected-user',
       accessDecision,
+      writeDecision,
       items: users.map(mapUserRecordToDirectoryEntry),
       permissions: session.permissions,
     };
+  }
+
+  async createUserForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<AdminUserCreateRequest>,
+  ): Promise<AdminUserMutationResult> {
+    const writeDecision = canUpdateUsers(session.principal as SessionPrincipal);
+
+    if (!writeDecision.allowed) {
+      throw new ForbiddenException(writeDecision.reasons.join('; '));
+    }
+
+    if (!request || typeof request !== 'object' || Array.isArray(request)) {
+      throw new BadRequestException('Request body is required.');
+    }
+
+    const email = normalizeAdminEmail(request.email);
+    const password = normalizeAdminPassword(request.password);
+    const displayName = normalizeAdminDisplayName(request.displayName, 'displayName', false);
+    const systemRoles = normalizeOptionalAdminSystemRoles(request.systemRoles, 'systemRoles') ?? [];
+    const workspaceMemberships =
+      normalizeOptionalAdminWorkspaceMemberships(request.workspaceMemberships, 'workspaceMemberships') ?? [];
+    const passwordHash = await hashPassword(password);
+    const emailVerifiedAt = request.emailVerified === true ? new Date() : undefined;
+
+    await this.assertWorkspaceMembershipsExist(workspaceMemberships);
+
+    try {
+      const createdUser = await this.userRepository.create({
+        email,
+        passwordHash,
+        ...(displayName ? { displayName } : {}),
+        ...(emailVerifiedAt ? { emailVerifiedAt } : {}),
+        ...(systemRoles.length > 0
+          ? {
+              systemRoleAssignments: {
+                create: systemRoles.map((role) => ({
+                  role,
+                })),
+              },
+            }
+          : {}),
+        ...(workspaceMemberships.length > 0
+          ? {
+              memberships: {
+                create: workspaceMemberships.map((membership) => ({
+                  role: membership.role,
+                  workspace: {
+                    connect: {
+                      id: membership.workspaceId,
+                    },
+                  },
+                })),
+              },
+            }
+          : {}),
+      });
+
+      this.logAdminUserMutation('admin.user_created', {
+        actorUserId: session.user.id,
+        targetUserId: createdUser.id,
+        email: createdUser.email,
+        systemRoles: createdUser.systemRoleAssignments.map((assignment) => assignment.role),
+        workspaceMemberships: createdUser.memberships.map((membership) => ({
+          workspaceId: membership.workspaceId,
+          role: membership.role,
+        })),
+      });
+
+      return {
+        user: mapUserRecordToDirectoryEntry(createdUser),
+        updatedAt: createdUser.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new BadRequestException('A user with this email already exists.');
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new NotFoundException('One or more workspace assignments reference a missing workspace.');
+      }
+
+      throw error;
+    }
+  }
+
+  async updateUserAccessForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<AdminUserAccessUpdateRequest>,
+  ): Promise<AdminUserMutationResult> {
+    const writeDecision = canUpdateUsers(session.principal as SessionPrincipal);
+
+    if (!writeDecision.allowed) {
+      throw new ForbiddenException(writeDecision.reasons.join('; '));
+    }
+
+    if (!request || typeof request !== 'object' || Array.isArray(request)) {
+      throw new BadRequestException('Request body is required.');
+    }
+
+    const userId = typeof request.userId === 'string' ? request.userId.trim() : '';
+
+    if (!userId) {
+      throw new BadRequestException('userId is required.');
+    }
+
+    const existingUser = await this.userRepository.findById(userId);
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    const displayName = normalizeAdminDisplayName(request.displayName, 'displayName', true);
+    const systemRoles = normalizeOptionalAdminSystemRoles(request.systemRoles, 'systemRoles');
+    const workspaceMemberships = normalizeOptionalAdminWorkspaceMemberships(
+      request.workspaceMemberships,
+      'workspaceMemberships',
+    );
+
+    if (workspaceMemberships) {
+      await this.assertWorkspaceMembershipsExist(workspaceMemberships);
+    }
+
+    const suspendReason = normalizeAdminSuspendReason(request.suspendReason);
+
+    if (typeof request.suspend === 'undefined' && typeof suspendReason !== 'undefined') {
+      throw new BadRequestException('suspendReason can only be set when suspend is provided.');
+    }
+
+    const updateData: Prisma.UserUpdateInput = {};
+    let mutationCount = 0;
+
+    if (typeof displayName !== 'undefined') {
+      updateData.displayName = displayName;
+      mutationCount += 1;
+    }
+
+    if (systemRoles) {
+      updateData.systemRoleAssignments = {
+        deleteMany: {},
+        ...(systemRoles.length > 0
+          ? {
+              create: systemRoles.map((role) => ({
+                role,
+              })),
+            }
+          : {}),
+      };
+      mutationCount += 1;
+    }
+
+    if (workspaceMemberships) {
+      updateData.memberships = {
+        deleteMany: {},
+        ...(workspaceMemberships.length > 0
+          ? {
+              create: workspaceMemberships.map((membership) => ({
+                role: membership.role,
+                workspace: {
+                  connect: {
+                    id: membership.workspaceId,
+                  },
+                },
+              })),
+            }
+          : {}),
+      };
+      mutationCount += 1;
+    }
+
+    if (typeof request.suspend === 'boolean') {
+      if (request.suspend) {
+        updateData.suspendedAt = new Date();
+        updateData.suspendReason = suspendReason ?? 'Suspended by admin action.';
+      } else {
+        updateData.suspendedAt = null;
+        updateData.suspendReason = null;
+      }
+
+      mutationCount += 1;
+    }
+
+    if (mutationCount === 0) {
+      throw new BadRequestException(
+        'Provide at least one mutable field: displayName, systemRoles, workspaceMemberships, suspend.',
+      );
+    }
+
+    try {
+      const updatedUser = await this.userRepository.update(userId, updateData);
+
+      this.logAdminUserMutation('admin.user_access_updated', {
+        actorUserId: session.user.id,
+        targetUserId: updatedUser.id,
+        email: updatedUser.email,
+        suspendedAt: updatedUser.suspendedAt?.toISOString() ?? null,
+        suspendReason: updatedUser.suspendReason ?? null,
+        systemRoles: updatedUser.systemRoleAssignments.map((assignment) => assignment.role),
+        workspaceMemberships: updatedUser.memberships.map((membership) => ({
+          workspaceId: membership.workspaceId,
+          role: membership.role,
+        })),
+      });
+
+      return {
+        user: mapUserRecordToDirectoryEntry(updatedUser),
+        updatedAt: updatedUser.updatedAt.toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('User not found.');
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+        throw new NotFoundException('One or more workspace assignments reference a missing workspace.');
+      }
+
+      throw error;
+    }
   }
 
   async listFeatureFlagsForCurrentSession(session: CurrentSessionSnapshot) {

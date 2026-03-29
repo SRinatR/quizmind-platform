@@ -38,13 +38,13 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="The dashboard now has a dedicated managed-client inventory for extension installations, active installation sessions, compatibility state, and reconnect controls."
       eyebrow="Installations"
       pathname="/app/installations"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Extension installation inventory"
     >
       {session && inventory ? (
@@ -96,3 +96,6 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
     </SiteShell>
   );
 }
+
+
+

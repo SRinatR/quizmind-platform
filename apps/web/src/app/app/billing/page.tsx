@@ -43,13 +43,13 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   return (
     <SiteShell
       apiState={
-        session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
+        session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
       description="Current plan, upgrade paths, invoices, and cancellation controls are all driven from the same billing endpoints and Stripe integration wired in the API."
       eyebrow="Billing"
       pathname="/app/billing"
-      showPersonaSwitcher={!isConnectedSession}
+      showPersonaSwitcher={false}
       title="Workspace billing"
     >
       {session && workspaceId && subscription && plans ? (
@@ -91,3 +91,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     </SiteShell>
   );
 }
+
+
+
