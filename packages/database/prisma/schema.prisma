@@ -40,6 +40,20 @@ enum SubscriptionStatus {
   grace_period
 }
 
+enum WalletTopUpStatus {
+  pending
+  succeeded
+  canceled
+  refunded
+}
+
+enum WalletLedgerEntryType {
+  topup
+  refund
+  manual_adjustment
+  usage_debit
+}
+
 enum FeatureFlagStatus {
   draft
   active
@@ -210,6 +224,54 @@ model Workspace {
   providerCredentials    ProviderCredential[]
   aiRequests             AiRequest[]
   aiProviderPolicies     AiProviderPolicy[]
+  wallet                 Wallet?
+  walletTopUps           WalletTopUp[]
+}
+
+model Wallet {
+  id             String              @id @default(cuid())
+  workspaceId    String              @unique
+  currency       String              @default("RUB")
+  balanceKopecks Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  topUps         WalletTopUp[]
+  ledgerEntries  WalletLedgerEntry[]
+}
+
+model WalletTopUp {
+  id                String            @id @default(cuid())
+  walletId          String
+  workspaceId       String
+  createdByUserId   String
+  amountKopecks     Int
+  currency          String            @default("RUB")
+  status            WalletTopUpStatus @default(pending)
+  provider          String            @default("yookassa")
+  providerPaymentId String?           @unique
+  idempotenceKey    String            @unique
+  metadataJson      Json?
+  confirmationToken String?
+  paidAt            DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  wallet            Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  workspace         Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ledgerEntries     WalletLedgerEntry[]
+}
+
+model WalletLedgerEntry {
+  id                  String                @id @default(cuid())
+  walletId            String
+  topUpId             String?
+  type                WalletLedgerEntryType
+  deltaKopecks        Int
+  balanceAfterKopecks Int
+  description         String?
+  createdAt           DateTime              @default(now())
+  wallet              Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  topUp               WalletTopUp?          @relation(fields: [topUpId], references: [id], onDelete: SetNull)
 }
 
 model WorkspaceMembership {

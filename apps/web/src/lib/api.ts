@@ -41,6 +41,8 @@ import {
   type WorkspaceSummary,
   type UserProfilePayload,
   type UserProfileUpdateRequest,
+  type WalletBalanceSnapshot,
+  type WalletTopUpsPayload,
 } from '@quizmind/contracts';
 import { WEB_ENV } from './web-env';
 
@@ -603,6 +605,18 @@ export async function getSupportTickets(
   });
 
   return readApiData<SupportTicketsSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getWalletBalance(workspaceId: string, accessToken: string): Promise<WalletBalanceSnapshot | null> {
+  const path = withQuery('/wallet/balance', { workspaceId });
+
+  return readApiData<WalletBalanceSnapshot>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getWalletTopUps(workspaceId: string, accessToken: string): Promise<WalletTopUpsPayload | null> {
+  const path = withQuery('/wallet/topups', { workspaceId });
+
+  return readApiData<WalletTopUpsPayload>(path, withAccessToken(undefined, accessToken));
 }
 
 export function personaHref(pathname: string, persona: string) {

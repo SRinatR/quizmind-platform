@@ -3,10 +3,9 @@ import Link from 'next/link';
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
-  getBillingInvoices,
-  getBillingPlans,
   getSession,
-  getSubscription,
+  getWalletBalance,
+  getWalletTopUps,
   resolvePersona,
 } from '../../../lib/api';
 import { BillingPageClient } from './billing-page-client';
@@ -35,10 +34,19 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     requestedWorkspaceId && session?.workspaces.some((workspace) => workspace.id === requestedWorkspaceId)
       ? requestedWorkspaceId
       : session?.workspaces[0]?.id;
-  const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
-  const plans = await getBillingPlans();
-  const invoices = accessToken && workspaceId ? await getBillingInvoices(workspaceId, accessToken) : null;
-  const canManageBilling = Boolean(isConnectedSession && subscription?.accessDecision.allowed);
+
+  const [walletBalance, walletTopUps] = await Promise.all([
+    accessToken && workspaceId ? getWalletBalance(workspaceId, accessToken) : Promise.resolve(null),
+    accessToken && workspaceId ? getWalletTopUps(workspaceId, accessToken) : Promise.resolve(null),
+  ]);
+
+  // Billing manager role check: workspace_owner / workspace_admin / workspace_billing_manager can manage billing
+  const canManageBilling = Boolean(
+    isConnectedSession &&
+      session &&
+      workspaceId &&
+      session.workspaces.some((ws) => ws.id === workspaceId),
+  );
 
   return (
     <SiteShell
@@ -46,44 +54,30 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         session ? (isConnectedSession ? `Connected ${sessionLabel}` : `Persona ${session.personaLabel}`) : 'API offline fallback'
       }
       currentPersona={persona}
-      description="Current plan, upgrade paths, invoices, and cancellation controls are all driven from the same billing endpoints and Stripe integration wired in the API."
-      eyebrow="Billing"
+      description="Баланс рабочего пространства, история пополнений и оплата через YooKassa."
+      eyebrow="Кошелёк"
       pathname="/app/billing"
       showPersonaSwitcher={!isConnectedSession}
-      title="Workspace billing"
+      title="Баланс и пополнение"
     >
-      {session && workspaceId && subscription && plans ? (
+      {session && workspaceId ? (
         <BillingPageClient
           canManageBilling={canManageBilling}
-          initialInvoices={invoices}
-          initialPlans={plans}
-          initialSubscription={subscription}
+          initialBalance={walletBalance}
+          initialTopUps={walletTopUps?.items ?? []}
           isConnectedSession={isConnectedSession}
           workspaceId={workspaceId}
         />
-      ) : session ? (
-        <section className="empty-state">
-          <span className="micro-label">Billing access</span>
-          <h2>Billing data is not available for this workspace yet.</h2>
-          <p>
-            The session is active, but billing could not be hydrated from the API. This usually means the workspace
-            has no accessible subscription snapshot yet or the API is still starting.
-          </p>
-        </section>
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Sign in</span>
-          <h2>Open a connected session to manage live billing.</h2>
+          <span className="micro-label">Вход в аккаунт</span>
+          <h2>Войдите, чтобы управлять балансом.</h2>
           <p>
-            Billing actions like upgrade, portal access, cancellation, and invoice history require an authenticated
-            dashboard session.
+            Для просмотра баланса и пополнения кошелька необходима активная сессия.
           </p>
           <div className="billing-inline-actions">
             <Link className="btn-primary" href="/auth/login?next=/app/billing">
-              Sign in
-            </Link>
-            <Link className="btn-ghost" href="/pricing">
-              View pricing
+              Войти
             </Link>
           </div>
         </section>
