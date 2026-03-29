@@ -409,39 +409,43 @@ export function ExtensionConnectClient({
   }, [bridgeReturnChannelIssue, effectiveBridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
 
   return (
-    <div className="auth-form-shell">
-      <span className="micro-label">Extension bridge</span>
-      <h2>Connect this installation to QuizMind Platform.</h2>
-      <p className="auth-form-copy">
-        Signed in as {currentUserLabel}. This page keeps the site session on the web side and only hands the
-        extension a short-lived installation token.
-      </p>
-
-      <div className="auth-session-card">
-        <strong>Runtime handshake</strong>
-        <p>
-          Installation: <span className="monospace">{initialRequest?.installationId ?? 'missing'}</span>
+    <div className="connect-flow">
+      {/* ── Header ── */}
+      <div className="connect-flow__header">
+        <span className="connect-flow__eyebrow">Extension bridge</span>
+        <h2 className="connect-flow__title">
+          {bindResult ? 'Extension connected' : 'Connect your extension'}
+        </h2>
+        <p className="connect-flow__sub">
+          Signed in as <strong>{currentUserLabel}</strong>. Your site session stays secure — the
+          extension only receives a short-lived installation token.
         </p>
-        <p>
-          Version: <span className="monospace">{initialRequest?.handshake.extensionVersion ?? 'missing'}</span>
-          {' '}| Schema: <span className="monospace">{initialRequest?.handshake.schemaVersion ?? 'missing'}</span>
-          {' '}| Browser: <span className="monospace">{initialRequest?.handshake.browser ?? 'missing'}</span>
-        </p>
-        <div className="tag-row">
-          {(initialRequest?.handshake.capabilities ?? []).map((capability) => (
-            <span className="tag" key={capability}>
-              {capability}
-            </span>
-          ))}
-          {initialRequest?.handshake.buildId ? (
-            <span className="tag warn">build {initialRequest.handshake.buildId}</span>
-          ) : null}
-        </div>
       </div>
 
+      {/* ── Handshake info ── */}
+      {initialRequest ? (
+        <div className="connect-card">
+          <span className="connect-card__label">Extension handshake</span>
+          <div className="connect-card__row">
+            <span className="tag-soft">{initialRequest.handshake.browser}</span>
+            <span className="tag-soft tag-soft--gray">v{initialRequest.handshake.extensionVersion}</span>
+            <span className="tag-soft tag-soft--gray">schema {initialRequest.handshake.schemaVersion}</span>
+          </div>
+          <span className="connect-card__id">{initialRequest.installationId}</span>
+          {(initialRequest.handshake.capabilities ?? []).length > 0 ? (
+            <div className="connect-card__row">
+              {(initialRequest.handshake.capabilities ?? []).map((cap) => (
+                <span className="tag" key={cap}>{cap}</span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* ── Workspace selector ── */}
       {workspaces.length > 1 ? (
-        <label className="auth-field">
-          <span>Workspace</span>
+        <label className="form-field">
+          <span className="form-field__label">Workspace</span>
           <select
             onChange={(event) => setSelectedWorkspaceId(event.target.value)}
             value={selectedWorkspaceId}
@@ -455,132 +459,142 @@ export function ExtensionConnectClient({
         </label>
       ) : null}
 
+      {/* ── Issue cards ── */}
       {workspaces.length === 0 ? (
-        <div className="auth-highlight">
-          <span className="micro-label">Workspace</span>
-          <strong>Workspace membership is required before extension bind.</strong>
-          <p>Assign this account to a workspace (role `workspace_member` or higher), then reopen bridge connect.</p>
+        <div className="connect-issue">
+          <span className="connect-issue__label">Workspace required</span>
+          <p className="connect-issue__title">No workspace membership found</p>
+          <p className="connect-issue__detail">
+            Ask an admin to assign your account as <code>workspace_member</code> or higher, then
+            reopen the connect bridge from the extension.
+          </p>
         </div>
       ) : null}
 
       {missingFields.length > 0 ? (
-        <div className="auth-highlight">
-          <span className="micro-label">Missing parameters</span>
-          <strong>The extension did not open the bridge with a full handshake.</strong>
-          <p>{missingFields.join(', ')}</p>
+        <div className="connect-issue">
+          <span className="connect-issue__label">Incomplete handshake</span>
+          <p className="connect-issue__title">Extension did not send required bridge parameters</p>
+          <p className="connect-issue__detail">Missing: {missingFields.join(', ')}</p>
         </div>
       ) : null}
 
       {effectiveBridgeSecurityIssue ? (
-        <div className="auth-highlight">
-          <span className="micro-label">Bridge security</span>
-          <strong>Secure bridge parameters are missing or invalid.</strong>
-          <p>{effectiveBridgeSecurityIssue}</p>
+        <div className="connect-issue">
+          <span className="connect-issue__label">Security issue</span>
+          <p className="connect-issue__title">Bridge parameters invalid</p>
+          <p className="connect-issue__detail">{effectiveBridgeSecurityIssue}</p>
         </div>
       ) : null}
 
-      {platformOriginWarning ? (
-        <div className="auth-highlight">
-          <span className="micro-label">Bridge origin</span>
-          <strong>Bridge launch origin mismatch detected.</strong>
-          <p>{platformOriginWarning}</p>
+      {platformOriginWarning && !effectiveBridgeSecurityIssue ? (
+        <div className="connect-issue">
+          <span className="connect-issue__label">Origin warning</span>
+          <p className="connect-issue__title">Bridge origin mismatch</p>
+          <p className="connect-issue__detail">{platformOriginWarning}</p>
         </div>
       ) : null}
 
       {bridgeReturnChannelIssue ? (
-        <div className="auth-highlight">
-          <span className="micro-label">Return channel</span>
-          <strong>Automatic return to extension is not available in this tab context.</strong>
-          <p>{bridgeReturnChannelIssue}</p>
+        <div className="connect-issue">
+          <span className="connect-issue__label">Return channel</span>
+          <p className="connect-issue__title">Automatic return unavailable</p>
+          <p className="connect-issue__detail">{bridgeReturnChannelIssue}</p>
         </div>
       ) : null}
 
-      <div className="auth-form-actions">
-        <button className="btn-primary" disabled={!canConnect} onClick={() => void handleConnect()} type="button">
-          {isSubmitting ? 'Connecting...' : bindResult ? 'Reconnect installation' : 'Connect extension'}
+      {/* ── Actions ── */}
+      <div className="connect-flow__actions">
+        <button
+          className="btn-primary btn-lg"
+          disabled={!canConnect}
+          onClick={() => void handleConnect()}
+          type="button"
+        >
+          {isSubmitting ? 'Connecting...' : bindResult ? 'Reconnect' : 'Connect extension'}
         </button>
         <button className="btn-ghost" onClick={() => window.close()} type="button">
-          Close window
+          Cancel
         </button>
-        <Link className="btn-ghost" href="/app/settings">
-          Open settings
-        </Link>
+        <Link className="btn-ghost" href="/app/settings">Settings</Link>
       </div>
 
-      {statusMessage ? <p className="auth-inline-status">{statusMessage}</p> : null}
-      {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
+      {/* ── Status / error ── */}
+      {statusMessage ? (
+        <p className="connect-flow__status">{statusMessage}</p>
+      ) : null}
+      {errorMessage ? (
+        <p className="connect-flow__error">{errorMessage}</p>
+      ) : null}
 
+      {/* ── Success card ── */}
       {bindResult ? (
-        <div className="auth-session-card">
-          <strong>Bind complete</strong>
-          <p>
-            Workspace: <span className="monospace">{bindResult.installation.workspaceId ?? 'unbound'}</span>
-          </p>
-          <p>
-            Token: <span className="monospace">{maskToken(bindResult.session.token)}</span>
-            {' '}| Expires: <span className="monospace">{bindResult.session.expiresAt}</span>
-          </p>
-          <p>
-            Compatibility: <span className="monospace">{bindResult.bootstrap.compatibility.status}</span>
-            {' '}| Refresh after: <span className="monospace">{bindResult.session.refreshAfterSeconds}s</span>
-          </p>
-          <div className="tag-row">
+        <div className="connect-success">
+          <span className="connect-success__label">Connection established</span>
+          <p className="connect-success__title">Extension successfully bound</p>
+          <div className="connect-card__row">
+            <span className="tag-soft tag-soft--green">
+              {bindResult.bootstrap.compatibility.status}
+            </span>
             {bindResult.bootstrap.featureFlags.map((flag) => (
-              <span className="tag" key={flag}>
-                {flag}
-              </span>
+              <span className="tag" key={flag}>{flag}</span>
             ))}
-            {bindResult.bootstrap.killSwitches.map((switchKey) => (
-              <span className="tag warn" key={switchKey}>
-                {switchKey}
-              </span>
+            {bindResult.bootstrap.killSwitches.map((sw) => (
+              <span className="tag warn" key={sw}>{sw}</span>
             ))}
           </div>
+          <span className="connect-success__detail">
+            Token expires {bindResult.session.expiresAt}
+          </span>
         </div>
       ) : null}
 
+      {/* ── Fallback bind code ── */}
       {fallbackCode ? (
-        <div className="auth-highlight">
-          <span className="micro-label">Manual fallback</span>
-          <strong>One-time bind code</strong>
-          <p>
-            Code: <span className="monospace">{fallbackCode.code}</span>
-          </p>
-          <p>
-            Expires: <span className="monospace">{fallbackCode.expiresAt}</span>
-            {' '}| TTL: <span className="monospace">{fallbackCode.ttlSeconds}s</span>
-          </p>
-          <p>
-            Redeem endpoint: <span className="monospace">{fallbackCode.redeemPath}</span>
-          </p>
-          <button className="btn-ghost" onClick={() => void handleCopyFallbackCode()} type="button">
-            {fallbackCodeCopied ? 'Code copied' : 'Copy bind code'}
-          </button>
+        <div className="connect-card">
+          <span className="connect-card__label">Manual fallback — one-time code</span>
+          <div className="connect-code-block">
+            <span className="connect-code-block__value">{fallbackCode.code}</span>
+            <button
+              className="btn-ghost"
+              onClick={() => void handleCopyFallbackCode()}
+              type="button"
+              style={{ padding: '6px 14px', fontSize: '0.82rem', flexShrink: 0 }}
+            >
+              {fallbackCodeCopied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <span className="connect-card__id" style={{ fontSize: '0.76rem', opacity: 0.65 }}>
+            Expires {fallbackCode.expiresAt} · {fallbackCode.ttlSeconds}s TTL
+          </span>
         </div>
       ) : null}
 
-      <div className="auth-highlight">
-        <span className="micro-label">Bridge transport</span>
-        <strong>
-          Result channel: <span className="monospace">{resultChannelLabel}</span>
-        </strong>
-        <p>
-          Request id: <span className="monospace">{bridgeRequestIdRef.current}</span>
-          {' '}| Target origin: <span className="monospace">{resolvedTargetOrigin ?? 'missing/invalid'}</span>
-        </p>
-        <p>
-          Nonce: <span className="monospace">{resolvedBridgeNonce ?? 'missing/invalid'}</span>
-        </p>
-        <p>
-          Bridge mode: <span className="monospace">{bridgeModePreference}</span>
-          {' '}| Bind route mode: <span className="monospace">{bindRouteBridgeMode}</span>
-        </p>
-        {resolvedRelayUrl ? (
-          <p>
-            Relay URL: <span className="monospace">{resolvedRelayUrl}</span>
-          </p>
-        ) : null}
-      </div>
+      {/* ── Bridge diagnostics (collapsed) ── */}
+      <details style={{ marginTop: '4px' }}>
+        <summary style={{ fontSize: '0.8rem', color: 'var(--muted)', cursor: 'pointer', userSelect: 'none', padding: '4px 0' }}>
+          Bridge diagnostics
+        </summary>
+        <div className="connect-card" style={{ marginTop: '10px' }}>
+          <span className="connect-card__label">Transport</span>
+          <div className="kv-list" style={{ gap: '6px' }}>
+            <div className="kv-row">
+              <span className="kv-row__key">Channel</span>
+              <code>{resultChannelLabel}</code>
+            </div>
+            <div className="kv-row">
+              <span className="kv-row__key">Mode</span>
+              <code>{bindRouteBridgeMode}</code>
+            </div>
+            {resolvedTargetOrigin ? (
+              <div className="kv-row">
+                <span className="kv-row__key">Target origin</span>
+                <code>{resolvedTargetOrigin}</code>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

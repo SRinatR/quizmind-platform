@@ -31,26 +31,18 @@ interface SettingsPageClientProps {
 
 interface LogoutAllRouteResponse {
   ok: boolean;
-  data?: {
-    revoked: boolean;
-    revokedCount: number;
-  };
-  error?: {
-    message?: string;
-  };
+  data?: { revoked: boolean; revokedCount: number };
+  error?: { message?: string };
 }
 
 interface UserProfileRouteResponse {
   ok: boolean;
   data?: UserProfileSnapshot;
-  error?: {
-    message?: string;
-  };
+  error?: { message?: string };
 }
 
 function normalizeProfileInput(value: string): string | null {
   const normalized = value.trim();
-
   return normalized.length > 0 ? normalized : null;
 }
 
@@ -78,6 +70,7 @@ export function SettingsPageClient({
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [sessionItems, setSessionItems] = useState(authSessions?.items ?? []);
   const [isRevokingEverywhere, setIsRevokingEverywhere] = useState(false);
+  const [showAccessMatrix, setShowAccessMatrix] = useState(false);
   const [, startNavigation] = useTransition();
 
   const primaryWorkspace = session.workspaces[0] ?? null;
@@ -96,20 +89,17 @@ export function SettingsPageClient({
     setErrorMessage(null);
 
     if (!isConnectedSession) {
-      setStatusMessage(null);
       setErrorMessage('Connected session required to update profile settings.');
       return;
     }
 
-    setStatusMessage('Saving profile settings...');
+    setStatusMessage('Saving profile...');
     setIsSavingProfile(true);
 
     try {
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           displayName: normalizeProfileInput(profileDraft.displayName),
           avatarUrl: normalizeProfileInput(profileDraft.avatarUrl),
@@ -133,7 +123,7 @@ export function SettingsPageClient({
         locale: payload.data.locale ?? '',
         timezone: payload.data.timezone ?? '',
       });
-      setStatusMessage('Profile settings updated.');
+      setStatusMessage('Profile updated successfully.');
       setIsSavingProfile(false);
     } catch {
       setStatusMessage(null);
@@ -144,13 +134,11 @@ export function SettingsPageClient({
 
   async function handleLogoutAll() {
     setErrorMessage(null);
-    setStatusMessage('Ending all active sessions and clearing this browser...');
+    setStatusMessage('Ending all sessions...');
     setIsRevokingEverywhere(true);
 
     try {
-      const response = await fetch('/api/auth/logout-all', {
-        method: 'POST',
-      });
+      const response = await fetch('/api/auth/logout-all', { method: 'POST' });
       const payload = (await response.json().catch(() => null)) as LogoutAllRouteResponse | null;
 
       if (!response.ok || !payload?.ok || !payload.data?.revoked) {
@@ -174,87 +162,103 @@ export function SettingsPageClient({
 
   return (
     <>
-      {statusMessage ? <section className="billing-banner billing-banner-info">{statusMessage}</section> : null}
-      {errorMessage ? <section className="billing-banner billing-banner-error">{errorMessage}</section> : null}
+      {/* ── Banners ── */}
+      {statusMessage ? (
+        <div className="banner banner-info">{statusMessage}</div>
+      ) : null}
+      {errorMessage ? (
+        <div className="banner banner-error">{errorMessage}</div>
+      ) : null}
 
-      <section className="settings-metrics">
+      {/* ── Stats row ── */}
+      <section className="metrics-grid">
         <article className="stat-card">
-          <span className="micro-label">Email status</span>
+          <span className="micro-label">Email</span>
           <p className="stat-value">{isVerified ? 'Verified' : 'Pending'}</p>
           <p className="metric-copy">
-            {isVerified ? formatUtcDateTime(session.user.emailVerifiedAt) : 'Verification completes inbox ownership.'}
+            {isVerified
+              ? formatUtcDateTime(session.user.emailVerifiedAt)
+              : 'Check your inbox to verify.'}
           </p>
         </article>
         <article className="stat-card">
-          <span className="micro-label">Active sessions</span>
+          <span className="micro-label">Sessions</span>
           <p className="stat-value">{currentSessionCount}</p>
-          <p className="metric-copy">{isConnectedSession ? 'Live Prisma-backed session inventory.' : 'Persona preview only.'}</p>
+          <p className="metric-copy">
+            {isConnectedSession ? 'Active browser sessions' : 'Persona preview only'}
+          </p>
         </article>
         <article className="stat-card">
           <span className="micro-label">Workspaces</span>
           <p className="stat-value">{session.workspaces.length}</p>
-          <p className="metric-copy">{primaryWorkspace ? primaryWorkspace.name : 'No workspace membership yet.'}</p>
+          <p className="metric-copy">{primaryWorkspace?.name ?? 'No workspace yet'}</p>
         </article>
         <article className="stat-card">
           <span className="micro-label">Permissions</span>
           <p className="stat-value">{session.permissions.length}</p>
-          <p className="metric-copy">Resolved from the same backend policy graph as the dashboard.</p>
+          <p className="metric-copy">Resolved from backend policy</p>
         </article>
       </section>
 
+      {/* ── Account + Security ── */}
       <section className="settings-layout">
+        {/* Profile card */}
         <article className="panel settings-card">
-          <span className="micro-label">Account</span>
           <div className="settings-card-copy">
+            <span className="micro-label">Account</span>
             <h2>{currentDisplayName}</h2>
             <p>{currentEmail}</p>
           </div>
+
           <div className="tag-row">
-            <span className={isVerified ? 'tag' : 'tag warn'}>{isVerified ? 'email verified' : 'verification pending'}</span>
+            <span className={isVerified ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
+              {isVerified ? 'Email verified' : 'Verification pending'}
+            </span>
             {session.principal.systemRoles.map((role) => (
-              <span className="tag" key={role}>
-                {role}
-              </span>
+              <span className="tag-soft" key={role}>{role}</span>
             ))}
-            {session.principal.systemRoles.length === 0 ? <span className="tag warn">workspace-only account</span> : null}
+            {session.principal.systemRoles.length === 0 ? (
+              <span className="tag-soft tag-soft--gray">Workspace-only account</span>
+            ) : null}
           </div>
+
           <form className="settings-profile-form" onSubmit={(event) => void handleProfileSave(event)}>
-            <div className="settings-profile-grid">
-              <label className="settings-profile-field">
-                <span>Display name</span>
+            <div className="form-grid">
+              <label className="form-field">
+                <span className="form-field__label">Display name</span>
                 <input
                   name="displayName"
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))}
-                  placeholder="Workspace owner"
+                  onChange={(e) => setProfileDraft((c) => ({ ...c, displayName: e.target.value }))}
+                  placeholder="Your name"
                   type="text"
                   value={profileDraft.displayName}
                 />
               </label>
-              <label className="settings-profile-field">
-                <span>Avatar URL</span>
+              <label className="form-field">
+                <span className="form-field__label">Avatar URL</span>
                 <input
                   name="avatarUrl"
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, avatarUrl: event.target.value }))}
-                  placeholder="https://cdn.quizmind.dev/avatar.png"
+                  onChange={(e) => setProfileDraft((c) => ({ ...c, avatarUrl: e.target.value }))}
+                  placeholder="https://cdn.example.com/avatar.png"
                   type="url"
                   value={profileDraft.avatarUrl}
                 />
               </label>
-              <label className="settings-profile-field">
-                <span>Locale</span>
+              <label className="form-field">
+                <span className="form-field__label">Locale</span>
                 <input
                   name="locale"
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, locale: event.target.value }))}
+                  onChange={(e) => setProfileDraft((c) => ({ ...c, locale: e.target.value }))}
                   placeholder="en-US"
                   type="text"
                   value={profileDraft.locale}
                 />
               </label>
-              <label className="settings-profile-field">
-                <span>Timezone</span>
+              <label className="form-field">
+                <span className="form-field__label">Timezone</span>
                 <input
                   name="timezone"
-                  onChange={(event) => setProfileDraft((current) => ({ ...current, timezone: event.target.value }))}
+                  onChange={(e) => setProfileDraft((c) => ({ ...c, timezone: e.target.value }))}
                   placeholder="UTC"
                   type="text"
                   value={profileDraft.timezone}
@@ -262,179 +266,188 @@ export function SettingsPageClient({
               </label>
             </div>
             <div className="settings-inline-actions">
-              <button className="btn-primary" disabled={!isConnectedSession || isSavingProfile} type="submit">
-                {isSavingProfile ? 'Saving profile...' : 'Save profile'}
+              <button
+                className="btn-primary"
+                disabled={!isConnectedSession || isSavingProfile}
+                type="submit"
+              >
+                {isSavingProfile ? 'Saving...' : 'Save profile'}
               </button>
-              <span className="list-muted">
-                {isConnectedSession
-                  ? 'Leave optional fields blank to clear them.'
-                  : 'Connected session required for profile updates.'}
-              </span>
+              {!isConnectedSession ? (
+                <span className="list-muted">Connected session required.</span>
+              ) : (
+                <span className="list-muted">Leave optional fields blank to clear.</span>
+              )}
             </div>
           </form>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Current session persona</strong>
-              <p>{session.personaLabel}</p>
-            </div>
-            <div className="list-item">
-              <strong>Locale and timezone</strong>
-              <p>
-                {(profileState?.locale ?? 'not set')} | {(profileState?.timezone ?? 'not set')}
-              </p>
-            </div>
-            <div className="list-item">
-              <strong>Workspace memberships</strong>
-              <p>{session.workspaces.map((workspace) => `${workspace.name} (${workspace.role})`).join(', ') || 'None yet'}</p>
-            </div>
-            {!isVerified ? (
-              <div className="list-item">
-                <strong>Verification reminder</strong>
-                <p>Unverified accounts receive a fresh verification email on sign-in while the inbox is still pending.</p>
-              </div>
-            ) : null}
-          </div>
         </article>
 
+        {/* Security card */}
         <article className="panel settings-card">
-          <span className="micro-label">Security</span>
           <div className="settings-card-copy">
+            <span className="micro-label">Security</span>
             <h2>Session controls</h2>
-            <p>Use password recovery or revoke every active session if a browser was lost, shared, or left behind.</p>
+            <p>
+              Sign out of all browsers at once if a device was lost, shared, or compromised.
+            </p>
           </div>
+
           <div className="settings-inline-actions">
             <button
-              className="btn-primary"
+              className="btn-danger"
               disabled={!isConnectedSession || isRevokingEverywhere}
               onClick={() => void handleLogoutAll()}
               type="button"
             >
-              {isRevokingEverywhere ? 'Revoking sessions...' : 'Sign out everywhere'}
+              {isRevokingEverywhere ? 'Signing out...' : 'Sign out everywhere'}
             </button>
             <Link className="btn-ghost" href="/auth/forgot-password">
               Reset password
             </Link>
           </div>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Current browser</strong>
-              <p>
-                {currentSession
-                  ? `${currentSession.deviceName || currentSession.browser || 'Unnamed session'} | expires ${formatUtcDateTime(currentSession.expiresAt)}`
-                  : 'Current session details are only available in connected mode.'}
-              </p>
+
+          {currentSession ? (
+            <div className="kv-list">
+              <div className="kv-row">
+                <span className="kv-row__key">Current browser</span>
+                <span className="kv-row__value">
+                  {currentSession.deviceName || currentSession.browser || 'Unnamed'}
+                </span>
+              </div>
+              <div className="kv-row">
+                <span className="kv-row__key">Expires</span>
+                <span className="kv-row__value">{formatUtcDateTime(currentSession.expiresAt)}</span>
+              </div>
+              <div className="kv-row">
+                <span className="kv-row__key">IP address</span>
+                <span className="kv-row__value">{currentSession.ipAddress ?? 'Unknown'}</span>
+              </div>
             </div>
-            <div className="list-item">
-              <strong>Security posture</strong>
-              <p>
-                {isConnectedSession
-                  ? 'Connected mode is active, so session inventory and logout-all are backed by real session rows.'
-                  : 'Persona preview is read-only. Sign in with a connected account to manage live sessions.'}
-              </p>
-            </div>
-          </div>
+          ) : (
+            <p className="list-muted">
+              {isConnectedSession
+                ? 'Current session details unavailable.'
+                : 'Sign in with a connected account to manage live sessions.'}
+            </p>
+          )}
         </article>
       </section>
 
+      {/* ── Active sessions ── */}
       <section className="split-grid">
         <article className="panel settings-card">
           <span className="micro-label">Active sessions</span>
           <h2>Browser inventory</h2>
-          {sessionItems.length ? (
-            <div className="settings-session-list">
+          {sessionItems.length > 0 ? (
+            <div className="session-list">
               {sessionItems.map((item) => (
-                <div className="settings-session-row" key={item.id}>
-                  <div>
-                    <strong>{item.deviceName || item.browser || 'Unnamed session'}</strong>
-                    <p className="list-muted">
-                      {item.browser || 'unknown browser'} | {item.ipAddress || 'unknown ip'}
-                    </p>
-                    <p className="list-muted">
-                      Created {formatUtcDateTime(item.createdAt)} | Expires {formatUtcDateTime(item.expiresAt)}
-                    </p>
+                <div className="session-row" key={item.id}>
+                  <div className="session-row__info">
+                    <span className="session-row__name">
+                      {item.deviceName || item.browser || 'Unnamed session'}
+                    </span>
+                    <span className="session-row__detail">
+                      {item.ipAddress ?? 'Unknown IP'} · Expires {formatUtcDateTime(item.expiresAt)}
+                    </span>
                   </div>
-                  <div className="billing-history-meta">
-                    {item.current ? <span className="tag">current</span> : null}
-                    <span className="tag">{item.id.slice(0, 10)}</span>
+                  <div className="session-row__right">
+                    {item.current ? (
+                      <span className="tag-soft tag-soft--green">current</span>
+                    ) : null}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="empty-state">
-              <span className="micro-label">No live inventory</span>
-              <h2>Session listing is unavailable in this context.</h2>
-              <p>Connected mode shows browser/device rows here. Persona preview keeps this panel read-only.</p>
+              <p>
+                {isConnectedSession
+                  ? 'No active sessions found.'
+                  : 'Session inventory requires a connected account.'}
+              </p>
             </div>
           )}
         </article>
 
+        {/* Workspace snapshot */}
         <article className="panel settings-card">
           <span className="micro-label">Workspace</span>
-          <h2>{primaryWorkspace?.name ?? 'No workspace selected'}</h2>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Current role</strong>
-              <p>{primaryWorkspace?.role ?? 'No role available'}</p>
+          <h2>{primaryWorkspace?.name ?? 'No workspace'}</h2>
+          <div className="kv-list">
+            <div className="kv-row">
+              <span className="kv-row__key">Role</span>
+              <span className="kv-row__value">{primaryWorkspace?.role ?? '—'}</span>
             </div>
-            <div className="list-item">
-              <strong>Plan state</strong>
-              <p>
+            <div className="kv-row">
+              <span className="kv-row__key">Plan</span>
+              <span className="kv-row__value">
                 {currentSubscription
-                  ? `${currentSubscription.planCode} | ${currentSubscription.status} | ${currentSubscription.billingInterval}`
-                  : 'Subscription snapshot not available.'}
-              </p>
+                  ? `${currentSubscription.planCode} · ${currentSubscription.status}`
+                  : 'Unavailable'}
+              </span>
             </div>
-            <div className="list-item">
-              <strong>Visible dashboard routes</strong>
-              <p>{visibleSections.map((section) => section.title).join(', ') || 'None resolved for this context.'}</p>
+            <div className="kv-row">
+              <span className="kv-row__key">Billing interval</span>
+              <span className="kv-row__value">
+                {currentSubscription?.billingInterval ?? '—'}
+              </span>
+            </div>
+            <div className="kv-row">
+              <span className="kv-row__key">Visible sections</span>
+              <span className="kv-row__value">{visibleSections.length}</span>
             </div>
           </div>
           <div className="settings-inline-actions">
-            <Link className="btn-ghost" href="/app">
-              Overview
-            </Link>
-            <Link className="btn-ghost" href="/app/billing">
-              Billing
-            </Link>
-            <Link className="btn-ghost" href="/app/usage">
-              Usage
-            </Link>
-            <Link className="btn-ghost" href="/app/history">
-              History
-            </Link>
+            <Link className="btn-ghost" href="/app/billing">Billing</Link>
+            <Link className="btn-ghost" href="/app/usage">Usage</Link>
           </div>
         </article>
       </section>
 
+      {/* ── Access matrix (collapsible) ── */}
       <section className="panel settings-card">
-        <span className="micro-label">Access Matrix</span>
-        <h2>Resolved section access</h2>
-        <p>Dashboard and admin route gates are shown with allow/deny reasons for this active session.</p>
-        <div className="tag-row">
-          <span className="tag">dashboard {allowedDashboardRows.length}</span>
-          <span className="tag">admin {allowedAdminRows.length}</span>
-          <span className={blockedAccessRows.length > 0 ? 'tag warn' : 'tag'}>
-            blocked {blockedAccessRows.length}
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+          <div>
+            <span className="micro-label">Access matrix</span>
+            <h2>Section permissions</h2>
+          </div>
+          <div className="tag-row">
+            <span className="tag-soft tag-soft--green">{allowedDashboardRows.length + allowedAdminRows.length} allowed</span>
+            {blockedAccessRows.length > 0 ? (
+              <span className="tag-soft tag-soft--orange">{blockedAccessRows.length} blocked</span>
+            ) : null}
+            <button
+              className="btn-ghost"
+              onClick={() => setShowAccessMatrix((v) => !v)}
+              style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+              type="button"
+            >
+              {showAccessMatrix ? 'Hide' : 'Show all'}
+            </button>
+          </div>
         </div>
-        <div className="list-stack">
-          {accessMatrix.map((row) => (
-            <div className="list-item" key={`settings-matrix:${row.scope}:${row.id}`}>
-              <strong>
-                {row.scope.toUpperCase()} | {row.title}
-              </strong>
-              <p>{row.href}</p>
-              <p className="list-muted">{row.requirementSummary}</p>
-              <div className="tag-row">
-                <span className={row.allowed ? 'tag' : 'tag warn'}>{row.allowed ? 'allowed' : 'blocked'}</span>
-                {!row.allowed && row.reason ? <span className="tag warn">{row.reason}</span> : null}
+
+        {showAccessMatrix ? (
+          <div className="access-matrix">
+            {accessMatrix.map((row) => (
+              <div className="access-row" key={`settings-matrix:${row.scope}:${row.id}`}>
+                <span className={row.allowed ? 'access-row__dot access-row__dot--allowed' : 'access-row__dot access-row__dot--blocked'} />
+                <span className="access-row__title">{row.title}</span>
+                <span className="access-row__scope">{row.scope}</span>
+                {!row.allowed && row.reason ? (
+                  <span className="access-row__reason">{row.reason}</span>
+                ) : null}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="list-muted" style={{ fontSize: '0.88rem' }}>
+            Click &ldquo;Show all&rdquo; to inspect route-level allow/deny decisions for this session.
+          </p>
+        )}
       </section>
 
+      {/* ── AI provider credentials ── */}
       <AiAccessClient
         currentWorkspaceId={primaryWorkspace?.id}
         isConnectedSession={isConnectedSession}

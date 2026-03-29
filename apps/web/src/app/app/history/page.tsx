@@ -249,13 +249,15 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
             </article>
           </section>
 
-          <section className="panel">
-            <span className="micro-label">Filters</span>
-            <h2>Query history</h2>
-            <form className="history-filter-form" method="get">
-              <div className="history-filter-grid">
-                <label className="history-filter-field">
-                  <span>Workspace</span>
+          <section className="filter-panel">
+            <div className="filter-panel__header">
+              <span className="micro-label">Filters</span>
+              <h2>Query history</h2>
+            </div>
+            <form method="get">
+              <div className="filter-grid">
+                <label className="filter-field">
+                  <span className="filter-field__label">Workspace</span>
                   <select defaultValue={workspaceId} name="workspaceId">
                     {session.workspaces.map((workspace) => (
                       <option key={workspace.id} value={workspace.id}>
@@ -264,8 +266,8 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
                     ))}
                   </select>
                 </label>
-                <label className="history-filter-field">
-                  <span>Source</span>
+                <label className="filter-field">
+                  <span className="filter-field__label">Source</span>
                   <select defaultValue={source} name="source">
                     <option value="all">all</option>
                     <option value="telemetry">telemetry</option>
@@ -273,8 +275,8 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
                     <option value="ai">ai</option>
                   </select>
                 </label>
-                <label className="history-filter-field">
-                  <span>Limit</span>
+                <label className="filter-field">
+                  <span className="filter-field__label">Rows per page</span>
                   <select defaultValue={String(pageSize)} name="limit">
                     {[10, 25, 50, 100, 200].map((candidateLimit) => (
                       <option key={candidateLimit} value={candidateLimit}>
@@ -283,12 +285,12 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
                     ))}
                   </select>
                 </label>
-                <label className="history-filter-field">
-                  <span>Event type</span>
+                <label className="filter-field">
+                  <span className="filter-field__label">Event type</span>
                   <input defaultValue={eventType ?? ''} name="eventType" placeholder="extension.quiz_answer_requested" type="text" />
                 </label>
-                <label className="history-filter-field">
-                  <span>Installation</span>
+                <label className="filter-field">
+                  <span className="filter-field__label">Installation ID</span>
                   <input
                     defaultValue={source === 'activity' ? '' : installationId ?? ''}
                     disabled={source === 'activity'}
@@ -297,8 +299,8 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
                     type="text"
                   />
                 </label>
-                <label className="history-filter-field">
-                  <span>Actor</span>
+                <label className="filter-field">
+                  <span className="filter-field__label">Actor ID</span>
                   <input
                     defaultValue={source === 'telemetry' ? '' : actorId ?? ''}
                     disabled={source === 'telemetry'}
@@ -309,86 +311,88 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
                 </label>
               </div>
               <input name="page" type="hidden" value="1" />
-              <div className="history-filter-actions">
-                <button className="btn-primary" type="submit">
-                  Apply filters
-                </button>
-                <Link className="btn-ghost" href={clearHref}>
-                  Reset filters
-                </Link>
+              <div className="filter-actions">
+                <button className="btn-primary" type="submit">Apply filters</button>
+                <Link className="btn-ghost" href={clearHref}>Reset</Link>
                 <a
-                  className="btn-ghost"
-                  download={`usage-history-${history.workspace.slug}-page-${effectivePage}.csv`}
+                  className={canExportCsv ? 'btn-ghost' : 'btn-ghost btn-ghost--disabled'}
+                  download={canExportCsv ? `usage-history-${history.workspace.slug}-page-${effectivePage}.csv` : undefined}
                   href={canExportCsv ? csvHref : undefined}
+                  aria-disabled={!canExportCsv}
                 >
                   Export CSV
                 </a>
-                {!canExportCsv ? <span className="list-muted">CSV export requires `usage:export`.</span> : null}
+                {!canExportCsv ? (
+                  <span className="list-muted" style={{ fontSize: '0.82rem' }}>Requires <code>usage:export</code> permission.</span>
+                ) : null}
               </div>
             </form>
           </section>
 
           <section className="panel">
-            <span className="micro-label">Timeline</span>
-            <h2>Telemetry, activity, and AI stream</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+              <div>
+                <span className="micro-label">Timeline</span>
+                <h2>Telemetry, activity, and AI stream</h2>
+              </div>
+              <div className="tag-row">
+                {telemetryCount > 0 ? <span className="tag-soft tag-soft--gray">{telemetryCount} telemetry</span> : null}
+                {activityCount > 0 ? <span className="tag-soft tag-soft--gray">{activityCount} activity</span> : null}
+                {aiCount > 0 ? <span className="tag-soft tag-soft--gray">{aiCount} ai</span> : null}
+              </div>
+            </div>
             {visibleItems.length ? (
-              <div className="history-event-list">
+              <div className="event-list">
                 {visibleItems.map((event) => (
-                  <div className="list-item" key={event.id}>
-                    <div className="billing-history-meta">
-                      <span className="tag">{event.source}</span>
-                      {event.severity ? (
-                        <span className={event.severity === 'warn' || event.severity === 'error' ? 'tag warn' : 'tag'}>
-                          {event.severity}
-                        </span>
-                      ) : null}
-                      <span className="list-muted">{formatUtcDateTime(event.occurredAt)}</span>
+                  <div className="event-row" key={event.id}>
+                    <span className={
+                      event.source === 'ai' ? 'event-dot event-dot--ai'
+                      : event.source === 'activity' ? 'event-dot event-dot--activity'
+                      : event.severity === 'warn' || event.severity === 'error' ? 'event-dot event-dot--warn'
+                      : 'event-dot event-dot--info'
+                    } />
+                    <div className="event-row__body">
+                      <span className="event-row__type">{event.eventType}</span>
+                      {event.summary ? <p className="event-row__summary">{event.summary}</p> : null}
+                      <span className="event-row__context">
+                        {event.installationId ? event.installationId : 'no installation'}
+                        {event.actorId ? ` · ${event.actorId}` : ''}
+                      </span>
                     </div>
-                    <strong>{event.eventType}</strong>
-                    <p>{event.summary}</p>
-                    <span className="list-muted">
-                      {event.installationId ? `installation ${event.installationId}` : 'no installation context'}
-                      {event.actorId ? ` | actor ${event.actorId}` : ''}
-                    </span>
+                    <div className="event-row__meta">
+                      <div className="tag-row" style={{ justifyContent: 'flex-end', gap: '4px', marginBottom: '4px' }}>
+                        <span className="tag-soft tag-soft--gray">{event.source}</span>
+                        {event.severity ? (
+                          <span className={event.severity === 'warn' || event.severity === 'error' ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
+                            {event.severity}
+                          </span>
+                        ) : null}
+                      </div>
+                      {formatUtcDateTime(event.occurredAt)}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="empty-state">
                 <span className="micro-label">No matching events</span>
-                <h2>Try broadening the filter scope.</h2>
-                <p>
-                  The selected workspace is active, but no telemetry, activity, or AI events match the current source and
-                  filter set.
-                </p>
+                <h2>Try broadening the filter scope</h2>
+                <p>No telemetry, activity, or AI events match the current filter set.</p>
               </div>
             )}
-            <div className="history-filter-actions">
-              <span className="list-muted">
-                Loaded {history.items.length} rows
+            <div className="filter-actions" style={{ marginTop: '16px' }}>
+              <span className="list-muted" style={{ fontSize: '0.82rem' }}>
+                {history.items.length} row{history.items.length === 1 ? '' : 's'} loaded
                 {fetchLimit === maxHistoryFetchLimit ? ` (capped at ${maxHistoryFetchLimit})` : ''}
+                {' · '}Page {effectivePage}
               </span>
-              {hasPreviousPage ? (
-                <Link className="btn-ghost" href={previousHref}>
-                  Previous page
-                </Link>
-              ) : null}
-              {hasNextPage ? (
-                <Link className="btn-ghost" href={nextHref}>
-                  Next page
-                </Link>
-              ) : null}
+              {hasPreviousPage ? <Link className="btn-ghost" href={previousHref}>← Previous</Link> : null}
+              {hasNextPage ? <Link className="btn-ghost" href={nextHref}>Next →</Link> : null}
             </div>
-            <div className="link-row">
-              <Link className="btn-ghost" href="/app/usage">
-                Open usage summary
-              </Link>
-              <Link className="btn-ghost" href="/app/installations">
-                Open installations
-              </Link>
-              <Link className="btn-ghost" href="/app/billing">
-                Open billing
-              </Link>
+            <div className="link-row" style={{ marginTop: '8px' }}>
+              <Link className="btn-ghost" href="/app/usage">Usage summary</Link>
+              <Link className="btn-ghost" href="/app/installations">Installations</Link>
+              <Link className="btn-ghost" href="/app/billing">Billing</Link>
             </div>
           </section>
         </>
