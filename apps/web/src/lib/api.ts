@@ -187,14 +187,6 @@ function resolveApiUrl(): string {
 
 export const API_URL = resolveApiUrl();
 
-export const demoPersonas = [
-  { key: 'connected-user', label: 'Connected Session' },
-] as const;
-
-function withPersona(path: string, _persona?: string) {
-  return path;
-}
-
 function withQuery(path: string, query?: Record<string, string | number | undefined | null>) {
   if (!query) {
     return path;
@@ -627,10 +619,6 @@ export async function getSupportTickets(
   });
 
   return readApiData<SupportTicketsSnapshot>(path, withAccessToken(undefined, accessToken));
-}
-
-export function personaHref(pathname: string, persona: string) {
-  return withPersona(pathname, persona);
 }
 
 export function resolvePersona(
