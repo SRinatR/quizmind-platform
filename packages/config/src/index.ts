@@ -74,6 +74,7 @@ export interface ApiEnv extends PlatformEnv {
   yookassaShopId?: string;
   yookassaSecretKey?: string;
   yookassaWebhookSecret?: string;
+  yookassaReturnUrl?: string;
   paddleApiKey?: string;
   paddleWebhookSecret?: string;
   openRouterApiUrl: string;
@@ -228,6 +229,7 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     yookassaShopId: source.YOOKASSA_SHOP_ID,
     yookassaSecretKey: source.YOOKASSA_SECRET_KEY,
     yookassaWebhookSecret: source.YOOKASSA_WEBHOOK_SECRET,
+    yookassaReturnUrl: source.YOOKASSA_RETURN_URL,
     paddleApiKey: source.PADDLE_API_KEY,
     paddleWebhookSecret: source.PADDLE_WEBHOOK_SECRET,
     openRouterApiUrl: source.OPENROUTER_API_URL ?? 'https://openrouter.ai/api/v1',

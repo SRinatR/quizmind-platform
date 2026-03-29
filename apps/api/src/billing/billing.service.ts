@@ -53,6 +53,7 @@ import {
   getStripeInvoiceDocument,
   updateStripeSubscriptionCancellation,
 } from './stripe-client';
+import { WalletService } from '../wallet/wallet.service';
 
 interface StripeWebhookEvent {
   id: string;
@@ -314,6 +315,8 @@ export class BillingService {
     private readonly billingRepository: BillingRepository,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
+    @Inject(WalletService)
+    private readonly walletService: WalletService,
   ) {}
 
   async listPlans(): Promise<BillingPlansPayload> {
@@ -1022,6 +1025,21 @@ export class BillingService {
         receivedAt: persistedEvent.record.receivedAt.toISOString(),
       };
     }
+
+    // Process wallet top-up events directly (idempotent)
+    const objectValue =
+      event.payload.object && typeof event.payload.object === 'object' && !Array.isArray(event.payload.object)
+        ? (event.payload.object as Record<string, unknown>)
+        : undefined;
+    const paymentId = typeof objectValue?.id === 'string' ? objectValue.id.trim() : event.id;
+    const paidAtRaw = typeof objectValue?.captured_at === 'string' ? objectValue.captured_at : undefined;
+    const paidAt = paidAtRaw ? new Date(paidAtRaw) : new Date();
+
+    await this.walletService.processYookassaPaymentEvent({
+      eventType: event.type,
+      paymentId,
+      paidAt,
+    });
 
     const job = await this.queueDispatchService.dispatch<BillingWebhookJobPayload>(
       createQueueDispatchRequest({

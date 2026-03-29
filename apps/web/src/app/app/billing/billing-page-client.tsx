@@ -1,499 +1,445 @@
 'use client';
 
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import {
-  type BillingCheckoutResult,
-  type BillingInterval,
-  type BillingInvoicePdfResult,
-  type BillingInvoicesPayload,
-  type BillingPlanCatalogEntry,
-  type BillingPortalResult,
-  type BillingSubscriptionMutationResult,
-} from '@quizmind/contracts';
-
-import { type BillingPlansSnapshot, type WorkspaceSubscriptionSnapshot } from '../../../lib/api';
+import Script from 'next/script';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { type WalletBalanceSnapshot, type WalletTopUpEntry, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
 interface BillingRouteResponse<T> {
   ok: boolean;
   data?: T;
-  error?: {
-    message?: string;
-  };
+  error?: { message?: string };
 }
 
 interface BillingPageClientProps {
   canManageBilling: boolean;
-  initialInvoices: BillingInvoicesPayload | null;
-  initialPlans: BillingPlansSnapshot | null;
-  initialSubscription: WorkspaceSubscriptionSnapshot;
+  initialBalance: WalletBalanceSnapshot | null;
+  initialTopUps: WalletTopUpEntry[];
   isConnectedSession: boolean;
   workspaceId: string;
 }
 
-function formatMoney(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', {
+const PRESET_AMOUNTS_KOPECKS = [10_000, 30_000, 50_000, 100_000, 300_000] as const;
+
+function formatRub(kopecks: number): string {
+  return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
-    currency: currency.toUpperCase(),
+    currency: 'RUB',
     maximumFractionDigits: 0,
-  }).format(amount / 100);
+  }).format(kopecks / 100);
 }
 
-function formatDate(value?: string | null) {
-  if (!value) {
-    return 'TBD';
-  }
+function formatDate(value?: string | null): string {
+  if (!value) return '—';
 
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
+  return new Intl.DateTimeFormat('ru-RU', {
     day: 'numeric',
+    month: 'short',
     year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(value));
 }
 
-function formatIntervalLabel(interval: BillingInterval) {
-  return interval === 'yearly' ? 'year' : 'month';
-}
-
-function findPrice(plan: BillingPlanCatalogEntry | undefined, interval: BillingInterval) {
-  return (
-    plan?.prices.find((price) => price.interval === interval) ??
-    plan?.prices.find((price) => price.isDefault) ??
-    plan?.prices[0]
-  );
-}
-
-function readLimit(plan: BillingPlanCatalogEntry | undefined, key: string) {
-  return plan?.plan.entitlements.find((entitlement) => entitlement.key === key)?.limit;
-}
-
-function hasFeature(plan: BillingPlanCatalogEntry | undefined, keys: string[]) {
-  return keys.some((key) => plan?.plan.entitlements.some((entitlement) => entitlement.key === key && entitlement.enabled));
-}
-
-function buildPlanHighlights(plan: BillingPlanCatalogEntry | undefined) {
-  if (!plan) {
-    return [];
+function statusLabel(status: string): string {
+  switch (status) {
+    case 'pending':
+      return 'Ожидает оплаты';
+    case 'succeeded':
+      return 'Оплачено';
+    case 'canceled':
+      return 'Отменено';
+    case 'refunded':
+      return 'Возврат';
+    default:
+      return status;
   }
+}
 
-  return [
-    `${readLimit(plan, 'limit.requests_per_day') ?? 'Unlimited'} requests / day`,
-    `${readLimit(plan, 'limit.screenshots_per_day') ?? 0} screenshots / day`,
-    `${readLimit(plan, 'limit.seats') ?? 1} seat${(readLimit(plan, 'limit.seats') ?? 1) === 1 ? '' : 's'}`,
-    `${readLimit(plan, 'limit.history_retention_days') ?? 7} days history`,
-    hasFeature(plan, ['feature.remote_sync', 'feature.remote_config']) ? 'Remote sync enabled' : 'Remote sync disabled',
-    hasFeature(plan, ['feature.priority_support']) ? 'Priority support' : 'Standard support',
-  ];
+function statusClass(status: string): string {
+  switch (status) {
+    case 'succeeded':
+      return 'tag wallet-tag-success';
+    case 'pending':
+      return 'tag wallet-tag-pending';
+    case 'canceled':
+    case 'refunded':
+      return 'tag warn';
+    default:
+      return 'tag';
+  }
+}
+
+declare global {
+  interface Window {
+    YooMoneyCheckoutWidget?: new (options: {
+      confirmation_token: string;
+      return_url: string;
+      error_callback: (error: { error: string }) => void;
+    }) => {
+      render: (containerId: string) => Promise<void>;
+      destroy: () => void;
+    };
+  }
 }
 
 export function BillingPageClient({
   canManageBilling,
-  initialInvoices,
-  initialPlans,
-  initialSubscription,
+  initialBalance,
+  initialTopUps,
   isConnectedSession,
   workspaceId,
 }: BillingPageClientProps) {
-  const searchParams = useSearchParams();
+  const [balance, setBalance] = useState<WalletBalanceSnapshot | null>(initialBalance);
+  const [topUps, setTopUps] = useState<WalletTopUpEntry[]>(initialTopUps);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedKopecks, setSelectedKopecks] = useState<number>(50_000);
+  const [customAmount, setCustomAmount] = useState('');
+  const [useCustom, setUseCustom] = useState(false);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [selectedInterval, setSelectedInterval] = useState<BillingInterval>(initialSubscription.summary.billingInterval);
-  const [subscriptionState, setSubscriptionState] = useState(initialSubscription.summary);
-  const plans = initialPlans?.plans ?? [];
-  const currentPlan = plans.find((plan) => plan.plan.code === subscriptionState.planCode) ?? plans[0];
-  const currentPrice = findPrice(currentPlan, subscriptionState.billingInterval);
-  const checkoutState = searchParams.get('checkout');
-  const checkoutBanner =
-    checkoutState === 'success'
-      ? 'Checkout completed. Stripe webhook reconciliation may take a few seconds to refresh the final status.'
-      : checkoutState === 'canceled'
-        ? 'Checkout was canceled before payment was submitted.'
-        : null;
+  const [widgetToken, setWidgetToken] = useState<string | null>(null);
+  const [widgetReady, setWidgetReady] = useState(false);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const widgetRef = useRef<{ destroy: () => void } | null>(null);
 
-  async function handleCheckout(planCode: string) {
-    setActiveAction(`checkout:${planCode}`);
-    setErrorMessage(null);
-    setStatusMessage(`Starting the ${planCode} checkout flow...`);
+  const effectiveKopecks = useCustom
+    ? Math.round((parseFloat(customAmount.replace(',', '.')) || 0) * 100)
+    : selectedKopecks;
 
+  const customAmountValid =
+    !useCustom ||
+    (Number.isFinite(effectiveKopecks) && effectiveKopecks >= 1_000 && effectiveKopecks <= 100_000_000);
+
+  const refreshBalance = useCallback(async () => {
     try {
-      const response = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          workspaceId,
-          planCode,
-          interval: selectedInterval,
-          successPath: `/app/billing?workspaceId=${workspaceId}&checkout=success`,
-          cancelPath: `/app/billing?workspaceId=${workspaceId}&checkout=canceled`,
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as BillingRouteResponse<BillingCheckoutResult> | null;
-
-      if (!response.ok || !payload?.ok || !payload.data?.redirectUrl) {
-        setActiveAction(null);
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to create a billing checkout session right now.');
-        return;
-      }
-
-      window.location.assign(payload.data.redirectUrl);
-    } catch {
-      setActiveAction(null);
-      setStatusMessage(null);
-      setErrorMessage('Unable to reach the billing checkout route right now.');
-    }
-  }
-
-  async function handlePortal() {
-    setActiveAction('portal');
-    setErrorMessage(null);
-    setStatusMessage('Opening Stripe Customer Portal...');
-
-    try {
-      const response = await fetch('/api/billing/portal', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          workspaceId,
-          returnPath: `/app/billing?workspaceId=${workspaceId}`,
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as BillingRouteResponse<BillingPortalResult> | null;
-
-      if (!response.ok || !payload?.ok || !payload.data?.redirectUrl) {
-        setActiveAction(null);
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to open the billing portal right now.');
-        return;
-      }
-
-      window.location.assign(payload.data.redirectUrl);
-    } catch {
-      setActiveAction(null);
-      setStatusMessage(null);
-      setErrorMessage('Unable to reach the billing portal route right now.');
-    }
-  }
-
-  async function handleInvoiceDownload(invoiceId: string) {
-    setActiveAction(`invoice:${invoiceId}`);
-    setErrorMessage(null);
-    setStatusMessage('Preparing invoice export...');
-
-    try {
-      const response = await fetch(`/api/billing/invoices/${encodeURIComponent(invoiceId)}/pdf`, {
-        method: 'GET',
+      const res = await fetch(`/api/wallet/balance?workspaceId=${encodeURIComponent(workspaceId)}`, {
         cache: 'no-store',
       });
-      const payload = (await response.json().catch(() => null)) as BillingRouteResponse<BillingInvoicePdfResult> | null;
+      const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
 
-      if (!response.ok || !payload?.ok || !payload.data?.redirectUrl) {
-        setActiveAction(null);
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to open the invoice export right now.');
+      if (res.ok && payload?.ok && payload.data) {
+        setBalance(payload.data);
+      }
+    } catch {
+      // non-critical, keep current balance
+    }
+  }, [workspaceId]);
+
+  // Mount/destroy YooKassa widget when token changes
+  useEffect(() => {
+    if (!widgetToken || !scriptLoaded) {
+      return;
+    }
+
+    const container = 'yookassa-widget-container';
+
+    async function mountWidget() {
+      if (!window.YooMoneyCheckoutWidget) {
+        setErrorMessage('Не удалось загрузить виджет оплаты. Попробуйте обновить страницу.');
         return;
       }
 
-      setActiveAction(null);
-      setStatusMessage(null);
-      const popup = window.open(payload.data.redirectUrl, '_blank', 'noopener,noreferrer');
+      widgetRef.current?.destroy();
 
-      if (!popup) {
-        window.location.assign(payload.data.redirectUrl);
+      const widget = new window.YooMoneyCheckoutWidget({
+        confirmation_token: widgetToken!,
+        return_url: window.location.href,
+        error_callback: (err) => {
+          if (err.error === 'token_expired') {
+            setWidgetToken(null);
+            setErrorMessage('Время сессии оплаты истекло. Создайте новый платёж.');
+          } else {
+            setErrorMessage(`Ошибка виджета: ${err.error}`);
+          }
+          setActiveAction(null);
+        },
+      });
+
+      widgetRef.current = widget;
+
+      try {
+        await widget.render(container);
+        setWidgetReady(true);
+      } catch {
+        setErrorMessage('Не удалось отобразить виджет оплаты.');
+        setActiveAction(null);
       }
+    }
+
+    void mountWidget();
+
+    return () => {
+      widgetRef.current?.destroy();
+      widgetRef.current = null;
+      setWidgetReady(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widgetToken, scriptLoaded]);
+
+  async function handleCreateTopUp() {
+    if (!canManageBilling) return;
+    if (!customAmountValid) {
+      setErrorMessage('Введите корректную сумму (от 10 ₽ до 1 000 000 ₽).');
+      return;
+    }
+
+    setActiveAction('create_topup');
+    setErrorMessage(null);
+    setStatusMessage('Создаём платёж...');
+
+    try {
+      const response = await fetch('/api/wallet/topups/create', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ workspaceId, amountKopecks: effectiveKopecks }),
+      });
+      const payload = (await response.json().catch(() => null)) as BillingRouteResponse<WalletTopUpCreateResult> | null;
+
+      if (!response.ok || !payload?.ok || !payload.data?.confirmationToken) {
+        setActiveAction(null);
+        setStatusMessage(null);
+        setErrorMessage(payload?.error?.message ?? 'Не удалось создать платёж. Попробуйте ещё раз.');
+        return;
+      }
+
+      const result = payload.data;
+
+      // Add pending top-up to list immediately for UX
+      setTopUps((prev) => [
+        {
+          id: result.topUpId,
+          amountKopecks: result.amountKopecks,
+          amountRub: result.amountKopecks / 100,
+          currency: result.currency,
+          status: 'pending',
+          provider: 'yookassa',
+          providerPaymentId: result.providerPaymentId,
+          idempotenceKey: '',
+          paidAt: null,
+          createdAt: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+
+      setWidgetToken(result.confirmationToken);
+      setStatusMessage('Платёж создан. Завершите оплату в форме ниже.');
+      setActiveAction(null);
     } catch {
       setActiveAction(null);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the invoice export route right now.');
+      setErrorMessage('Не удалось связаться с сервером. Попробуйте ещё раз.');
     }
   }
 
-  async function handleSubscriptionMutation(mode: 'cancel' | 'resume') {
-    setActiveAction(mode);
+  function handleOpenModal() {
+    setShowModal(true);
+    setWidgetToken(null);
     setErrorMessage(null);
-    setStatusMessage(mode === 'cancel' ? 'Scheduling cancellation at period end...' : 'Resuming the current subscription...');
+    setStatusMessage(null);
+    setUseCustom(false);
+    setSelectedKopecks(50_000);
+    setCustomAmount('');
+  }
 
-    try {
-      const response = await fetch(`/api/billing/${mode}`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          workspaceId,
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as BillingRouteResponse<BillingSubscriptionMutationResult> | null;
-
-      if (!response.ok || !payload?.ok || !payload.data) {
-        setActiveAction(null);
-        setStatusMessage(null);
-        setErrorMessage(
-          payload?.error?.message ??
-            (mode === 'cancel'
-              ? 'Unable to schedule cancellation right now.'
-              : 'Unable to resume the subscription right now.'),
-        );
-        return;
-      }
-
-      setSubscriptionState((current) => ({
-        ...current,
-        status: payload.data?.status ?? current.status,
-        cancelAtPeriodEnd: payload.data?.cancelAtPeriodEnd ?? current.cancelAtPeriodEnd,
-        currentPeriodEnd: payload.data?.currentPeriodEnd ?? current.currentPeriodEnd,
-      }));
-      setActiveAction(null);
-      setStatusMessage(
-        mode === 'cancel'
-          ? 'Cancellation scheduled. Access stays active until the current billing period ends.'
-          : 'Cancellation removed. The subscription will renew normally.',
-      );
-    } catch {
-      setActiveAction(null);
-      setStatusMessage(null);
-      setErrorMessage(
-        mode === 'cancel'
-          ? 'Unable to reach the cancellation route right now.'
-          : 'Unable to reach the resume route right now.',
-      );
-    }
+  function handleCloseModal() {
+    widgetRef.current?.destroy();
+    widgetRef.current = null;
+    setWidgetToken(null);
+    setWidgetReady(false);
+    setShowModal(false);
+    setActiveAction(null);
+    setErrorMessage(null);
+    setStatusMessage(null);
+    void refreshBalance();
   }
 
   return (
     <>
-      {checkoutBanner ? <section className="billing-banner billing-banner-info">{checkoutBanner}</section> : null}
-      {statusMessage ? <section className="billing-banner billing-banner-info">{statusMessage}</section> : null}
-      {errorMessage ? <section className="billing-banner billing-banner-error">{errorMessage}</section> : null}
+      <Script
+        src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"
+        strategy="lazyOnload"
+        onLoad={() => setScriptLoaded(true)}
+      />
 
-      <section className="billing-metrics">
-        <article className="stat-card">
-          <span className="micro-label">Current plan</span>
-          <p className="stat-value">{currentPlan?.plan.name ?? subscriptionState.planCode}</p>
-          <p className="metric-copy">
-            {currentPrice
-              ? `${formatMoney(currentPrice.amount, currentPrice.currency)} / ${formatIntervalLabel(subscriptionState.billingInterval)}`
-              : 'Custom pricing'}
-          </p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">Renewal</span>
-          <p className="stat-value">{subscriptionState.cancelAtPeriodEnd ? 'Ends soon' : 'Auto-renew'}</p>
-          <p className="metric-copy">{formatDate(subscriptionState.currentPeriodEnd)}</p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">Seats</span>
-          <p className="stat-value">{subscriptionState.seatCount}</p>
-          <p className="metric-copy">Allocated to this workspace</p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">Invoices</span>
-          <p className="stat-value">{initialInvoices?.items.length ?? 0}</p>
-          <p className="metric-copy">Visible in billing history</p>
-        </article>
-      </section>
-
-      <section className="billing-layout">
-        <article className="panel billing-current-plan">
-          <span className="micro-label">Current plan</span>
-          <div className="billing-current-plan-header">
-            <div>
-              <h2>{currentPlan?.plan.name ?? subscriptionState.planCode}</h2>
-              <p>{currentPlan?.plan.description ?? 'Current workspace billing state.'}</p>
-            </div>
-            <div className="billing-price-chip">
-              {currentPrice ? formatMoney(currentPrice.amount, currentPrice.currency) : 'Custom'}
-              <span>/{formatIntervalLabel(subscriptionState.billingInterval)}</span>
-            </div>
+      {/* Balance card + top-up trigger */}
+      <section className="wallet-hero">
+        <article className="wallet-balance-card panel">
+          <span className="micro-label">Текущий баланс</span>
+          <div className="wallet-balance-amount">
+            {balance ? formatRub(balance.balanceKopecks) : '—'}
           </div>
-          <div className="tag-row">
-            <span className="tag">{subscriptionState.status}</span>
-            <span className={subscriptionState.cancelAtPeriodEnd ? 'tag warn' : 'tag'}>
-              {subscriptionState.cancelAtPeriodEnd ? 'cancel at period end' : 'renews automatically'}
-            </span>
-          </div>
-          <div className="billing-entitlements">
-            {currentPlan
-              ? buildPlanHighlights(currentPlan).map((highlight) => (
-                  <div className="billing-highlight" key={highlight}>
-                    {highlight}
-                  </div>
-                ))
-              : null}
-          </div>
-        </article>
-
-        <article className="panel billing-payment-card">
-          <span className="micro-label">Payment method</span>
-          <h2>Manage billing in Stripe</h2>
-          <p>
-            Card details and tax information stay inside Stripe Customer Portal. Use it to update payment methods,
-            download receipts from Stripe, and review renewal settings.
-          </p>
-          <div className="billing-inline-actions">
-            <button
-              className="btn-primary"
-              disabled={!canManageBilling || activeAction === 'portal'}
-              onClick={() => void handlePortal()}
-              type="button"
-            >
-              {activeAction === 'portal' ? 'Opening portal...' : 'Update payment method'}
+          <p className="wallet-balance-currency">Рубли · Рабочее пространство</p>
+          {canManageBilling && isConnectedSession ? (
+            <button className="btn-primary wallet-topup-btn" onClick={handleOpenModal} type="button">
+              Пополнить баланс
             </button>
-            {!isConnectedSession ? <span className="list-muted">Connected session required for live billing actions.</span> : null}
-          </div>
+          ) : (
+            <p className="list-muted">
+              {isConnectedSession
+                ? 'Недостаточно прав для пополнения баланса.'
+                : 'Войдите в аккаунт для управления балансом.'}
+            </p>
+          )}
         </article>
       </section>
 
-      <section className="panel">
-        <div className="billing-section-header">
-          <div>
-            <span className="micro-label">Upgrade</span>
-            <h2>Plans and comparison</h2>
-            <p>Select monthly or yearly pricing, compare plan limits, and launch Stripe Checkout.</p>
-          </div>
-          <div className="billing-interval-toggle">
-            {(['monthly', 'yearly'] as const).map((interval) => (
+      {/* Top-up modal */}
+      {showModal ? (
+        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label="Пополнение баланса">
+          <article className="wallet-modal panel">
+            <div className="wallet-modal-header">
+              <h2>Пополнение баланса</h2>
               <button
-                className={selectedInterval === interval ? 'billing-toggle active' : 'billing-toggle'}
-                key={interval}
-                onClick={() => setSelectedInterval(interval)}
+                className="wallet-modal-close"
+                onClick={handleCloseModal}
                 type="button"
+                aria-label="Закрыть"
               >
-                {interval === 'monthly' ? 'Monthly' : 'Yearly'}
+                ✕
               </button>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        <div className="billing-plan-grid">
-          {plans.map((plan) => {
-            const price = findPrice(plan, selectedInterval);
-            const isCurrentPlan = plan.plan.code === subscriptionState.planCode;
-            const actionDisabled = !canManageBilling || isCurrentPlan || plan.plan.code === 'free';
+            {statusMessage ? (
+              <div className="billing-banner billing-banner-info">{statusMessage}</div>
+            ) : null}
+            {errorMessage ? (
+              <div className="billing-banner billing-banner-error">{errorMessage}</div>
+            ) : null}
 
-            return (
-              <article className={isCurrentPlan ? 'billing-plan-card current' : 'billing-plan-card'} key={plan.plan.code}>
-                <div className="billing-plan-header">
-                  <div>
-                    <span className="micro-label">{plan.plan.code}</span>
-                    <h3>{plan.plan.name}</h3>
-                    <p>{plan.plan.description}</p>
+            {/* Only show amount selector if widget not yet opened */}
+            {!widgetToken ? (
+              <>
+                <div className="wallet-amount-section">
+                  <span className="micro-label">Выберите сумму</span>
+                  <div className="wallet-preset-grid">
+                    {PRESET_AMOUNTS_KOPECKS.map((amount) => (
+                      <button
+                        key={amount}
+                        className={
+                          !useCustom && selectedKopecks === amount
+                            ? 'wallet-preset-btn active'
+                            : 'wallet-preset-btn'
+                        }
+                        onClick={() => {
+                          setUseCustom(false);
+                          setSelectedKopecks(amount);
+                        }}
+                        type="button"
+                      >
+                        {formatRub(amount)}
+                      </button>
+                    ))}
+                    <button
+                      className={useCustom ? 'wallet-preset-btn active' : 'wallet-preset-btn'}
+                      onClick={() => setUseCustom(true)}
+                      type="button"
+                    >
+                      Другая
+                    </button>
                   </div>
-                  <div className="billing-plan-price">
-                    {price ? formatMoney(price.amount, price.currency) : 'Custom'}
-                    <span>{price ? `/${formatIntervalLabel(price.interval)}` : ''}</span>
-                  </div>
-                </div>
 
-                <div className="billing-highlight-grid">
-                  {buildPlanHighlights(plan).slice(0, 6).map((highlight) => (
-                    <div className="billing-highlight" key={`${plan.plan.code}:${highlight}`}>
-                      {highlight}
+                  {useCustom ? (
+                    <div className="wallet-custom-amount">
+                      <label className="micro-label" htmlFor="custom-amount">
+                        Сумма в рублях
+                      </label>
+                      <div className="wallet-custom-input-wrap">
+                        <input
+                          className="wallet-custom-input"
+                          id="custom-amount"
+                          inputMode="decimal"
+                          min="10"
+                          max="1000000"
+                          placeholder="Например: 500"
+                          type="number"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                        />
+                        <span className="wallet-custom-suffix">₽</span>
+                      </div>
+                      {useCustom && customAmount && !customAmountValid ? (
+                        <p className="wallet-input-error">Введите сумму от 10 ₽ до 1 000 000 ₽</p>
+                      ) : null}
                     </div>
-                  ))}
+                  ) : null}
                 </div>
 
-                <div className="billing-inline-actions">
-                  <button
-                    className={isCurrentPlan ? 'btn-ghost' : 'btn-primary'}
-                    disabled={actionDisabled || activeAction === `checkout:${plan.plan.code}`}
-                    onClick={() => void handleCheckout(plan.plan.code)}
-                    type="button"
-                  >
-                    {isCurrentPlan
-                      ? 'Current plan'
-                      : activeAction === `checkout:${plan.plan.code}`
-                        ? 'Redirecting...'
-                        : `Upgrade to ${plan.plan.name}`}
-                  </button>
-                  {!canManageBilling ? (
-                    <span className="list-muted">
-                      {isConnectedSession ? 'This session can view billing but cannot change it.' : 'Preview only'}
+                <div className="wallet-pay-summary">
+                  <span>К оплате:</span>
+                  <strong>{customAmountValid ? formatRub(effectiveKopecks) : '—'}</strong>
+                </div>
+
+                <button
+                  className="btn-primary wallet-pay-btn"
+                  disabled={
+                    !customAmountValid ||
+                    activeAction === 'create_topup' ||
+                    effectiveKopecks < 1_000
+                  }
+                  onClick={() => void handleCreateTopUp()}
+                  type="button"
+                >
+                  {activeAction === 'create_topup' ? 'Создаём платёж...' : 'Перейти к оплате'}
+                </button>
+              </>
+            ) : null}
+
+            {/* YooKassa widget container */}
+            {widgetToken ? (
+              <div className="wallet-widget-section">
+                {!widgetReady ? (
+                  <div className="wallet-widget-loading">
+                    <div className="wallet-spinner" />
+                    <span>Загружаем форму оплаты...</span>
+                  </div>
+                ) : null}
+                <div
+                  id="yookassa-widget-container"
+                  className="wallet-widget-container"
+                  style={{ minHeight: widgetReady ? undefined : 0 }}
+                />
+              </div>
+            ) : null}
+          </article>
+        </div>
+      ) : null}
+
+      {/* Top-up history */}
+      <section className="panel">
+        <span className="micro-label">История пополнений</span>
+        <h2>Транзакции</h2>
+
+        {topUps.length > 0 ? (
+          <div className="wallet-history">
+            {topUps.map((topUp) => (
+              <div className="wallet-history-row" key={topUp.id}>
+                <div className="wallet-history-left">
+                  <strong className="wallet-history-amount">{formatRub(topUp.amountKopecks)}</strong>
+                  <span className={statusClass(topUp.status)}>{statusLabel(topUp.status)}</span>
+                </div>
+                <div className="wallet-history-right">
+                  <span className="list-muted wallet-history-date">
+                    {topUp.status === 'succeeded' && topUp.paidAt
+                      ? `Оплачено ${formatDate(topUp.paidAt)}`
+                      : `Создано ${formatDate(topUp.createdAt)}`}
+                  </span>
+                  {topUp.providerPaymentId ? (
+                    <span className="wallet-history-ref" title={topUp.providerPaymentId}>
+                      {topUp.providerPaymentId.slice(0, 8)}…
                     </span>
                   ) : null}
                 </div>
-              </article>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="split-grid">
-        <article className="panel">
-          <span className="micro-label">Billing history</span>
-          <h2>Invoices</h2>
-          {initialInvoices?.items.length ? (
-            <div className="billing-history">
-              {initialInvoices.items.map((invoice) => (
-                <div className="billing-history-row" key={invoice.id}>
-                  <div>
-                    <strong>{formatMoney(invoice.amountDue, invoice.currency)}</strong>
-                    <p className="list-muted">
-                      {invoice.externalId ?? invoice.id} · issued {formatDate(invoice.issuedAt)}
-                    </p>
-                  </div>
-                  <div className="billing-history-meta">
-                    <span className={invoice.status === 'paid' ? 'tag' : 'tag warn'}>{invoice.status}</span>
-                    <button
-                      className="btn-ghost"
-                      disabled={activeAction === `invoice:${invoice.id}`}
-                      onClick={() => void handleInvoiceDownload(invoice.id)}
-                      type="button"
-                    >
-                      {activeAction === `invoice:${invoice.id}` ? 'Opening...' : 'Download PDF'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <span className="micro-label">No invoices yet</span>
-              <h2>Billing history will appear after the first successful payment.</h2>
-              <p>Once Stripe invoices start landing, this panel will show dates, paid status, and export actions.</p>
-            </div>
-          )}
-        </article>
-
-        <article className="panel billing-danger-card">
-          <span className="micro-label">Danger zone</span>
-          <h2>{subscriptionState.cancelAtPeriodEnd ? 'Cancellation is scheduled' : 'Cancel the subscription'}</h2>
-          <p>
-            {subscriptionState.cancelAtPeriodEnd
-              ? `Access remains active until ${formatDate(subscriptionState.currentPeriodEnd)}. You can still resume before the period ends.`
-              : 'Canceling keeps the workspace active through the current billing period and prevents the next renewal.'}
-          </p>
-          <div className="billing-inline-actions">
-            {subscriptionState.cancelAtPeriodEnd ? (
-              <button
-                className="btn-primary"
-                disabled={!canManageBilling || activeAction === 'resume'}
-                onClick={() => void handleSubscriptionMutation('resume')}
-                type="button"
-              >
-                {activeAction === 'resume' ? 'Resuming...' : 'Resume subscription'}
-              </button>
-            ) : (
-              <button
-                className="btn-ghost billing-danger-button"
-                disabled={!canManageBilling || activeAction === 'cancel'}
-                onClick={() => void handleSubscriptionMutation('cancel')}
-                type="button"
-              >
-                {activeAction === 'cancel' ? 'Scheduling...' : 'Cancel at period end'}
-              </button>
-            )}
-            <Link className="btn-ghost" href="/app">
-              Back to overview
-            </Link>
+              </div>
+            ))}
           </div>
-        </article>
+        ) : (
+          <div className="empty-state">
+            <span className="micro-label">История пуста</span>
+            <h2>Пополнений ещё не было.</h2>
+            <p>После первого пополнения здесь появится история транзакций.</p>
+          </div>
+        )}
       </section>
     </>
   );

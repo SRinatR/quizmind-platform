@@ -1834,3 +1834,46 @@ export interface ApiRouteDefinition {
   summary: string;
   permission?: ResourceAction;
 }
+
+// ─── Wallet / Balance top-up (YooKassa) ────────────────────────────────────
+
+export type WalletTopUpStatus = 'pending' | 'succeeded' | 'canceled' | 'refunded';
+
+export interface WalletBalanceSnapshot {
+  workspaceId: string;
+  currency: string;
+  balanceKopecks: number;
+  balanceRub: number;
+}
+
+export interface WalletTopUpEntry {
+  id: string;
+  amountKopecks: number;
+  amountRub: number;
+  currency: string;
+  status: WalletTopUpStatus;
+  provider: string;
+  providerPaymentId: string | null;
+  idempotenceKey: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface WalletTopUpsPayload {
+  workspaceId: string;
+  items: WalletTopUpEntry[];
+}
+
+export interface WalletTopUpCreateRequest {
+  workspaceId: string;
+  amountKopecks: number;
+}
+
+export interface WalletTopUpCreateResult {
+  topUpId: string;
+  confirmationToken: string;
+  amountKopecks: number;
+  currency: string;
+  providerPaymentId: string;
+  status: WalletTopUpStatus;
+}

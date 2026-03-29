@@ -9,6 +9,9 @@ import { BillingController } from './billing/billing.controller';
 import { BillingRepository } from './billing/billing.repository';
 import { BillingService } from './billing/billing.service';
 import { BillingWebhookRepository } from './billing/billing-webhook.repository';
+import { WalletController } from './wallet/wallet.controller';
+import { WalletRepository } from './wallet/wallet.repository';
+import { WalletService } from './wallet/wallet.service';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { EmailVerificationRepository } from './auth/repositories/email-verification.repository';
 import { PasswordResetRepository } from './auth/repositories/password-reset.repository';
@@ -47,6 +50,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
   controllers: [
     AuthController,
     BillingController,
+    WalletController,
     PlatformController,
     ExtensionControlController,
     ProviderCredentialController,
@@ -89,6 +93,8 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     UsageRepository,
     UserRepository,
     InMemoryRateLimitService,
+    WalletRepository,
+    WalletService,
     WorkspaceRepository,
   ],
 })
