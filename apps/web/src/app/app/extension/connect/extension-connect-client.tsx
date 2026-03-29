@@ -120,9 +120,11 @@ export function ExtensionConnectClient({
     resolvedBridgeNonce,
   });
   const effectiveBridgeSecurityIssue = platformOriginSecurityIssue ?? bridgeSecurityIssue;
+  const hasWorkspaceMembership = workspaces.length > 0;
 
   const canConnect =
     Boolean(initialRequest) &&
+    hasWorkspaceMembership &&
     missingFields.length === 0 &&
     !isSubmitting &&
     !effectiveBridgeSecurityIssue &&
@@ -162,6 +164,23 @@ export function ExtensionConnectClient({
         requestId: bridgeRequestIdRef.current,
         error: {
           code: 'missing_bridge_params',
+          message,
+        },
+      });
+      return;
+    }
+
+    if (!hasWorkspaceMembership) {
+      const message =
+        'This account has no workspace access. Ask an admin to assign workspace_member (or higher), then reconnect the extension.';
+      setErrorMessage(message);
+      setStatusMessage(null);
+
+      postBridgeMessage({
+        type: 'quizmind.extension.bind_error',
+        requestId: bridgeRequestIdRef.current,
+        error: {
+          code: 'workspace_access_required',
           message,
         },
       });
@@ -439,8 +458,8 @@ export function ExtensionConnectClient({
       {workspaces.length === 0 ? (
         <div className="auth-highlight">
           <span className="micro-label">Workspace</span>
-          <strong>No workspace membership was found in this site session.</strong>
-          <p>The installation can still bind, but workspace-scoped quotas and settings will stay unbound until a workspace is selected later.</p>
+          <strong>Workspace membership is required before extension bind.</strong>
+          <p>Assign this account to a workspace (role `workspace_member` or higher), then reopen bridge connect.</p>
         </div>
       ) : null}
 

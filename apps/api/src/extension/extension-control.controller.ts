@@ -127,6 +127,14 @@ function readPositiveInteger(value: unknown): number | undefined {
   return value;
 }
 
+function readOptionalBoolean(value: unknown): boolean | undefined {
+  if (typeof value !== 'boolean') {
+    return undefined;
+  }
+
+  return value;
+}
+
 function mapProviderModelToExtensionShape(entry: ProviderModelCatalogEntry) {
   const hasVision = entry.capabilityTags.includes('vision') || entry.capabilityTags.includes('image');
   const hasText = entry.capabilityTags.includes('text');
@@ -209,7 +217,7 @@ function normalizeExtensionAiRequest(
   }
 
   const provider = readString(request?.provider) as AiProvider | null;
-  const useOwnKey = request?.useOwnKey === true || request?.options?.useOwnKey === true;
+  const useOwnKey = readOptionalBoolean(request?.useOwnKey) ?? readOptionalBoolean(request?.options?.useOwnKey);
   const temperature = readFiniteNumber(request?.options?.temperature ?? request?.temperature);
   const maxTokens = readPositiveInteger(
     request?.options?.max_tokens ?? request?.options?.maxTokens ?? request?.maxTokens,
@@ -220,7 +228,7 @@ function normalizeExtensionAiRequest(
     ...(provider ? { provider } : {}),
     model,
     messages: request.messages as AiProxyRequest['messages'],
-    useOwnKey,
+    ...(typeof useOwnKey === 'boolean' ? { useOwnKey } : {}),
     ...(typeof temperature === 'number' ? { temperature } : {}),
     ...(typeof maxTokens === 'number' ? { maxTokens } : {}),
     stream: false,

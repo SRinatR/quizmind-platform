@@ -904,9 +904,15 @@ export class ExtensionControlService {
     const handshake = this.normalizeHandshake(request?.handshake);
     const workspaceId = request?.workspaceId?.trim() || session.workspaces[0]?.id;
 
+    if (!workspaceId) {
+      throw new BadRequestException(
+        'workspaceId is required for extension bind. Assign this user to a workspace before connecting the extension.',
+      );
+    }
+
     return {
       installationId,
-      ...(workspaceId ? { workspaceId } : {}),
+      workspaceId,
       environment,
       handshake,
     };

@@ -49,7 +49,7 @@ interface NormalizedProxyRequest {
   provider?: AiProvider;
   model: string;
   messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
-  useOwnKey: boolean;
+  useOwnKey?: boolean;
   temperature?: number;
   maxTokens?: number;
   stream: boolean;
@@ -87,6 +87,11 @@ interface WorkspaceAiCatalog {
   defaultProvider?: AiProvider;
   defaultModel?: string;
   allowedModelTags: string[];
+}
+
+interface KeyMaterialResolution {
+  keySource: 'platform' | 'user';
+  apiKey: string;
 }
 
 export interface AiProxyStreamCompletion {
@@ -610,20 +615,45 @@ export class AiProxyService {
       this.aiProxyRepository.findActiveQuotaCounter(workspace.id, aiRequestsQuotaKey, occurredAt),
     ]);
     const quotaCounter = activeCounter ?? quotaCounterFallback;
-    const keySource = normalizedRequest.useOwnKey ? 'user' : 'platform';
 
-    if (provider !== 'openrouter') {
-      if (!policy.allowDirectProviderMode) {
-        throw new ForbiddenException(
-          policy.reason ?? `Direct provider mode is disabled for provider "${provider}".`,
-        );
-      }
+    if (provider !== 'openrouter' && !policy.allowDirectProviderMode) {
+      throw new ForbiddenException(
+        policy.reason ?? `Direct provider mode is disabled for provider "${provider}".`,
+      );
+    }
 
-      if (keySource !== 'user') {
-        throw new BadRequestException(
-          `Provider "${provider}" requires useOwnKey=true because platform-managed direct routing is not configured.`,
-        );
-      }
+    if (policy.mode === 'user_key_required' && normalizedRequest.useOwnKey !== true) {
+      throw new ForbiddenException(
+        policy.reason ?? 'This workspace requires bring-your-own-key for AI proxy requests.',
+      );
+    }
+
+    if (
+      normalizedRequest.useOwnKey === true &&
+      modelSupportsVision(selectedModel) &&
+      !policy.allowVisionOnUserKeys
+    ) {
+      throw new ForbiddenException(
+        policy.reason ?? `Model "${selectedModel.modelId}" requires vision support that is disabled for user keys.`,
+      );
+    }
+
+    const keyMaterial = await this.resolveKeyMaterial({
+      provider,
+      session,
+      workspaceId: workspace.id,
+      policy,
+      requestId,
+      model: normalizedRequest.model,
+      requestedUseOwnKey: normalizedRequest.useOwnKey,
+    });
+    const keySource = keyMaterial.keySource;
+    const apiKey = keyMaterial.apiKey;
+
+    if (provider !== 'openrouter' && keySource !== 'user') {
+      throw new BadRequestException(
+        `Provider "${provider}" requires useOwnKey=true because platform-managed direct routing is not configured.`,
+      );
     }
 
     if (policy.mode === 'user_key_required' && keySource !== 'user') {
@@ -637,19 +667,6 @@ export class AiProxyService {
         policy.reason ?? `Model "${selectedModel.modelId}" requires vision support that is disabled for user keys.`,
       );
     }
-
-    const apiKey =
-      keySource === 'user'
-        ? await this.resolveUserKey({
-            provider,
-            session,
-            workspaceId: workspace.id,
-            policy,
-          })
-        : await this.resolvePlatformKey({
-            provider,
-            policy,
-          });
 
     const invocation: PreparedProxyInvocation = {
       session,
@@ -684,6 +701,204 @@ export class AiProxyService {
     }
 
     return invocation;
+  }
+
+  private async resolveKeyMaterial(input: {
+    provider: AiProvider;
+    session: CurrentSessionSnapshot;
+    workspaceId: string;
+    policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
+    requestId: string;
+    model: string;
+    requestedUseOwnKey?: boolean;
+  }): Promise<KeyMaterialResolution> {
+    if (input.provider !== 'openrouter' && !input.policy.allowDirectProviderMode) {
+      throw new ForbiddenException(
+        input.policy.reason ?? `Direct provider mode is disabled for provider "${input.provider}".`,
+      );
+    }
+
+    const attempted: Array<{
+      keySource: 'platform' | 'user';
+      error: unknown;
+    }> = [];
+    const requestedUseOwnKey = input.requestedUseOwnKey;
+    const attemptOrder = this.resolveKeyAttemptOrder({
+      provider: input.provider,
+      policy: input.policy,
+      requestedUseOwnKey,
+    });
+
+    for (const keySource of attemptOrder) {
+      try {
+        const apiKey =
+          keySource === 'user'
+            ? await this.resolveUserKey({
+                provider: input.provider,
+                session: input.session,
+                workspaceId: input.workspaceId,
+                policy: input.policy,
+              })
+            : await this.resolvePlatformKey({
+                provider: input.provider,
+                policy: input.policy,
+              });
+
+        if (attempted.length > 0) {
+          this.logKeySourceFallback({
+            requestId: input.requestId,
+            userId: input.session.user.id,
+            workspaceId: input.workspaceId,
+            provider: input.provider,
+            model: input.model,
+            requestedUseOwnKey,
+            resolvedKeySource: keySource,
+            attempted,
+          });
+        } else {
+          this.logKeySourceResolution({
+            requestId: input.requestId,
+            userId: input.session.user.id,
+            workspaceId: input.workspaceId,
+            provider: input.provider,
+            model: input.model,
+            requestedUseOwnKey,
+            resolvedKeySource: keySource,
+            attemptCount: 1,
+          });
+        }
+
+        return {
+          keySource,
+          apiKey,
+        };
+      } catch (error) {
+        attempted.push({
+          keySource,
+          error,
+        });
+
+        if (!this.canTryNextKeySource(error)) {
+          throw error;
+        }
+      }
+    }
+
+    this.logKeySourceFallback({
+      requestId: input.requestId,
+      userId: input.session.user.id,
+      workspaceId: input.workspaceId,
+      provider: input.provider,
+      model: input.model,
+      requestedUseOwnKey,
+      resolvedKeySource: null,
+      attempted,
+    });
+
+    throw (attempted[attempted.length - 1]?.error ??
+      new ServiceUnavailableException('Unable to resolve provider credentials for this request.'));
+  }
+
+  private resolveKeyAttemptOrder(input: {
+    provider: AiProvider;
+    policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
+    requestedUseOwnKey?: boolean;
+  }): Array<'platform' | 'user'> {
+    if (typeof input.requestedUseOwnKey === 'boolean') {
+      return [input.requestedUseOwnKey ? 'user' : 'platform'];
+    }
+
+    const canTryUserKey = input.policy.allowBringYourOwnKey && !input.policy.requireAdminApproval;
+
+    if (input.policy.mode === 'user_key_required') {
+      return ['user'];
+    }
+
+    if (input.provider !== 'openrouter') {
+      return ['user'];
+    }
+
+    if (!input.policy.allowPlatformManaged) {
+      return canTryUserKey ? ['user'] : ['platform'];
+    }
+
+    if (canTryUserKey) {
+      return ['user', 'platform'];
+    }
+
+    return ['platform'];
+  }
+
+  private canTryNextKeySource(error: unknown): boolean {
+    return (
+      error instanceof NotFoundException ||
+      error instanceof ForbiddenException ||
+      error instanceof ServiceUnavailableException
+    );
+  }
+
+  private logKeySourceResolution(input: {
+    requestId: string;
+    userId: string;
+    workspaceId: string;
+    provider: AiProvider;
+    model: string;
+    requestedUseOwnKey?: boolean;
+    resolvedKeySource: 'platform' | 'user';
+    attemptCount: number;
+  }): void {
+    console.info(
+      JSON.stringify({
+        eventType: 'ai_proxy.key_source_resolved',
+        occurredAt: new Date().toISOString(),
+        requestId: input.requestId,
+        userId: input.userId,
+        workspaceId: input.workspaceId,
+        provider: input.provider,
+        model: input.model,
+        requestedUseOwnKey:
+          typeof input.requestedUseOwnKey === 'boolean' ? input.requestedUseOwnKey : null,
+        resolvedKeySource: input.resolvedKeySource,
+        attemptCount: input.attemptCount,
+      }),
+    );
+  }
+
+  private logKeySourceFallback(input: {
+    requestId: string;
+    userId: string;
+    workspaceId: string;
+    provider: AiProvider;
+    model: string;
+    requestedUseOwnKey?: boolean;
+    resolvedKeySource: 'platform' | 'user' | null;
+    attempted: Array<{
+      keySource: 'platform' | 'user';
+      error: unknown;
+    }>;
+  }): void {
+    const attempts = input.attempted.map((attempt) => ({
+      keySource: attempt.keySource,
+      errorCode: this.resolveProxyFailureCode(attempt.error),
+      errorMessage: this.resolveProxyFailureMessage(attempt.error),
+      status: attempt.error instanceof HttpException ? attempt.error.getStatus() : undefined,
+    }));
+
+    console.warn(
+      JSON.stringify({
+        eventType: 'ai_proxy.key_source_fallback',
+        occurredAt: new Date().toISOString(),
+        requestId: input.requestId,
+        userId: input.userId,
+        workspaceId: input.workspaceId,
+        provider: input.provider,
+        model: input.model,
+        requestedUseOwnKey:
+          typeof input.requestedUseOwnKey === 'boolean' ? input.requestedUseOwnKey : null,
+        resolvedKeySource: input.resolvedKeySource,
+        attempts,
+      }),
+    );
   }
 
   private async resolveWorkspaceCatalog(
@@ -751,7 +966,7 @@ export class AiProxyService {
       provider,
       model,
       messages,
-      useOwnKey: request.useOwnKey === true,
+      ...(typeof request.useOwnKey === 'boolean' ? { useOwnKey: request.useOwnKey } : {}),
       ...(typeof temperature === 'number' ? { temperature } : {}),
       ...(typeof maxTokens === 'number' ? { maxTokens } : {}),
       stream: request.stream === true,
@@ -1389,7 +1604,8 @@ export class AiProxyService {
         requestedWorkspaceId,
         requestedProvider,
         requestedModel,
-        useOwnKey: input.request?.useOwnKey === true,
+        useOwnKeyRequested:
+          typeof input.request?.useOwnKey === 'boolean' ? input.request.useOwnKey : null,
         messageCount,
         errorCode: this.resolveProxyFailureCode(input.error),
         errorMessage: this.resolveProxyFailureMessage(input.error),
