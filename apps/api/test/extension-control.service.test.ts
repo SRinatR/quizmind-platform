@@ -385,6 +385,34 @@ test('ExtensionControlService.bindInstallationForCurrentSession rejects invalid 
   assert.equal(upsertCalled, false);
 });
 
+test('ExtensionControlService.bindInstallationForCurrentSession requires workspace membership context', async () => {
+  const { service } = createService();
+  const baseSession = createConnectedSession();
+  const sessionWithoutWorkspace: CurrentSessionSnapshot = {
+    ...baseSession,
+    principal: {
+      ...baseSession.principal,
+      workspaceMemberships: [],
+    },
+    workspaces: [],
+  };
+
+  await assert.rejects(
+    () =>
+      service.bindInstallationForCurrentSession(sessionWithoutWorkspace, {
+        installationId: 'inst_local_browser',
+        environment: 'development',
+        handshake: {
+          extensionVersion: '1.6.1',
+          schemaVersion: '2',
+          capabilities: ['quiz-capture'],
+          browser: 'chrome',
+        },
+      }),
+    /workspaceId is required for extension bind/i,
+  );
+});
+
 test('ExtensionControlService.bootstrapInstallationSession refreshes bootstrap for a valid installation session', async () => {
   const {
     service,

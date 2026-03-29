@@ -106,6 +106,18 @@ function buildSuspendReasonDraft(items: DirectoryUser[]) {
   return Object.fromEntries(items.map((item) => [item.id, '']));
 }
 
+function buildDefaultCreateWorkspaceRoles(workspaceOptions: WorkspaceOption[]): Record<string, string> {
+  const firstWorkspaceId = workspaceOptions[0]?.id;
+
+  if (!firstWorkspaceId) {
+    return {};
+  }
+
+  return {
+    [firstWorkspaceId]: 'workspace_member',
+  };
+}
+
 function applyMutation(items: DirectoryUser[], nextUser: DirectoryUser) {
   const nextItems = items.filter((item) => item.id !== nextUser.id);
   nextItems.push(nextUser);
@@ -146,7 +158,9 @@ export function UsersDirectoryClient({
   const [createPassword, setCreatePassword] = useState('');
   const [createDisplayName, setCreateDisplayName] = useState('');
   const [createRoles, setCreateRoles] = useState<string[]>([]);
-  const [createWorkspaceRoles, setCreateWorkspaceRoles] = useState<Record<string, string>>({});
+  const [createWorkspaceRoles, setCreateWorkspaceRoles] = useState<Record<string, string>>(
+    () => buildDefaultCreateWorkspaceRoles(workspaceOptions),
+  );
   const [createEmailVerified, setCreateEmailVerified] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(
@@ -349,7 +363,7 @@ export function UsersDirectoryClient({
       setCreatePassword('');
       setCreateDisplayName('');
       setCreateRoles([]);
-      setCreateWorkspaceRoles({});
+      setCreateWorkspaceRoles(buildDefaultCreateWorkspaceRoles(workspaceOptions));
       setCreateEmailVerified(false);
       setCreatingUser(false);
       setStatusMessage(`User ${nextUser.email} created and access assignments were saved.`);
@@ -474,6 +488,14 @@ export function UsersDirectoryClient({
               ))}
             </div>
           </label>
+          <p className="list-muted">
+            User account: no system roles. Admin account: at least one system role (for example{' '}
+            <span className="monospace">platform_admin</span>).
+          </p>
+          <p className="list-muted">
+            Extension access requires workspace membership (minimum:{' '}
+            <span className="monospace">workspace_member</span>).
+          </p>
           {workspaceOptions.length > 0 ? (
             <div className="list-stack">
               {workspaceOptions.map((workspace) => (
