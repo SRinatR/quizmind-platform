@@ -10,7 +10,7 @@ import {
 } from '@quizmind/contracts';
 import { allSystemRoles, allWorkspaceRoles, permissionRegistry } from '@quizmind/permissions';
 
-import { starterFlags, starterPlans, starterRemoteConfig } from './bootstrap/platform-blueprint';
+import { starterFlags, starterRemoteConfig } from './bootstrap/platform-blueprint';
 import { apiModules } from './modules';
 import { apiRoutes } from './routes';
 
@@ -150,9 +150,9 @@ export const foundationTracks = [
   },
   {
     id: 'billing',
-    title: 'Billing Engine',
+    title: 'Wallet & Payments',
     status: 'done',
-    description: 'Plan and entitlement resolution for free and pro workspace states.',
+    description: 'Wallet top-up and YooKassa payment processing for workspace balance.',
   },
   {
     id: 'control-plane',
@@ -204,10 +204,6 @@ export function getWorkspaceSummary(workspaceId?: string): WorkspaceSummary {
     demoWorkspaces.find((workspace) => workspace.id === workspaceId) ??
     demoWorkspaces[0]
   );
-}
-
-export function getPlanForWorkspace(workspaceId: string) {
-  return workspaceId === 'ws_beta' ? starterPlans[0] : starterPlans[1];
 }
 
 export function buildAuthSession(persona: DemoPersona): AuthSessionPayload {
@@ -368,7 +364,6 @@ export function getFoundationOverview() {
       workspace: allWorkspaceRoles,
     },
     permissions: [...permissionRegistry],
-    plans: starterPlans,
     featureFlags: starterFlags,
     remoteConfigLayers: starterRemoteConfig,
     foundationTracks,

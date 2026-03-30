@@ -1,7 +1,6 @@
 import {
   EventSeverity,
   PrismaClient,
-  SubscriptionStatus,
   SystemRole,
   WorkspaceRole,
   createPrismaClientOptions,
@@ -11,133 +10,6 @@ const prisma = new PrismaClient(createPrismaClientOptions(process.env.DATABASE_U
 const demoPasswordHash = '$2b$12$PHJXSUJWEvesXLnQh90hv.tvljJ4FN/GTqhqHoVFNtmRzGvsaMzVi';
 
 async function seed() {
-  const freePlan = await prisma.plan.upsert({
-    where: { code: 'free' },
-    update: {
-      name: 'Free',
-      description: 'Starter tier for local development and onboarding flows.',
-      isActive: true,
-    },
-    create: {
-      code: 'free',
-      name: 'Free',
-      description: 'Starter tier for local development and onboarding flows.',
-      isActive: true,
-    },
-  });
-
-  const proPlan = await prisma.plan.upsert({
-    where: { code: 'pro' },
-    update: {
-      name: 'Pro',
-      description: 'Expanded quotas and control-plane capabilities for active workspaces.',
-      isActive: true,
-    },
-    create: {
-      code: 'pro',
-      name: 'Pro',
-      description: 'Expanded quotas and control-plane capabilities for active workspaces.',
-      isActive: true,
-    },
-  });
-
-  const businessPlan = await prisma.plan.upsert({
-    where: { code: 'business' },
-    update: {
-      name: 'Business',
-      description: 'Business tier with higher quotas, more seats, and priority billing support.',
-      isActive: true,
-    },
-    create: {
-      code: 'business',
-      name: 'Business',
-      description: 'Business tier with higher quotas, more seats, and priority billing support.',
-      isActive: true,
-    },
-  });
-
-  await prisma.planEntitlement.createMany({
-    data: [
-      { planId: freePlan.id, key: 'feature.text_answering', enabled: true },
-      { planId: freePlan.id, key: 'limit.requests_per_day', enabled: true, limitValue: 25 },
-      { planId: proPlan.id, key: 'feature.text_answering', enabled: true },
-      { planId: proPlan.id, key: 'feature.screenshot_answering', enabled: true },
-      { planId: proPlan.id, key: 'feature.remote_config', enabled: true },
-      { planId: proPlan.id, key: 'limit.requests_per_day', enabled: true, limitValue: 500 },
-      { planId: businessPlan.id, key: 'feature.text_answering', enabled: true },
-      { planId: businessPlan.id, key: 'feature.screenshot_answering', enabled: true },
-      { planId: businessPlan.id, key: 'feature.remote_config', enabled: true },
-      { planId: businessPlan.id, key: 'feature.priority_support', enabled: true },
-      { planId: businessPlan.id, key: 'limit.screenshots_per_day', enabled: true, limitValue: 200 },
-      { planId: businessPlan.id, key: 'limit.seats', enabled: true, limitValue: 5 },
-      { planId: businessPlan.id, key: 'limit.history_retention_days', enabled: true, limitValue: 365 },
-    ],
-    skipDuplicates: true,
-  });
-
-  const seededPlanPrices = [
-    {
-      planId: freePlan.id,
-      intervalCode: 'monthly',
-      currency: 'usd',
-      amount: 0,
-      isDefault: true,
-      stripePriceId: null,
-    },
-    {
-      planId: proPlan.id,
-      intervalCode: 'monthly',
-      currency: 'usd',
-      amount: 900,
-      isDefault: true,
-      stripePriceId: 'price_pro_monthly',
-    },
-    {
-      planId: proPlan.id,
-      intervalCode: 'yearly',
-      currency: 'usd',
-      amount: 9000,
-      isDefault: false,
-      stripePriceId: 'price_pro_yearly',
-    },
-    {
-      planId: businessPlan.id,
-      intervalCode: 'monthly',
-      currency: 'usd',
-      amount: 2900,
-      isDefault: true,
-      stripePriceId: 'price_biz_monthly',
-    },
-    {
-      planId: businessPlan.id,
-      intervalCode: 'yearly',
-      currency: 'usd',
-      amount: 29000,
-      isDefault: false,
-      stripePriceId: 'price_biz_yearly',
-    },
-  ] as const;
-
-  for (const price of seededPlanPrices) {
-    await prisma.planPrice.upsert({
-      where: {
-        planId_intervalCode_currency: {
-          planId: price.planId,
-          intervalCode: price.intervalCode,
-          currency: price.currency,
-        },
-      },
-      update: {
-        amount: price.amount,
-        isDefault: price.isDefault,
-        stripePriceId: price.stripePriceId,
-      },
-      create: {
-        ...price,
-      },
-    });
-  }
-
   await prisma.featureFlag.upsert({
     where: { key: 'beta.remote-config-v2' },
     update: {
@@ -145,7 +17,6 @@ async function seed() {
       status: 'active',
       enabled: true,
       rolloutPercentage: 100,
-      allowPlansJson: ['pro'],
       minimumExtensionVersion: '1.5.0',
     },
     create: {
@@ -154,7 +25,6 @@ async function seed() {
       status: 'active',
       enabled: true,
       rolloutPercentage: 100,
-      allowPlansJson: ['pro'],
       minimumExtensionVersion: '1.5.0',
     },
   });
@@ -165,14 +35,12 @@ async function seed() {
       description: 'Show banner when a client is below the recommended version.',
       status: 'active',
       enabled: true,
-      allowPlansJson: null,
     },
     create: {
       key: 'ops.force-upgrade-banner',
       description: 'Show banner when a client is below the recommended version.',
       status: 'active',
       enabled: true,
-      allowPlansJson: null,
     },
   });
 
@@ -277,12 +145,10 @@ async function seed() {
     where: { slug: 'demo-workspace' },
     update: {
       name: 'Demo Workspace',
-      billingEmail: 'billing@quizmind.dev',
     },
     create: {
       slug: 'demo-workspace',
       name: 'Demo Workspace',
-      billingEmail: 'billing@quizmind.dev',
     },
   });
 
@@ -664,32 +530,6 @@ async function seed() {
       },
     });
   }
-
-  await prisma.subscription.upsert({
-    where: { externalId: 'seed:demo-workspace:free' },
-    update: {
-      planId: freePlan.id,
-      status: SubscriptionStatus.trialing,
-      billingInterval: 'monthly',
-      seatCount: 1,
-      trialStartAt: new Date(),
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      cancelAtPeriodEnd: false,
-    },
-    create: {
-      workspaceId: workspace.id,
-      planId: freePlan.id,
-      externalId: 'seed:demo-workspace:free',
-      status: SubscriptionStatus.trialing,
-      billingInterval: 'monthly',
-      seatCount: 1,
-      trialStartAt: new Date(),
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      cancelAtPeriodEnd: false,
-    },
-  });
 
   const chromeInstallation = await prisma.extensionInstallation.upsert({
     where: { installationId: 'inst_local_browser' },

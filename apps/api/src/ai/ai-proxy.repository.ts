@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Prisma, type SubscriptionStatus } from '@quizmind/database';
+import { Prisma } from '@quizmind/database';
 
 import { PrismaService } from '../database/prisma.service';
 
@@ -82,13 +82,6 @@ interface RecordProxyFailureInput {
   durationMs?: number;
 }
 
-const subscriptionStatusesWithPlanAccess: SubscriptionStatus[] = [
-  'trialing',
-  'active',
-  'past_due',
-  'grace_period',
-];
-
 function toNullableJsonInput(
   value: Prisma.InputJsonValue | null | undefined,
 ): Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue | undefined {
@@ -134,95 +127,6 @@ function normalizeDurationMs(value: number | undefined): number | null {
 @Injectable()
 export class AiProxyRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
-
-  async findWorkspacePlanCode(workspaceId: string): Promise<string | undefined> {
-    const activeSubscription = await this.prisma.subscription.findFirst({
-      where: {
-        workspaceId,
-        status: {
-          in: subscriptionStatusesWithPlanAccess,
-        },
-      },
-      orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
-      select: {
-        planId: true,
-      },
-    });
-
-    const latestSubscription =
-      activeSubscription ??
-      (await this.prisma.subscription.findFirst({
-        where: {
-          workspaceId,
-        },
-        orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
-        select: {
-          planId: true,
-        },
-      }));
-
-    if (!latestSubscription?.planId) {
-      return undefined;
-    }
-
-    const plan = await this.prisma.plan.findUnique({
-      where: {
-        id: latestSubscription.planId,
-      },
-      select: {
-        code: true,
-      },
-    });
-
-    return plan?.code ?? undefined;
-  }
-
-  async findUsageLimit(workspaceId: string, key: string): Promise<number | undefined> {
-    const subscription = await this.prisma.subscription.findFirst({
-      where: {
-        workspaceId,
-      },
-      orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
-      include: {
-        plan: {
-          include: {
-            entitlements: true,
-          },
-        },
-        workspace: {
-          include: {
-            entitlementOverrides: true,
-          },
-        },
-      },
-    });
-
-    if (!subscription) {
-      return undefined;
-    }
-
-    const override = subscription.workspace.entitlementOverrides.find((entry) => entry.key === key);
-
-    if (override) {
-      if (!override.enabled) {
-        return 0;
-      }
-
-      return override.limitValue ?? undefined;
-    }
-
-    const planEntitlement = subscription.plan.entitlements.find((entry) => entry.key === key);
-
-    if (!planEntitlement) {
-      return undefined;
-    }
-
-    if (!planEntitlement.enabled) {
-      return 0;
-    }
-
-    return planEntitlement.limitValue ?? undefined;
-  }
 
   findActiveQuotaCounter(
     workspaceId: string,

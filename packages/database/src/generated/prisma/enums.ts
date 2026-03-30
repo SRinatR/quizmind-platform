@@ -36,19 +36,24 @@ export const WorkspaceRole = {
 export type WorkspaceRole = (typeof WorkspaceRole)[keyof typeof WorkspaceRole]
 
 
-export const SubscriptionStatus = {
-  trialing: 'trialing',
-  active: 'active',
-  past_due: 'past_due',
-  paused: 'paused',
+export const WalletTopUpStatus = {
+  pending: 'pending',
+  succeeded: 'succeeded',
   canceled: 'canceled',
-  expired: 'expired',
-  incomplete: 'incomplete',
-  incomplete_expired: 'incomplete_expired',
-  grace_period: 'grace_period'
+  refunded: 'refunded'
 } as const
 
-export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]
+export type WalletTopUpStatus = (typeof WalletTopUpStatus)[keyof typeof WalletTopUpStatus]
+
+
+export const WalletLedgerEntryType = {
+  topup: 'topup',
+  refund: 'refund',
+  manual_adjustment: 'manual_adjustment',
+  usage_debit: 'usage_debit'
+} as const
+
+export type WalletLedgerEntryType = (typeof WalletLedgerEntryType)[keyof typeof WalletLedgerEntryType]
 
 
 export const FeatureFlagStatus = {

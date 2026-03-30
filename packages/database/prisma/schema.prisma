@@ -28,18 +28,6 @@ enum WorkspaceRole {
   workspace_viewer
 }
 
-enum SubscriptionStatus {
-  trialing
-  active
-  past_due
-  paused
-  canceled
-  expired
-  incomplete
-  incomplete_expired
-  grace_period
-}
-
 enum WalletTopUpStatus {
   pending
   succeeded
@@ -202,16 +190,10 @@ model Workspace {
   id                     String                  @id @default(cuid())
   slug                   String                  @unique
   name                   String
-  billingEmail           String?
-  billingProvider        String?
-  providerCustomerId     String?
-  stripeCustomerId       String?                 @unique
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   memberships            WorkspaceMembership[]
   invitations            WorkspaceInvite[]
-  subscriptions          Subscription[]
-  entitlementOverrides   EntitlementOverride[]
   featureFlagOverrides   FeatureFlagOverride[]
   remoteConfigVersions   RemoteConfigVersion[]
   extensionInstallations ExtensionInstallation[]
@@ -308,136 +290,6 @@ model UserSystemRole {
   @@unique([userId, role])
 }
 
-model Plan {
-  id            String            @id @default(cuid())
-  code          String            @unique
-  name          String
-  description   String
-  isActive      Boolean           @default(true)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  prices        PlanPrice[]
-  entitlements  PlanEntitlement[]
-  subscriptions Subscription[]
-}
-
-model PlanPrice {
-  id           String   @id @default(cuid())
-  planId       String
-  intervalCode String
-  currency     String
-  amount       Int
-  isDefault    Boolean  @default(false)
-  stripePriceId String? @unique
-  createdAt    DateTime @default(now())
-  plan         Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  providerMappings PlanPriceProviderMapping[]
-
-  @@unique([planId, intervalCode, currency])
-}
-
-model PlanPriceProviderMapping {
-  id              String    @id @default(cuid())
-  planPriceId     String
-  provider        String
-  providerPriceId String
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  planPrice       PlanPrice @relation(fields: [planPriceId], references: [id], onDelete: Cascade)
-
-  @@unique([planPriceId, provider])
-  @@unique([provider, providerPriceId])
-}
-
-model PlanEntitlement {
-  id         String   @id @default(cuid())
-  planId     String
-  key        String
-  enabled    Boolean
-  limitValue Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  plan       Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-
-  @@unique([planId, key])
-}
-
-model Subscription {
-  id                   String             @id @default(cuid())
-  workspaceId          String
-  planId               String
-  provider             String?
-  providerCustomerId   String?
-  providerPriceId      String?
-  providerSubscriptionId String?          @unique
-  externalId           String?            @unique
-  stripeCustomerId     String?
-  stripePriceId        String?
-  stripeSubscriptionId String?          @unique
-  status               SubscriptionStatus
-  billingInterval      String
-  seatCount            Int                @default(1)
-  trialStartAt         DateTime?
-  currentPeriodStart   DateTime?
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
-  workspace            Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  plan                 Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
-  invoices             Invoice[]
-  payments             Payment[]
-}
-
-model Invoice {
-  id             String       @id @default(cuid())
-  subscriptionId String
-  provider       String?
-  providerInvoiceId String?   @unique
-  externalId     String?      @unique
-  amountDue      Int
-  amountPaid     Int          @default(0)
-  currency       String
-  issuedAt       DateTime
-  dueAt          DateTime?
-  paidAt         DateTime?
-  createdAt      DateTime     @default(now())
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-}
-
-model Payment {
-  id             String       @id @default(cuid())
-  subscriptionId String
-  provider       String?
-  providerPaymentId String?   @unique
-  externalId     String?      @unique
-  amount         Int
-  currency       String
-  status         String
-  processedAt    DateTime?
-  createdAt      DateTime     @default(now())
-  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-}
-
-model Coupon {
-  id               String   @id @default(cuid())
-  code             String   @unique
-  stripeCouponId   String?  @unique
-  name             String?
-  percentOff       Int?
-  amountOff        Int?
-  currency         String?
-  duration         String
-  durationInMonths Int?
-  maxRedemptions   Int?
-  redeemBy         DateTime?
-  isActive         Boolean  @default(true)
-  metadataJson     Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-}
-
 model WebhookEvent {
   id                String   @id @default(cuid())
   provider          String
@@ -454,20 +306,6 @@ model WebhookEvent {
 
   @@unique([provider, externalEventId])
   @@index([provider, status, receivedAt])
-}
-
-model EntitlementOverride {
-  id          String    @id @default(cuid())
-  workspaceId String
-  key         String
-  enabled     Boolean
-  limitValue  Int?
-  reason      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([workspaceId, key])
 }
 
 model QuotaCounter {
@@ -517,7 +355,6 @@ model FeatureFlag {
   enabled                 Boolean               @default(false)
   rolloutPercentage       Int?
   allowRolesJson          Json?
-  allowPlansJson          Json?
   minimumExtensionVersion String?
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt

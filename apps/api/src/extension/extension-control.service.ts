@@ -30,18 +30,11 @@ import {
 } from '@quizmind/contracts';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
-import { SubscriptionRepository } from '../billing/subscription.repository';
 import { QueueDispatchService } from '../queue/queue-dispatch.service';
 import {
   canReadExtensionInstallations,
   canWriteExtensionInstallations,
 } from '../services/access-service';
-import {
-  mapEntitlementOverrides,
-  mapPlanRecordToDefinition,
-  mapSubscriptionRecordToSnapshot,
-  resolveWorkspaceSubscriptionSummary,
-} from '../services/billing-service';
 import {
   defaultCompatibilityPolicy,
   mapExtensionCompatibilityRuleToPolicy,
@@ -181,8 +174,6 @@ export class ExtensionControlService {
     private readonly remoteConfigRepository: RemoteConfigRepository,
     @Inject(AiProviderPolicyService)
     private readonly aiProviderPolicyService: AiProviderPolicyService,
-    @Inject(SubscriptionRepository)
-    private readonly subscriptionRepository: SubscriptionRepository,
     @Inject(UsageRepository)
     private readonly usageRepository: UsageRepository,
     @Inject(QueueDispatchService)
@@ -771,42 +762,26 @@ export class ExtensionControlService {
     issuedAt?: string;
     refreshAfterSeconds: number;
   }): Promise<ExtensionBootstrapPayloadV2> {
-    const [compatibilityRule, featureFlags, remoteConfigLayers, aiAccessPolicy, workspaceSubscription, quotaCounters] = await Promise.all([
+    const [compatibilityRule, featureFlags, remoteConfigLayers, aiAccessPolicy, quotaCounters] = await Promise.all([
       this.extensionCompatibilityRepository.findLatest(),
       this.featureFlagRepository.findAll(),
       this.remoteConfigRepository.findActiveLayers(input.installation.workspaceId ?? undefined),
       this.aiProviderPolicyService.resolvePolicyForWorkspace(input.installation.workspaceId ?? undefined),
       input.installation.workspaceId
-        ? this.subscriptionRepository.findCurrentByWorkspaceId(input.installation.workspaceId)
-        : Promise.resolve(null),
-      input.installation.workspaceId
         ? this.usageRepository.listQuotaCountersByWorkspaceId(input.installation.workspaceId)
         : Promise.resolve([]),
     ]);
-    const subscriptionSummary = workspaceSubscription
-      ? resolveWorkspaceSubscriptionSummary({
-          workspaceId: input.installation.workspaceId ?? workspaceSubscription.workspaceId,
-          plan: mapPlanRecordToDefinition(workspaceSubscription.plan),
-          subscription: mapSubscriptionRecordToSnapshot(workspaceSubscription),
-          overrides: mapEntitlementOverrides(workspaceSubscription.workspace.entitlementOverrides),
-        })
-      : null;
-    const quotaHints = subscriptionSummary
-      ? buildUsageQuotas({
-          entitlements: subscriptionSummary.entitlements,
-          counters: quotaCounters,
-          seatCount: subscriptionSummary.seatCount,
-          currentPeriodStart: workspaceSubscription?.currentPeriodStart,
-          currentPeriodEnd: workspaceSubscription?.currentPeriodEnd,
-        }).map((quota) =>
-          buildQuotaHint({
-            key: quota.key,
-            label: quota.label,
-            consumed: quota.consumed,
-            limit: quota.limit,
-          }),
-        )
-      : [];
+    const quotaHints = buildUsageQuotas({
+      counters: quotaCounters,
+      seatCount: 1,
+    }).map((quota) =>
+      buildQuotaHint({
+        key: quota.key,
+        label: quota.label,
+        consumed: quota.consumed,
+        limit: quota.limit,
+      }),
+    );
 
     return buildExtensionBootstrapV2({
       installationId: input.installation.installationId,
@@ -822,14 +797,13 @@ export class ExtensionControlService {
           },
       flagDefinitions: featureFlags.map(mapFeatureFlagRecordToDefinition),
       remoteConfigLayers: remoteConfigLayers.map(mapRemoteConfigLayerRecordToDefinition),
-      entitlements: subscriptionSummary?.entitlements ?? [],
+      entitlements: [],
       quotaHints,
       aiAccessPolicy,
       context: {
         environment: input.environment,
         workspaceId: input.installation.workspaceId ?? undefined,
         userId: input.installation.userId,
-        planCode: subscriptionSummary?.planCode,
         buildId: input.handshake.buildId,
       },
       issuedAt: input.issuedAt,

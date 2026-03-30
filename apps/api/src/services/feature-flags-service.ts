@@ -27,14 +27,6 @@ function parseAllowedRoles(value: unknown): Array<SystemRole | WorkspaceRole> {
   return value.filter((role): role is SystemRole | WorkspaceRole => validRoleSet.has(role));
 }
 
-function parseAllowedPlans(value: unknown): string[] {
-  if (!isStringArray(value)) {
-    return [];
-  }
-
-  return uniqueStrings(value);
-}
-
 function normalizeList(value?: string[] | Array<SystemRole | WorkspaceRole>) {
   return uniqueStrings(value?.map((item) => item.trim()) ?? []);
 }
@@ -53,7 +45,6 @@ export interface NormalizedFeatureFlagUpdate {
   rolloutPercentage?: number;
   minimumExtensionVersion?: string;
   allowRoles: Array<SystemRole | WorkspaceRole>;
-  allowPlans: string[];
   allowUsers: string[];
   allowWorkspaces: string[];
 }
@@ -76,7 +67,6 @@ export function normalizeFeatureFlagUpdate(
     ...(rolloutPercentage === null ? {} : { rolloutPercentage }),
     ...(minimumExtensionVersion ? { minimumExtensionVersion } : {}),
     allowRoles: request?.allowRoles ? parseAllowedRoles(request.allowRoles) : existing.allowRoles ?? [],
-    allowPlans: request?.allowPlans ? normalizeList(request.allowPlans) : existing.allowPlans ?? [],
     allowUsers: request?.allowUsers ? normalizeList(request.allowUsers) : existing.allowUsers ?? [],
     allowWorkspaces: request?.allowWorkspaces ? normalizeList(request.allowWorkspaces) : existing.allowWorkspaces ?? [],
   };
@@ -87,7 +77,6 @@ export function mapFeatureFlagRecordToDefinition(record: FeatureFlagRecord): Fea
   const allowUsers = uniqueStrings(enabledOverrides.map((override) => override.userId));
   const allowWorkspaces = uniqueStrings(enabledOverrides.map((override) => override.workspaceId));
   const allowRoles = parseAllowedRoles(record.allowRolesJson);
-  const allowPlans = parseAllowedPlans(record.allowPlansJson);
 
   return {
     key: record.key,
@@ -96,7 +85,6 @@ export function mapFeatureFlagRecordToDefinition(record: FeatureFlagRecord): Fea
     enabled: record.enabled,
     rolloutPercentage: record.rolloutPercentage ?? undefined,
     ...(allowRoles.length > 0 ? { allowRoles } : {}),
-    ...(allowPlans.length > 0 ? { allowPlans } : {}),
     ...(allowUsers.length > 0 ? { allowUsers } : {}),
     ...(allowWorkspaces.length > 0 ? { allowWorkspaces } : {}),
     minimumExtensionVersion: record.minimumExtensionVersion ?? undefined,

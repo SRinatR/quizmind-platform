@@ -50,7 +50,6 @@ export const platformQueues = [
   'usage-events',
   'emails',
   'quota-resets',
-  'entitlement-refresh',
   'config-publish',
   'audit-exports',
 ] as const;
@@ -981,16 +980,6 @@ export interface QuotaResetJobPayload {
   requestedAt: string;
 }
 
-export interface EntitlementRefreshJobPayload {
-  workspaceId: string;
-  subscriptionId: string;
-  previousStatus: string;
-  nextStatus: string;
-  reason: 'subscription_canceled' | 'subscription_resumed' | 'manual' | 'webhook';
-  requestedAt: string;
-  requestedByUserId?: string;
-}
-
 export interface UsageAuditExportJobPayload {
   exportType: 'usage';
   workspaceId: string;
@@ -1082,8 +1071,6 @@ export interface WorkspaceUsageSnapshot {
   workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
-  planCode: string;
-  subscriptionStatus: string;
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
   quotas: UsageQuotaSnapshot[];
@@ -1333,7 +1320,6 @@ export interface AiProxyRequest {
 
 export interface AiModelsCatalogPayload {
   workspaceId: string;
-  planCode: string;
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
   defaultProvider?: AiProvider;

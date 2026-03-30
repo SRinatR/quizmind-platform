@@ -3,7 +3,6 @@ import test from 'node:test';
 
 import {
   type BillingWebhookJobPayload,
-  type EntitlementRefreshJobPayload,
   type UsageEventPayload,
 } from '@quizmind/contracts';
 
@@ -80,21 +79,6 @@ test('createQueueDispatchRequest injects dedupe keys and retry defaults for supp
   assert.equal(preparedRequest.dedupeKey, 'yookassa:evt_456');
   assert.equal(preparedRequest.attempts, getQueueRuntimeOptions('billing-webhooks').attempts);
 
-  const entitlementRequest = createQueueDispatchRequest({
-    queue: 'entitlement-refresh',
-    payload: {
-      workspaceId: 'ws_1',
-      subscriptionId: 'sub_1',
-      previousStatus: 'active',
-      nextStatus: 'active',
-      reason: 'manual',
-      requestedAt: '2026-03-27T10:00:00.000Z',
-      requestedByUserId: 'user_1',
-    } satisfies EntitlementRefreshJobPayload,
-  });
-
-  assert.equal(entitlementRequest.dedupeKey, undefined);
-  assert.equal(entitlementRequest.attempts, getQueueRuntimeOptions('entitlement-refresh').attempts);
 });
 
 test('buildQueueJob keeps queue-scoped deterministic ids when dedupe keys are present', () => {

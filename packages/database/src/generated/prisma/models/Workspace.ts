@@ -28,10 +28,6 @@ export type WorkspaceMinAggregateOutputType = {
   id: string | null
   slug: string | null
   name: string | null
-  billingEmail: string | null
-  billingProvider: string | null
-  providerCustomerId: string | null
-  stripeCustomerId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -40,10 +36,6 @@ export type WorkspaceMaxAggregateOutputType = {
   id: string | null
   slug: string | null
   name: string | null
-  billingEmail: string | null
-  billingProvider: string | null
-  providerCustomerId: string | null
-  stripeCustomerId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -52,10 +44,6 @@ export type WorkspaceCountAggregateOutputType = {
   id: number
   slug: number
   name: number
-  billingEmail: number
-  billingProvider: number
-  providerCustomerId: number
-  stripeCustomerId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,10 +54,6 @@ export type WorkspaceMinAggregateInputType = {
   id?: true
   slug?: true
   name?: true
-  billingEmail?: true
-  billingProvider?: true
-  providerCustomerId?: true
-  stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -78,10 +62,6 @@ export type WorkspaceMaxAggregateInputType = {
   id?: true
   slug?: true
   name?: true
-  billingEmail?: true
-  billingProvider?: true
-  providerCustomerId?: true
-  stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -90,10 +70,6 @@ export type WorkspaceCountAggregateInputType = {
   id?: true
   slug?: true
   name?: true
-  billingEmail?: true
-  billingProvider?: true
-  providerCustomerId?: true
-  stripeCustomerId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -175,10 +151,6 @@ export type WorkspaceGroupByOutputType = {
   id: string
   slug: string
   name: string
-  billingEmail: string | null
-  billingProvider: string | null
-  providerCustomerId: string | null
-  stripeCustomerId: string | null
   createdAt: Date
   updatedAt: Date
   _count: WorkspaceCountAggregateOutputType | null
@@ -208,16 +180,10 @@ export type WorkspaceWhereInput = {
   id?: Prisma.StringFilter<"Workspace"> | string
   slug?: Prisma.StringFilter<"Workspace"> | string
   name?: Prisma.StringFilter<"Workspace"> | string
-  billingEmail?: Prisma.StringNullableFilter<"Workspace"> | string | null
-  billingProvider?: Prisma.StringNullableFilter<"Workspace"> | string | null
-  providerCustomerId?: Prisma.StringNullableFilter<"Workspace"> | string | null
-  stripeCustomerId?: Prisma.StringNullableFilter<"Workspace"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   memberships?: Prisma.WorkspaceMembershipListRelationFilter
   invitations?: Prisma.WorkspaceInviteListRelationFilter
-  subscriptions?: Prisma.SubscriptionListRelationFilter
-  entitlementOverrides?: Prisma.EntitlementOverrideListRelationFilter
   featureFlagOverrides?: Prisma.FeatureFlagOverrideListRelationFilter
   remoteConfigVersions?: Prisma.RemoteConfigVersionListRelationFilter
   extensionInstallations?: Prisma.ExtensionInstallationListRelationFilter
@@ -230,22 +196,18 @@ export type WorkspaceWhereInput = {
   providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
   aiProviderPolicies?: Prisma.AiProviderPolicyListRelationFilter
+  wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
+  walletTopUps?: Prisma.WalletTopUpListRelationFilter
 }
 
 export type WorkspaceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
-  billingProvider?: Prisma.SortOrderInput | Prisma.SortOrder
-  providerCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
-  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   memberships?: Prisma.WorkspaceMembershipOrderByRelationAggregateInput
   invitations?: Prisma.WorkspaceInviteOrderByRelationAggregateInput
-  subscriptions?: Prisma.SubscriptionOrderByRelationAggregateInput
-  entitlementOverrides?: Prisma.EntitlementOverrideOrderByRelationAggregateInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideOrderByRelationAggregateInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionOrderByRelationAggregateInput
   extensionInstallations?: Prisma.ExtensionInstallationOrderByRelationAggregateInput
@@ -258,25 +220,21 @@ export type WorkspaceOrderByWithRelationInput = {
   providerCredentials?: Prisma.ProviderCredentialOrderByRelationAggregateInput
   aiRequests?: Prisma.AiRequestOrderByRelationAggregateInput
   aiProviderPolicies?: Prisma.AiProviderPolicyOrderByRelationAggregateInput
+  wallet?: Prisma.WalletOrderByWithRelationInput
+  walletTopUps?: Prisma.WalletTopUpOrderByRelationAggregateInput
 }
 
 export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   slug?: string
-  stripeCustomerId?: string
   AND?: Prisma.WorkspaceWhereInput | Prisma.WorkspaceWhereInput[]
   OR?: Prisma.WorkspaceWhereInput[]
   NOT?: Prisma.WorkspaceWhereInput | Prisma.WorkspaceWhereInput[]
   name?: Prisma.StringFilter<"Workspace"> | string
-  billingEmail?: Prisma.StringNullableFilter<"Workspace"> | string | null
-  billingProvider?: Prisma.StringNullableFilter<"Workspace"> | string | null
-  providerCustomerId?: Prisma.StringNullableFilter<"Workspace"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Workspace"> | Date | string
   memberships?: Prisma.WorkspaceMembershipListRelationFilter
   invitations?: Prisma.WorkspaceInviteListRelationFilter
-  subscriptions?: Prisma.SubscriptionListRelationFilter
-  entitlementOverrides?: Prisma.EntitlementOverrideListRelationFilter
   featureFlagOverrides?: Prisma.FeatureFlagOverrideListRelationFilter
   remoteConfigVersions?: Prisma.RemoteConfigVersionListRelationFilter
   extensionInstallations?: Prisma.ExtensionInstallationListRelationFilter
@@ -289,16 +247,14 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
   aiProviderPolicies?: Prisma.AiProviderPolicyListRelationFilter
-}, "id" | "slug" | "stripeCustomerId">
+  wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
+  walletTopUps?: Prisma.WalletTopUpListRelationFilter
+}, "id" | "slug">
 
 export type WorkspaceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  billingEmail?: Prisma.SortOrderInput | Prisma.SortOrder
-  billingProvider?: Prisma.SortOrderInput | Prisma.SortOrder
-  providerCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
-  stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.WorkspaceCountOrderByAggregateInput
@@ -313,10 +269,6 @@ export type WorkspaceScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Workspace"> | string
   slug?: Prisma.StringWithAggregatesFilter<"Workspace"> | string
   name?: Prisma.StringWithAggregatesFilter<"Workspace"> | string
-  billingEmail?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
-  billingProvider?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
-  providerCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
-  stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"Workspace"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Workspace"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Workspace"> | Date | string
 }
@@ -325,16 +277,10 @@ export type WorkspaceCreateInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -347,22 +293,18 @@ export type WorkspaceCreateInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -375,22 +317,18 @@ export type WorkspaceUncheckedCreateInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -403,22 +341,18 @@ export type WorkspaceUpdateInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -431,16 +365,14 @@ export type WorkspaceUncheckedUpdateInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateManyInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -449,10 +381,6 @@ export type WorkspaceUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -461,10 +389,6 @@ export type WorkspaceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -473,10 +397,6 @@ export type WorkspaceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  billingEmail?: Prisma.SortOrder
-  billingProvider?: Prisma.SortOrder
-  providerCustomerId?: Prisma.SortOrder
-  stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -485,10 +405,6 @@ export type WorkspaceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  billingEmail?: Prisma.SortOrder
-  billingProvider?: Prisma.SortOrder
-  providerCustomerId?: Prisma.SortOrder
-  stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -497,10 +413,6 @@ export type WorkspaceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   name?: Prisma.SortOrder
-  billingEmail?: Prisma.SortOrder
-  billingProvider?: Prisma.SortOrder
-  providerCustomerId?: Prisma.SortOrder
-  stripeCustomerId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -513,6 +425,34 @@ export type WorkspaceScalarRelationFilter = {
 export type WorkspaceNullableScalarRelationFilter = {
   is?: Prisma.WorkspaceWhereInput | null
   isNot?: Prisma.WorkspaceWhereInput | null
+}
+
+export type WorkspaceCreateNestedOneWithoutWalletInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneRequiredWithoutWalletNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletInput
+  upsert?: Prisma.WorkspaceUpsertWithoutWalletInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutWalletInput, Prisma.WorkspaceUpdateWithoutWalletInput>, Prisma.WorkspaceUncheckedUpdateWithoutWalletInput>
+}
+
+export type WorkspaceCreateNestedOneWithoutWalletTopUpsInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletTopUpsInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneRequiredWithoutWalletTopUpsNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletTopUpsInput
+  upsert?: Prisma.WorkspaceUpsertWithoutWalletTopUpsInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutWalletTopUpsInput, Prisma.WorkspaceUpdateWithoutWalletTopUpsInput>, Prisma.WorkspaceUncheckedUpdateWithoutWalletTopUpsInput>
 }
 
 export type WorkspaceCreateNestedOneWithoutMembershipsInput = {
@@ -541,34 +481,6 @@ export type WorkspaceUpdateOneRequiredWithoutInvitationsNestedInput = {
   upsert?: Prisma.WorkspaceUpsertWithoutInvitationsInput
   connect?: Prisma.WorkspaceWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutInvitationsInput, Prisma.WorkspaceUpdateWithoutInvitationsInput>, Prisma.WorkspaceUncheckedUpdateWithoutInvitationsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutSubscriptionsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutSubscriptionsInput, Prisma.WorkspaceUncheckedCreateWithoutSubscriptionsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutSubscriptionsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneRequiredWithoutSubscriptionsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutSubscriptionsInput, Prisma.WorkspaceUncheckedCreateWithoutSubscriptionsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutSubscriptionsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutSubscriptionsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutSubscriptionsInput, Prisma.WorkspaceUpdateWithoutSubscriptionsInput>, Prisma.WorkspaceUncheckedUpdateWithoutSubscriptionsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutEntitlementOverridesInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutEntitlementOverridesInput, Prisma.WorkspaceUncheckedCreateWithoutEntitlementOverridesInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutEntitlementOverridesInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneRequiredWithoutEntitlementOverridesNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutEntitlementOverridesInput, Prisma.WorkspaceUncheckedCreateWithoutEntitlementOverridesInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutEntitlementOverridesInput
-  upsert?: Prisma.WorkspaceUpsertWithoutEntitlementOverridesInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutEntitlementOverridesInput, Prisma.WorkspaceUpdateWithoutEntitlementOverridesInput>, Prisma.WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput>
 }
 
 export type WorkspaceCreateNestedOneWithoutAiRequestsInput = {
@@ -763,19 +675,14 @@ export type WorkspaceUpdateOneWithoutSupportImpersonationSessionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUpdateWithoutSupportImpersonationSessionsInput>, Prisma.WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput>
 }
 
-export type WorkspaceCreateWithoutMembershipsInput = {
+export type WorkspaceCreateWithoutWalletInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -788,21 +695,17 @@ export type WorkspaceCreateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
-export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
+export type WorkspaceUncheckedCreateWithoutWalletInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -815,6 +718,223 @@ export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutWalletInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
+}
+
+export type WorkspaceUpsertWithoutWalletInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutWalletInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletInput>
+}
+
+export type WorkspaceUpdateWithoutWalletInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutWalletInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutWalletTopUpsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutWalletTopUpsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutWalletTopUpsInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
+}
+
+export type WorkspaceUpsertWithoutWalletTopUpsInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletTopUpsInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutWalletTopUpsInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletTopUpsInput>
+}
+
+export type WorkspaceUpdateWithoutWalletTopUpsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutWalletTopUpsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
+  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutMembershipsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
+  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutMembershipsInput = {
@@ -837,15 +957,9 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -858,21 +972,17 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -885,21 +995,17 @@ export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutInvitationsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -912,21 +1018,17 @@ export type WorkspaceCreateWithoutInvitationsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -939,6 +1041,8 @@ export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutInvitationsInput = {
@@ -961,15 +1065,9 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -982,21 +1080,17 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -1009,270 +1103,18 @@ export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutSubscriptionsInput = {
-  id?: string
-  slug: string
-  name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutSubscriptionsInput = {
-  id?: string
-  slug: string
-  name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutSubscriptionsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutSubscriptionsInput, Prisma.WorkspaceUncheckedCreateWithoutSubscriptionsInput>
-}
-
-export type WorkspaceUpsertWithoutSubscriptionsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutSubscriptionsInput, Prisma.WorkspaceUncheckedUpdateWithoutSubscriptionsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutSubscriptionsInput, Prisma.WorkspaceUncheckedCreateWithoutSubscriptionsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutSubscriptionsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutSubscriptionsInput, Prisma.WorkspaceUncheckedUpdateWithoutSubscriptionsInput>
-}
-
-export type WorkspaceUpdateWithoutSubscriptionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutSubscriptionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutEntitlementOverridesInput = {
-  id?: string
-  slug: string
-  name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutEntitlementOverridesInput = {
-  id?: string
-  slug: string
-  name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutEntitlementOverridesInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutEntitlementOverridesInput, Prisma.WorkspaceUncheckedCreateWithoutEntitlementOverridesInput>
-}
-
-export type WorkspaceUpsertWithoutEntitlementOverridesInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutEntitlementOverridesInput, Prisma.WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutEntitlementOverridesInput, Prisma.WorkspaceUncheckedCreateWithoutEntitlementOverridesInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutEntitlementOverridesInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutEntitlementOverridesInput, Prisma.WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput>
-}
-
-export type WorkspaceUpdateWithoutEntitlementOverridesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutEntitlementOverridesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAiRequestsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -1284,22 +1126,18 @@ export type WorkspaceCreateWithoutAiRequestsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAiRequestsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -1311,6 +1149,8 @@ export type WorkspaceUncheckedCreateWithoutAiRequestsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAiRequestsInput = {
@@ -1333,16 +1173,10 @@ export type WorkspaceUpdateWithoutAiRequestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -1354,22 +1188,18 @@ export type WorkspaceUpdateWithoutAiRequestsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAiRequestsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -1381,22 +1211,18 @@ export type WorkspaceUncheckedUpdateWithoutAiRequestsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
@@ -1408,22 +1234,18 @@ export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -1435,6 +1257,8 @@ export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput = {
@@ -1457,16 +1281,10 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
@@ -1478,22 +1296,18 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -1505,22 +1319,18 @@ export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
@@ -1532,22 +1342,18 @@ export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -1559,6 +1365,8 @@ export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutRemoteConfigVersionsInput = {
@@ -1581,16 +1389,10 @@ export type WorkspaceUpdateWithoutRemoteConfigVersionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
@@ -1602,22 +1404,18 @@ export type WorkspaceUpdateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -1629,22 +1427,18 @@ export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutExtensionInstallationsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
@@ -1656,22 +1450,18 @@ export type WorkspaceCreateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -1683,6 +1473,8 @@ export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutExtensionInstallationsInput = {
@@ -1705,16 +1497,10 @@ export type WorkspaceUpdateWithoutExtensionInstallationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
@@ -1726,22 +1512,18 @@ export type WorkspaceUpdateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -1753,22 +1535,18 @@ export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutProviderCredentialsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -1780,22 +1558,18 @@ export type WorkspaceCreateWithoutProviderCredentialsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutProviderCredentialsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -1807,6 +1581,8 @@ export type WorkspaceUncheckedCreateWithoutProviderCredentialsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutProviderCredentialsInput = {
@@ -1829,16 +1605,10 @@ export type WorkspaceUpdateWithoutProviderCredentialsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -1850,22 +1620,18 @@ export type WorkspaceUpdateWithoutProviderCredentialsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutProviderCredentialsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -1877,22 +1643,18 @@ export type WorkspaceUncheckedUpdateWithoutProviderCredentialsInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAiProviderPoliciesInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -1904,22 +1666,18 @@ export type WorkspaceCreateWithoutAiProviderPoliciesInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -1931,6 +1689,8 @@ export type WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput = {
@@ -1953,16 +1713,10 @@ export type WorkspaceUpdateWithoutAiProviderPoliciesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -1974,22 +1728,18 @@ export type WorkspaceUpdateWithoutAiProviderPoliciesInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2001,22 +1751,18 @@ export type WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput = {
   supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAuditLogsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -2028,22 +1774,18 @@ export type WorkspaceCreateWithoutAuditLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -2055,6 +1797,8 @@ export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAuditLogsInput = {
@@ -2077,16 +1821,10 @@ export type WorkspaceUpdateWithoutAuditLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -2098,22 +1836,18 @@ export type WorkspaceUpdateWithoutAuditLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2125,22 +1859,18 @@ export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutActivityLogsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -2152,22 +1882,18 @@ export type WorkspaceCreateWithoutActivityLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -2179,6 +1905,8 @@ export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutActivityLogsInput = {
@@ -2201,16 +1929,10 @@ export type WorkspaceUpdateWithoutActivityLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -2222,22 +1944,18 @@ export type WorkspaceUpdateWithoutActivityLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2249,22 +1967,18 @@ export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSecurityEventsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -2276,22 +1990,18 @@ export type WorkspaceCreateWithoutSecurityEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -2303,6 +2013,8 @@ export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSecurityEventsInput = {
@@ -2325,16 +2037,10 @@ export type WorkspaceUpdateWithoutSecurityEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -2346,22 +2052,18 @@ export type WorkspaceUpdateWithoutSecurityEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2373,22 +2075,18 @@ export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutDomainEventsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -2400,22 +2098,18 @@ export type WorkspaceCreateWithoutDomainEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -2427,6 +2121,8 @@ export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutDomainEventsInput = {
@@ -2449,16 +2145,10 @@ export type WorkspaceUpdateWithoutDomainEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -2470,22 +2160,18 @@ export type WorkspaceUpdateWithoutDomainEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2497,22 +2183,18 @@ export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportTicketsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -2524,22 +2206,18 @@ export type WorkspaceCreateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -2551,6 +2229,8 @@ export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportTicketsInput = {
@@ -2573,16 +2253,10 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -2594,22 +2268,18 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2621,22 +2291,18 @@ export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
@@ -2648,22 +2314,18 @@ export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
   id?: string
   slug: string
   name: string
-  billingEmail?: string | null
-  billingProvider?: string | null
-  providerCustomerId?: string | null
-  stripeCustomerId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutWorkspaceInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
@@ -2675,6 +2337,8 @@ export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportImpersonationSessionsInput = {
@@ -2697,16 +2361,10 @@ export type WorkspaceUpdateWithoutSupportImpersonationSessionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
@@ -2718,22 +2376,18 @@ export type WorkspaceUpdateWithoutSupportImpersonationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
-  billingEmail?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  billingProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  providerCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  entitlementOverrides?: Prisma.EntitlementOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
   extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
@@ -2745,6 +2399,8 @@ export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
+  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 
@@ -2755,8 +2411,6 @@ export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
 export type WorkspaceCountOutputType = {
   memberships: number
   invitations: number
-  subscriptions: number
-  entitlementOverrides: number
   featureFlagOverrides: number
   remoteConfigVersions: number
   extensionInstallations: number
@@ -2769,13 +2423,12 @@ export type WorkspaceCountOutputType = {
   providerCredentials: number
   aiRequests: number
   aiProviderPolicies: number
+  walletTopUps: number
 }
 
 export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | WorkspaceCountOutputTypeCountMembershipsArgs
   invitations?: boolean | WorkspaceCountOutputTypeCountInvitationsArgs
-  subscriptions?: boolean | WorkspaceCountOutputTypeCountSubscriptionsArgs
-  entitlementOverrides?: boolean | WorkspaceCountOutputTypeCountEntitlementOverridesArgs
   featureFlagOverrides?: boolean | WorkspaceCountOutputTypeCountFeatureFlagOverridesArgs
   remoteConfigVersions?: boolean | WorkspaceCountOutputTypeCountRemoteConfigVersionsArgs
   extensionInstallations?: boolean | WorkspaceCountOutputTypeCountExtensionInstallationsArgs
@@ -2788,6 +2441,7 @@ export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   providerCredentials?: boolean | WorkspaceCountOutputTypeCountProviderCredentialsArgs
   aiRequests?: boolean | WorkspaceCountOutputTypeCountAiRequestsArgs
   aiProviderPolicies?: boolean | WorkspaceCountOutputTypeCountAiProviderPoliciesArgs
+  walletTopUps?: boolean | WorkspaceCountOutputTypeCountWalletTopUpsArgs
 }
 
 /**
@@ -2812,20 +2466,6 @@ export type WorkspaceCountOutputTypeCountMembershipsArgs<ExtArgs extends runtime
  */
 export type WorkspaceCountOutputTypeCountInvitationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.WorkspaceInviteWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountSubscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SubscriptionWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountEntitlementOverridesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.EntitlementOverrideWhereInput
 }
 
 /**
@@ -2912,21 +2552,22 @@ export type WorkspaceCountOutputTypeCountAiProviderPoliciesArgs<ExtArgs extends 
   where?: Prisma.AiProviderPolicyWhereInput
 }
 
+/**
+ * WorkspaceCountOutputType without action
+ */
+export type WorkspaceCountOutputTypeCountWalletTopUpsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WalletTopUpWhereInput
+}
+
 
 export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   slug?: boolean
   name?: boolean
-  billingEmail?: boolean
-  billingProvider?: boolean
-  providerCustomerId?: boolean
-  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   memberships?: boolean | Prisma.Workspace$membershipsArgs<ExtArgs>
   invitations?: boolean | Prisma.Workspace$invitationsArgs<ExtArgs>
-  subscriptions?: boolean | Prisma.Workspace$subscriptionsArgs<ExtArgs>
-  entitlementOverrides?: boolean | Prisma.Workspace$entitlementOverridesArgs<ExtArgs>
   featureFlagOverrides?: boolean | Prisma.Workspace$featureFlagOverridesArgs<ExtArgs>
   remoteConfigVersions?: boolean | Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs>
   extensionInstallations?: boolean | Prisma.Workspace$extensionInstallationsArgs<ExtArgs>
@@ -2939,6 +2580,8 @@ export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.Workspace$aiRequestsArgs<ExtArgs>
   aiProviderPolicies?: boolean | Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>
+  wallet?: boolean | Prisma.Workspace$walletArgs<ExtArgs>
+  walletTopUps?: boolean | Prisma.Workspace$walletTopUpsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["workspace"]>
 
@@ -2946,10 +2589,6 @@ export type WorkspaceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   slug?: boolean
   name?: boolean
-  billingEmail?: boolean
-  billingProvider?: boolean
-  providerCustomerId?: boolean
-  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["workspace"]>
@@ -2958,10 +2597,6 @@ export type WorkspaceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   slug?: boolean
   name?: boolean
-  billingEmail?: boolean
-  billingProvider?: boolean
-  providerCustomerId?: boolean
-  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["workspace"]>
@@ -2970,20 +2605,14 @@ export type WorkspaceSelectScalar = {
   id?: boolean
   slug?: boolean
   name?: boolean
-  billingEmail?: boolean
-  billingProvider?: boolean
-  providerCustomerId?: boolean
-  stripeCustomerId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type WorkspaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "billingEmail" | "billingProvider" | "providerCustomerId" | "stripeCustomerId" | "createdAt" | "updatedAt", ExtArgs["result"]["workspace"]>
+export type WorkspaceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "slug" | "name" | "createdAt" | "updatedAt", ExtArgs["result"]["workspace"]>
 export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | Prisma.Workspace$membershipsArgs<ExtArgs>
   invitations?: boolean | Prisma.Workspace$invitationsArgs<ExtArgs>
-  subscriptions?: boolean | Prisma.Workspace$subscriptionsArgs<ExtArgs>
-  entitlementOverrides?: boolean | Prisma.Workspace$entitlementOverridesArgs<ExtArgs>
   featureFlagOverrides?: boolean | Prisma.Workspace$featureFlagOverridesArgs<ExtArgs>
   remoteConfigVersions?: boolean | Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs>
   extensionInstallations?: boolean | Prisma.Workspace$extensionInstallationsArgs<ExtArgs>
@@ -2996,6 +2625,8 @@ export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.Workspace$aiRequestsArgs<ExtArgs>
   aiProviderPolicies?: boolean | Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>
+  wallet?: boolean | Prisma.Workspace$walletArgs<ExtArgs>
+  walletTopUps?: boolean | Prisma.Workspace$walletTopUpsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WorkspaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -3006,8 +2637,6 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
   objects: {
     memberships: Prisma.$WorkspaceMembershipPayload<ExtArgs>[]
     invitations: Prisma.$WorkspaceInvitePayload<ExtArgs>[]
-    subscriptions: Prisma.$SubscriptionPayload<ExtArgs>[]
-    entitlementOverrides: Prisma.$EntitlementOverridePayload<ExtArgs>[]
     featureFlagOverrides: Prisma.$FeatureFlagOverridePayload<ExtArgs>[]
     remoteConfigVersions: Prisma.$RemoteConfigVersionPayload<ExtArgs>[]
     extensionInstallations: Prisma.$ExtensionInstallationPayload<ExtArgs>[]
@@ -3020,15 +2649,13 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     providerCredentials: Prisma.$ProviderCredentialPayload<ExtArgs>[]
     aiRequests: Prisma.$AiRequestPayload<ExtArgs>[]
     aiProviderPolicies: Prisma.$AiProviderPolicyPayload<ExtArgs>[]
+    wallet: Prisma.$WalletPayload<ExtArgs> | null
+    walletTopUps: Prisma.$WalletTopUpPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     slug: string
     name: string
-    billingEmail: string | null
-    billingProvider: string | null
-    providerCustomerId: string | null
-    stripeCustomerId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["workspace"]>
@@ -3427,8 +3054,6 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   readonly [Symbol.toStringTag]: "PrismaPromise"
   memberships<T extends Prisma.Workspace$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WorkspaceMembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   invitations<T extends Prisma.Workspace$invitationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$invitationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WorkspaceInvitePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  subscriptions<T extends Prisma.Workspace$subscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  entitlementOverrides<T extends Prisma.Workspace$entitlementOverridesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$entitlementOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EntitlementOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   featureFlagOverrides<T extends Prisma.Workspace$featureFlagOverridesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$featureFlagOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FeatureFlagOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   remoteConfigVersions<T extends Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RemoteConfigVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   extensionInstallations<T extends Prisma.Workspace$extensionInstallationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$extensionInstallationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtensionInstallationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3441,6 +3066,8 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   providerCredentials<T extends Prisma.Workspace$providerCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$providerCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRequests<T extends Prisma.Workspace$aiRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiProviderPolicies<T extends Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiProviderPolicyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  wallet<T extends Prisma.Workspace$walletArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$walletArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  walletTopUps<T extends Prisma.Workspace$walletTopUpsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$walletTopUpsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletTopUpPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3473,10 +3100,6 @@ export interface WorkspaceFieldRefs {
   readonly id: Prisma.FieldRef<"Workspace", 'String'>
   readonly slug: Prisma.FieldRef<"Workspace", 'String'>
   readonly name: Prisma.FieldRef<"Workspace", 'String'>
-  readonly billingEmail: Prisma.FieldRef<"Workspace", 'String'>
-  readonly billingProvider: Prisma.FieldRef<"Workspace", 'String'>
-  readonly providerCustomerId: Prisma.FieldRef<"Workspace", 'String'>
-  readonly stripeCustomerId: Prisma.FieldRef<"Workspace", 'String'>
   readonly createdAt: Prisma.FieldRef<"Workspace", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Workspace", 'DateTime'>
 }
@@ -3920,54 +3543,6 @@ export type Workspace$invitationsArgs<ExtArgs extends runtime.Types.Extensions.I
 }
 
 /**
- * Workspace.subscriptions
- */
-export type Workspace$subscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Subscription
-   */
-  select?: Prisma.SubscriptionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Subscription
-   */
-  omit?: Prisma.SubscriptionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SubscriptionInclude<ExtArgs> | null
-  where?: Prisma.SubscriptionWhereInput
-  orderBy?: Prisma.SubscriptionOrderByWithRelationInput | Prisma.SubscriptionOrderByWithRelationInput[]
-  cursor?: Prisma.SubscriptionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SubscriptionScalarFieldEnum | Prisma.SubscriptionScalarFieldEnum[]
-}
-
-/**
- * Workspace.entitlementOverrides
- */
-export type Workspace$entitlementOverridesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the EntitlementOverride
-   */
-  select?: Prisma.EntitlementOverrideSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the EntitlementOverride
-   */
-  omit?: Prisma.EntitlementOverrideOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.EntitlementOverrideInclude<ExtArgs> | null
-  where?: Prisma.EntitlementOverrideWhereInput
-  orderBy?: Prisma.EntitlementOverrideOrderByWithRelationInput | Prisma.EntitlementOverrideOrderByWithRelationInput[]
-  cursor?: Prisma.EntitlementOverrideWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.EntitlementOverrideScalarFieldEnum | Prisma.EntitlementOverrideScalarFieldEnum[]
-}
-
-/**
  * Workspace.featureFlagOverrides
  */
 export type Workspace$featureFlagOverridesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4253,6 +3828,49 @@ export type Workspace$aiProviderPoliciesArgs<ExtArgs extends runtime.Types.Exten
   take?: number
   skip?: number
   distinct?: Prisma.AiProviderPolicyScalarFieldEnum | Prisma.AiProviderPolicyScalarFieldEnum[]
+}
+
+/**
+ * Workspace.wallet
+ */
+export type Workspace$walletArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Wallet
+   */
+  select?: Prisma.WalletSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Wallet
+   */
+  omit?: Prisma.WalletOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WalletInclude<ExtArgs> | null
+  where?: Prisma.WalletWhereInput
+}
+
+/**
+ * Workspace.walletTopUps
+ */
+export type Workspace$walletTopUpsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WalletTopUp
+   */
+  select?: Prisma.WalletTopUpSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WalletTopUp
+   */
+  omit?: Prisma.WalletTopUpOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WalletTopUpInclude<ExtArgs> | null
+  where?: Prisma.WalletTopUpWhereInput
+  orderBy?: Prisma.WalletTopUpOrderByWithRelationInput | Prisma.WalletTopUpOrderByWithRelationInput[]
+  cursor?: Prisma.WalletTopUpWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WalletTopUpScalarFieldEnum | Prisma.WalletTopUpScalarFieldEnum[]
 }
 
 /**

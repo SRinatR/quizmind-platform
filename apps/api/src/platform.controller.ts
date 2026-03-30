@@ -107,17 +107,6 @@ export class PlatformController {
     );
   }
 
-  @Get('billing/subscription')
-  async getSubscription(
-    @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
-    @Headers('authorization') authorization?: string,
-  ) {
-    void persona;
-    const session = await this.requireStrictConnectedSession(authorization);
-    return ok(await this.platformService.getSubscriptionForCurrentSession(session, workspaceId));
-  }
-
   @Get('usage/summary')
   async getUsage(
     @Query('persona') persona?: string,

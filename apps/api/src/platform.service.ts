@@ -101,15 +101,8 @@ import {
   canStartSupportImpersonation,
   canPublishRemoteConfig,
   canReadWorkspace,
-  canReadWorkspaceSubscription,
   listPrincipalPermissions,
 } from './services/access-service';
-import {
-  mapEntitlementOverrides,
-  mapPlanRecordToDefinition,
-  mapSubscriptionRecordToSnapshot,
-  resolveWorkspaceSubscriptionSummary,
-} from './services/billing-service';
 import {
   defaultCompatibilityPolicy,
   mapExtensionCompatibilityRuleToDefinition,
@@ -151,14 +144,12 @@ import {
   getAccessibleWorkspaces,
   getFoundationOverview,
   getPersona,
-  getPlanForWorkspace,
   getWorkspaceSummary,
   listFoundationSupportTickets,
   listFoundationUsers,
   matchPersonaFromLogin,
 } from './platform-data';
 import { UserRepository } from './auth/repositories/user.repository';
-import { SubscriptionRepository } from './billing/subscription.repository';
 import { BillingWebhookRepository, type BillingWebhookAdminRecord } from './billing/billing-webhook.repository';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import {
@@ -545,8 +536,6 @@ export class PlatformService {
   constructor(
     @Inject(InfrastructureHealthService)
     private readonly infrastructureHealthService: InfrastructureHealthService,
-    @Inject(SubscriptionRepository)
-    private readonly subscriptionRepository: SubscriptionRepository,
     @Inject(ExtensionCompatibilityRepository)
     private readonly extensionCompatibilityRepository: ExtensionCompatibilityRepository,
     @Inject(ExtensionInstallationRepository)
@@ -927,73 +916,15 @@ export class PlatformService {
     return mapUserRecordToProfile(updated);
   }
 
-  getSubscription(personaKey?: string, workspaceId?: string) {
-    const persona = getPersona(personaKey);
-    const workspace = getWorkspaceSummary(workspaceId ?? persona.preferredWorkspaceId);
-    const plan = getPlanForWorkspace(workspace.id);
-    const currentPeriodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-    return {
-      workspace,
-      accessDecision: canReadWorkspaceSubscription(persona.principal, workspace.id),
-      summary: resolveWorkspaceSubscriptionSummary({
-        workspaceId: workspace.id,
-        plan,
-        subscription: {
-          planId: plan.id,
-          status: workspace.id === 'ws_beta' ? 'trialing' : 'active',
-          interval: 'monthly',
-          cancelAtPeriodEnd: false,
-          seats: workspace.id === 'ws_beta' ? 3 : 24,
-          trialEndsAt: currentPeriodEnd,
-        },
-      }),
-    };
-  }
-
-  async getSubscriptionForCurrentSession(session: CurrentSessionSnapshot, workspaceId?: string) {
-    const requestedWorkspace =
-      (workspaceId ? session.workspaces.find((workspace) => workspace.id === workspaceId) : session.workspaces[0]) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const accessDecision = canReadWorkspaceSubscription(session.principal as SessionPrincipal, requestedWorkspace.id);
-
-    if (!accessDecision.allowed) {
-      throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
-
-    const subscription = await this.subscriptionRepository.findCurrentByWorkspaceId(requestedWorkspace.id);
-
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found for workspace.');
-    }
-
-    return {
-      workspace: requestedWorkspace,
-      accessDecision,
-      summary: resolveWorkspaceSubscriptionSummary({
-        workspaceId: requestedWorkspace.id,
-        plan: mapPlanRecordToDefinition(subscription.plan),
-        subscription: mapSubscriptionRecordToSnapshot(subscription),
-        overrides: mapEntitlementOverrides(subscription.workspace.entitlementOverrides),
-      }),
-    };
-  }
-
   getUsage(personaKey?: string, workspaceId?: string): WorkspaceUsageSnapshot {
     const persona = getPersona(personaKey);
     const workspace = getWorkspaceSummary(workspaceId ?? persona.preferredWorkspaceId);
     const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
     const exportDecision = canExportUsage(persona.principal as SessionPrincipal, workspace.id);
-    const plan = getPlanForWorkspace(workspace.id);
     const currentPeriodStart = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
     const currentPeriodEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const seatCount = workspace.id === 'ws_beta' ? 3 : 2;
     const quotas = buildUsageQuotas({
-      entitlements: plan.entitlements,
       seatCount,
       currentPeriodStart,
       currentPeriodEnd,
@@ -1053,8 +984,6 @@ export class PlatformService {
       workspace,
       accessDecision,
       exportDecision,
-      planCode: plan.code,
-      subscriptionStatus: workspace.id === 'ws_beta' ? 'trialing' : 'active',
       currentPeriodStart: currentPeriodStart.toISOString(),
       currentPeriodEnd: currentPeriodEnd.toISOString(),
       quotas,
@@ -1081,12 +1010,6 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const subscription = await this.subscriptionRepository.findCurrentByWorkspaceId(requestedWorkspace.id);
-
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found for workspace.');
-    }
-
     const [installations, counters, telemetry, activity, aiRequests] = await Promise.all([
       this.usageRepository.listInstallationsByWorkspaceId(requestedWorkspace.id),
       this.usageRepository.listQuotaCountersByWorkspaceId(requestedWorkspace.id),
@@ -1094,26 +1017,13 @@ export class PlatformService {
       this.usageRepository.listRecentActivityByWorkspaceId(requestedWorkspace.id),
       this.usageRepository.listRecentAiRequestsByWorkspaceId(requestedWorkspace.id),
     ]);
-    const summary = resolveWorkspaceSubscriptionSummary({
-      workspaceId: requestedWorkspace.id,
-      plan: mapPlanRecordToDefinition(subscription.plan),
-      subscription: mapSubscriptionRecordToSnapshot(subscription),
-      overrides: mapEntitlementOverrides(subscription.workspace.entitlementOverrides),
-    });
     const usageSnapshot: WorkspaceUsageSnapshot = {
       workspace: requestedWorkspace,
       accessDecision,
       exportDecision,
-      planCode: summary.planCode,
-      subscriptionStatus: summary.status,
-      currentPeriodStart: subscription.currentPeriodStart?.toISOString(),
-      currentPeriodEnd: summary.currentPeriodEnd,
       quotas: buildUsageQuotas({
-        entitlements: summary.entitlements,
         counters,
-        seatCount: summary.seatCount,
-        currentPeriodStart: subscription.currentPeriodStart,
-        currentPeriodEnd: subscription.currentPeriodEnd,
+        seatCount: 1,
       }),
       installations: mapUsageInstallations(installations),
       recentEvents: buildRecentUsageEvents({
@@ -2159,7 +2069,6 @@ export class PlatformService {
         rolloutPercentage: normalized.rolloutPercentage ?? null,
         minimumExtensionVersion: normalized.minimumExtensionVersion ?? null,
         allowRoles: normalized.allowRoles,
-        allowPlans: normalized.allowPlans,
         allowUsers: normalized.allowUsers,
         allowWorkspaces: normalized.allowWorkspaces,
       });
@@ -2186,7 +2095,6 @@ export class PlatformService {
     const resolvedWorkspaceId = workspaceId ?? persona.preferredWorkspaceId;
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
-      planCode: getPlanForWorkspace(resolvedWorkspaceId).code,
       workspaceId: resolvedWorkspaceId,
       userId: persona.user.id,
       activeFlags: persona.principal.featureFlags,
@@ -2218,17 +2126,13 @@ export class PlatformService {
     }
 
     const resolvedWorkspaceId = workspaceId?.trim() || session.workspaces[0]?.id;
-    const [subscription, activeLayerRecords, recentVersions] = await Promise.all([
-      resolvedWorkspaceId
-        ? this.subscriptionRepository.findCurrentByWorkspaceId(resolvedWorkspaceId)
-        : Promise.resolve(null),
+    const [activeLayerRecords, recentVersions] = await Promise.all([
       this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId),
       this.remoteConfigRepository.findRecentVersions(resolvedWorkspaceId),
     ]);
     const activeLayers = activeLayerRecords.map(mapRemoteConfigLayerRecordToDefinition);
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
-      planCode: subscription?.plan.code ?? 'pro',
       workspaceId: resolvedWorkspaceId,
       userId: session.user.id,
       activeFlags: session.principal.featureFlags,
@@ -2260,7 +2164,6 @@ export class PlatformService {
       layers: publishRequest.layers,
       context: {
         environment: 'development',
-        planCode: 'pro',
         workspaceId: publishRequest.workspaceId ?? fallbackActor.preferredWorkspaceId,
         userId: fallbackActor.user.id,
         activeFlags: ['beta.remote-config-v2'],
@@ -2301,7 +2204,6 @@ export class PlatformService {
         layers: publishRequest.layers,
         context: {
           environment: 'development',
-          planCode: 'pro',
           workspaceId: publishRequest.workspaceId ?? session.workspaces[0]?.id,
           userId: session.user.id,
           activeFlags: ['beta.remote-config-v2'],
@@ -2389,7 +2291,6 @@ export class PlatformService {
       userId: request?.userId ?? fallbackPersona.user.id,
       workspaceId: request?.workspaceId ?? fallbackPersona.preferredWorkspaceId,
       environment: request?.environment ?? 'development',
-      planCode: request?.planCode ?? 'pro',
       handshake: request?.handshake ?? {
         extensionVersion: '1.6.0',
         schemaVersion: '2',
@@ -2406,20 +2307,14 @@ export class PlatformService {
   }
 
   async bootstrapExtensionForConnectedRuntime(request: ExtensionBootstrapRequest) {
-    const [compatibilityRule, featureFlags, remoteConfigLayers, workspaceSubscription] = await Promise.all([
+    const [compatibilityRule, featureFlags, remoteConfigLayers] = await Promise.all([
       this.extensionCompatibilityRepository.findLatest(),
       this.featureFlagRepository.findAll(),
       this.remoteConfigRepository.findActiveLayers(request.workspaceId),
-      request.workspaceId ? this.subscriptionRepository.findCurrentByWorkspaceId(request.workspaceId) : Promise.resolve(null),
     ]);
 
-    const effectivePlanCode = workspaceSubscription?.plan.code ?? request.planCode;
-
     return resolveExtensionBootstrap(
-      {
-        ...request,
-        ...(effectivePlanCode ? { planCode: effectivePlanCode } : {}),
-      },
+      request,
       {
         ...(compatibilityRule ? { compatibilityPolicy: mapExtensionCompatibilityRuleToPolicy(compatibilityRule) } : {}),
         flagDefinitions: featureFlags.map(mapFeatureFlagRecordToDefinition),
@@ -2490,7 +2385,6 @@ export class PlatformService {
       enabled: normalized.enabled,
       ...(normalized.rolloutPercentage === undefined ? {} : { rolloutPercentage: normalized.rolloutPercentage }),
       ...(normalized.allowRoles.length > 0 ? { allowRoles: normalized.allowRoles } : {}),
-      ...(normalized.allowPlans.length > 0 ? { allowPlans: normalized.allowPlans } : {}),
       ...(normalized.allowUsers.length > 0 ? { allowUsers: normalized.allowUsers } : {}),
       ...(normalized.allowWorkspaces.length > 0 ? { allowWorkspaces: normalized.allowWorkspaces } : {}),
       ...(normalized.minimumExtensionVersion
@@ -2948,11 +2842,6 @@ export class PlatformService {
           processorState: 'bound',
           handler: 'processQuotaResetJob',
         };
-      case 'entitlement-refresh':
-        return {
-          processorState: 'bound',
-          handler: 'processEntitlementRefreshJob',
-        };
       case 'config-publish':
         return {
           processorState: 'bound',
@@ -2974,22 +2863,22 @@ export class PlatformService {
     return [
       {
         id: 'webhook_foundation_failed',
-        provider: 'stripe',
+        provider: 'yookassa',
         externalEventId: 'evt_foundation_failed',
-        eventType: 'invoice.payment_failed',
+        eventType: 'payment.canceled',
         status: 'failed',
         queue: 'billing-webhooks',
         retryable: true,
         receivedAt: '2026-03-24T12:00:00.000Z',
         providerCreatedAt: '2026-03-24T11:59:20.000Z',
         processedAt: null,
-        lastError: 'Workspace billing context could not be resolved for the incoming customer.',
+        lastError: 'Workspace wallet context could not be resolved for the incoming payment.',
       },
       {
         id: 'webhook_foundation_processed',
-        provider: 'stripe',
+        provider: 'yookassa',
         externalEventId: 'evt_foundation_processed',
-        eventType: 'customer.subscription.updated',
+        eventType: 'payment.succeeded',
         status: 'processed',
         queue: 'billing-webhooks',
         retryable: false,
@@ -2999,9 +2888,9 @@ export class PlatformService {
       },
       {
         id: 'webhook_foundation_received',
-        provider: 'stripe',
+        provider: 'yookassa',
         externalEventId: 'evt_foundation_received',
-        eventType: 'checkout.session.completed',
+        eventType: 'payment.waiting_for_capture',
         status: 'received',
         queue: 'billing-webhooks',
         retryable: false,
@@ -3204,26 +3093,6 @@ export class PlatformService {
         targetId: workspaceViewer.user.id,
         metadata: {
           reason: 'invalid_password',
-        },
-      },
-      {
-        id: `domain:${workspace?.id ?? 'platform'}:subscription-changed`,
-        stream: 'domain',
-        eventType: 'billing.subscription_changed',
-        summary: 'Reconciled the workspace subscription after a provider status update moved the plan into active state.',
-        occurredAt: '2026-03-24T12:40:00.000Z',
-        ...(workspace
-          ? {
-              workspace: {
-                id: workspace.id,
-                slug: workspace.slug,
-                name: workspace.name,
-              },
-            }
-          : {}),
-        metadata: {
-          provider: 'stripe',
-          status: 'active',
         },
       },
       {

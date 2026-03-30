@@ -1,8 +1,6 @@
 import {
-  type PlanEntitlement,
   type UsageInstallationSummary,
   type UsageEventSeverity,
-  type UsageMetricStatus,
   type UsageQuotaSnapshot,
   type UsageRecentEventSummary,
 } from '@quizmind/contracts';
@@ -142,7 +140,6 @@ export function mapUsageInstallations(
 }
 
 export function buildUsageQuotas(input: {
-  entitlements: PlanEntitlement[];
   counters: WorkspaceQuotaCounterRecord[];
   seatCount: number;
   currentPeriodStart?: Date | null;
@@ -157,18 +154,8 @@ export function buildUsageQuotas(input: {
     }
   }
 
-  const entitlementLimitByKey = new Map(
-    input.entitlements
-      .filter((entitlement) => typeof entitlement.limit === 'number')
-      .map((entitlement) => [entitlement.key, entitlement.limit as number]),
-  );
   const keys = Array.from(
-    new Set(
-      [
-        ...Array.from(entitlementLimitByKey.keys()).filter((key) => usageTrackedQuotaKeys.has(key)),
-        ...Array.from(counterByKey.keys()),
-      ].sort((left, right) => left.localeCompare(right)),
-    ),
+    new Set(Array.from(counterByKey.keys()).sort((left, right) => left.localeCompare(right))),
   );
   const fallbackWindow = resolveCounterFallbackWindow({
     currentPeriodStart: input.currentPeriodStart,
@@ -177,22 +164,18 @@ export function buildUsageQuotas(input: {
   });
 
   return keys.map((key) => {
-    const limit = entitlementLimitByKey.get(key);
     const counter = counterByKey.get(key);
     const consumed = key === 'limit.seats' ? input.seatCount : counter?.consumed ?? 0;
     const periodStart = counter?.periodStart ?? fallbackWindow.periodStart;
     const periodEnd = counter?.periodEnd ?? fallbackWindow.periodEnd;
-    const remaining = typeof limit === 'number' ? Math.max(limit - consumed, 0) : undefined;
 
     return {
       key,
       label: usageQuotaLabels[key] ?? humanizeQuotaKey(key),
       consumed,
-      ...(typeof limit === 'number' ? { limit } : {}),
-      ...(typeof remaining === 'number' ? { remaining } : {}),
       periodStart: periodStart.toISOString(),
       periodEnd: periodEnd.toISOString(),
-      status: resolveUsageMetricStatus(consumed, limit),
+      status: resolveUsageMetricStatus(consumed, undefined),
     };
   });
 }

@@ -80,51 +80,8 @@ export class WorkerUsageProcessingRepository implements UsageProcessingRepositor
     });
   }
 
-  async findUsageLimit(workspaceId: string, key: string): Promise<number | undefined> {
-    const subscription = await this.prisma.subscription.findFirst({
-      where: {
-        workspaceId,
-      },
-      orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
-      include: {
-        plan: {
-          include: {
-            entitlements: true,
-          },
-        },
-        workspace: {
-          include: {
-            entitlementOverrides: true,
-          },
-        },
-      },
-    });
-
-    if (!subscription) {
-      return undefined;
-    }
-
-    const override = subscription.workspace.entitlementOverrides.find((entry) => entry.key === key);
-
-    if (override) {
-      if (!override.enabled) {
-        return 0;
-      }
-
-      return override.limitValue ?? undefined;
-    }
-
-    const planEntitlement = subscription.plan.entitlements.find((entry) => entry.key === key);
-
-    if (!planEntitlement) {
-      return undefined;
-    }
-
-    if (!planEntitlement.enabled) {
-      return 0;
-    }
-
-    return planEntitlement.limitValue ?? undefined;
+  async findUsageLimit(_workspaceId: string, _key: string): Promise<number | undefined> {
+    return undefined;
   }
 
   findActiveQuotaCounter(

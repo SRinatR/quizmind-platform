@@ -66,7 +66,6 @@ export type FeatureFlagCountAggregateOutputType = {
   enabled: number
   rolloutPercentage: number
   allowRolesJson: number
-  allowPlansJson: number
   minimumExtensionVersion: number
   createdAt: number
   updatedAt: number
@@ -114,7 +113,6 @@ export type FeatureFlagCountAggregateInputType = {
   enabled?: true
   rolloutPercentage?: true
   allowRolesJson?: true
-  allowPlansJson?: true
   minimumExtensionVersion?: true
   createdAt?: true
   updatedAt?: true
@@ -215,7 +213,6 @@ export type FeatureFlagGroupByOutputType = {
   enabled: boolean
   rolloutPercentage: number | null
   allowRolesJson: runtime.JsonValue | null
-  allowPlansJson: runtime.JsonValue | null
   minimumExtensionVersion: string | null
   createdAt: Date
   updatedAt: Date
@@ -252,7 +249,6 @@ export type FeatureFlagWhereInput = {
   enabled?: Prisma.BoolFilter<"FeatureFlag"> | boolean
   rolloutPercentage?: Prisma.IntNullableFilter<"FeatureFlag"> | number | null
   allowRolesJson?: Prisma.JsonNullableFilter<"FeatureFlag">
-  allowPlansJson?: Prisma.JsonNullableFilter<"FeatureFlag">
   minimumExtensionVersion?: Prisma.StringNullableFilter<"FeatureFlag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"FeatureFlag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FeatureFlag"> | Date | string
@@ -267,7 +263,6 @@ export type FeatureFlagOrderByWithRelationInput = {
   enabled?: Prisma.SortOrder
   rolloutPercentage?: Prisma.SortOrderInput | Prisma.SortOrder
   allowRolesJson?: Prisma.SortOrderInput | Prisma.SortOrder
-  allowPlansJson?: Prisma.SortOrderInput | Prisma.SortOrder
   minimumExtensionVersion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -285,7 +280,6 @@ export type FeatureFlagWhereUniqueInput = Prisma.AtLeast<{
   enabled?: Prisma.BoolFilter<"FeatureFlag"> | boolean
   rolloutPercentage?: Prisma.IntNullableFilter<"FeatureFlag"> | number | null
   allowRolesJson?: Prisma.JsonNullableFilter<"FeatureFlag">
-  allowPlansJson?: Prisma.JsonNullableFilter<"FeatureFlag">
   minimumExtensionVersion?: Prisma.StringNullableFilter<"FeatureFlag"> | string | null
   createdAt?: Prisma.DateTimeFilter<"FeatureFlag"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FeatureFlag"> | Date | string
@@ -300,7 +294,6 @@ export type FeatureFlagOrderByWithAggregationInput = {
   enabled?: Prisma.SortOrder
   rolloutPercentage?: Prisma.SortOrderInput | Prisma.SortOrder
   allowRolesJson?: Prisma.SortOrderInput | Prisma.SortOrder
-  allowPlansJson?: Prisma.SortOrderInput | Prisma.SortOrder
   minimumExtensionVersion?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -322,7 +315,6 @@ export type FeatureFlagScalarWhereWithAggregatesInput = {
   enabled?: Prisma.BoolWithAggregatesFilter<"FeatureFlag"> | boolean
   rolloutPercentage?: Prisma.IntNullableWithAggregatesFilter<"FeatureFlag"> | number | null
   allowRolesJson?: Prisma.JsonNullableWithAggregatesFilter<"FeatureFlag">
-  allowPlansJson?: Prisma.JsonNullableWithAggregatesFilter<"FeatureFlag">
   minimumExtensionVersion?: Prisma.StringNullableWithAggregatesFilter<"FeatureFlag"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"FeatureFlag"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"FeatureFlag"> | Date | string
@@ -336,7 +328,6 @@ export type FeatureFlagCreateInput = {
   enabled?: boolean
   rolloutPercentage?: number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -351,7 +342,6 @@ export type FeatureFlagUncheckedCreateInput = {
   enabled?: boolean
   rolloutPercentage?: number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -366,7 +356,6 @@ export type FeatureFlagUpdateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rolloutPercentage?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -381,7 +370,6 @@ export type FeatureFlagUncheckedUpdateInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rolloutPercentage?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -396,7 +384,6 @@ export type FeatureFlagCreateManyInput = {
   enabled?: boolean
   rolloutPercentage?: number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -410,7 +397,6 @@ export type FeatureFlagUpdateManyMutationInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rolloutPercentage?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -424,7 +410,6 @@ export type FeatureFlagUncheckedUpdateManyInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rolloutPercentage?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -438,7 +423,6 @@ export type FeatureFlagCountOrderByAggregateInput = {
   enabled?: Prisma.SortOrder
   rolloutPercentage?: Prisma.SortOrder
   allowRolesJson?: Prisma.SortOrder
-  allowPlansJson?: Prisma.SortOrder
   minimumExtensionVersion?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -485,6 +469,10 @@ export type EnumFeatureFlagStatusFieldUpdateOperationsInput = {
   set?: $Enums.FeatureFlagStatus
 }
 
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
 export type FeatureFlagCreateNestedOneWithoutOverridesInput = {
   create?: Prisma.XOR<Prisma.FeatureFlagCreateWithoutOverridesInput, Prisma.FeatureFlagUncheckedCreateWithoutOverridesInput>
   connectOrCreate?: Prisma.FeatureFlagCreateOrConnectWithoutOverridesInput
@@ -507,7 +495,6 @@ export type FeatureFlagCreateWithoutOverridesInput = {
   enabled?: boolean
   rolloutPercentage?: number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -521,7 +508,6 @@ export type FeatureFlagUncheckedCreateWithoutOverridesInput = {
   enabled?: boolean
   rolloutPercentage?: number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -551,7 +537,6 @@ export type FeatureFlagUpdateWithoutOverridesInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rolloutPercentage?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -565,7 +550,6 @@ export type FeatureFlagUncheckedUpdateWithoutOverridesInput = {
   enabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   rolloutPercentage?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   allowRolesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  allowPlansJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   minimumExtensionVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -610,7 +594,6 @@ export type FeatureFlagSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   enabled?: boolean
   rolloutPercentage?: boolean
   allowRolesJson?: boolean
-  allowPlansJson?: boolean
   minimumExtensionVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -626,7 +609,6 @@ export type FeatureFlagSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   enabled?: boolean
   rolloutPercentage?: boolean
   allowRolesJson?: boolean
-  allowPlansJson?: boolean
   minimumExtensionVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -640,7 +622,6 @@ export type FeatureFlagSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   enabled?: boolean
   rolloutPercentage?: boolean
   allowRolesJson?: boolean
-  allowPlansJson?: boolean
   minimumExtensionVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -654,13 +635,12 @@ export type FeatureFlagSelectScalar = {
   enabled?: boolean
   rolloutPercentage?: boolean
   allowRolesJson?: boolean
-  allowPlansJson?: boolean
   minimumExtensionVersion?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type FeatureFlagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "description" | "status" | "enabled" | "rolloutPercentage" | "allowRolesJson" | "allowPlansJson" | "minimumExtensionVersion" | "createdAt" | "updatedAt", ExtArgs["result"]["featureFlag"]>
+export type FeatureFlagOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "description" | "status" | "enabled" | "rolloutPercentage" | "allowRolesJson" | "minimumExtensionVersion" | "createdAt" | "updatedAt", ExtArgs["result"]["featureFlag"]>
 export type FeatureFlagInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   overrides?: boolean | Prisma.FeatureFlag$overridesArgs<ExtArgs>
   _count?: boolean | Prisma.FeatureFlagCountOutputTypeDefaultArgs<ExtArgs>
@@ -681,7 +661,6 @@ export type $FeatureFlagPayload<ExtArgs extends runtime.Types.Extensions.Interna
     enabled: boolean
     rolloutPercentage: number | null
     allowRolesJson: runtime.JsonValue | null
-    allowPlansJson: runtime.JsonValue | null
     minimumExtensionVersion: string | null
     createdAt: Date
     updatedAt: Date
@@ -1116,7 +1095,6 @@ export interface FeatureFlagFieldRefs {
   readonly enabled: Prisma.FieldRef<"FeatureFlag", 'Boolean'>
   readonly rolloutPercentage: Prisma.FieldRef<"FeatureFlag", 'Int'>
   readonly allowRolesJson: Prisma.FieldRef<"FeatureFlag", 'Json'>
-  readonly allowPlansJson: Prisma.FieldRef<"FeatureFlag", 'Json'>
   readonly minimumExtensionVersion: Prisma.FieldRef<"FeatureFlag", 'String'>
   readonly createdAt: Prisma.FieldRef<"FeatureFlag", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"FeatureFlag", 'DateTime'>
