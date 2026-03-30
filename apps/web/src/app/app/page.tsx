@@ -3,7 +3,7 @@ import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../lib/auth-session';
-import { getSession, getSubscription, getUsageSummary, resolvePersona } from '../../lib/api';
+import { getSession, getUsageSummary, resolvePersona } from '../../lib/api';
 import { getVisibleDashboardSections } from '../../features/navigation/visibility';
 
 interface AppPageProps {
@@ -18,7 +18,6 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
-  const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
   const usage = workspaceId ? await getUsageSummary(persona, workspaceId, accessToken) : null;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
@@ -29,7 +28,7 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
         session ? `Connected ${sessionLabel}` : 'Session unavailable'
       }
       currentPersona={persona}
-      description="Your workspace at a glance — session, plan, usage, and available sections."
+      description="Your workspace at a glance — session, usage overview, and available sections."
       eyebrow="Dashboard"
       pathname="/app"
       showPersonaSwitcher={false}
@@ -97,63 +96,31 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
             </article>
           </section>
 
-          {/* ── Subscription + usage ── */}
-          <section className="split-grid">
-            <article className="panel">
-              <span className="micro-label">Subscription</span>
-              <h2>{subscription?.workspace.name ?? 'Workspace'} plan</h2>
-              {subscription ? (
-                <>
-                  <div className="tag-row">
-                    <span className={subscription.accessDecision.allowed ? 'tag' : 'tag warn'}>
-                      {subscription.accessDecision.allowed ? 'billing visible' : 'billing restricted'}
-                    </span>
-                    <span className="tag">{subscription.summary.planCode}</span>
-                    <span className="tag">{subscription.summary.status}</span>
-                  </div>
-                  <div className="list-stack">
-                    {subscription.summary.entitlements.map((entitlement) => (
-                      <div className="list-item" key={entitlement.key}>
-                        <strong>{entitlement.key}</strong>
-                        <p>
-                          {String(entitlement.enabled)}
-                          {typeof entitlement.limit === 'number' ? ` · limit ${entitlement.limit}` : ''}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="list-muted">Billing snapshot unavailable — API offline.</p>
-              )}
-            </article>
-
-            <article className="panel">
-              <span className="micro-label">Usage</span>
-              <h2>{usage?.workspace.name ?? 'Workspace'} quota health</h2>
-              {usage ? (
-                <>
-                  <div className="tag-row">
-                    <span className="tag">{usage.planCode}</span>
-                    <span className="tag">{usage.installations.length} installations</span>
-                    <span className="tag">{usage.recentEvents.length} recent events</span>
-                  </div>
-                  <div className="list-stack">
-                    {usage.quotas.slice(0, 3).map((quota) => (
-                      <div className="list-item" key={quota.key}>
-                        <strong>{quota.label}</strong>
-                        <p>
-                          {quota.consumed}
-                          {typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''} &middot; {quota.status}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="list-muted">Usage snapshot unavailable — API offline.</p>
-              )}
-            </article>
+          {/* ── Usage ── */}
+          <section className="panel">
+            <span className="micro-label">Usage</span>
+            <h2>{usage?.workspace.name ?? 'Workspace'} quota health</h2>
+            {usage ? (
+              <>
+                <div className="tag-row">
+                  <span className="tag">{usage.installations.length} installations</span>
+                  <span className="tag">{usage.recentEvents.length} recent events</span>
+                </div>
+                <div className="list-stack">
+                  {usage.quotas.slice(0, 3).map((quota) => (
+                    <div className="list-item" key={quota.key}>
+                      <strong>{quota.label}</strong>
+                      <p>
+                        {quota.consumed}
+                        {typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''} &middot; {quota.status}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="list-muted">Usage snapshot unavailable — API offline.</p>
+            )}
           </section>
 
           {/* ── Permissions sample ── */}

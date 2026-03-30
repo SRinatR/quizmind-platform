@@ -1,7 +1,6 @@
 export type PublicPageSlug =
   | 'faq'
   | 'features'
-  | 'pricing'
   | 'blog'
   | 'docs'
   | 'changelog'
@@ -58,7 +57,7 @@ export const publicPageContent: Record<PublicPageSlug, PublicPageContent> = {
       'Auth, entitlements, compatibility policy, remote config, and logging are all part of the base scaffold.',
     bullets: [
       'RBAC + ABAC aware route visibility.',
-      'Subscription and entitlement resolution.',
+      'Quota and usage limit resolution.',
       'Support impersonation with audit and security logs.',
     ],
     items: [
@@ -68,8 +67,8 @@ export const publicPageContent: Record<PublicPageSlug, PublicPageContent> = {
         status: 'live',
       },
       {
-        title: 'Multi-payment Foundation',
-        summary: 'Stripe live flow plus manual, YooKassa, and Paddle-ready provider branches.',
+        title: 'Wallet & Top-Up',
+        summary: 'YooKassa-backed wallet balance, top-up history, and payment confirmation flow.',
         status: 'in_development',
         href: '/roadmap',
       },
@@ -77,34 +76,6 @@ export const publicPageContent: Record<PublicPageSlug, PublicPageContent> = {
         title: 'Remote Config + Feature Flags',
         summary: 'Versioned config and rollout controls exposed in admin and extension bootstrap.',
         status: 'live',
-      },
-    ],
-  },
-  pricing: {
-    eyebrow: 'Pricing',
-    title: 'Plans designed around entitlements',
-    description: 'The billing engine models free and pro plans, limit-based entitlements, and override hooks.',
-    bullets: [
-      'Plan definition drives access and usage limits.',
-      'Overrides let support or sales unlock temporary capabilities.',
-      'The same plan data feeds web UI and API responses.',
-    ],
-    items: [
-      {
-        title: 'Free',
-        summary: 'Core extension flow with managed defaults and baseline request limits.',
-        status: 'live',
-      },
-      {
-        title: 'Pro',
-        summary: 'Higher limits, extended AI access, and advanced control-plane capabilities.',
-        status: 'live',
-      },
-      {
-        title: 'Business',
-        summary: 'Expanded governance, support tooling, and provider policy controls.',
-        status: 'in_development',
-        href: '/roadmap',
       },
     ],
   },
@@ -157,8 +128,8 @@ export const publicPageContent: Record<PublicPageSlug, PublicPageContent> = {
         updatedAt: '2026-03-25',
       },
       {
-        title: 'Billing Runbook',
-        summary: 'Checkout, webhook, retry, and provider-operations guidance.',
+        title: 'Wallet Runbook',
+        summary: 'Top-up flow, webhook handling, and wallet balance operations guidance.',
         status: 'in_development',
         href: '/roadmap',
       },

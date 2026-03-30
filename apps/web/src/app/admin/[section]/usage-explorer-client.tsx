@@ -203,8 +203,7 @@ export function UsageExplorerClient({
           <span className="micro-label">Baseline</span>
           <h2>Current usage summary</h2>
           <div className="tag-row" style={{ marginBottom: '12px' }}>
-            <span className="tag-soft">{usageSummary.planCode}</span>
-            <span className="tag-soft tag-soft--gray">{usageSummary.subscriptionStatus}</span>
+            <span className="tag-soft tag-soft--gray">{usageSummary.workspace.name}</span>
           </div>
           <div className="kv-list">
             <div className="kv-row">

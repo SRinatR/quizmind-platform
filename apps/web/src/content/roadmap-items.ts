@@ -46,8 +46,8 @@ export const roadmapItems: RoadmapItem[] = [
     targetWindow: 'Sprint 2',
     owner: 'web + api',
     summary:
-      'Finalize usage history, billing controls, settings profile management, and workspace-scoped installation visibility.',
-    streams: ['dashboard', 'billing', 'usage'],
+      'Finalize usage history, wallet controls, settings profile management, and workspace-scoped installation visibility.',
+    streams: ['dashboard', 'wallet', 'usage'],
     links: [
       {
         label: 'Dashboard',
@@ -60,19 +60,15 @@ export const roadmapItems: RoadmapItem[] = [
     ],
   },
   {
-    id: 'track-multi-provider-billing',
-    title: 'Multi-provider billing expansion',
+    id: 'track-wallet-expansion',
+    title: 'Wallet and payment expansion',
     status: 'planned',
     targetWindow: 'Sprint 2-3',
     owner: 'billing',
     summary:
-      'Extend checkout, webhook, and lifecycle handling with YooKassa parity while keeping Stripe as the stable baseline.',
-    streams: ['billing', 'webhooks', 'subscriptions'],
+      'Extend wallet top-up flow, webhook handling, and YooKassa payment confirmation with improved error recovery.',
+    streams: ['wallet', 'webhooks', 'payments'],
     links: [
-      {
-        label: 'Plans',
-        href: '/admin/plans',
-      },
       {
         label: 'Webhook jobs',
         href: '/admin/webhooks',

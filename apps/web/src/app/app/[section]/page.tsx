@@ -2,7 +2,7 @@ import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
-import { getSession, getSubscription, resolvePersona } from '../../../lib/api';
+import { getSession, resolvePersona } from '../../../lib/api';
 import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
 
 interface AppSectionPageProps {
@@ -19,7 +19,6 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
-  const subscription = workspaceId ? await getSubscription(persona, workspaceId, accessToken) : null;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
@@ -48,11 +47,9 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
             <span className="micro-label">Context</span>
             <h2>Current workspace state</h2>
             <p>
-              Workspace: {subscription?.workspace.name ?? 'n/a'}
+              Workspace: {session.workspaces[0]?.name ?? 'n/a'}
               <br />
-              Plan: {subscription?.summary.planCode ?? 'n/a'}
-              <br />
-              Subscription: {subscription?.summary.status ?? 'n/a'}
+              Role: {session.workspaces[0]?.role ?? 'n/a'}
             </p>
           </article>
         </section>

@@ -19,8 +19,6 @@ import {
   getAdminSecurity,
   getAdminWebhooks,
   getAdminUsers,
-  getAdminPlans,
-  getBillingPlans,
   getCompatibilityRules,
   getFeatureFlags,
   getRemoteConfigState,
@@ -36,7 +34,6 @@ import { ExtensionControlClient } from './extension-control-client';
 import { FeatureFlagsClient } from './feature-flags-client';
 import { CompatibilityClient } from './compatibility-client';
 import { AdminAiProvidersClient } from './admin-ai-providers-client';
-import { PlansClient } from './plans-client';
 import { RemoteConfigClient } from './remote-config-client';
 import { SupportSessionsClient } from './support-sessions-client';
 import { SupportTicketsClient } from './support-tickets-client';
@@ -98,7 +95,6 @@ function createInitialExtensionBootstrapRequest(input: {
     userId: input.sessionUserId,
     workspaceId: input.workspaceId,
     environment: 'development',
-    planCode: 'pro',
     handshake: {
       extensionVersion: '1.7.0',
       schemaVersion: '2',
@@ -183,8 +179,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     : null;
   const [
     featureFlags,
-    billingPlans,
-    adminPlans,
     adminProviderGovernance,
     compatibilityRules,
     adminUsers,
@@ -199,8 +193,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   ] =
     await Promise.all([
       getFeatureFlags(persona, accessToken),
-      getBillingPlans(),
-      getAdminPlans(accessToken),
       resolvedParams.section === 'ai-providers'
         ? getAdminProviderGovernance(sessionWorkspaceId, accessToken)
         : Promise.resolve(null),
@@ -233,7 +225,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       : null;
   const isConnectedSession = session?.personaKey === 'connected-user';
   const canEditFeatureFlags = Boolean(isConnectedSession && featureFlags?.writeDecision.allowed);
-  const canManagePlans = Boolean(isConnectedSession && adminPlans?.manageDecision.allowed);
   const sessionLabel = session?.user.displayName || session?.user.email;
   const canManageSupportSessions = Boolean(isConnectedSession && supportImpersonationSessions?.accessDecision.allowed);
   const canManageUserAccess = Boolean(isConnectedSession && adminUsers?.writeDecision.allowed);
@@ -791,12 +782,10 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               canEdit={canEditFeatureFlags}
               flags={featureFlags?.flags ?? []}
               initialPreviewContext={{
-                planCode: remoteConfigState?.previewContext.planCode,
                 roles: previewRoles,
                 userId: session.user.id,
                 workspaceId: sessionWorkspaceId,
               }}
-              planOptions={Array.from(new Set((billingPlans?.plans ?? []).map((entry) => entry.plan.code)))}
             />
           </>
         ) : section.id === 'compatibility' ? (
@@ -942,16 +931,10 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                       <p>{usageSummary.workspace.name}</p>
                     </div>
                     <div className="list-item">
-                      <strong>Plan and status</strong>
-                      <p>
-                        {usageSummary.planCode} | {usageSummary.subscriptionStatus}
-                      </p>
-                    </div>
-                    <div className="list-item">
-                      <strong>Current period</strong>
+                      <strong>Quota period</strong>
                       <p>
                         {usageSummary.currentPeriodStart && usageSummary.currentPeriodEnd
-                          ? `${usageSummary.currentPeriodStart} -> ${usageSummary.currentPeriodEnd}`
+                          ? `${usageSummary.currentPeriodStart} → ${usageSummary.currentPeriodEnd}`
                           : 'Current period unavailable'}
                       </p>
                     </div>
@@ -1070,7 +1053,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 <div className="list-stack">
                   <div className="list-item">
                     <strong>Workspace</strong>
-                    <p>{sessionWorkspaceId ?? 'No workspace binding; request planCode will be used directly.'}</p>
+                    <p>{sessionWorkspaceId ?? 'No workspace binding.'}</p>
                   </div>
                   <div className="list-item">
                     <strong>Operator</strong>
@@ -1090,7 +1073,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 installationId: extensionBootstrapRequest!.installationId,
                 workspaceId: sessionWorkspaceId,
               })}
-              planOptions={Array.from(new Set((billingPlans?.plans ?? []).map((entry) => entry.plan.code)))}
               usageSummary={usageSummary}
               workspaceOptions={session.workspaces.map((workspace) => ({
                 id: workspace.id,
@@ -1127,7 +1109,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                     <div className="list-item">
                       <strong>Preview context</strong>
                       <p>
-                        env {remoteConfigState.previewContext.environment ?? 'n/a'} | plan {remoteConfigState.previewContext.planCode ?? 'n/a'}
+                        env {remoteConfigState.previewContext.environment ?? 'n/a'}
                       </p>
                     </div>
                   </div>
@@ -1145,57 +1127,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 <p>The API did not return an active remote config snapshot for this workspace context.</p>
               </section>
             )}
-          </>
-        ) : section.id === 'plans' ? (
-          <>
-            <section className="split-grid">
-              <article className="panel">
-                <span className="micro-label">Section</span>
-                <h2>{section.title}</h2>
-                <p>{section.description}</p>
-                <div className="tag-row">
-                  <span className="tag">
-                    {adminPlans?.plans.length ?? 0} visible
-                    {(adminPlans?.plans.length ?? 0) === 1 ? ' plan' : ' plans'}
-                  </span>
-                  <span className={canManagePlans ? 'tag' : 'tag warn'}>
-                    {canManagePlans ? 'write access' : 'read-only'}
-                  </span>
-                </div>
-              </article>
-              <article className="panel">
-                <span className="micro-label">Workspace context</span>
-                <h2>Preview anchor</h2>
-                <div className="list-stack">
-                  <div className="list-item">
-                    <strong>Workspace</strong>
-                    <p>{sessionWorkspaceId ?? 'No workspace resolved for this admin route.'}</p>
-                  </div>
-                  <div className="list-item">
-                    <strong>Current operator</strong>
-                    <p>{session.user.displayName || session.user.email}</p>
-                  </div>
-                  <div className="list-item">
-                    <strong>Resolved preview plan</strong>
-                    <p>{remoteConfigState?.previewContext.planCode ?? 'No current plan preview available.'}</p>
-                  </div>
-                </div>
-              </article>
-            </section>
-
-            <section className="panel">
-              <span className="micro-label">Catalog</span>
-              <h2>Catalog editor</h2>
-              {adminPlans ? (
-                <PlansClient
-                  canManagePlans={canManagePlans}
-                  currentPlanCode={remoteConfigState?.previewContext.planCode}
-                  plans={adminPlans.plans}
-                />
-              ) : (
-                <p>No admin billing catalog is available for this environment.</p>
-              )}
-            </section>
           </>
         ) : (
           <section className="split-grid">

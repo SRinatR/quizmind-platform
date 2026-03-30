@@ -19,18 +19,6 @@ export const workspaceRoles = [
   'workspace_viewer',
 ] as const;
 
-export const subscriptionStatuses = [
-  'trialing',
-  'active',
-  'past_due',
-  'paused',
-  'canceled',
-  'expired',
-  'incomplete',
-  'incomplete_expired',
-  'grace_period',
-] as const;
-
 export const featureFlagStatuses = ['draft', 'active', 'paused', 'archived'] as const;
 export const compatibilityStatuses = [
   'supported',
@@ -67,7 +55,6 @@ export const platformQueues = [
   'audit-exports',
 ] as const;
 export const billingProviders = ['mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
-export const billingIntervals = ['monthly', 'yearly'] as const;
 export const aiProviders = ['openai', 'anthropic', 'openrouter', 'polza', 'internal'] as const;
 export const credentialOwnerTypes = ['platform', 'workspace', 'user'] as const;
 export const credentialValidationStatuses = ['pending', 'valid', 'invalid', 'revoked'] as const;
@@ -103,7 +90,6 @@ export const adminExtensionSessionStatuses = ['active', 'expired', 'revoked'] as
 
 export type SystemRole = (typeof systemRoles)[number];
 export type WorkspaceRole = (typeof workspaceRoles)[number];
-export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 export type FeatureFlagStatus = (typeof featureFlagStatuses)[number];
 export type CompatibilityStatus = (typeof compatibilityStatuses)[number];
 export type TicketStatus = (typeof ticketStatuses)[number];
@@ -113,7 +99,6 @@ export type SupportTicketQueuePreset = (typeof supportTicketQueuePresets)[number
 export type RemoteConfigScope = (typeof remoteConfigScopes)[number];
 export type PlatformQueue = (typeof platformQueues)[number];
 export type BillingProvider = (typeof billingProviders)[number];
-export type BillingInterval = (typeof billingIntervals)[number];
 export type AiProvider = (typeof aiProviders)[number];
 export type CredentialOwnerType = (typeof credentialOwnerTypes)[number];
 export type CredentialValidationStatus = (typeof credentialValidationStatuses)[number];
@@ -167,7 +152,6 @@ export interface FeatureFlagDefinition {
   enabled: boolean;
   rolloutPercentage?: number;
   allowRoles?: Array<SystemRole | WorkspaceRole>;
-  allowPlans?: string[];
   allowUsers?: string[];
   allowWorkspaces?: string[];
   minimumExtensionVersion?: string;
@@ -180,7 +164,6 @@ export interface FeatureFlagUpdateRequest {
   enabled?: boolean;
   rolloutPercentage?: number | null;
   allowRoles?: Array<SystemRole | WorkspaceRole>;
-  allowPlans?: string[];
   allowUsers?: string[];
   allowWorkspaces?: string[];
   minimumExtensionVersion?: string | null;
@@ -189,20 +172,6 @@ export interface FeatureFlagUpdateRequest {
 export interface FeatureFlagUpdateResult {
   flag: FeatureFlagDefinition;
   updatedAt: string;
-}
-
-export interface PlanEntitlement {
-  key: string;
-  enabled: boolean;
-  limit?: number;
-}
-
-export interface PlanDefinition {
-  id: string;
-  code: string;
-  name: string;
-  description: string;
-  entitlements: PlanEntitlement[];
 }
 
 export interface CompatibilityHandshake {
@@ -687,170 +656,6 @@ export interface AdminWebhookRetryResult {
   status: 'received';
 }
 
-export interface SubscriptionSummary {
-  workspaceId: string;
-  planCode: string;
-  status: SubscriptionStatus;
-  billingInterval: BillingInterval;
-  cancelAtPeriodEnd: boolean;
-  seatCount: number;
-  currentPeriodEnd?: string;
-  entitlements: PlanEntitlement[];
-}
-
-export interface BillingPlanPriceProviderMapping {
-  provider: BillingProvider;
-  providerPriceId: string;
-  isActive: boolean;
-}
-
-export interface BillingPlanPrice {
-  interval: BillingInterval;
-  currency: string;
-  amount: number;
-  isDefault: boolean;
-  providerMappings?: BillingPlanPriceProviderMapping[];
-  stripePriceId?: string | null;
-}
-
-export interface BillingPlanCatalogEntry {
-  plan: PlanDefinition;
-  prices: BillingPlanPrice[];
-}
-
-export interface BillingPlansPayload {
-  plans: BillingPlanCatalogEntry[];
-}
-
-export interface BillingAdminPlanSnapshot extends BillingPlanCatalogEntry {
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface BillingAdminPlansPayload {
-  manageDecision: AccessDecision;
-  plans: BillingAdminPlanSnapshot[];
-}
-
-export interface BillingAdminPlanEntitlementInput {
-  key: string;
-  enabled: boolean;
-  limit?: number | null;
-}
-
-export interface BillingAdminPlanPriceProviderMappingInput {
-  provider: BillingProvider;
-  providerPriceId: string;
-  isActive?: boolean;
-}
-
-export interface BillingAdminPlanPriceInput {
-  interval: BillingInterval;
-  currency: string;
-  amount: number;
-  isDefault: boolean;
-  providerMappings?: BillingAdminPlanPriceProviderMappingInput[];
-  stripePriceId?: string | null;
-}
-
-export interface BillingAdminPlanUpdateRequest {
-  planCode: string;
-  name?: string;
-  description?: string;
-  isActive?: boolean;
-  entitlements?: BillingAdminPlanEntitlementInput[];
-  prices?: BillingAdminPlanPriceInput[];
-}
-
-export interface BillingAdminPlanUpdateResult {
-  plan: BillingAdminPlanSnapshot;
-  updatedAt: string;
-}
-
-export interface BillingCheckoutRequest {
-  workspaceId: string;
-  planCode: string;
-  interval: BillingInterval;
-  provider?: BillingProvider;
-  successPath?: string;
-  cancelPath?: string;
-}
-
-export interface BillingCheckoutResult {
-  workspaceId: string;
-  planCode: string;
-  interval: BillingInterval;
-  provider: BillingProvider;
-  providerCustomerId: string;
-  providerPriceId: string;
-  customerId: string;
-  stripePriceId: string;
-  sessionId: string;
-  redirectUrl: string;
-}
-
-export interface BillingPortalRequest {
-  workspaceId: string;
-  provider?: BillingProvider;
-  returnPath?: string;
-}
-
-export interface BillingPortalResult {
-  workspaceId: string;
-  provider: BillingProvider;
-  providerCustomerId: string;
-  customerId: string;
-  redirectUrl: string;
-}
-
-export interface BillingSubscriptionMutationRequest {
-  workspaceId: string;
-}
-
-export interface BillingSubscriptionMutationResult {
-  workspaceId: string;
-  subscriptionId: string;
-  provider: BillingProvider;
-  providerSubscriptionId: string;
-  stripeSubscriptionId: string;
-  status: SubscriptionStatus;
-  cancelAtPeriodEnd: boolean;
-  currentPeriodEnd?: string;
-}
-
-export interface BillingInvoiceSummary {
-  id: string;
-  provider?: BillingProvider;
-  providerInvoiceId?: string | null;
-  externalId?: string | null;
-  subscriptionId: string;
-  amountDue: number;
-  amountPaid: number;
-  currency: string;
-  status: string;
-  issuedAt: string;
-  dueAt?: string | null;
-  paidAt?: string | null;
-}
-
-export interface BillingInvoicesPayload {
-  workspaceId: string;
-  items: BillingInvoiceSummary[];
-}
-
-export type BillingInvoiceDocumentFormat = 'pdf' | 'hosted_page';
-
-export interface BillingInvoicePdfResult {
-  invoiceId: string;
-  workspaceId: string;
-  provider: BillingProvider;
-  providerInvoiceId: string;
-  externalId: string;
-  redirectUrl: string;
-  format: BillingInvoiceDocumentFormat;
-}
-
 export interface ExtensionBootstrapRequest {
   installationId: string;
   userId: string;
@@ -962,7 +767,7 @@ export interface ExtensionBootstrapPayloadV2 {
   installationId: string;
   workspaceId?: string;
   compatibility: CompatibilityResult;
-  entitlements: PlanEntitlement[];
+  entitlements: string[];
   featureFlags: string[];
   remoteConfig: ResolvedRemoteConfig;
   quotaHints: UsageQuotaHint[];
@@ -1179,8 +984,8 @@ export interface QuotaResetJobPayload {
 export interface EntitlementRefreshJobPayload {
   workspaceId: string;
   subscriptionId: string;
-  previousStatus: SubscriptionStatus;
-  nextStatus: SubscriptionStatus;
+  previousStatus: string;
+  nextStatus: string;
   reason: 'subscription_canceled' | 'subscription_resumed' | 'manual' | 'webhook';
   requestedAt: string;
   requestedByUserId?: string;
@@ -1278,7 +1083,7 @@ export interface WorkspaceUsageSnapshot {
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
   planCode: string;
-  subscriptionStatus: SubscriptionStatus;
+  subscriptionStatus: string;
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
   quotas: UsageQuotaSnapshot[];

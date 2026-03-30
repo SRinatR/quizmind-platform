@@ -10,7 +10,6 @@ import {
   type ProviderCredentialInventorySnapshot,
   type SessionSnapshot,
   type UserProfileSnapshot,
-  type WorkspaceSubscriptionSnapshot,
 } from '../../../lib/api';
 import { type DashboardSection } from '../../../features/dashboard/sections';
 import { type NavigationAccessMatrixRow } from '../../../features/navigation/access-matrix';
@@ -23,7 +22,6 @@ interface SettingsPageClientProps {
   providerCatalog: ProviderCatalogSnapshot | null;
   providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
   session: SessionSnapshot;
-  subscription: WorkspaceSubscriptionSnapshot | null;
   userProfile: UserProfileSnapshot | null;
   visibleSections: DashboardSection[];
   accessMatrix: NavigationAccessMatrixRow[];
@@ -52,7 +50,6 @@ export function SettingsPageClient({
   providerCatalog,
   providerCredentialInventory,
   session,
-  subscription,
   userProfile,
   visibleSections,
   accessMatrix,
@@ -74,7 +71,6 @@ export function SettingsPageClient({
   const [, startNavigation] = useTransition();
 
   const primaryWorkspace = session.workspaces[0] ?? null;
-  const currentSubscription = subscription?.summary ?? null;
   const currentSessionCount = sessionItems.length;
   const currentSession = sessionItems.find((item) => item.current) ?? null;
   const isVerified = Boolean(session.user.emailVerifiedAt);
@@ -377,20 +373,6 @@ export function SettingsPageClient({
             <div className="kv-row">
               <span className="kv-row__key">Role</span>
               <span className="kv-row__value">{primaryWorkspace?.role ?? '—'}</span>
-            </div>
-            <div className="kv-row">
-              <span className="kv-row__key">Plan</span>
-              <span className="kv-row__value">
-                {currentSubscription
-                  ? `${currentSubscription.planCode} · ${currentSubscription.status}`
-                  : 'Unavailable'}
-              </span>
-            </div>
-            <div className="kv-row">
-              <span className="kv-row__key">Billing interval</span>
-              <span className="kv-row__value">
-                {currentSubscription?.billingInterval ?? '—'}
-              </span>
             </div>
             <div className="kv-row">
               <span className="kv-row__key">Visible sections</span>

@@ -98,7 +98,7 @@ export const docsGuides: DocsGuide[] = [
         heading: 'Operational observability',
         paragraphs: [
           'Completion metadata is logged for activity, security, and domain streams, so operators can investigate request behavior without reading raw prompt payloads.',
-          'Usage snapshots are used by dashboard and admin surfaces for plan and quota diagnostics.',
+          'Usage snapshots are used by dashboard and admin surfaces for quota and billing diagnostics.',
         ],
       },
     ],

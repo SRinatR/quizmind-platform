@@ -69,9 +69,9 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
           {/* ── Metrics ── */}
           <section className="metrics-grid">
             <article className="stat-card">
-              <span className="micro-label">Plan</span>
-              <p className="stat-value">{usage.planCode}</p>
-              <p className="metric-copy">{usage.subscriptionStatus}</p>
+              <span className="micro-label">Workspace</span>
+              <p className="stat-value">{usage.workspace.name}</p>
+              <p className="metric-copy">Usage period active</p>
             </article>
             <article className="stat-card">
               <span className="micro-label">Installations</span>

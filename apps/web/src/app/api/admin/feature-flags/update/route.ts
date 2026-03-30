@@ -65,7 +65,6 @@ export async function POST(request: Request) {
           : undefined
       : undefined;
   const allowRoles = normalizeStringArray(body?.allowRoles);
-  const allowPlans = normalizeStringArray(body?.allowPlans);
   const allowUsers = normalizeStringArray(body?.allowUsers);
   const allowWorkspaces = normalizeStringArray(body?.allowWorkspaces);
 
@@ -88,7 +87,6 @@ export async function POST(request: Request) {
       ...(rolloutPercentage !== undefined ? { rolloutPercentage } : {}),
       ...(minimumExtensionVersion !== undefined ? { minimumExtensionVersion } : {}),
       ...(body && 'allowRoles' in body ? { allowRoles } : {}),
-      ...(body && 'allowPlans' in body ? { allowPlans } : {}),
       ...(body && 'allowUsers' in body ? { allowUsers } : {}),
       ...(body && 'allowWorkspaces' in body ? { allowWorkspaces } : {}),
     }),
