@@ -130,6 +130,7 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
 }
 
 .persona-link,
@@ -161,6 +162,7 @@ a {
 .empty-state {
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .content-grid {
@@ -186,6 +188,7 @@ a {
 
 .split-grid {
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
 }
 
 .stat-card,
@@ -979,6 +982,7 @@ a {
   padding: 32px;
   display: grid;
   gap: 28px;
+  align-content: start;
   background:
     linear-gradient(145deg, rgba(255, 249, 240, 0.94), rgba(248, 235, 220, 0.88)),
     linear-gradient(160deg, rgba(184, 92, 56, 0.08), transparent);
@@ -3647,6 +3651,7 @@ code {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: start;
 }
 
 /* ── Page section header ── */
@@ -3935,6 +3940,7 @@ code {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: start;
 }
 
 .filter-field {
