@@ -8,6 +8,7 @@ interface SiteShellProps {
   currentPersona: string;
   description: string;
   eyebrow: string;
+  isAdmin?: boolean;
   pathname: string;
   showPersonaSwitcher?: boolean;
   title: string;
@@ -27,6 +28,7 @@ export function SiteShell({
   currentPersona: _currentPersona,
   description,
   eyebrow,
+  isAdmin = false,
   pathname,
   showPersonaSwitcher: _showPersonaSwitcher = true,
   title,
@@ -84,23 +86,25 @@ export function SiteShell({
             ))}
           </div>
 
-          {/* ── Admin section ── */}
-          <div className="app-nav-group">
-            <span className="app-nav-group__label">Admin</span>
-            {adminNavigation.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={
-                  isActiveRoute(item.href, pathname)
-                    ? 'app-nav-item app-nav-item--active'
-                    : 'app-nav-item'
-                }
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
+          {/* ── Admin section — only rendered for admin users ── */}
+          {isAdmin ? (
+            <div className="app-nav-group">
+              <span className="app-nav-group__label">Admin</span>
+              {adminNavigation.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={
+                    isActiveRoute(item.href, pathname)
+                      ? 'app-nav-item app-nav-item--active'
+                      : 'app-nav-item'
+                  }
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </nav>
 
         {/* ── Sidebar footer ── */}
@@ -145,12 +149,6 @@ export function SiteShell({
               ) : null}
               <span className="app-topbar__title">{title}</span>
             </div>
-          </div>
-
-          <div className="app-topbar__right">
-            <span className="app-status-badge" title={apiState}>
-              {apiState}
-            </span>
           </div>
         </header>
 

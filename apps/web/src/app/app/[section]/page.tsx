@@ -1,8 +1,10 @@
 import { buildAccessContext } from '@quizmind/auth';
+import Link from 'next/link';
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { getSession, resolvePersona } from '../../../lib/api';
+import { isAdminSession } from '../../../lib/admin-guard';
 import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
 
 interface AppSectionPageProps {
@@ -16,24 +18,23 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
-  const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
+  const isAdmin = session ? isAdminSession(session) : false;
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="Each dashboard route can be opened directly, but its availability still follows the permission and entitlement model."
-      eyebrow="App Route"
+      description=""
+      eyebrow="Dashboard"
+      isAdmin={isAdmin}
       pathname={`/app/${resolvedParams.section}`}
       showPersonaSwitcher={false}
-      title={section?.title ?? 'Section unavailable'}
+      title={section?.title ?? resolvedParams.section}
     >
       {section && session ? (
         <section className="split-grid">
@@ -41,31 +42,23 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
             <span className="micro-label">Section</span>
             <h2>{section.title}</h2>
             <p>{section.description}</p>
-            <span className="tag">{session.personaLabel}</span>
           </article>
           <article className="panel">
-            <span className="micro-label">Context</span>
-            <h2>Current workspace state</h2>
-            <p>
-              Workspace: {session.workspaces[0]?.name ?? 'n/a'}
-              <br />
-              Role: {session.workspaces[0]?.role ?? 'n/a'}
-            </p>
+            <span className="micro-label">Workspace</span>
+            <h2>{session.workspaces[0]?.name ?? 'No workspace'}</h2>
+            <p>Role: {session.workspaces[0]?.role ?? 'n/a'}</p>
           </article>
         </section>
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Route Gate</span>
-          <h2>This persona cannot open this dashboard route.</h2>
-          <p>
-            Switch personas above or return to `/app` to see only the sections available for the current access
-            context.
-          </p>
+          <span className="micro-label">Not available</span>
+          <h2>This section is not accessible with your current account.</h2>
+          <p>Return to the dashboard to see sections available for your workspace.</p>
+          <div className="link-row" style={{ justifyContent: 'center' }}>
+            <Link className="btn-primary" href="/app">Go to dashboard</Link>
+          </div>
         </section>
       )}
     </SiteShell>
   );
 }
-
-
-

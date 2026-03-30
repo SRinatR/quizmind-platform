@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { getSession, getUsageSummary, resolvePersona } from '../../../lib/api';
+import { isAdminSession } from '../../../lib/admin-guard';
 
 interface UsagePageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -53,13 +54,15 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
       : session?.workspaces[0]?.id;
   const usage = workspaceId ? await getUsageSummary(persona, workspaceId, accessToken) : null;
   const highlightedQuota = usage?.quotas[0] ?? null;
+  const isAdmin = session ? isAdminSession(session) : false;
 
   return (
     <SiteShell
-      apiState={session ? `Connected ${sessionLabel}` : 'Session unavailable'}
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="Quota counters, extension telemetry, and installation health for your workspace."
+      description=""
       eyebrow="Usage"
+      isAdmin={isAdmin}
       pathname="/app/usage"
       showPersonaSwitcher={false}
       title="Workspace usage"

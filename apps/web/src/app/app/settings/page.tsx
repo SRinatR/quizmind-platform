@@ -12,6 +12,7 @@ import {
   getUserProfile,
   resolvePersona,
 } from '../../../lib/api';
+import { isAdminSession } from '../../../lib/admin-guard';
 import { SettingsPageClient } from './settings-page-client';
 
 interface SettingsPageProps {
@@ -32,24 +33,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const providerCredentialInventory = await getProviderCredentialInventory(workspaceId, accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
-  const accessMatrix = context
-    ? buildAccessMatrixRows({
-        context,
-        workspaceId,
-      })
-    : [];
+  const accessMatrix = context ? buildAccessMatrixRows({ context, workspaceId }) : [];
+  const isAdmin = session ? isAdminSession(session) : false;
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="Account security, AI access policy, and provider key inventory now come from the live control plane instead of local-only extension state."
+      description=""
       eyebrow="Settings"
+      isAdmin={isAdmin}
       pathname="/app/settings"
       showPersonaSwitcher={false}
-      title="Account and workspace settings"
+      title="Account &amp; workspace"
     >
       {session ? (
         <SettingsPageClient
@@ -64,14 +60,11 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         />
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Sign in</span>
-          <h2>Open a connected session to manage account security.</h2>
-          <p>Settings, session inventory, and sign-out controls require an authenticated dashboard session.</p>
+          <span className="micro-label">Sign in required</span>
+          <h2>Sign in to manage your settings</h2>
+          <p>Account, session, and workspace settings require an authenticated session.</p>
         </section>
       )}
     </SiteShell>
   );
 }
-
-
-
