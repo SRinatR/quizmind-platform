@@ -72,6 +72,21 @@ export type PasswordReset = Prisma.PasswordResetModel
  */
 export type Workspace = Prisma.WorkspaceModel
 /**
+ * Model Wallet
+ * 
+ */
+export type Wallet = Prisma.WalletModel
+/**
+ * Model WalletTopUp
+ * 
+ */
+export type WalletTopUp = Prisma.WalletTopUpModel
+/**
+ * Model WalletLedgerEntry
+ * 
+ */
+export type WalletLedgerEntry = Prisma.WalletLedgerEntryModel
+/**
  * Model WorkspaceMembership
  * 
  */
@@ -87,55 +102,10 @@ export type WorkspaceInvite = Prisma.WorkspaceInviteModel
  */
 export type UserSystemRole = Prisma.UserSystemRoleModel
 /**
- * Model Plan
- * 
- */
-export type Plan = Prisma.PlanModel
-/**
- * Model PlanPrice
- * 
- */
-export type PlanPrice = Prisma.PlanPriceModel
-/**
- * Model PlanPriceProviderMapping
- * 
- */
-export type PlanPriceProviderMapping = Prisma.PlanPriceProviderMappingModel
-/**
- * Model PlanEntitlement
- * 
- */
-export type PlanEntitlement = Prisma.PlanEntitlementModel
-/**
- * Model Subscription
- * 
- */
-export type Subscription = Prisma.SubscriptionModel
-/**
- * Model Invoice
- * 
- */
-export type Invoice = Prisma.InvoiceModel
-/**
- * Model Payment
- * 
- */
-export type Payment = Prisma.PaymentModel
-/**
- * Model Coupon
- * 
- */
-export type Coupon = Prisma.CouponModel
-/**
  * Model WebhookEvent
  * 
  */
 export type WebhookEvent = Prisma.WebhookEventModel
-/**
- * Model EntitlementOverride
- * 
- */
-export type EntitlementOverride = Prisma.EntitlementOverrideModel
 /**
  * Model QuotaCounter
  * 

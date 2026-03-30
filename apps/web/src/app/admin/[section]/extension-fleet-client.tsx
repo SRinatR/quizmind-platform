@@ -234,14 +234,14 @@ export function ExtensionFleetClient({
   }
 
   return (
-    <div className="admin-feature-flags-shell">
+    <>
       <section className="split-grid">
         <article className="panel">
           <span className="micro-label">Filters</span>
-          <h2>Explore managed extension installations</h2>
-          <div className="admin-ticket-editor">
-            <label className="admin-ticket-field">
-              <span className="micro-label">Workspace</span>
+          <h2>Explore managed installations</h2>
+          <div className="filter-grid">
+            <label className="filter-field">
+              <span className="filter-field__label">Workspace</span>
               <select
                 onChange={(event) => pushFilters({ workspaceId: event.target.value, installationId: '' })}
                 value={snapshot.workspace.id}
@@ -253,131 +253,99 @@ export function ExtensionFleetClient({
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Compatibility</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Compatibility</span>
               <select
-                onChange={(event) =>
-                  pushFilters({
-                    compatibility: event.target.value as AdminExtensionFleetFilters['compatibility'],
-                  })
-                }
+                onChange={(event) => pushFilters({ compatibility: event.target.value as AdminExtensionFleetFilters['compatibility'] })}
                 value={snapshot.filters.compatibility}
               >
                 {adminExtensionCompatibilityFilters.map((filter) => (
-                  <option key={filter} value={filter}>
-                    {filter}
-                  </option>
+                  <option key={filter} value={filter}>{filter}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Connection</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Connection</span>
               <select
-                onChange={(event) =>
-                  pushFilters({
-                    connection: event.target.value as AdminExtensionFleetFilters['connection'],
-                  })
-                }
+                onChange={(event) => pushFilters({ connection: event.target.value as AdminExtensionFleetFilters['connection'] })}
                 value={snapshot.filters.connection}
               >
                 {adminExtensionConnectionFilters.map((filter) => (
-                  <option key={filter} value={filter}>
-                    {filter}
-                  </option>
+                  <option key={filter} value={filter}>{filter}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Limit</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Limit</span>
               <select
                 onChange={(event) => pushFilters({ limit: Number(event.target.value) })}
                 value={String(snapshot.filters.limit)}
               >
                 {[8, 12, 20, 40].map((limit) => (
-                  <option key={limit} value={limit}>
-                    {limit}
-                  </option>
+                  <option key={limit} value={limit}>{limit}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Search</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Search</span>
               <input
                 onChange={(event) => setSearchDraft(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    applySearch();
-                  }
+                  if (event.key === 'Enter') { event.preventDefault(); applySearch(); }
                 }}
                 placeholder="installation id, user id, chrome, deprecated"
                 value={searchDraft}
               />
             </label>
           </div>
-          <div className="admin-user-actions">
-            <button className="btn-primary" onClick={applySearch} type="button">
-              Apply filters
-            </button>
+          <div className="filter-actions">
+            <button className="btn-primary" onClick={applySearch} type="button">Apply filters</button>
             <button
               className="btn-ghost"
               onClick={() => {
                 setSearchDraft('');
-                pushFilters({
-                  installationId: '',
-                  compatibility: 'all',
-                  connection: 'all',
-                  search: '',
-                  limit: 12,
-                });
+                pushFilters({ installationId: '', compatibility: 'all', connection: 'all', search: '', limit: 12 });
               }}
               type="button"
             >
               Reset
             </button>
           </div>
-          <p className="admin-ticket-note">
-            This explorer shows workspace-bound installation auth health, compatibility drift, and short-lived token activity.
-          </p>
         </article>
 
         <article className="panel">
-          <span className="micro-label">Counts</span>
-          <h2>Fleet health summary</h2>
-          <div className="tag-row">
-            <span className="tag">connected {snapshot.counts.connected}</span>
-            <span className={snapshot.counts.reconnectRequired > 0 ? 'tag warn' : 'tag'}>
+          <span className="micro-label">Fleet health</span>
+          <h2>Workspace extension fleet</h2>
+          <div className="tag-row" style={{ marginBottom: '12px' }}>
+            <span className="tag-soft tag-soft--green">connected {snapshot.counts.connected}</span>
+            <span className={snapshot.counts.reconnectRequired > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
               reconnect {snapshot.counts.reconnectRequired}
             </span>
-            <span className="tag">supported {snapshot.counts.supported}</span>
-            <span className={snapshot.counts.supportedWithWarnings > 0 ? 'tag warn' : 'tag'}>
-              warnings {snapshot.counts.supportedWithWarnings}
-            </span>
-            <span className={snapshot.counts.deprecated > 0 ? 'tag warn' : 'tag'}>
-              deprecated {snapshot.counts.deprecated}
-            </span>
-            <span className={snapshot.counts.unsupported > 0 ? 'tag warn' : 'tag'}>
+            <span className={snapshot.counts.unsupported > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
               unsupported {snapshot.counts.unsupported}
             </span>
-            <span className={canManageInstallations ? 'tag' : 'tag warn'}>
+            <span className={snapshot.counts.deprecated > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
+              deprecated {snapshot.counts.deprecated}
+            </span>
+            <span className={canManageInstallations ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
               {canManageInstallations ? 'write enabled' : 'read only'}
             </span>
           </div>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Workspace</strong>
-              <p>{snapshot.workspace.name}</p>
+          <div className="kv-list">
+            <div className="kv-row">
+              <span className="kv-row__key">Workspace</span>
+              <span className="kv-row__value">{snapshot.workspace.name}</span>
             </div>
-            <div className="list-item">
-              <strong>Filter scope</strong>
-              <p>
-                {snapshot.filters.compatibility} | {snapshot.filters.connection}
-                {snapshot.filters.search ? ` | "${snapshot.filters.search}"` : ''}
-              </p>
+            <div className="kv-row">
+              <span className="kv-row__key">Filter scope</span>
+              <span className="kv-row__value">
+                {snapshot.filters.compatibility} · {snapshot.filters.connection}
+                {snapshot.filters.search ? ` · "${snapshot.filters.search}"` : ''}
+              </span>
             </div>
-            <div className="list-item">
-              <strong>Visible items</strong>
-              <p>{snapshot.items.length} installation{snapshot.items.length === 1 ? '' : 's'} returned</p>
+            <div className="kv-row">
+              <span className="kv-row__key">Visible items</span>
+              <span className="kv-row__value">{snapshot.items.length} installation{snapshot.items.length === 1 ? '' : 's'}</span>
             </div>
           </div>
         </article>
@@ -385,16 +353,14 @@ export function ExtensionFleetClient({
 
       <section className="panel">
         <span className="micro-label">Installations</span>
-        <h2>Workspace extension fleet</h2>
-        {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-        {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+        <h2>Managed installation fleet</h2>
+        {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+        {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
         {!canManageInstallations ? (
-          <p className="admin-ticket-note">
-            This account can inspect fleet health but cannot rotate or disconnect sessions. {manageBlockedReason}
-          </p>
+          <div className="banner banner-info">Read-only: {manageBlockedReason}</div>
         ) : null}
-        <label className="admin-ticket-field">
-          <span className="micro-label">Operator reason (required for rotate/disconnect)</span>
+        <label className="form-field" style={{ marginTop: '12px', marginBottom: '4px' }}>
+          <span className="form-field__label">Operator reason <span className="list-muted">(required for rotate / disconnect)</span></span>
           <textarea
             maxLength={500}
             onChange={(event) => setActionReason(event.target.value)}
@@ -404,140 +370,125 @@ export function ExtensionFleetClient({
           />
         </label>
         {snapshot.items.length > 0 ? (
-          <div className="settings-session-list">
+          <div className="installation-list" style={{ marginTop: '12px' }}>
             {snapshot.items.map((item) => (
-              <div className="settings-session-row" key={item.installationId}>
-                <div>
-                  <strong>{item.installationId}</strong>
-                  <p>
-                    user {item.userId} | {item.browser} | v{item.extensionVersion} | schema {item.schemaVersion}
-                  </p>
-                  <p className="list-muted">
-                    bound {formatUtcDateTime(item.boundAt)}
-                    {item.lastSeenAt ? ` | last seen ${formatUtcDateTime(item.lastSeenAt)}` : ''}
-                    {item.lastSessionExpiresAt ? ` | token expires ${formatUtcDateTime(item.lastSessionExpiresAt)}` : ''}
-                  </p>
-                  <p className="list-muted">
-                    {item.capabilities.join(', ') || 'No capabilities reported'}
-                    {item.compatibility.reason ? ` | ${item.compatibility.reason}` : ''}
-                  </p>
+              <div className="installation-row" key={item.installationId}>
+                <div className="installation-row__header">
+                  <span className="installation-row__id">{item.installationId}</span>
+                  <div className="installation-row__badges">
+                    <span className="tag-soft">{item.browser}</span>
+                    <span className="tag-soft tag-soft--gray">v{item.extensionVersion}</span>
+                    <span className={item.compatibility.status === 'supported' ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
+                      {item.compatibility.status}
+                    </span>
+                    <span className={item.requiresReconnect ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--green'}>
+                      {item.requiresReconnect ? 'reconnect required' : `${item.activeSessionCount} session${item.activeSessionCount === 1 ? '' : 's'}`}
+                    </span>
+                  </div>
                 </div>
-                <div className="billing-history-meta">
-                  <span className={item.compatibility.status === 'supported' ? 'tag' : 'tag warn'}>
-                    {item.compatibility.status}
-                  </span>
-                  <span className={item.requiresReconnect ? 'tag warn' : 'tag'}>
-                    {item.requiresReconnect ? 'reconnect required' : `${item.activeSessionCount} active session${item.activeSessionCount === 1 ? '' : 's'}`}
-                  </span>
+                <div className="kv-list" style={{ marginTop: '8px' }}>
+                  <div className="kv-row">
+                    <span className="kv-row__key">User</span>
+                    <span className="kv-row__value">{item.userId}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Bound</span>
+                    <span className="kv-row__value">{formatUtcDateTime(item.boundAt)}</span>
+                  </div>
+                  {item.lastSeenAt ? (
+                    <div className="kv-row">
+                      <span className="kv-row__key">Last seen</span>
+                      <span className="kv-row__value">{formatUtcDateTime(item.lastSeenAt)}</span>
+                    </div>
+                  ) : null}
+                  {item.compatibility.reason ? (
+                    <div className="kv-row">
+                      <span className="kv-row__key">Compat note</span>
+                      <span className="kv-row__value">{item.compatibility.reason}</span>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="link-row" style={{ marginTop: '10px' }}>
                   <button
                     className="btn-ghost"
-                    disabled={
-                      !canManageInstallations ||
-                      normalizedActionReason.length === 0 ||
-                      pendingRotateInstallationId === item.installationId
-                    }
+                    disabled={!canManageInstallations || normalizedActionReason.length === 0 || pendingRotateInstallationId === item.installationId}
                     onClick={() => void handleRotateSession(item.installationId)}
                     type="button"
                   >
                     {pendingRotateInstallationId === item.installationId ? 'Rotating...' : 'Rotate token'}
                   </button>
                   <button
-                    className="btn-ghost"
-                    disabled={
-                      !canManageInstallations ||
-                      normalizedActionReason.length === 0 ||
-                      item.activeSessionCount === 0 ||
-                      pendingDisconnectInstallationId === item.installationId
-                    }
+                    className={!canManageInstallations || normalizedActionReason.length === 0 || item.activeSessionCount === 0 ? 'btn-ghost' : 'btn-danger'}
+                    disabled={!canManageInstallations || normalizedActionReason.length === 0 || item.activeSessionCount === 0 || pendingDisconnectInstallationId === item.installationId}
                     onClick={() => void handleDisconnect(item.installationId)}
                     type="button"
                   >
-                    {pendingDisconnectInstallationId === item.installationId
-                      ? 'Disconnecting...'
-                      : item.activeSessionCount === 0
-                        ? 'Disconnected'
-                        : 'Disconnect installation'}
+                    {pendingDisconnectInstallationId === item.installationId ? 'Disconnecting...' : item.activeSessionCount === 0 ? 'No active sessions' : 'Disconnect'}
                   </button>
                   <button className="btn-ghost" onClick={() => toggleInstallationDetail(item.installationId)} type="button">
-                    {snapshot.selectedInstallationId === item.installationId ? 'Hide history' : 'View history'}
+                    {snapshot.selectedInstallationId === item.installationId ? 'Hide sessions' : 'View sessions'}
                   </button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p>No extension installations matched the current filter set.</p>
+          <div className="empty-state" style={{ padding: '32px 0' }}>
+            <span className="micro-label">No installations</span>
+            <h2>No installations matched the current filter set</h2>
+          </div>
         )}
       </section>
 
       {selectedInstallation ? (
         <section className="split-grid">
           <article className="panel">
-            <span className="micro-label">Session Detail</span>
+            <span className="micro-label">Session detail</span>
             <h2>Installation token lifecycle</h2>
-            <div className="tag-row">
-              <span className="tag">total {selectedInstallation.counts.total}</span>
-              <span className="tag">active {selectedInstallation.counts.active}</span>
-              <span className={selectedInstallation.counts.expired > 0 ? 'tag warn' : 'tag'}>
+            <div className="tag-row" style={{ marginBottom: '12px' }}>
+              <span className="tag-soft tag-soft--gray">total {selectedInstallation.counts.total}</span>
+              <span className="tag-soft tag-soft--green">active {selectedInstallation.counts.active}</span>
+              <span className={selectedInstallation.counts.expired > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
                 expired {selectedInstallation.counts.expired}
               </span>
-              <span className={selectedInstallation.counts.revoked > 0 ? 'tag warn' : 'tag'}>
+              <span className={selectedInstallation.counts.revoked > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
                 revoked {selectedInstallation.counts.revoked}
               </span>
             </div>
-            <div className="mini-list">
-              <div className="list-item">
-                <strong>Installation</strong>
-                <p>{selectedInstallation.installation.installationId}</p>
+            <div className="kv-list">
+              <div className="kv-row">
+                <span className="kv-row__key">Installation</span>
+                <span className="kv-row__value">{selectedInstallation.installation.installationId}</span>
               </div>
-              <div className="list-item">
-                <strong>Operator context</strong>
-                <p>
-                  {selectedInstallation.installation.browser} | v
-                  {selectedInstallation.installation.extensionVersion} | schema{' '}
-                  {selectedInstallation.installation.schemaVersion}
-                </p>
+              <div className="kv-row">
+                <span className="kv-row__key">Browser</span>
+                <span className="kv-row__value">
+                  {selectedInstallation.installation.browser} · v{selectedInstallation.installation.extensionVersion} · schema {selectedInstallation.installation.schemaVersion}
+                </span>
               </div>
-              <div className="list-item">
-                <strong>Latest state</strong>
-                <p>
-                  {selectedInstallation.installation.requiresReconnect
-                    ? 'Reconnect required'
-                    : 'At least one active installation token still exists.'}
-                </p>
+              <div className="kv-row">
+                <span className="kv-row__key">Status</span>
+                <span className="kv-row__value">
+                  {selectedInstallation.installation.requiresReconnect ? 'Reconnect required' : 'Active token exists'}
+                </span>
               </div>
             </div>
-            <div className="admin-user-actions">
+            <div className="link-row" style={{ marginTop: '12px' }}>
               <button
                 className="btn-ghost"
-                disabled={
-                  !canManageInstallations ||
-                  normalizedActionReason.length === 0 ||
-                  pendingRotateInstallationId === selectedInstallation.installation.installationId
-                }
+                disabled={!canManageInstallations || normalizedActionReason.length === 0 || pendingRotateInstallationId === selectedInstallation.installation.installationId}
                 onClick={() => void handleRotateSession(selectedInstallation.installation.installationId)}
                 type="button"
               >
-                {pendingRotateInstallationId === selectedInstallation.installation.installationId
-                  ? 'Rotating...'
-                  : 'Rotate selected token'}
+                {pendingRotateInstallationId === selectedInstallation.installation.installationId ? 'Rotating...' : 'Rotate selected token'}
               </button>
               <button
-                className="btn-ghost"
-                disabled={
-                  !canManageInstallations ||
-                  normalizedActionReason.length === 0 ||
-                  selectedInstallation.installation.activeSessionCount === 0 ||
-                  pendingDisconnectInstallationId === selectedInstallation.installation.installationId
-                }
+                className={selectedInstallation.installation.activeSessionCount === 0 ? 'btn-ghost' : 'btn-danger'}
+                disabled={!canManageInstallations || normalizedActionReason.length === 0 || selectedInstallation.installation.activeSessionCount === 0 || pendingDisconnectInstallationId === selectedInstallation.installation.installationId}
                 onClick={() => void handleDisconnect(selectedInstallation.installation.installationId)}
                 type="button"
               >
-                {pendingDisconnectInstallationId === selectedInstallation.installation.installationId
-                  ? 'Disconnecting...'
-                  : selectedInstallation.installation.activeSessionCount === 0
-                    ? 'Disconnected'
-                    : 'Disconnect selected installation'}
+                {pendingDisconnectInstallationId === selectedInstallation.installation.installationId ? 'Disconnecting...' : selectedInstallation.installation.activeSessionCount === 0 ? 'No active sessions' : 'Disconnect selected'}
               </button>
             </div>
           </article>
@@ -546,31 +497,30 @@ export function ExtensionFleetClient({
             <span className="micro-label">History</span>
             <h2>Recent installation sessions</h2>
             {selectedInstallation.sessions.length > 0 ? (
-              <div className="settings-session-list">
+              <div className="event-list">
                 {selectedInstallation.sessions.map((session) => (
-                  <div className="settings-session-row" key={session.id}>
-                    <div>
-                      <strong>{session.id}</strong>
-                      <p>
-                        issued {formatUtcDateTime(session.issuedAt)} | expires {formatUtcDateTime(session.expiresAt)}
-                      </p>
-                      <p className="list-muted">
+                  <div className="event-row" key={session.id}>
+                    <span className={session.status === 'active' ? 'event-dot event-dot--info' : session.status === 'revoked' ? 'event-dot event-dot--warn' : 'event-dot event-dot--activity'} />
+                    <div className="event-row__body">
+                      <span className="event-row__type">{session.id}</span>
+                      <span className="event-row__context">
                         user {session.userId}
-                        {session.revokedAt ? ` | revoked ${formatUtcDateTime(session.revokedAt)}` : ''}
-                      </p>
+                        {session.revokedAt ? ` · revoked ${formatUtcDateTime(session.revokedAt)}` : ''}
+                      </span>
                     </div>
-                    <div className="billing-history-meta">
-                      <span className={session.status === 'active' ? 'tag' : 'tag warn'}>{session.status}</span>
+                    <div className="event-row__meta">
+                      <span className={session.status === 'active' ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>{session.status}</span>
+                      <br />{formatUtcDateTime(session.issuedAt)}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p>No recent installation session history is available for this installation yet.</p>
+              <p className="list-muted">No session history available yet.</p>
             )}
           </article>
         </section>
       ) : null}
-    </div>
+    </>
   );
 }

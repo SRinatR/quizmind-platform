@@ -90,17 +90,6 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'GET',
-    path: '/billing/plans',
-    summary: 'Return the public billing plan catalog, prices, and entitlements for pricing surfaces.',
-  },
-  {
-    method: 'GET',
-    path: '/billing/subscription',
-    summary: 'Return current subscription, plan, and entitlement state for a workspace.',
-    permission: 'subscriptions:read',
-  },
-  {
-    method: 'GET',
     path: '/usage/summary',
     summary: 'Return quota counters, extension installations, and recent usage activity for a workspace.',
     permission: 'usage:read',
@@ -116,47 +105,6 @@ export const apiRoutes: ApiRouteDefinition[] = [
     path: '/admin/usage/export',
     summary: 'Export usage snapshot data for a workspace as JSON or CSV.',
     permission: 'usage:export',
-  },
-  {
-    method: 'GET',
-    path: '/billing/invoices',
-    summary: 'Return billing invoices for the current workspace, ordered from newest to oldest.',
-    permission: 'subscriptions:read',
-  },
-  {
-    method: 'GET',
-    path: '/billing/invoices/:invoiceId/pdf',
-    summary: 'Resolve the Stripe-hosted PDF or invoice page for a workspace invoice export.',
-    permission: 'subscriptions:read',
-  },
-  {
-    method: 'POST',
-    path: '/billing/checkout',
-    summary: 'Create a Stripe Checkout Session and return a hosted redirect URL for a workspace upgrade.',
-    permission: 'subscriptions:update',
-  },
-  {
-    method: 'GET',
-    path: '/billing/portal',
-    summary: 'Create a Stripe Customer Portal session for payment method and subscription management.',
-    permission: 'subscriptions:update',
-  },
-  {
-    method: 'POST',
-    path: '/billing/cancel',
-    summary: 'Mark the current Stripe subscription to cancel at period end for a workspace.',
-    permission: 'subscriptions:update',
-  },
-  {
-    method: 'POST',
-    path: '/billing/resume',
-    summary: 'Undo a scheduled subscription cancellation for a workspace before the billing period ends.',
-    permission: 'subscriptions:update',
-  },
-  {
-    method: 'POST',
-    path: '/billing/webhooks/stripe',
-    summary: 'Verify, persist, and enqueue Stripe billing webhook deliveries.',
   },
   {
     method: 'POST',
@@ -239,7 +187,7 @@ export const apiRoutes: ApiRouteDefinition[] = [
   {
     method: 'GET',
     path: '/ai/models',
-    summary: 'Return plan-aware AI model availability for the current workspace and provider policy.',
+    summary: 'Return AI model availability for the current workspace and provider policy.',
   },
   {
     method: 'GET',
@@ -365,18 +313,6 @@ export const apiRoutes: ApiRouteDefinition[] = [
     path: '/admin/logs/export',
     summary: 'Export filtered audit, activity, security, and domain log entries as JSON or CSV.',
     permission: 'audit_logs:export',
-  },
-  {
-    method: 'GET',
-    path: '/admin/plans',
-    summary: 'Return the full billing plan catalog, including inactive plans, prices, and entitlements for admin control-plane management.',
-    permission: 'plans:manage',
-  },
-  {
-    method: 'POST',
-    path: '/admin/plans/update',
-    summary: 'Update a billing plan catalog entry, including active state, prices, and entitlements.',
-    permission: 'plans:manage',
   },
   {
     method: 'GET',

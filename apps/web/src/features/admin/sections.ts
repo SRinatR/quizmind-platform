@@ -55,15 +55,6 @@ export const adminSections: AdminSection[] = [
     },
   },
   {
-    id: 'plans',
-    title: 'Plans',
-    href: '/admin/plans',
-    description: 'Plans, prices, entitlements, and overrides.',
-    requirement: {
-      permission: 'plans:manage',
-    },
-  },
-  {
     id: 'ai-providers',
     title: 'AI Providers',
     href: '/admin/ai-providers',

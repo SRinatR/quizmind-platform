@@ -217,8 +217,8 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         <p>
           Platform bind, compatibility, and installation session state are now visible in one workspace-scoped inventory.
         </p>
-        <label className="admin-ticket-field">
-          <span className="micro-label">Operator reason (required for rotate/disconnect)</span>
+        <label className="form-field">
+          <span className="form-field__label">Operator reason <span className="list-muted">(required for rotate / disconnect)</span></span>
           <textarea
             maxLength={500}
             onChange={(event) => setActionReason(event.target.value)}
@@ -227,25 +227,34 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
             value={actionReason}
           />
         </label>
-        {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-        {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+
+        {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+        {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
+
         {rotatedSession ? (
-          <div className="auth-highlight">
+          <div className="connect-success" style={{ marginTop: '12px' }}>
             <span className="micro-label">Rotated token</span>
-            <strong>New installation session issued for {rotatedSession.installationId}</strong>
-            <p>
-              Token: <span className="monospace">{rotatedSession.session.token}</span>
-            </p>
-            <p>
-              Expires: <span className="monospace">{formatDateTime(rotatedSession.session.expiresAt)}</span>
-              {' '}| Refresh after: <span className="monospace">{rotatedSession.session.refreshAfterSeconds}s</span>
-            </p>
-            <button className="btn-ghost" onClick={() => void handleCopyRotatedToken()} type="button">
-              {copiedRotatedToken ? 'Token copied' : 'Copy rotated token'}
-            </button>
+            <p><strong>New session issued for {rotatedSession.installationId}</strong></p>
+            <div className="connect-code-block">
+              <code>{rotatedSession.session.token}</code>
+              <button className="connect-code-block__copy" onClick={() => void handleCopyRotatedToken()} type="button">
+                {copiedRotatedToken ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+            <div className="kv-list" style={{ marginTop: '8px' }}>
+              <div className="kv-row">
+                <span className="kv-row__key">Expires</span>
+                <span className="kv-row__value">{formatDateTime(rotatedSession.session.expiresAt)}</span>
+              </div>
+              <div className="kv-row">
+                <span className="kv-row__key">Refresh after</span>
+                <span className="kv-row__value">{rotatedSession.session.refreshAfterSeconds}s</span>
+              </div>
+            </div>
           </div>
         ) : null}
-        <div className="list-stack">
+
+        <div className="installation-list" style={{ marginTop: '16px' }}>
           {snapshot.items.map((installation) => {
             const disconnectDisabled =
               !snapshot.disconnectDecision.allowed ||
@@ -258,33 +267,52 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
               pendingRotationInstallationId === installation.installationId;
 
             return (
-              <div className="list-item" key={installation.installationId}>
-                <strong>{installation.installationId}</strong>
-                <p>
-                  {installation.browser} | v{installation.extensionVersion} | schema {installation.schemaVersion}
-                </p>
-                <div className="tag-row">
-                  <span className={formatCompatibilityTone(installation.compatibility.status)}>
-                    {installation.compatibility.status}
-                  </span>
-                  <span className={installation.requiresReconnect ? 'tag warn' : 'tag'}>
-                    {installation.requiresReconnect ? 'reconnect required' : 'connected'}
-                  </span>
-                  <span className="tag">{installation.activeSessionCount} active session{installation.activeSessionCount === 1 ? '' : 's'}</span>
-                </div>
-                <span className="list-muted">
-                  Bound {formatDateTime(installation.boundAt)} | last seen {formatDateTime(installation.lastSeenAt)} | token expires{' '}
-                  {formatDateTime(installation.lastSessionExpiresAt)}
-                </span>
-                {installation.compatibility.reason ? <p>{installation.compatibility.reason}</p> : null}
-                <div className="tag-row">
-                  {installation.capabilities.map((capability) => (
-                    <span className="tag" key={`${installation.installationId}:${capability}`}>
-                      {capability}
+              <div className="installation-row" key={installation.installationId}>
+                <div className="installation-row__header">
+                  <span className="installation-row__id">{installation.installationId}</span>
+                  <div className="installation-row__badges">
+                    <span className="tag-soft">{installation.browser}</span>
+                    <span className="tag-soft tag-soft--gray">v{installation.extensionVersion}</span>
+                    <span className={installation.compatibility.status === 'supported' ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
+                      {installation.compatibility.status}
                     </span>
-                  ))}
+                    <span className={installation.requiresReconnect ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--green'}>
+                      {installation.requiresReconnect ? 'reconnect required' : 'connected'}
+                    </span>
+                    <span className="tag-soft tag-soft--gray">
+                      {installation.activeSessionCount} session{installation.activeSessionCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
                 </div>
-                <div className="link-row">
+                {installation.capabilities.length > 0 ? (
+                  <div className="tag-row">
+                    {installation.capabilities.map((capability) => (
+                      <span className="tag" key={`${installation.installationId}:${capability}`}>{capability}</span>
+                    ))}
+                  </div>
+                ) : null}
+                {installation.compatibility.reason ? (
+                  <p className="list-muted" style={{ fontSize: '0.84rem', margin: '4px 0 0' }}>{installation.compatibility.reason}</p>
+                ) : null}
+                <div className="kv-list" style={{ marginTop: '8px' }}>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Bound</span>
+                    <span className="kv-row__value">{formatDateTime(installation.boundAt)}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Last seen</span>
+                    <span className="kv-row__value">{formatDateTime(installation.lastSeenAt)}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Token expires</span>
+                    <span className="kv-row__value">{formatDateTime(installation.lastSessionExpiresAt)}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Schema</span>
+                    <span className="kv-row__value">{installation.schemaVersion}</span>
+                  </div>
+                </div>
+                <div className="link-row" style={{ marginTop: '10px' }}>
                   <button
                     className="btn-ghost"
                     disabled={rotateDisabled}
@@ -294,7 +322,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     {pendingRotationInstallationId === installation.installationId ? 'Rotating...' : 'Rotate token'}
                   </button>
                   <button
-                    className="btn-ghost"
+                    className={disconnectDisabled ? 'btn-ghost' : 'btn-danger'}
                     disabled={disconnectDisabled}
                     onClick={() => void handleDisconnect(installation.installationId)}
                     type="button"
@@ -302,11 +330,11 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     {pendingInstallationId === installation.installationId
                       ? 'Disconnecting...'
                       : installation.activeSessionCount === 0
-                        ? 'Disconnected'
-                        : 'Disconnect installation'}
+                        ? 'No active sessions'
+                        : 'Disconnect'}
                   </button>
                   <Link className="btn-ghost" href={`/app/usage?workspaceId=${snapshot.workspace.id}`}>
-                    Open usage
+                    Usage
                   </Link>
                 </div>
               </div>

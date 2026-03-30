@@ -81,7 +81,6 @@ interface OpenRouterStreamInspection {
 }
 
 interface WorkspaceAiCatalog {
-  planCode: string;
   providers: AiModelsCatalogPayload['providers'];
   models: AiModelsCatalogPayload['models'];
   defaultProvider?: AiProvider;
@@ -449,7 +448,6 @@ export class AiProxyService {
             occurredAt: new Date().toISOString(),
             userId: session.user.id,
             workspaceId: workspace.id,
-            planCode: catalog.planCode,
             policyMode: policy.mode,
             policyProviders: policy.providers,
             allowedModelTags: policy.allowedModelTags ?? [],
@@ -461,7 +459,6 @@ export class AiProxyService {
 
       return {
         workspaceId: workspace.id,
-        planCode: catalog.planCode,
         providers: catalog.providers,
         models: catalog.models,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
@@ -610,11 +607,9 @@ export class AiProxyService {
       createdAt: occurredAt,
       updatedAt: occurredAt,
     };
-    const [quotaLimit, activeCounter] = await Promise.all([
-      this.aiProxyRepository.findUsageLimit(workspace.id, aiRequestsQuotaKey),
-      this.aiProxyRepository.findActiveQuotaCounter(workspace.id, aiRequestsQuotaKey, occurredAt),
-    ]);
+    const activeCounter = await this.aiProxyRepository.findActiveQuotaCounter(workspace.id, aiRequestsQuotaKey, occurredAt);
     const quotaCounter = activeCounter ?? quotaCounterFallback;
+    const quotaLimit: number | undefined = undefined;
 
     if (provider !== 'openrouter' && !policy.allowDirectProviderMode) {
       throw new ForbiddenException(
@@ -905,8 +900,6 @@ export class AiProxyService {
     workspaceId: string,
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>,
   ): Promise<WorkspaceAiCatalog> {
-    const resolvedPlanCode = (await this.aiProxyRepository.findWorkspacePlanCode(workspaceId)) ?? 'free';
-    const planCode = resolvedPlanCode.trim().toLowerCase() || 'free';
     const allowedModelTags = Array.from(
       new Set(
         (policy.allowedModelTags ?? [])
@@ -916,11 +909,11 @@ export class AiProxyService {
     );
     const providerCatalog = getProviderCatalog();
     const providers = providerCatalog.providers.filter((entry) => policy.providers.includes(entry.provider));
-    const planModels = listAvailableModelsForPlan(planCode).filter((entry) => policy.providers.includes(entry.provider));
+    const allModels = listAvailableModelsForPlan().filter((entry) => policy.providers.includes(entry.provider));
     const models =
       allowedModelTags.length > 0
-        ? planModels.filter((entry) => entry.capabilityTags.some((tag) => allowedModelTags.includes(tag)))
-        : planModels;
+        ? allModels.filter((entry) => entry.capabilityTags.some((tag) => allowedModelTags.includes(tag)))
+        : allModels;
     const defaultProvider =
       policy.defaultProvider && providers.some((entry) => entry.provider === policy.defaultProvider)
         ? policy.defaultProvider
@@ -932,7 +925,6 @@ export class AiProxyService {
         : models[0]?.modelId;
 
     return {
-      planCode,
       providers,
       models,
       ...(defaultProvider ? { defaultProvider } : {}),

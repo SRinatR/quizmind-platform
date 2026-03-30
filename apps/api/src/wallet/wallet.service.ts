@@ -17,7 +17,7 @@ import {
 } from '@quizmind/contracts';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
-import { canReadWorkspaceSubscription, canUpdateWorkspaceSubscription } from '../services/access-service';
+import { canReadWorkspaceBilling, canUpdateWorkspaceBilling } from '../services/access-service';
 import { YookassaClient } from './yookassa.client';
 import { WalletRepository } from './wallet.repository';
 
@@ -74,7 +74,7 @@ export class WalletService {
     this.requireConnectedMode();
 
     const resolvedWorkspaceId = this.resolveWorkspaceId(session, workspaceId);
-    const accessDecision = canReadWorkspaceSubscription(session.principal, resolvedWorkspaceId);
+    const accessDecision = canReadWorkspaceBilling(session.principal, resolvedWorkspaceId);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -94,7 +94,7 @@ export class WalletService {
     this.requireConnectedMode();
 
     const resolvedWorkspaceId = this.resolveWorkspaceId(session, workspaceId);
-    const accessDecision = canReadWorkspaceSubscription(session.principal, resolvedWorkspaceId);
+    const accessDecision = canReadWorkspaceBilling(session.principal, resolvedWorkspaceId);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -126,7 +126,7 @@ export class WalletService {
     this.requireConnectedMode();
 
     const resolvedWorkspaceId = this.resolveWorkspaceId(session, request?.workspaceId);
-    const accessDecision = canUpdateWorkspaceSubscription(session.principal, resolvedWorkspaceId);
+    const accessDecision = canUpdateWorkspaceBilling(session.principal, resolvedWorkspaceId);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));

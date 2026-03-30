@@ -14,12 +14,6 @@ import {
   type AdminUserAccessUpdateRequest,
   type AdminUserMutationResult,
   type CompatibilityRulesSnapshot,
-  type BillingAdminPlansPayload,
-  type BillingCheckoutResult,
-  type BillingInvoicesPayload,
-  type BillingPlansPayload,
-  type BillingPortalResult,
-  type BillingSubscriptionMutationResult,
   type ApiRouteDefinition,
   type AdminProviderGovernanceSnapshot,
   type ExtensionBootstrapPayload,
@@ -28,14 +22,12 @@ import {
   type ProviderCatalogPayload,
   type ProviderCredentialInventory,
   type FeatureFlagDefinition,
-  type PlanDefinition,
   type RemoteConfigLayer,
   type RemoteConfigPublishResponse,
   type RemoteConfigSnapshot,
   type SupportImpersonationHistorySnapshot,
   type SupportTicketQueueFilters,
   type SupportTicketQueueSnapshot,
-  type SubscriptionSummary,
   type UsageHistoryRequest,
   type UsageEventIngestResult,
   type UsageEventPayload,
@@ -86,7 +78,6 @@ export interface FoundationSnapshot {
     workspace: string[];
   };
   permissions: string[];
-  plans: PlanDefinition[];
   featureFlags: FeatureFlagDefinition[];
   remoteConfigLayers: RemoteConfigLayer[];
   foundationTracks: Array<{
@@ -130,12 +121,6 @@ export interface WorkspaceListSnapshot {
   items: WorkspaceSummary[];
 }
 
-export interface WorkspaceSubscriptionSnapshot {
-  workspace: WorkspaceSummary;
-  accessDecision: AccessDecision;
-  summary: SubscriptionSummary;
-}
-
 export interface FeatureFlagsSnapshot {
   personaKey: string;
   flags: FeatureFlagDefinition[];
@@ -151,13 +136,7 @@ export type AdminWebhooksStateSnapshot = AdminWebhooksSnapshot;
 export type AdminUsersSnapshot = AdminUserDirectorySnapshot;
 export type CompatibilityRulesStateSnapshot = CompatibilityRulesSnapshot;
 export type AuthSessionsSnapshot = AuthSessionsPayload;
-export type BillingPlansSnapshot = BillingPlansPayload;
-export type AdminBillingPlansSnapshot = BillingAdminPlansPayload;
 export type AdminExtensionFleetStateSnapshot = AdminExtensionFleetSnapshot;
-export type BillingInvoicesSnapshot = BillingInvoicesPayload;
-export type BillingCheckoutSnapshot = BillingCheckoutResult;
-export type BillingPortalSnapshot = BillingPortalResult;
-export type BillingSubscriptionMutationSnapshot = BillingSubscriptionMutationResult;
 export type UsageSummarySnapshot = WorkspaceUsageSnapshot;
 export type UsageHistorySnapshot = WorkspaceUsageHistorySnapshot;
 export type UsageEventIngestSnapshot = UsageEventIngestResult;
@@ -336,22 +315,6 @@ export async function getWorkspaces(_persona: string, accessToken?: string | nul
   return readApiData<WorkspaceListSnapshot>('/workspaces', withAccessToken(undefined, accessToken));
 }
 
-export async function getSubscription(_persona: string, workspaceId?: string, accessToken?: string | null) {
-  const basePath = '/billing/subscription';
-  const path = workspaceId
-    ? `${basePath}${basePath.includes('?') ? '&' : '?'}workspaceId=${workspaceId}`
-    : basePath;
-
-  return readApiData<WorkspaceSubscriptionSnapshot>(
-    path,
-    withAccessToken(undefined, accessToken),
-  );
-}
-
-export async function getBillingPlans() {
-  return readApiData<BillingPlansSnapshot>('/billing/plans');
-}
-
 export async function getProviderCatalog() {
   return readApiData<ProviderCatalogSnapshot>('/providers/catalog');
 }
@@ -386,14 +349,6 @@ export async function getAdminProviderGovernance(
   return readApiData<AdminProviderGovernanceStateSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getAdminPlans(accessToken?: string | null) {
-  if (!accessToken) {
-    return null;
-  }
-
-  return readApiData<AdminBillingPlansSnapshot>('/admin/plans', withAccessToken(undefined, accessToken));
-}
-
 export async function getAdminExtensionFleet(
   _persona: string,
   filters?: Partial<AdminExtensionFleetFilters>,
@@ -417,14 +372,6 @@ export async function getCompatibilityRules(_persona: string, accessToken?: stri
     '/admin/compatibility',
     withAccessToken(undefined, accessToken),
   );
-}
-
-export async function getBillingInvoices(workspaceId: string, accessToken?: string | null) {
-  const path = withQuery('/billing/invoices', {
-    workspaceId,
-  });
-
-  return readApiData<BillingInvoicesSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function getUsageSummary(
@@ -635,8 +582,8 @@ export async function getWalletTopUps(workspaceId: string, accessToken: string):
   return readApiData<WalletTopUpsPayload>(path, withAccessToken(undefined, accessToken));
 }
 
-export function personaHref(pathname: string, persona: string) {
-  return withPersona(pathname, persona);
+export function personaHref(pathname: string, _persona: string) {
+  return pathname;
 }
 
 export function resolvePersona(

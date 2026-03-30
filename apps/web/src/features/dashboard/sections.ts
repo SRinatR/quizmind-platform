@@ -13,18 +13,18 @@ export const dashboardSections: DashboardSection[] = [
     id: 'overview',
     title: 'Overview',
     href: '/app',
-    description: 'Workspace summary, current plan, and extension status.',
+    description: 'Workspace summary, usage overview, and extension status.',
     requirement: {
       permission: 'workspaces:read',
     },
   },
   {
     id: 'billing',
-    title: 'Billing',
+    title: 'Wallet',
     href: '/app/billing',
-    description: 'Plan, invoices, entitlements, and renewal state.',
+    description: 'Wallet balance, top-up history, and payment.',
     requirement: {
-      permission: 'subscriptions:read',
+      permission: 'workspaces:read',
     },
   },
   {

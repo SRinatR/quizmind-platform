@@ -16,7 +16,6 @@ interface ExtensionControlClientProps {
   initialRequest: ExtensionBootstrapRequest;
   initialResult: ExtensionBootstrapPayload | null;
   initialUsageEvent: UsageEventPayload;
-  planOptions: string[];
   usageSummary: UsageSummarySnapshot | null;
   workspaceOptions: Array<{
     id: string;
@@ -83,7 +82,6 @@ export function ExtensionControlClient({
   initialRequest,
   initialResult,
   initialUsageEvent,
-  planOptions,
   usageSummary,
   workspaceOptions,
 }: ExtensionControlClientProps) {
@@ -324,12 +322,7 @@ export function ExtensionControlClient({
                 }
                 value={formState.planCode}
               >
-                <option value="">Resolve from workspace subscription</option>
-                {planOptions.map((planCode) => (
-                  <option key={planCode} value={planCode}>
-                    {planCode}
-                  </option>
-                ))}
+                <option value="">Resolve from workspace defaults</option>
               </select>
             </label>
             <label className="admin-ticket-field">
@@ -566,7 +559,7 @@ export function ExtensionControlClient({
                 <strong>Workspace</strong>
                 <p>{usageSummary.workspace.name}</p>
                 <span className="list-muted">
-                  {usageSummary.planCode} | {usageSummary.subscriptionStatus}
+                  {usageSummary.workspace.name}
                 </span>
               </div>
               <div className="list-item">

@@ -9,7 +9,6 @@ export default function HomePage() {
           <span className="lp-brand">QuizMind</span>
           <div className="lp-nav-links">
             <Link href="/features">Features</Link>
-            <Link href="/pricing">Pricing</Link>
             <Link href="/docs">Docs</Link>
             <Link href="/blog">Blog</Link>
             <Link href="/faq">FAQ</Link>
@@ -125,60 +124,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Pricing ── */}
-      <section className="lp-section lp-pricing">
-        <div className="lp-section-inner">
-          <span className="lp-section-label">Pricing</span>
-          <h2 className="lp-section-title">Simple, honest pricing</h2>
-          <p className="lp-pricing-sub">Start free. Upgrade when you need more.</p>
-          <div className="lp-pricing-grid">
-            {/* Free plan */}
-            <div className="lp-plan">
-              <div className="lp-plan-header">
-                <span className="lp-plan-name">Free</span>
-                <div className="lp-plan-price">
-                  $0<span className="lp-plan-period">/month</span>
-                </div>
-              </div>
-              <ul className="lp-plan-features">
-                <li>25 answers per day</li>
-                <li>Text questions</li>
-                <li>Basic explanations</li>
-                <li>Chrome extension</li>
-                <li className="lp-plan-feature-disabled">Screenshot mode</li>
-                <li className="lp-plan-feature-disabled">History sync</li>
-              </ul>
-              <Link href="/auth/login" className="btn-outline btn-block">
-                Get started free
-              </Link>
-            </div>
-
-            {/* Pro plan */}
-            <div className="lp-plan lp-plan-pro">
-              <div className="lp-plan-badge">Most popular</div>
-              <div className="lp-plan-header">
-                <span className="lp-plan-name">Pro</span>
-                <div className="lp-plan-price">
-                  $9<span className="lp-plan-period">/month</span>
-                </div>
-              </div>
-              <ul className="lp-plan-features">
-                <li>500 answers per day</li>
-                <li>Text + screenshot questions</li>
-                <li>Deep explanations</li>
-                <li>Chrome extension</li>
-                <li>Full history & sync</li>
-                <li>Remote config for teams</li>
-              </ul>
-              <Link href="/auth/login" className="btn-primary btn-block">
-                Start free trial
-              </Link>
-              <p className="lp-plan-note">14 days free, no card required</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* ── CTA ── */}
       <section className="lp-cta">
         <div className="lp-section-inner lp-cta-inner">
@@ -204,7 +149,6 @@ export default function HomePage() {
           <span className="lp-brand">QuizMind</span>
           <div className="lp-footer-links">
             <Link href="/features">Features</Link>
-            <Link href="/pricing">Pricing</Link>
             <Link href="/docs">Docs</Link>
             <Link href="/blog">Blog</Link>
             <Link href="/changelog">Changelog</Link>

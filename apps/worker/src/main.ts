@@ -5,7 +5,6 @@ import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
 import {
   type AuditExportJobPayload,
   type EmailQueueJobPayload,
-  type EntitlementRefreshJobPayload,
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
 } from '@quizmind/contracts';
@@ -23,7 +22,6 @@ import {
   buildEmailJobProcessedDomainEvent,
 } from './jobs/email-job-domain-event';
 import { processEmailJob } from './jobs/process-email';
-import { processEntitlementRefreshJob } from './jobs/process-entitlement-refresh';
 import { processQuotaResetJob } from './jobs/process-quota-reset';
 import { processUsageEvent, processUsageEventJob } from './jobs/process-usage-event';
 import { buildQueueJobFailedDomainEvent, buildQueueLogDomainEvent, type QueueJobContext } from './jobs/queue-log-domain-event';
@@ -290,22 +288,6 @@ async function bootstrap() {
           },
         ),
         new Worker(
-          'entitlement-refresh',
-          async (job) => {
-            const payload = job.data as EntitlementRefreshJobPayload;
-
-            return processQueueJobWithDomainLogging(
-              job,
-              domainEventRepository,
-              async () => processEntitlementRefreshJob(payload),
-              payload.workspaceId,
-            );
-          },
-          {
-            connection: redisConnectionOptions,
-          },
-        ),
-        new Worker(
           'config-publish',
           async (job) => {
             const payload = job.data as RemoteConfigPublishResult;
@@ -471,15 +453,6 @@ async function runDryRun() {
       requestedAt: new Date().toISOString(),
     },
   );
-  const entitlementRefreshResult = processEntitlementRefreshJob({
-    workspaceId: 'ws_alpha',
-    subscriptionId: 'sub_local_record',
-    previousStatus: 'active',
-    nextStatus: 'active',
-    reason: 'manual',
-    requestedAt: new Date().toISOString(),
-    requestedByUserId: 'user_platform_admin',
-  });
   const auditExportResult = processAuditExportJob({
     exportType: 'usage',
     workspaceId: 'ws_alpha',
@@ -493,49 +466,20 @@ async function runDryRun() {
   const webhookReceivedAt = new Date();
   const billingResult = await processBillingWebhookJob(
     {
-      provider: 'stripe',
+      provider: 'yookassa',
       webhookEventId: 'wh_local_1',
       externalEventId: 'evt_local_1',
-      eventType: 'customer.subscription.updated',
+      eventType: 'payment.succeeded',
       receivedAt: webhookReceivedAt.toISOString(),
     },
     {
       async findWebhookEventById() {
         return {
           id: 'wh_local_1',
-          provider: 'stripe',
+          provider: 'yookassa',
           externalEventId: 'evt_local_1',
-          eventType: 'customer.subscription.updated',
-          payloadJson: {
-            id: 'evt_local_1',
-            type: 'customer.subscription.updated',
-            data: {
-              object: {
-                id: 'sub_local_1',
-                customer: 'cus_local_1',
-                status: 'active',
-                cancel_at_period_end: false,
-                current_period_start: Math.floor(Date.now() / 1000),
-                current_period_end: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-                metadata: {
-                  workspaceId: 'ws_alpha',
-                  planCode: 'pro',
-                },
-                items: {
-                  data: [
-                    {
-                      quantity: 3,
-                      price: {
-                        recurring: {
-                          interval: 'month',
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          },
+          eventType: 'payment.succeeded',
+          payloadJson: { type: 'notification', event: 'payment.succeeded' },
           status: 'received',
           receivedAt: webhookReceivedAt,
           processedAt: null,
@@ -543,53 +487,6 @@ async function runDryRun() {
       },
       async markWebhookEventProcessed() {},
       async markWebhookEventFailed() {},
-      async findWorkspaceById() {
-        return {
-          id: 'ws_alpha',
-          stripeCustomerId: null,
-        };
-      },
-      async findWorkspaceByStripeCustomerId() {
-        return null;
-      },
-      async setWorkspaceStripeCustomerId() {},
-      async findPlanByCode(planCode) {
-        return {
-          id: `plan_${planCode}`,
-          code: planCode,
-        };
-      },
-      async findSubscriptionByStripeSubscriptionId() {
-        return null;
-      },
-      async findCurrentSubscriptionByWorkspaceId() {
-        return null;
-      },
-      async upsertStripeSubscriptionForWorkspace(input) {
-        return {
-          id: 'sub_local_record',
-          workspaceId: input.workspaceId,
-          planId: input.planId,
-          status: input.status,
-          billingInterval: input.billingInterval,
-          seatCount: input.seatCount,
-          stripeCustomerId: input.stripeCustomerId,
-          stripePriceId: input.stripePriceId,
-          stripeSubscriptionId: input.stripeSubscriptionId,
-          trialStartAt: input.trialStartAt,
-        };
-      },
-      async updateSubscriptionStatus() {},
-      async upsertInvoice() {
-        return {
-          id: 'in_local_record',
-        };
-      },
-      async upsertPayment() {
-        return {
-          id: 'pay_local_record',
-        };
-      },
     },
   );
 
@@ -597,7 +494,6 @@ async function runDryRun() {
   console.log(JSON.stringify(publishResult.logEvent));
   console.log(JSON.stringify(emailResult.logEvent));
   console.log(JSON.stringify(quotaResetResult.logEvent));
-  console.log(JSON.stringify(entitlementRefreshResult.logEvent));
   console.log(JSON.stringify(auditExportResult.logEvent));
   console.log(JSON.stringify(billingResult.logEvent));
 }

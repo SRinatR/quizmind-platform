@@ -26,14 +26,6 @@ export function canWriteFeatureFlags(principal: SessionPrincipal): AccessDecisio
   });
 }
 
-export function canManagePlans(principal: SessionPrincipal): AccessDecision {
-  const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'plans:manage',
-  });
-}
-
 export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
 
@@ -187,7 +179,7 @@ export function canExportUsage(principal: SessionPrincipal, workspaceId: string)
   });
 }
 
-export function canReadWorkspaceSubscription(
+export function canReadWorkspaceBilling(
   principal: SessionPrincipal,
   workspaceId: string,
 ): AccessDecision {
@@ -199,7 +191,7 @@ export function canReadWorkspaceSubscription(
   });
 }
 
-export function canUpdateWorkspaceSubscription(
+export function canUpdateWorkspaceBilling(
   principal: SessionPrincipal,
   workspaceId: string,
 ): AccessDecision {

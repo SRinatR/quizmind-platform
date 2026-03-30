@@ -3,7 +3,6 @@ import {
   platformQueues,
   type BillingWebhookJobPayload,
   type EmailQueueJobPayload,
-  type EntitlementRefreshJobPayload,
   type PlatformQueue,
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
@@ -17,7 +16,6 @@ export interface PlatformQueuePayloadMap {
   'usage-events': UsageEventPayload;
   emails: EmailQueueJobPayload;
   'quota-resets': QuotaResetJobPayload;
-  'entitlement-refresh': EntitlementRefreshJobPayload;
   'config-publish': RemoteConfigPublishResult;
   'audit-exports': AuditExportJobPayload;
 }
@@ -95,13 +93,6 @@ export const queueDefinitions: Record<PlatformQueue, QueueDefinition> = {
     name: 'quota-resets',
     description: 'Resets quota counters at the end of a billing or usage window.',
     attempts: 3,
-    removeOnComplete: 250,
-    removeOnFail: 250,
-  },
-  'entitlement-refresh': {
-    name: 'entitlement-refresh',
-    description: 'Recomputes entitlements after subscription or override changes.',
-    attempts: 5,
     removeOnComplete: 250,
     removeOnFail: 250,
   },

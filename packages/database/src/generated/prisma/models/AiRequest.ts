@@ -701,6 +701,14 @@ export type AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput = {
   deleteMany?: Prisma.AiRequestScalarWhereInput | Prisma.AiRequestScalarWhereInput[]
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type AiRequestCreateWithoutUserInput = {
   id?: string
   installationId?: string | null

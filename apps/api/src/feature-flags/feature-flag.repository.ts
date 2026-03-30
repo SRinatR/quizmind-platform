@@ -20,7 +20,6 @@ export interface ReplaceFeatureFlagDefinitionInput {
   rolloutPercentage?: number | null;
   minimumExtensionVersion?: string | null;
   allowRoles: string[];
-  allowPlans: string[];
   allowUsers: string[];
   allowWorkspaces: string[];
 }
@@ -63,7 +62,6 @@ export class FeatureFlagRepository {
           rolloutPercentage: input.rolloutPercentage ?? null,
           minimumExtensionVersion: input.minimumExtensionVersion ?? null,
           allowRolesJson: input.allowRoles,
-          allowPlansJson: input.allowPlans,
         },
       });
 

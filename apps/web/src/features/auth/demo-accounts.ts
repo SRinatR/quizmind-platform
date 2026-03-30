@@ -48,7 +48,7 @@ export const demoAccounts: DemoAccount[] = [
     password: 'demo-password',
     systemRoles: ['billing_admin'],
     workspaceRoles: ['workspace_billing_manager'],
-    highlights: ['Plans, subscriptions, billing history, usage budgeting'],
+    highlights: ['Wallet, top-up history, usage budgeting'],
   },
   {
     label: 'Security admin',

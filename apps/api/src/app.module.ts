@@ -6,7 +6,6 @@ import { AiProxyService } from './ai/ai-proxy.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { BillingController } from './billing/billing.controller';
-import { BillingRepository } from './billing/billing.repository';
 import { BillingService } from './billing/billing.service';
 import { BillingWebhookRepository } from './billing/billing-webhook.repository';
 import { WalletController } from './wallet/wallet.controller';
@@ -17,7 +16,6 @@ import { EmailVerificationRepository } from './auth/repositories/email-verificat
 import { PasswordResetRepository } from './auth/repositories/password-reset.repository';
 import { SessionRepository } from './auth/repositories/session.repository';
 import { UserRepository } from './auth/repositories/user.repository';
-import { SubscriptionRepository } from './billing/subscription.repository';
 import { PrismaService } from './database/prisma.service';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import { ExtensionControlController } from './extension/extension-control.controller';
@@ -60,7 +58,6 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     AiProxyRepository,
     AiProxyService,
     AuthService,
-    BillingRepository,
     BillingService,
     BillingWebhookRepository,
     EmailVerificationRepository,
@@ -86,7 +83,6 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     RemoteConfigRepository,
     RequestLoggingInterceptor,
     SessionRepository,
-    SubscriptionRepository,
     SupportImpersonationRepository,
     SupportTicketPresetFavoriteRepository,
     SupportTicketRepository,

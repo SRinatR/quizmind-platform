@@ -140,17 +140,17 @@ export function UsageExplorerClient({
   const highlightedQuota = usageSummary.quotas[0] ?? null;
 
   return (
-    <div className="admin-feature-flags-shell">
-      {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-      {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+    <>
+      {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+      {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
 
       <section className="split-grid">
         <article className="panel">
           <span className="micro-label">Export</span>
           <h2>Download usage snapshots</h2>
-          <div className="admin-ticket-editor">
-            <label className="admin-ticket-field">
-              <span className="micro-label">Workspace</span>
+          <div className="filter-grid">
+            <label className="filter-field">
+              <span className="filter-field__label">Workspace</span>
               <select
                 disabled={!canSelectWorkspace}
                 onChange={(event) => updateWorkspaceScope(event.target.value)}
@@ -163,78 +163,70 @@ export function UsageExplorerClient({
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Format</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Format</span>
               <select
                 onChange={(event) => handleFormatChange(event.target.value as UsageExportFormat)}
                 value={exportFormat}
               >
                 {usageExportFormats.map((format) => (
-                  <option key={format} value={format}>
-                    {format}
-                  </option>
+                  <option key={format} value={format}>{format}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Scope</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Scope</span>
               <select
                 onChange={(event) => setExportScope(event.target.value as UsageExportScope)}
                 value={exportScope}
               >
                 {availableScopes.map((scope) => (
-                  <option key={scope} value={scope}>
-                    {scope}
-                  </option>
+                  <option key={scope} value={scope}>{scope}</option>
                 ))}
               </select>
             </label>
           </div>
-          <div className="admin-user-actions">
+          <div className="filter-actions" style={{ marginTop: '12px' }}>
             <button className="btn-primary" disabled={isExporting || !canExportUsage} onClick={() => void exportUsage()} type="button">
               {isExporting ? 'Exporting...' : 'Export usage'}
             </button>
+            <span className={canExportUsage ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
+              {canExportUsage ? 'export allowed' : 'export blocked'}
+            </span>
           </div>
-          <p className="admin-ticket-note">
-            JSON supports full workspace snapshots. CSV is intentionally scoped to quotas, installations, or recent events.
+          <p className="list-muted" style={{ fontSize: '0.82rem', marginTop: '8px' }}>
+            JSON supports full workspace snapshots. CSV is scoped to quotas, installations, or recent events.
           </p>
         </article>
 
         <article className="panel">
-          <span className="micro-label">Summary</span>
-          <h2>Current usage baseline</h2>
-          <div className="tag-row">
-            <span className="tag">{usageSummary.planCode}</span>
-            <span className="tag">{usageSummary.subscriptionStatus}</span>
-            <span className={canExportUsage ? 'tag' : 'tag warn'}>
-              {canExportUsage ? 'export allowed' : 'export blocked'}
-            </span>
+          <span className="micro-label">Baseline</span>
+          <h2>Current usage summary</h2>
+          <div className="tag-row" style={{ marginBottom: '12px' }}>
+            <span className="tag-soft tag-soft--gray">{usageSummary.workspace.name}</span>
           </div>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Workspace</strong>
-              <p>{usageSummary.workspace.name}</p>
+          <div className="kv-list">
+            <div className="kv-row">
+              <span className="kv-row__key">Workspace</span>
+              <span className="kv-row__value">{usageSummary.workspace.name}</span>
             </div>
-            <div className="list-item">
-              <strong>Primary quota</strong>
-              <p>
+            <div className="kv-row">
+              <span className="kv-row__key">Primary quota</span>
+              <span className="kv-row__value">
                 {highlightedQuota
-                  ? `${highlightedQuota.label}: ${highlightedQuota.consumed}${
-                      typeof highlightedQuota.limit === 'number' ? ` / ${highlightedQuota.limit}` : ''
-                    }`
-                  : 'No tracked quota snapshot is available.'}
-              </p>
+                  ? `${highlightedQuota.label}: ${highlightedQuota.consumed}${typeof highlightedQuota.limit === 'number' ? ` / ${highlightedQuota.limit}` : ''}`
+                  : 'No quota snapshot available'}
+              </span>
             </div>
-            <div className="list-item">
-              <strong>Current window</strong>
-              <p>{formatWindow(usageSummary.currentPeriodStart, usageSummary.currentPeriodEnd)}</p>
+            <div className="kv-row">
+              <span className="kv-row__key">Period</span>
+              <span className="kv-row__value">{formatWindow(usageSummary.currentPeriodStart, usageSummary.currentPeriodEnd)}</span>
             </div>
-            <div className="list-item">
-              <strong>Fleet + activity</strong>
-              <p>
-                {usageSummary.installations.length} installation{usageSummary.installations.length === 1 ? '' : 's'} |{' '}
-                {usageSummary.recentEvents.length} recent event{usageSummary.recentEvents.length === 1 ? '' : 's'}
-              </p>
+            <div className="kv-row">
+              <span className="kv-row__key">Fleet</span>
+              <span className="kv-row__value">
+                {usageSummary.installations.length} installation{usageSummary.installations.length === 1 ? '' : 's'} · {usageSummary.recentEvents.length} recent event{usageSummary.recentEvents.length === 1 ? '' : 's'}
+              </span>
             </div>
           </div>
         </article>
@@ -245,20 +237,28 @@ export function UsageExplorerClient({
           <span className="micro-label">Quotas</span>
           <h2>Server-side quota counters</h2>
           {usageSummary.quotas.length > 0 ? (
-            <div className="list-stack">
-              {usageSummary.quotas.map((quota) => (
-                <div className="list-item" key={quota.key}>
-                  <strong>{quota.label}</strong>
-                  <p>
-                    {quota.consumed}
-                    {typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''} | {quota.status}
-                  </p>
-                  <span className="list-muted">{formatWindow(quota.periodStart, quota.periodEnd)}</span>
-                </div>
-              ))}
+            <div style={{ display: 'grid', gap: '12px' }}>
+              {usageSummary.quotas.map((quota) => {
+                const pct = quota.limit && quota.limit > 0 ? Math.min(100, Math.round((quota.consumed / quota.limit) * 100)) : -1;
+                const tone = pct >= 90 ? 'critical' : pct >= 70 ? 'warn' : 'ok';
+                return (
+                  <div className="quota-row" key={quota.key}>
+                    <div className="quota-row__header">
+                      <span className="quota-row__label">{quota.label}</span>
+                      <span className="quota-row__value">
+                        {quota.consumed}{typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''}
+                      </span>
+                    </div>
+                    <div className="quota-bar">
+                      <div className={`quota-bar__fill quota-bar__fill--${pct >= 0 ? tone : 'unknown'}`} style={{ width: pct >= 0 ? `${pct}%` : '0%' }} />
+                    </div>
+                    <span className="quota-row__meta">{quota.status} · {formatWindow(quota.periodStart, quota.periodEnd)}</span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
-            <p>No quota counters are available for this workspace yet.</p>
+            <p className="list-muted">No quota counters available for this workspace yet.</p>
           )}
         </article>
 
@@ -266,22 +266,24 @@ export function UsageExplorerClient({
           <span className="micro-label">Installations</span>
           <h2>Managed extension fleet</h2>
           {usageSummary.installations.length > 0 ? (
-            <div className="list-stack">
+            <div className="installation-list">
               {usageSummary.installations.map((installation) => (
-                <div className="list-item" key={installation.installationId}>
-                  <strong>{installation.installationId}</strong>
-                  <p>
-                    {installation.browser} | v{installation.extensionVersion} | schema {installation.schemaVersion}
-                  </p>
-                  <span className="list-muted">
-                    {installation.capabilities.join(', ') || 'No capabilities reported'} | last seen{' '}
-                    {formatUtcDateTime(installation.lastSeenAt)}
+                <div className="installation-row" key={installation.installationId}>
+                  <div className="installation-row__header">
+                    <span className="installation-row__id">{installation.installationId}</span>
+                    <div className="installation-row__badges">
+                      <span className="tag-soft">{installation.browser}</span>
+                      <span className="tag-soft tag-soft--gray">v{installation.extensionVersion}</span>
+                    </div>
+                  </div>
+                  <span className="list-muted" style={{ fontSize: '0.8rem' }}>
+                    {installation.capabilities.join(', ') || 'No capabilities'} · last seen {formatUtcDateTime(installation.lastSeenAt)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p>No extension installations have reported into this workspace yet.</p>
+            <p className="list-muted">No installations reported into this workspace yet.</p>
           )}
         </article>
       </section>
@@ -290,24 +292,29 @@ export function UsageExplorerClient({
         <span className="micro-label">Recent events</span>
         <h2>Telemetry and activity stream</h2>
         {usageSummary.recentEvents.length > 0 ? (
-          <div className="list-stack">
+          <div className="event-list">
             {usageSummary.recentEvents.map((event) => (
-              <div className="list-item" key={event.id}>
-                <strong>{event.eventType}</strong>
-                <p>{event.summary}</p>
-                <span className="list-muted">
-                  {event.source}
-                  {event.installationId ? ` | ${event.installationId}` : ''}
-                  {event.actorId ? ` | actor ${event.actorId}` : ''}
-                  {event.severity ? ` | ${event.severity}` : ''} | {formatUtcDateTime(event.occurredAt)}
-                </span>
+              <div className="event-row" key={event.id}>
+                <span className={event.source === 'ai' ? 'event-dot event-dot--ai' : event.source === 'activity' ? 'event-dot event-dot--activity' : event.severity === 'warn' || event.severity === 'error' ? 'event-dot event-dot--warn' : 'event-dot event-dot--info'} />
+                <div className="event-row__body">
+                  <span className="event-row__type">{event.eventType}</span>
+                  {event.summary ? <p className="event-row__summary">{event.summary}</p> : null}
+                  <span className="event-row__context">
+                    {event.installationId ?? 'no installation'}
+                    {event.actorId ? ` · ${event.actorId}` : ''}
+                  </span>
+                </div>
+                <div className="event-row__meta">
+                  <span className="tag-soft tag-soft--gray">{event.source}</span>
+                  <br />{formatUtcDateTime(event.occurredAt)}
+                </div>
               </div>
             ))}
           </div>
         ) : (
-          <p>No telemetry or dashboard activity has been recorded for this workspace yet.</p>
+          <p className="list-muted">No telemetry or activity recorded for this workspace yet.</p>
         )}
       </section>
-    </div>
+    </>
   );
 }

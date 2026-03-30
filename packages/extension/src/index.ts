@@ -6,7 +6,6 @@ import {
   type ExtensionBootstrapPayload,
   type ExtensionBootstrapPayloadV2,
   type FeatureFlagDefinition,
-  type PlanEntitlement,
   type RemoteConfigContext,
   type RemoteConfigLayer,
   type ResolvedRemoteConfig,
@@ -124,12 +123,6 @@ export function resolveFeatureFlags(
         }
       }
 
-      if (definition.allowPlans) {
-        if (!context.planCode || !definition.allowPlans.includes(context.planCode)) {
-          return false;
-        }
-      }
-
       if (definition.minimumExtensionVersion && context.extensionVersion) {
         return compareSemver(context.extensionVersion, definition.minimumExtensionVersion) >= 0;
       }
@@ -221,7 +214,7 @@ export function buildExtensionBootstrapV2(input: {
   compatibilityPolicy: CompatibilityPolicy;
   flagDefinitions: FeatureFlagDefinition[];
   remoteConfigLayers: RemoteConfigLayer[];
-  entitlements: PlanEntitlement[];
+  entitlements: string[];
   quotaHints: UsageQuotaHint[];
   aiAccessPolicy: AiAccessPolicy;
   context: RemoteConfigContext & {
@@ -252,7 +245,7 @@ export function buildExtensionBootstrapV2(input: {
     installationId: input.installationId,
     ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
     compatibility,
-    entitlements: [...input.entitlements].sort((left, right) => left.key.localeCompare(right.key)),
+    entitlements: [...input.entitlements].sort((left, right) => left.localeCompare(right)),
     featureFlags,
     remoteConfig,
     quotaHints: [...input.quotaHints].sort((left, right) => left.key.localeCompare(right.key)),

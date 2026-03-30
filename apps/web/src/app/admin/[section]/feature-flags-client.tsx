@@ -15,10 +15,8 @@ import { formatUtcDateTime } from '../../../lib/datetime';
 interface FeatureFlagsClientProps {
   flags: FeatureFlagDefinition[];
   canEdit?: boolean;
-  planOptions?: string[];
   initialPreviewContext: {
     extensionVersion?: string;
-    planCode?: string;
     roles?: string[];
     userId?: string;
     workspaceId?: string;
@@ -31,7 +29,6 @@ interface FeatureFlagDraft {
   enabled: boolean;
   rolloutPercentage: string;
   minimumExtensionVersion: string;
-  allowPlans: string;
   allowRoles: string;
   allowUsers: string;
   allowWorkspaces: string;
@@ -62,7 +59,7 @@ function matchesSearch(flag: FeatureFlagDefinition, searchTerm: string): boolean
     return true;
   }
 
-  return [flag.key, flag.description, ...(flag.allowPlans ?? []), ...(flag.allowRoles ?? [])]
+  return [flag.key, flag.description, ...(flag.allowRoles ?? [])]
     .join(' ')
     .toLowerCase()
     .includes(normalizedSearch);
@@ -70,10 +67,6 @@ function matchesSearch(flag: FeatureFlagDefinition, searchTerm: string): boolean
 
 function describeTargeting(flag: FeatureFlagDefinition): string {
   const parts: string[] = [];
-
-  if (flag.allowPlans?.length) {
-    parts.push(`plans: ${flag.allowPlans.join(', ')}`);
-  }
 
   if (flag.allowRoles?.length) {
     parts.push(`roles: ${flag.allowRoles.join(', ')}`);
@@ -101,7 +94,6 @@ function createDraft(flag: FeatureFlagDefinition): FeatureFlagDraft {
     enabled: flag.enabled,
     rolloutPercentage: flag.rolloutPercentage === undefined ? '' : String(flag.rolloutPercentage),
     minimumExtensionVersion: flag.minimumExtensionVersion ?? '',
-    allowPlans: stringifyCsv(flag.allowPlans),
     allowRoles: stringifyCsv(flag.allowRoles),
     allowUsers: stringifyCsv(flag.allowUsers),
     allowWorkspaces: stringifyCsv(flag.allowWorkspaces),
@@ -159,7 +151,6 @@ function parseRolloutPercentage(value: string): number | null {
 export function FeatureFlagsClient({
   flags,
   canEdit = false,
-  planOptions = [],
   initialPreviewContext,
 }: FeatureFlagsClientProps) {
   const [flagItems, setFlagItems] = useState(flags);
@@ -170,7 +161,6 @@ export function FeatureFlagsClient({
   const deferredSearchTerm = useDeferredValue(searchTerm);
   const [previewContext, setPreviewContext] = useState({
     extensionVersion: initialPreviewContext.extensionVersion ?? '1.7.0',
-    planCode: initialPreviewContext.planCode ?? '',
     roles: stringifyCsv(initialPreviewContext.roles),
     userId: initialPreviewContext.userId ?? '',
     workspaceId: initialPreviewContext.workspaceId ?? '',
@@ -179,7 +169,6 @@ export function FeatureFlagsClient({
   const filteredFlags = flagItems.filter((flag) => matchesSearch(flag, deferredSearchTerm));
   const resolvedFlags = resolveFeatureFlags(flagItems, {
     extensionVersion: previewContext.extensionVersion.trim() || undefined,
-    planCode: previewContext.planCode.trim() || undefined,
     roles: parseCsv(previewContext.roles),
     userId: previewContext.userId.trim() || undefined,
     workspaceId: previewContext.workspaceId.trim() || undefined,
@@ -271,7 +260,6 @@ export function FeatureFlagsClient({
           enabled: draft.enabled,
           rolloutPercentage,
           minimumExtensionVersion: draft.minimumExtensionVersion.trim() || null,
-          allowPlans: parseCsv(draft.allowPlans),
           allowRoles: parseCsv(draft.allowRoles),
           allowUsers: parseCsv(draft.allowUsers),
           allowWorkspaces: parseCsv(draft.allowWorkspaces),
@@ -332,19 +320,6 @@ export function FeatureFlagsClient({
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="beta.remote-config-v2"
                 value={searchTerm}
-              />
-            </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Plan code</span>
-              <input
-                onChange={(event) =>
-                  setPreviewContext((current) => ({
-                    ...current,
-                    planCode: event.target.value,
-                  }))
-                }
-                placeholder="pro"
-                value={previewContext.planCode}
               />
             </label>
             <label className="admin-ticket-field">
@@ -559,14 +534,6 @@ export function FeatureFlagsClient({
                       />
                     </label>
                     <label className="admin-ticket-field">
-                      <span className="micro-label">Allowed plans</span>
-                      <input
-                        onChange={(event) => setDraftValue(flag.key, { allowPlans: event.target.value })}
-                        placeholder="pro, business"
-                        value={draft.allowPlans}
-                      />
-                    </label>
-                    <label className="admin-ticket-field">
                       <span className="micro-label">Allowed roles</span>
                       <input
                         onChange={(event) => setDraftValue(flag.key, { allowRoles: event.target.value })}
@@ -592,7 +559,6 @@ export function FeatureFlagsClient({
                     </label>
                     <p className="admin-ticket-note">
                       Available roles: {availableRoleOptions.join(', ')}.
-                      {planOptions.length > 0 ? ` Available plan codes: ${planOptions.join(', ')}.` : ''}
                     </p>
                     <div className="admin-feature-flag-actions">
                       <button

@@ -98,56 +98,78 @@ export function SupportSessionsClient({
   }
 
   return (
-    <div className="admin-support-shell">
-      {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-      {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+    <>
+      {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+      {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
 
       {lastEndedSession ? (
-        <div className="admin-support-result">
-          <span className="micro-label">Latest closed session</span>
-          <strong>{lastEndedSession.impersonationSessionId}</strong>
-          <p>Closed at {formatUtcDateTime(lastEndedSession.endedAt)}.</p>
+        <div className="connect-success" style={{ marginBottom: '16px' }}>
+          <span className="micro-label">Session closed</span>
+          <p><strong>{lastEndedSession.impersonationSessionId}</strong></p>
+          <p className="list-muted">Closed at {formatUtcDateTime(lastEndedSession.endedAt)}.</p>
           {lastEndedSession.closeReason ? (
-            <p>close reason: {lastEndedSession.closeReason}</p>
+            <p className="list-muted">Reason: {lastEndedSession.closeReason}</p>
           ) : null}
         </div>
       ) : null}
 
       {items.length > 0 ? (
-        <div className="list-stack">
+        <div style={{ display: 'grid', gap: '12px' }}>
           {items.map((item) => {
             const isActive = !item.endedAt;
             const draftCloseReason = getDraftCloseReason(item);
 
             return (
-              <div className="list-item" key={item.impersonationSessionId}>
-                <strong>
-                  {item.supportActor.displayName || item.supportActor.email} {'->'}{' '}
-                  {item.targetUser.displayName || item.targetUser.email}
-                </strong>
-                <p>{item.reason}</p>
-                <div className="tag-row">
-                  <span className={isActive ? 'tag' : 'tag warn'}>
-                    {isActive ? 'active session' : 'ended'}
-                  </span>
-                  {item.workspace ? <span className="tag">{item.workspace.name}</span> : null}
-                  {item.supportTicket ? <span className="tag">ticket linked</span> : null}
+              <div className="panel" style={{ padding: '16px 20px' }} key={item.impersonationSessionId}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>
+                      {item.supportActor.displayName || item.supportActor.email}
+                      <span style={{ opacity: 0.5, margin: '0 6px' }}>→</span>
+                      {item.targetUser.displayName || item.targetUser.email}
+                    </p>
+                    <p className="list-muted" style={{ margin: '2px 0 0', fontSize: '0.84rem' }}>{item.reason}</p>
+                  </div>
+                  <div className="tag-row">
+                    <span className={isActive ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--gray'}>
+                      {isActive ? 'active' : 'ended'}
+                    </span>
+                    {item.workspace ? <span className="tag-soft tag-soft--gray">{item.workspace.name}</span> : null}
+                    {item.supportTicket ? <span className="tag-soft tag-soft--gray">ticket linked</span> : null}
+                  </div>
                 </div>
-                <span className="list-muted">started: {formatUtcDateTime(item.createdAt)}</span>
-                <span className="list-muted">
-                  ended: {item.endedAt ? formatUtcDateTime(item.endedAt) : 'still active'}
-                </span>
-                {item.supportTicket ? (
-                  <span className="list-muted">
-                    ticket: {item.supportTicket.subject} ({item.supportTicket.status.replace('_', ' ')})
-                  </span>
-                ) : null}
-                {item.operatorNote ? <span className="list-muted">operator note: {item.operatorNote}</span> : null}
-                {item.closeReason ? <span className="list-muted">close reason: {item.closeReason}</span> : null}
+                <div className="kv-list">
+                  <div className="kv-row">
+                    <span className="kv-row__key">Started</span>
+                    <span className="kv-row__value">{formatUtcDateTime(item.createdAt)}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Ended</span>
+                    <span className="kv-row__value">{item.endedAt ? formatUtcDateTime(item.endedAt) : 'Still active'}</span>
+                  </div>
+                  {item.supportTicket ? (
+                    <div className="kv-row">
+                      <span className="kv-row__key">Ticket</span>
+                      <span className="kv-row__value">{item.supportTicket.subject} ({item.supportTicket.status.replace('_', ' ')})</span>
+                    </div>
+                  ) : null}
+                  {item.operatorNote ? (
+                    <div className="kv-row">
+                      <span className="kv-row__key">Operator note</span>
+                      <span className="kv-row__value">{item.operatorNote}</span>
+                    </div>
+                  ) : null}
+                  {item.closeReason ? (
+                    <div className="kv-row">
+                      <span className="kv-row__key">Close reason</span>
+                      <span className="kv-row__value">{item.closeReason}</span>
+                    </div>
+                  ) : null}
+                </div>
                 {isActive && isConnectedSession && canEndSupportSessions ? (
-                  <div className="admin-ticket-editor">
-                    <label className="admin-ticket-field">
-                      <span className="micro-label">Close reason</span>
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.07)' }}>
+                    <label className="form-field" style={{ marginBottom: '8px' }}>
+                      <span className="form-field__label">Close reason</span>
                       <textarea
                         disabled={activeSessionId === item.impersonationSessionId}
                         onChange={(event) => {
@@ -156,21 +178,19 @@ export function SupportSessionsClient({
                             [item.impersonationSessionId]: event.target.value,
                           }));
                         }}
-                        placeholder="Capture the outcome, handoff, or user-visible resolution before ending access."
-                        rows={3}
+                        placeholder="Capture the outcome, handoff, or user-visible resolution."
+                        rows={2}
                         value={draftCloseReason}
                       />
                     </label>
-                    <div className="admin-user-actions">
-                      <button
-                        className="btn-primary"
-                        disabled={activeSessionId === item.impersonationSessionId}
-                        onClick={() => void handleEndSession(item)}
-                        type="button"
-                      >
-                        {activeSessionId === item.impersonationSessionId ? 'Ending session...' : 'End session'}
-                      </button>
-                    </div>
+                    <button
+                      className="btn-danger"
+                      disabled={activeSessionId === item.impersonationSessionId}
+                      onClick={() => void handleEndSession(item)}
+                      type="button"
+                    >
+                      {activeSessionId === item.impersonationSessionId ? 'Ending session…' : 'End session'}
+                    </button>
                   </div>
                 ) : null}
               </div>
@@ -178,8 +198,8 @@ export function SupportSessionsClient({
           })}
         </div>
       ) : (
-        <p>No impersonation sessions have been recorded yet for this environment.</p>
+        <p className="list-muted">No impersonation sessions have been recorded yet for this environment.</p>
       )}
-    </div>
+    </>
   );
 }

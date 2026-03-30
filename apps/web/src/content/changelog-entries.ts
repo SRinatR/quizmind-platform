@@ -112,10 +112,6 @@ export const changelogEntries: ChangelogEntry[] = [
         label: 'Webhook operations',
         href: '/admin/webhooks',
       },
-      {
-        label: 'Plans',
-        href: '/admin/plans',
-      },
     ],
   },
 ];

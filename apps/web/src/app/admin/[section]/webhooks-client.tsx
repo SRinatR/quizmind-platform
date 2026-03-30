@@ -139,114 +139,86 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
   }
 
   return (
-    <div className="admin-feature-flags-shell">
-      {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-      {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+    <>
+      {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+      {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
 
       <section className="split-grid">
         <article className="panel">
           <span className="micro-label">Filters</span>
           <h2>Inspect billing webhook deliveries</h2>
-          <div className="admin-ticket-editor">
-            <label className="admin-ticket-field">
-              <span className="micro-label">Provider</span>
+          <div className="filter-grid">
+            <label className="filter-field">
+              <span className="filter-field__label">Provider</span>
               <select
                 onChange={(event) => pushFilters({ provider: event.target.value as AdminWebhookFilters['provider'] })}
                 value={snapshot.filters.provider}
               >
                 {adminWebhookProviderFilters.map((provider) => (
-                  <option key={provider} value={provider}>
-                    {provider}
-                  </option>
+                  <option key={provider} value={provider}>{provider}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Status</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Status</span>
               <select
                 onChange={(event) => pushFilters({ status: event.target.value as AdminWebhookFilters['status'] })}
                 value={snapshot.filters.status}
               >
                 {adminWebhookStatusFilters.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
+                  <option key={status} value={status}>{status}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Limit</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Limit</span>
               <select
                 onChange={(event) => pushFilters({ limit: Number(event.target.value) })}
                 value={String(snapshot.filters.limit)}
               >
                 {[8, 12, 20, 40].map((limit) => (
-                  <option key={limit} value={limit}>
-                    {limit}
-                  </option>
+                  <option key={limit} value={limit}>{limit}</option>
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Search</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Search</span>
               <input
                 onChange={(event) => setSearchDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault();
-                    pushFilters({ search: searchDraft });
-                  }
-                }}
-                placeholder="invoice.payment_failed, evt_123, failed"
+                onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); pushFilters({ search: searchDraft }); } }}
+                placeholder="invoice.payment_failed, evt_123"
                 value={searchDraft}
               />
             </label>
           </div>
-          <div className="admin-user-actions">
-            <button className="btn-primary" onClick={() => pushFilters({ search: searchDraft })} type="button">
-              Apply filters
-            </button>
-            <button
-              className="btn-ghost"
-              onClick={() => {
-                setSearchDraft('');
-                pushFilters({
-                  provider: 'all',
-                  status: 'all',
-                  search: '',
-                  limit: 12,
-                });
-              }}
-              type="button"
-            >
-              Reset
-            </button>
+          <div className="filter-actions">
+            <button className="btn-primary" onClick={() => pushFilters({ search: searchDraft })} type="button">Apply filters</button>
+            <button className="btn-ghost" onClick={() => { setSearchDraft(''); pushFilters({ provider: 'all', status: 'all', search: '', limit: 12 }); }} type="button">Reset</button>
           </div>
-          <p className="admin-ticket-note">
-            Failed Stripe deliveries can be requeued here without exposing raw provider payloads to the web client.
-          </p>
         </article>
 
         <article className="panel">
           <span className="micro-label">Status</span>
           <h2>Delivery distribution</h2>
-          <div className="tag-row">
-            <span className="tag">received {snapshot.statusCounts.received}</span>
-            <span className="tag">processed {snapshot.statusCounts.processed}</span>
-            <span className="tag warn">failed {snapshot.statusCounts.failed}</span>
+          <div className="tag-row" style={{ marginBottom: '12px' }}>
+            <span className="tag-soft tag-soft--gray">received {snapshot.statusCounts.received}</span>
+            <span className="tag-soft tag-soft--green">processed {snapshot.statusCounts.processed}</span>
+            <span className={snapshot.statusCounts.failed > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
+              failed {snapshot.statusCounts.failed}
+            </span>
           </div>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Visible deliveries</strong>
-              <p>{snapshot.items.length} item{snapshot.items.length === 1 ? '' : 's'} returned</p>
+          <div className="kv-list">
+            <div className="kv-row">
+              <span className="kv-row__key">Visible deliveries</span>
+              <span className="kv-row__value">{snapshot.items.length} item{snapshot.items.length === 1 ? '' : 's'}</span>
             </div>
-            <div className="list-item">
-              <strong>Retry access</strong>
-              <p>{snapshot.retryDecision.allowed ? 'Allowed for this operator.' : 'Read-only inspection mode.'}</p>
+            <div className="kv-row">
+              <span className="kv-row__key">Retry access</span>
+              <span className="kv-row__value">{snapshot.retryDecision.allowed ? 'Allowed for this operator' : 'Read-only mode'}</span>
             </div>
-            <div className="list-item">
-              <strong>Queue catalog</strong>
-              <p>{snapshot.queues.length} declared queue{snapshot.queues.length === 1 ? '' : 's'} in the platform.</p>
+            <div className="kv-row">
+              <span className="kv-row__key">Queue catalog</span>
+              <span className="kv-row__value">{snapshot.queues.length} declared queue{snapshot.queues.length === 1 ? '' : 's'}</span>
             </div>
           </div>
         </article>
@@ -256,17 +228,13 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
         <article className="panel">
           <span className="micro-label">Queues</span>
           <h2>Worker queue catalog</h2>
-          <div className="list-stack">
+          <div className="kv-list">
             {snapshot.queues.map((queue) => (
-              <div className="list-item" key={queue.name}>
-                <strong>{queue.name}</strong>
-                <p>
-                  {queue.description} | attempts {queue.attempts}
-                </p>
-                <p className="list-muted">
-                  {queue.processorState}
-                  {queue.handler ? ` | ${queue.handler}` : ''}
-                </p>
+              <div className="kv-row" key={queue.name} style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
+                <span className="kv-row__key">{queue.name}</span>
+                <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>
+                  {queue.description} · {queue.attempts} attempt{queue.attempts === 1 ? '' : 's'} · {queue.processorState}
+                </span>
               </div>
             ))}
           </div>
@@ -274,19 +242,19 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
 
         <article className="panel">
           <span className="micro-label">Retry model</span>
-          <h2>Current operator safety rails</h2>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Eligible deliveries</strong>
-              <p>Only failed Stripe deliveries can be requeued from this admin surface.</p>
+          <h2>Operator safety rails</h2>
+          <div className="kv-list">
+            <div className="kv-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
+              <span className="kv-row__key">Eligible deliveries</span>
+              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Only failed Stripe deliveries can be requeued from this surface.</span>
             </div>
-            <div className="list-item">
-              <strong>Job routing</strong>
-              <p>Retries are sent back onto the shared billing-webhooks queue with a fresh job id.</p>
+            <div className="kv-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
+              <span className="kv-row__key">Job routing</span>
+              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Retries go onto the billing-webhooks queue with a fresh job id.</span>
             </div>
-            <div className="list-item">
-              <strong>State reset</strong>
-              <p>Retry clears the previous error and returns the webhook event to received state before requeue.</p>
+            <div className="kv-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
+              <span className="kv-row__key">State reset</span>
+              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Retry clears the previous error and resets the event to received state.</span>
             </div>
           </div>
         </article>
@@ -296,42 +264,45 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
         <span className="micro-label">Deliveries</span>
         <h2>Recent billing webhook events</h2>
         {snapshot.items.length > 0 ? (
-          <div className="settings-session-list">
+          <div className="event-list">
             {snapshot.items.map((item) => (
-              <div className="settings-session-row" key={item.id}>
-                <div>
-                  <strong>
-                    {item.provider} | {item.eventType}
-                  </strong>
-                  <p className="list-muted">
-                    {item.externalEventId} | {formatUtcDateTime(item.receivedAt)}
-                  </p>
-                  <p className="list-muted">
-                    {item.status} | queue {item.queue}
-                    {item.processedAt ? ` | processed ${formatUtcDateTime(item.processedAt)}` : ''}
-                  </p>
-                  {item.lastError ? <p className="list-muted">{item.lastError}</p> : null}
+              <div className="event-row" key={item.id}>
+                <span className={item.status === 'failed' ? 'event-dot event-dot--warn' : 'event-dot event-dot--info'} />
+                <div className="event-row__body">
+                  <span className="event-row__type">{item.provider} · {item.eventType}</span>
+                  <span className="event-row__context">
+                    {item.externalEventId} · queue {item.queue}
+                    {item.processedAt ? ` · processed ${formatUtcDateTime(item.processedAt)}` : ''}
+                  </span>
+                  {item.lastError ? <p className="event-row__summary" style={{ color: 'var(--error, #c0392b)' }}>{item.lastError}</p> : null}
                 </div>
-                <div className="billing-history-meta">
-                  <span className={item.status === 'failed' ? 'tag warn' : 'tag'}>{item.status}</span>
-                  {item.retryable ? (
-                    <button
-                      className="btn-ghost"
-                      disabled={retryingId === item.id || !isConnectedSession || !snapshot.retryDecision.allowed}
-                      onClick={() => void retryWebhook(item.id)}
-                      type="button"
-                    >
-                      {retryingId === item.id ? 'Retrying...' : 'Retry'}
-                    </button>
-                  ) : null}
+                <div className="event-row__meta">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                    <span className={item.status === 'failed' ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>{item.status}</span>
+                    {item.retryable ? (
+                      <button
+                        className="btn-ghost"
+                        disabled={retryingId === item.id || !isConnectedSession || !snapshot.retryDecision.allowed}
+                        onClick={() => void retryWebhook(item.id)}
+                        style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                        type="button"
+                      >
+                        {retryingId === item.id ? 'Retrying…' : 'Retry'}
+                      </button>
+                    ) : null}
+                  </div>
+                  <div style={{ marginTop: '4px', fontSize: '0.74rem', opacity: 0.7 }}>{formatUtcDateTime(item.receivedAt)}</div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p>No webhook deliveries matched the current filter set.</p>
+          <div className="empty-state" style={{ padding: '28px 0' }}>
+            <span className="micro-label">No deliveries</span>
+            <h2>No webhook deliveries matched the current filter set</h2>
+          </div>
         )}
       </section>
-    </div>
+    </>
   );
 }

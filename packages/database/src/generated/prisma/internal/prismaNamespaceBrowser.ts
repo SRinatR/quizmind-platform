@@ -57,19 +57,13 @@ export const ModelName = {
   EmailVerification: 'EmailVerification',
   PasswordReset: 'PasswordReset',
   Workspace: 'Workspace',
+  Wallet: 'Wallet',
+  WalletTopUp: 'WalletTopUp',
+  WalletLedgerEntry: 'WalletLedgerEntry',
   WorkspaceMembership: 'WorkspaceMembership',
   WorkspaceInvite: 'WorkspaceInvite',
   UserSystemRole: 'UserSystemRole',
-  Plan: 'Plan',
-  PlanPrice: 'PlanPrice',
-  PlanPriceProviderMapping: 'PlanPriceProviderMapping',
-  PlanEntitlement: 'PlanEntitlement',
-  Subscription: 'Subscription',
-  Invoice: 'Invoice',
-  Payment: 'Payment',
-  Coupon: 'Coupon',
   WebhookEvent: 'WebhookEvent',
-  EntitlementOverride: 'EntitlementOverride',
   QuotaCounter: 'QuotaCounter',
   AiRequest: 'AiRequest',
   FeatureFlag: 'FeatureFlag',
@@ -182,15 +176,58 @@ export const WorkspaceScalarFieldEnum = {
   id: 'id',
   slug: 'slug',
   name: 'name',
-  billingEmail: 'billingEmail',
-  billingProvider: 'billingProvider',
-  providerCustomerId: 'providerCustomerId',
-  stripeCustomerId: 'stripeCustomerId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type WorkspaceScalarFieldEnum = (typeof WorkspaceScalarFieldEnum)[keyof typeof WorkspaceScalarFieldEnum]
+
+
+export const WalletScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  currency: 'currency',
+  balanceKopecks: 'balanceKopecks',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WalletScalarFieldEnum = (typeof WalletScalarFieldEnum)[keyof typeof WalletScalarFieldEnum]
+
+
+export const WalletTopUpScalarFieldEnum = {
+  id: 'id',
+  walletId: 'walletId',
+  workspaceId: 'workspaceId',
+  createdByUserId: 'createdByUserId',
+  amountKopecks: 'amountKopecks',
+  currency: 'currency',
+  status: 'status',
+  provider: 'provider',
+  providerPaymentId: 'providerPaymentId',
+  idempotenceKey: 'idempotenceKey',
+  metadataJson: 'metadataJson',
+  confirmationToken: 'confirmationToken',
+  paidAt: 'paidAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WalletTopUpScalarFieldEnum = (typeof WalletTopUpScalarFieldEnum)[keyof typeof WalletTopUpScalarFieldEnum]
+
+
+export const WalletLedgerEntryScalarFieldEnum = {
+  id: 'id',
+  walletId: 'walletId',
+  topUpId: 'topUpId',
+  type: 'type',
+  deltaKopecks: 'deltaKopecks',
+  balanceAfterKopecks: 'balanceAfterKopecks',
+  description: 'description',
+  createdAt: 'createdAt'
+} as const
+
+export type WalletLedgerEntryScalarFieldEnum = (typeof WalletLedgerEntryScalarFieldEnum)[keyof typeof WalletLedgerEntryScalarFieldEnum]
 
 
 export const WorkspaceMembershipScalarFieldEnum = {
@@ -228,140 +265,6 @@ export const UserSystemRoleScalarFieldEnum = {
 export type UserSystemRoleScalarFieldEnum = (typeof UserSystemRoleScalarFieldEnum)[keyof typeof UserSystemRoleScalarFieldEnum]
 
 
-export const PlanScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  name: 'name',
-  description: 'description',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PlanScalarFieldEnum = (typeof PlanScalarFieldEnum)[keyof typeof PlanScalarFieldEnum]
-
-
-export const PlanPriceScalarFieldEnum = {
-  id: 'id',
-  planId: 'planId',
-  intervalCode: 'intervalCode',
-  currency: 'currency',
-  amount: 'amount',
-  isDefault: 'isDefault',
-  stripePriceId: 'stripePriceId',
-  createdAt: 'createdAt'
-} as const
-
-export type PlanPriceScalarFieldEnum = (typeof PlanPriceScalarFieldEnum)[keyof typeof PlanPriceScalarFieldEnum]
-
-
-export const PlanPriceProviderMappingScalarFieldEnum = {
-  id: 'id',
-  planPriceId: 'planPriceId',
-  provider: 'provider',
-  providerPriceId: 'providerPriceId',
-  isActive: 'isActive',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PlanPriceProviderMappingScalarFieldEnum = (typeof PlanPriceProviderMappingScalarFieldEnum)[keyof typeof PlanPriceProviderMappingScalarFieldEnum]
-
-
-export const PlanEntitlementScalarFieldEnum = {
-  id: 'id',
-  planId: 'planId',
-  key: 'key',
-  enabled: 'enabled',
-  limitValue: 'limitValue',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type PlanEntitlementScalarFieldEnum = (typeof PlanEntitlementScalarFieldEnum)[keyof typeof PlanEntitlementScalarFieldEnum]
-
-
-export const SubscriptionScalarFieldEnum = {
-  id: 'id',
-  workspaceId: 'workspaceId',
-  planId: 'planId',
-  provider: 'provider',
-  providerCustomerId: 'providerCustomerId',
-  providerPriceId: 'providerPriceId',
-  providerSubscriptionId: 'providerSubscriptionId',
-  externalId: 'externalId',
-  stripeCustomerId: 'stripeCustomerId',
-  stripePriceId: 'stripePriceId',
-  stripeSubscriptionId: 'stripeSubscriptionId',
-  status: 'status',
-  billingInterval: 'billingInterval',
-  seatCount: 'seatCount',
-  trialStartAt: 'trialStartAt',
-  currentPeriodStart: 'currentPeriodStart',
-  currentPeriodEnd: 'currentPeriodEnd',
-  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type SubscriptionScalarFieldEnum = (typeof SubscriptionScalarFieldEnum)[keyof typeof SubscriptionScalarFieldEnum]
-
-
-export const InvoiceScalarFieldEnum = {
-  id: 'id',
-  subscriptionId: 'subscriptionId',
-  provider: 'provider',
-  providerInvoiceId: 'providerInvoiceId',
-  externalId: 'externalId',
-  amountDue: 'amountDue',
-  amountPaid: 'amountPaid',
-  currency: 'currency',
-  issuedAt: 'issuedAt',
-  dueAt: 'dueAt',
-  paidAt: 'paidAt',
-  createdAt: 'createdAt'
-} as const
-
-export type InvoiceScalarFieldEnum = (typeof InvoiceScalarFieldEnum)[keyof typeof InvoiceScalarFieldEnum]
-
-
-export const PaymentScalarFieldEnum = {
-  id: 'id',
-  subscriptionId: 'subscriptionId',
-  provider: 'provider',
-  providerPaymentId: 'providerPaymentId',
-  externalId: 'externalId',
-  amount: 'amount',
-  currency: 'currency',
-  status: 'status',
-  processedAt: 'processedAt',
-  createdAt: 'createdAt'
-} as const
-
-export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
-
-
-export const CouponScalarFieldEnum = {
-  id: 'id',
-  code: 'code',
-  stripeCouponId: 'stripeCouponId',
-  name: 'name',
-  percentOff: 'percentOff',
-  amountOff: 'amountOff',
-  currency: 'currency',
-  duration: 'duration',
-  durationInMonths: 'durationInMonths',
-  maxRedemptions: 'maxRedemptions',
-  redeemBy: 'redeemBy',
-  isActive: 'isActive',
-  metadataJson: 'metadataJson',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type CouponScalarFieldEnum = (typeof CouponScalarFieldEnum)[keyof typeof CouponScalarFieldEnum]
-
-
 export const WebhookEventScalarFieldEnum = {
   id: 'id',
   provider: 'provider',
@@ -378,20 +281,6 @@ export const WebhookEventScalarFieldEnum = {
 } as const
 
 export type WebhookEventScalarFieldEnum = (typeof WebhookEventScalarFieldEnum)[keyof typeof WebhookEventScalarFieldEnum]
-
-
-export const EntitlementOverrideScalarFieldEnum = {
-  id: 'id',
-  workspaceId: 'workspaceId',
-  key: 'key',
-  enabled: 'enabled',
-  limitValue: 'limitValue',
-  reason: 'reason',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-} as const
-
-export type EntitlementOverrideScalarFieldEnum = (typeof EntitlementOverrideScalarFieldEnum)[keyof typeof EntitlementOverrideScalarFieldEnum]
 
 
 export const QuotaCounterScalarFieldEnum = {
@@ -438,7 +327,6 @@ export const FeatureFlagScalarFieldEnum = {
   enabled: 'enabled',
   rolloutPercentage: 'rolloutPercentage',
   allowRolesJson: 'allowRolesJson',
-  allowPlansJson: 'allowPlansJson',
   minimumExtensionVersion: 'minimumExtensionVersion',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

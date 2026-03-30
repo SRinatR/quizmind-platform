@@ -435,72 +435,75 @@ export function UsersDirectoryClient({
   }
 
   return (
-    <div className="admin-directory-shell">
-      {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-      {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+    <>
+      {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+      {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
 
       {isConnectedSession && canManageUserAccess ? (
-        <div className="admin-directory-result">
+        <section className="panel" style={{ marginBottom: '16px' }}>
           <span className="micro-label">Create user or admin</span>
-          <label className="admin-ticket-field">
-            <span className="micro-label">Email</span>
-            <input
-              disabled={creatingUser}
-              onChange={(event) => setCreateEmail(event.target.value)}
-              placeholder="new.user@quizmind.dev"
-              type="email"
-              value={createEmail}
-            />
-          </label>
-          <label className="admin-ticket-field">
-            <span className="micro-label">Password</span>
-            <input
-              disabled={creatingUser}
-              onChange={(event) => setCreatePassword(event.target.value)}
-              placeholder="At least 8 characters"
-              type="password"
-              value={createPassword}
-            />
-          </label>
-          <label className="admin-ticket-field">
-            <span className="micro-label">Display name</span>
-            <input
-              disabled={creatingUser}
-              onChange={(event) => setCreateDisplayName(event.target.value)}
-              placeholder="Optional display name"
-              type="text"
-              value={createDisplayName}
-            />
-          </label>
-          <label className="admin-ticket-field">
-            <span className="micro-label">Initial system roles</span>
-            <div className="tag-row">
-              {systemRoles.map((role) => (
-                <label className="tag" key={`create-role-${role}`}>
-                  <input
-                    checked={createRoles.includes(role)}
-                    disabled={creatingUser}
-                    onChange={(event) => toggleCreateRole(role, event.target.checked)}
-                    type="checkbox"
-                  />
-                  {role}
-                </label>
-              ))}
-            </div>
-          </label>
-          <p className="list-muted">
-            User account: no system roles. Admin account: at least one system role (for example{' '}
+          <h2>Provision a new account</h2>
+          <div className="form-grid">
+            <label className="form-field">
+              <span className="form-field__label">Email</span>
+              <input
+                disabled={creatingUser}
+                onChange={(event) => setCreateEmail(event.target.value)}
+                placeholder="new.user@quizmind.dev"
+                type="email"
+                value={createEmail}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-field__label">Password</span>
+              <input
+                disabled={creatingUser}
+                onChange={(event) => setCreatePassword(event.target.value)}
+                placeholder="At least 8 characters"
+                type="password"
+                value={createPassword}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-field__label">Display name</span>
+              <input
+                disabled={creatingUser}
+                onChange={(event) => setCreateDisplayName(event.target.value)}
+                placeholder="Optional display name"
+                type="text"
+                value={createDisplayName}
+              />
+            </label>
+            <label className="form-field">
+              <span className="form-field__label">System roles</span>
+              <div className="tag-row">
+                {systemRoles.map((role) => (
+                  <label className="tag-soft tag-soft--gray" key={`create-role-${role}`} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                    <input
+                      checked={createRoles.includes(role)}
+                      disabled={creatingUser}
+                      onChange={(event) => toggleCreateRole(role, event.target.checked)}
+                      type="checkbox"
+                    />
+                    {role}
+                  </label>
+                ))}
+              </div>
+            </label>
+          </div>
+          <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0' }}>
+            User account: no system roles. Admin account: at least one system role (e.g.{' '}
             <span className="monospace">platform_admin</span>).
           </p>
-          <p className="list-muted">
+          <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0 12px' }}>
             Extension access requires workspace membership (minimum:{' '}
             <span className="monospace">workspace_member</span>).
           </p>
           {workspaceOptions.length > 0 ? (
-            <div className="list-stack">
+            <div className="form-grid" style={{ marginBottom: '12px' }}>
               {workspaceOptions.map((workspace) => (
-                <label className="admin-ticket-field" key={`create-workspace-${workspace.id}`}>
-                  <span className="micro-label">{workspace.name}</span>
+                <label className="form-field" key={`create-workspace-${workspace.id}`}>
+                  <span className="form-field__label">{workspace.name}</span>
                   <select
                     disabled={creatingUser}
                     onChange={(event) =>
@@ -522,7 +525,7 @@ export function UsersDirectoryClient({
               ))}
             </div>
           ) : null}
-          <label className="tag">
+          <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <input
               checked={createEmailVerified}
               disabled={creatingUser}
@@ -531,23 +534,23 @@ export function UsersDirectoryClient({
             />
             mark email as verified
           </label>
-          <div className="admin-user-actions">
+          <div className="link-row">
             <button className="btn-primary" disabled={creatingUser} onClick={() => void handleCreateUser()} type="button">
               {creatingUser ? 'Creating user...' : 'Create user'}
             </button>
           </div>
-        </div>
+        </section>
       ) : null}
 
       {lastStartedSession && lastStartedUser ? (
-        <div className="admin-directory-result">
-          <span className="micro-label">Latest support session</span>
-          <strong>{lastStartedUser.displayName || lastStartedUser.email}</strong>
-          <p>
-            Session <span className="monospace">{lastStartedSession.impersonationSessionId}</span> started at{' '}
+        <div className="connect-success" style={{ marginBottom: '16px' }}>
+          <span className="micro-label">Support session started</span>
+          <p><strong>{lastStartedUser.displayName || lastStartedUser.email}</strong></p>
+          <p className="list-muted">
+            Session <span className="monospace">{lastStartedSession.impersonationSessionId}</span> opened at{' '}
             {formatUtcDateTime(lastStartedSession.createdAt)}.
           </p>
-          <div className="admin-user-actions">
+          <div className="link-row" style={{ marginTop: '8px' }}>
             <Link className="btn-ghost" href="/admin/support">
               Open support history
             </Link>
@@ -556,7 +559,7 @@ export function UsersDirectoryClient({
       ) : null}
 
       {directoryItems.length > 0 ? (
-        <div className="list-stack">
+        <div style={{ display: 'grid', gap: '12px' }}>
           {directoryItems.map((user) => {
             const primaryWorkspace = describePrimaryWorkspace(user);
             const canStartForUser =
@@ -572,76 +575,85 @@ export function UsersDirectoryClient({
             );
 
             return (
-              <div className="list-item" key={user.id}>
-                <strong>{user.displayName || user.email}</strong>
-                <p>{user.email}</p>
-                <div className="tag-row">
-                  <span className={user.emailVerifiedAt ? 'tag' : 'tag warn'}>
-                    {user.emailVerifiedAt ? 'email verified' : 'email pending'}
-                  </span>
-                  <span className={user.lastLoginAt ? 'tag' : 'tag warn'}>
-                    {user.lastLoginAt ? 'active session history' : 'no login recorded'}
-                  </span>
-                  {user.suspendedAt ? <span className="tag warn">suspended</span> : null}
-                  {user.id === currentUserId ? <span className="tag">current session</span> : null}
+              <div className="panel" style={{ padding: '16px 20px' }} key={user.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>
+                      {user.displayName || user.email}
+                    </p>
+                    {user.displayName ? (
+                      <p className="list-muted" style={{ margin: '2px 0 0', fontSize: '0.84rem' }}>{user.email}</p>
+                    ) : null}
+                  </div>
+                  <div className="tag-row">
+                    <span className={user.emailVerifiedAt ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
+                      {user.emailVerifiedAt ? 'email verified' : 'email pending'}
+                    </span>
+                    {user.suspendedAt ? <span className="tag-soft tag-soft--orange">suspended</span> : null}
+                    {user.id === currentUserId ? <span className="tag-soft tag-soft--gray">current session</span> : null}
+                    {!user.lastLoginAt ? <span className="tag-soft tag-soft--gray">no login recorded</span> : null}
+                  </div>
                 </div>
-                <span className="list-muted">
-                  roles: {user.systemRoles.length > 0 ? user.systemRoles.join(', ') : 'workspace-only'}
-                </span>
-                <span className="list-muted">
-                  workspaces:{' '}
-                  {user.workspaces.length > 0
-                    ? user.workspaces
-                        .map((workspace) => `${workspace.workspaceName} (${workspace.role})`)
-                        .join(', ')
-                    : 'none'}
-                </span>
-                {primaryWorkspace ? (
-                  <span className="list-muted">default support scope: {primaryWorkspace}</span>
-                ) : (
-                  <span className="list-muted">
-                    default support scope: user-level session without workspace.
-                  </span>
-                )}
+                <div className="kv-list">
+                  <div className="kv-row">
+                    <span className="kv-row__key">Roles</span>
+                    <span className="kv-row__value">{user.systemRoles.length > 0 ? user.systemRoles.join(', ') : 'workspace-only'}</span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Workspaces</span>
+                    <span className="kv-row__value">
+                      {user.workspaces.length > 0
+                        ? user.workspaces.map((workspace) => `${workspace.workspaceName} (${workspace.role})`).join(', ')
+                        : 'none'}
+                    </span>
+                  </div>
+                  <div className="kv-row">
+                    <span className="kv-row__key">Support scope</span>
+                    <span className="kv-row__value">
+                      {primaryWorkspace ?? 'User-level session without workspace'}
+                    </span>
+                  </div>
+                </div>
 
                 {canManageUser ? (
-                  <div className="admin-ticket-editor">
-                    <label className="admin-ticket-field">
-                      <span className="micro-label">Display name</span>
-                      <input
-                        disabled={activeAccessUserId === user.id}
-                        onChange={(event) =>
-                          setDraftDisplayNames((current) => ({
-                            ...current,
-                            [user.id]: event.target.value,
-                          }))
-                        }
-                        placeholder="Display name"
-                        type="text"
-                        value={getDisplayNameDraft(user)}
-                      />
-                    </label>
-                    <label className="admin-ticket-field">
-                      <span className="micro-label">System roles</span>
-                      <div className="tag-row">
-                        {systemRoles.map((role) => (
-                          <label className="tag" key={`${user.id}:role:${role}`}>
-                            <input
-                              checked={roleDraft.includes(role)}
-                              disabled={activeAccessUserId === user.id}
-                              onChange={(event) => toggleRoleForUser(user.id, role, event.target.checked)}
-                              type="checkbox"
-                            />
-                            {role}
-                          </label>
-                        ))}
-                      </div>
-                    </label>
-                    {workspaceScope.length > 0 ? (
-                      <div className="list-stack">
-                        {workspaceScope.map((workspaceId) => (
-                          <label className="admin-ticket-field" key={`${user.id}:workspace:${workspaceId}`}>
-                            <span className="micro-label">
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.07)' }}>
+                    <span className="micro-label">Access profile</span>
+                    <div className="form-grid" style={{ marginTop: '8px' }}>
+                      <label className="form-field">
+                        <span className="form-field__label">Display name</span>
+                        <input
+                          disabled={activeAccessUserId === user.id}
+                          onChange={(event) =>
+                            setDraftDisplayNames((current) => ({
+                              ...current,
+                              [user.id]: event.target.value,
+                            }))
+                          }
+                          placeholder="Display name"
+                          type="text"
+                          value={getDisplayNameDraft(user)}
+                        />
+                      </label>
+                      <label className="form-field">
+                        <span className="form-field__label">System roles</span>
+                        <div className="tag-row">
+                          {systemRoles.map((role) => (
+                            <label className="tag-soft tag-soft--gray" key={`${user.id}:role:${role}`} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                              <input
+                                checked={roleDraft.includes(role)}
+                                disabled={activeAccessUserId === user.id}
+                                onChange={(event) => toggleRoleForUser(user.id, role, event.target.checked)}
+                                type="checkbox"
+                              />
+                              {role}
+                            </label>
+                          ))}
+                        </div>
+                      </label>
+                      {workspaceScope.length > 0 ? (
+                        workspaceScope.map((workspaceId) => (
+                          <label className="form-field" key={`${user.id}:workspace:${workspaceId}`}>
+                            <span className="form-field__label">
                               {workspaceLabelById.get(workspaceId) ?? workspaceId}
                             </span>
                             <select
@@ -665,10 +677,10 @@ export function UsersDirectoryClient({
                               ))}
                             </select>
                           </label>
-                        ))}
-                      </div>
-                    ) : null}
-                    <label className="tag">
+                        ))
+                      ) : null}
+                    </div>
+                    <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', margin: '8px 0' }}>
                       <input
                         checked={getSuspendedDraft(user)}
                         disabled={activeAccessUserId === user.id || user.id === currentUserId}
@@ -683,8 +695,8 @@ export function UsersDirectoryClient({
                       suspend account
                     </label>
                     {getSuspendedDraft(user) ? (
-                      <label className="admin-ticket-field">
-                        <span className="micro-label">Suspend reason</span>
+                      <label className="form-field" style={{ marginTop: '6px' }}>
+                        <span className="form-field__label">Suspend reason</span>
                         <textarea
                           disabled={activeAccessUserId === user.id}
                           onChange={(event) =>
@@ -699,7 +711,7 @@ export function UsersDirectoryClient({
                         />
                       </label>
                     ) : null}
-                    <div className="admin-user-actions">
+                    <div className="link-row" style={{ marginTop: '10px' }}>
                       <button
                         className="btn-primary"
                         disabled={activeAccessUserId === user.id}
@@ -713,38 +725,41 @@ export function UsersDirectoryClient({
                 ) : null}
 
                 {canStartForUser ? (
-                  <div className="admin-ticket-editor">
-                    <label className="admin-ticket-field">
-                      <span className="micro-label">Session reason</span>
-                      <textarea
-                        disabled={activeSupportUserId === user.id}
-                        onChange={(event) => {
-                          setDraftReasons((current) => ({
-                            ...current,
-                            [user.id]: event.target.value,
-                          }));
-                        }}
-                        placeholder="Explain why this support session is being opened."
-                        rows={3}
-                        value={getDraftReason(user)}
-                      />
-                    </label>
-                    <label className="admin-ticket-field">
-                      <span className="micro-label">Operator note</span>
-                      <textarea
-                        disabled={activeSupportUserId === user.id}
-                        onChange={(event) => {
-                          setDraftOperatorNotes((current) => ({
-                            ...current,
-                            [user.id]: event.target.value,
-                          }));
-                        }}
-                        placeholder="Capture support context that should stay with the session history."
-                        rows={3}
-                        value={getDraftOperatorNote(user)}
-                      />
-                    </label>
-                    <div className="admin-user-actions">
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.07)' }}>
+                    <span className="micro-label">Support session</span>
+                    <div className="form-grid" style={{ marginTop: '8px' }}>
+                      <label className="form-field">
+                        <span className="form-field__label">Session reason</span>
+                        <textarea
+                          disabled={activeSupportUserId === user.id}
+                          onChange={(event) => {
+                            setDraftReasons((current) => ({
+                              ...current,
+                              [user.id]: event.target.value,
+                            }));
+                          }}
+                          placeholder="Explain why this support session is being opened."
+                          rows={3}
+                          value={getDraftReason(user)}
+                        />
+                      </label>
+                      <label className="form-field">
+                        <span className="form-field__label">Operator note</span>
+                        <textarea
+                          disabled={activeSupportUserId === user.id}
+                          onChange={(event) => {
+                            setDraftOperatorNotes((current) => ({
+                              ...current,
+                              [user.id]: event.target.value,
+                            }));
+                          }}
+                          placeholder="Capture support context that should stay with the session history."
+                          rows={3}
+                          value={getDraftOperatorNote(user)}
+                        />
+                      </label>
+                    </div>
+                    <div className="link-row" style={{ marginTop: '10px' }}>
                       <button
                         className="btn-primary"
                         disabled={activeSupportUserId === user.id}
@@ -766,8 +781,11 @@ export function UsersDirectoryClient({
           })}
         </div>
       ) : (
-        <p>No users are available in the directory for this environment.</p>
+        <div className="empty-state">
+          <span className="micro-label">No users</span>
+          <h2>No users are available in the directory for this environment</h2>
+        </div>
       )}
-    </div>
+    </>
   );
 }

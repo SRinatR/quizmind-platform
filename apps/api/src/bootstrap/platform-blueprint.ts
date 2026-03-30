@@ -1,29 +1,4 @@
-import { type FeatureFlagDefinition, type PlanDefinition, type RemoteConfigLayer } from '@quizmind/contracts';
-
-export const starterPlans: PlanDefinition[] = [
-  {
-    id: 'plan_free',
-    code: 'free',
-    name: 'Free',
-    description: 'Starter access for individual users.',
-    entitlements: [
-      { key: 'feature.text_answering', enabled: true },
-      { key: 'limit.requests_per_day', enabled: true, limit: 25 },
-    ],
-  },
-  {
-    id: 'plan_pro',
-    code: 'pro',
-    name: 'Pro',
-    description: 'Expanded limits and premium extension controls.',
-    entitlements: [
-      { key: 'feature.text_answering', enabled: true },
-      { key: 'feature.screenshot_answering', enabled: true },
-      { key: 'feature.remote_sync', enabled: true },
-      { key: 'limit.requests_per_day', enabled: true, limit: 500 },
-    ],
-  },
-];
+import { type FeatureFlagDefinition, type RemoteConfigLayer } from '@quizmind/contracts';
 
 export const starterFlags: FeatureFlagDefinition[] = [
   {
@@ -31,7 +6,6 @@ export const starterFlags: FeatureFlagDefinition[] = [
     status: 'active',
     description: 'Enable the second-generation remote config payload.',
     enabled: true,
-    allowPlans: ['pro'],
     minimumExtensionVersion: '1.5.0',
   },
   {
@@ -51,18 +25,6 @@ export const starterRemoteConfig: RemoteConfigLayer[] = [
       defaultModel: 'gpt-4.1-mini',
       screenshotEnabled: false,
       historyRetentionDays: 30,
-    },
-  },
-  {
-    id: 'plan-pro',
-    scope: 'plan',
-    priority: 20,
-    conditions: {
-      planCode: 'pro',
-    },
-    values: {
-      screenshotEnabled: true,
-      historyRetentionDays: 90,
     },
   },
   {
