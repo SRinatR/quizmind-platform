@@ -210,17 +210,17 @@ export function LogsExplorerClient({
   }
 
   return (
-    <div className="admin-feature-flags-shell">
-      {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
-      {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+    <>
+      {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
+      {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
 
       <section className="split-grid">
         <article className="panel">
           <span className="micro-label">Filters</span>
           <h2>Explore operational log streams</h2>
-          <div className="admin-ticket-editor">
-            <label className="admin-ticket-field">
-              <span className="micro-label">Workspace</span>
+          <div className="filter-grid">
+            <label className="filter-field">
+              <span className="filter-field__label">Workspace</span>
               <select
                 onChange={(event) => pushFilters({ workspaceId: event.target.value })}
                 value={snapshot.workspace?.id ?? snapshot.filters.workspaceId ?? ''}
@@ -232,8 +232,8 @@ export function LogsExplorerClient({
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Stream</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Stream</span>
               <select
                 onChange={(event) => pushFilters({ stream: event.target.value as AdminLogFilters['stream'] })}
                 value={snapshot.filters.stream}
@@ -245,8 +245,8 @@ export function LogsExplorerClient({
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Severity</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Severity</span>
               <select
                 onChange={(event) => pushFilters({ severity: event.target.value as AdminLogFilters['severity'] })}
                 value={snapshot.filters.severity}
@@ -258,8 +258,8 @@ export function LogsExplorerClient({
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Limit</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Limit</span>
               <select
                 onChange={(event) => pushFilters({ limit: Number(event.target.value) })}
                 value={String(snapshot.filters.limit)}
@@ -271,8 +271,8 @@ export function LogsExplorerClient({
                 ))}
               </select>
             </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Search</span>
+            <label className="filter-field">
+              <span className="filter-field__label">Search</span>
               <input
                 onChange={(event) => setSearchDraft(event.target.value)}
                 onKeyDown={(event) => {
@@ -286,7 +286,7 @@ export function LogsExplorerClient({
               />
             </label>
           </div>
-          <div className="admin-user-actions">
+          <div className="filter-actions">
             <button className="btn-primary" onClick={applySearch} type="button">
               Apply filters
             </button>
@@ -306,33 +306,24 @@ export function LogsExplorerClient({
               Reset
             </button>
           </div>
-          <p className="admin-ticket-note">
-            Counts below reflect the current workspace context and any active search or severity filter.
-          </p>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Extension lifecycle focus</strong>
-              <p>Quick filters for reconnect, bootstrap refresh, and session token lifecycle triage.</p>
-              <div className="tag-row">
+          <div style={{ marginTop: '16px' }}>
+            <p className="list-muted" style={{ fontSize: '0.82rem', marginBottom: '8px' }}>
+              Extension lifecycle quick-filters:
+            </p>
+            <div className="tag-row">
+              <button className="btn-ghost" onClick={() => applyExtensionLifecycleFilter()} type="button">
+                all lifecycle
+              </button>
+              {extensionLifecycleFilterDefinitions.map((definition) => (
                 <button
                   className="btn-ghost"
-                  onClick={() => applyExtensionLifecycleFilter()}
+                  key={definition.eventType}
+                  onClick={() => applyExtensionLifecycleFilter(definition.eventType)}
                   type="button"
                 >
-                  all extension lifecycle
+                  {definition.label} ({extensionLifecycleSummary.byEventType[definition.eventType]})
                 </button>
-                {extensionLifecycleFilterDefinitions.map((definition) => (
-                  <button
-                    className="btn-ghost"
-                    key={definition.eventType}
-                    onClick={() => applyExtensionLifecycleFilter(definition.eventType)}
-                    type="button"
-                  >
-                    {definition.label} (
-                    {extensionLifecycleSummary.byEventType[definition.eventType]})
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </article>
@@ -340,9 +331,9 @@ export function LogsExplorerClient({
         <article className="panel">
           <span className="micro-label">Export</span>
           <h2>Download filtered log snapshots</h2>
-          <div className="admin-ticket-editor">
-            <label className="admin-ticket-field">
-              <span className="micro-label">Format</span>
+          <div className="filter-grid">
+            <label className="filter-field">
+              <span className="filter-field__label">Format</span>
               <select
                 onChange={(event) => setExportFormat(event.target.value as AdminLogExportFormat)}
                 value={exportFormat}
@@ -355,7 +346,7 @@ export function LogsExplorerClient({
               </select>
             </label>
           </div>
-          <div className="admin-user-actions">
+          <div className="filter-actions" style={{ marginTop: '12px' }}>
             <button
               className="btn-primary"
               disabled={isExporting || !canExportLogs}
@@ -364,96 +355,98 @@ export function LogsExplorerClient({
             >
               {isExporting ? 'Exporting...' : 'Export logs'}
             </button>
-          </div>
-          <p className="admin-ticket-note">
-            Export respects the current workspace, stream, severity, search, and limit filters from this explorer.
-          </p>
-          <div className="tag-row">
-            <span className={canExportLogs ? 'tag' : 'tag warn'}>
+            <span className={canExportLogs ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
               {canExportLogs ? 'export allowed' : 'export blocked'}
             </span>
           </div>
-          <div className="mini-list">
-            <div className="list-item">
-              <strong>Workspace</strong>
-              <p>{snapshot.workspace?.name ?? 'No workspace scope selected.'}</p>
+          <div className="kv-list" style={{ marginTop: '16px' }}>
+            <div className="kv-row">
+              <span className="kv-row__key">Workspace</span>
+              <span className="kv-row__value">{snapshot.workspace?.name ?? 'No workspace scope'}</span>
             </div>
-            <div className="list-item">
-              <strong>Visible events</strong>
-              <p>{snapshot.items.length} item{snapshot.items.length === 1 ? '' : 's'} returned</p>
+            <div className="kv-row">
+              <span className="kv-row__key">Visible events</span>
+              <span className="kv-row__value">{snapshot.items.length} item{snapshot.items.length === 1 ? '' : 's'}</span>
             </div>
-            <div className="list-item">
-              <strong>Current filter</strong>
-              <p>
-                {snapshot.filters.stream} | {snapshot.filters.severity}
-                {snapshot.filters.search ? ` | "${snapshot.filters.search}"` : ''}
-              </p>
+            <div className="kv-row">
+              <span className="kv-row__key">Active filter</span>
+              <span className="kv-row__value">
+                {snapshot.filters.stream} · {snapshot.filters.severity}
+                {snapshot.filters.search ? ` · "${snapshot.filters.search}"` : ''}
+              </span>
             </div>
           </div>
         </article>
       </section>
 
       <section className="panel">
-        <span className="micro-label">Counts</span>
-        <h2>Stream distribution</h2>
-        <div className="tag-row">
-          <span className="tag">audit {snapshot.streamCounts.audit}</span>
-          <span className="tag">activity {snapshot.streamCounts.activity}</span>
-          <span className="tag">security {snapshot.streamCounts.security}</span>
-          <span className="tag">domain {snapshot.streamCounts.domain}</span>
-          <span className={extensionLifecycleSummary.total > 0 ? 'tag warn' : 'tag'}>
-            extension lifecycle {extensionLifecycleSummary.total}
-          </span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <span className="micro-label">Stream distribution</span>
+            <h2>Recent audit and telemetry history</h2>
+          </div>
+          <div className="tag-row">
+            <span className="tag-soft tag-soft--gray">audit {snapshot.streamCounts.audit}</span>
+            <span className="tag-soft tag-soft--gray">activity {snapshot.streamCounts.activity}</span>
+            <span className={snapshot.streamCounts.security > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
+              security {snapshot.streamCounts.security}
+            </span>
+            <span className="tag-soft tag-soft--gray">domain {snapshot.streamCounts.domain}</span>
+            {extensionLifecycleSummary.total > 0 ? (
+              <span className="tag-soft tag-soft--orange">lifecycle {extensionLifecycleSummary.total}</span>
+            ) : null}
+          </div>
         </div>
-      </section>
-
-      <section className="panel">
-        <span className="micro-label">Events</span>
-        <h2>Recent audit and telemetry history</h2>
         {snapshot.items.length > 0 ? (
-          <div className="settings-session-list">
+          <div className="event-list">
             {snapshot.items.map((item) => (
-              <div className="settings-session-row" key={item.id}>
-                <div>
-                  <strong>
-                    {item.stream} | {item.eventType}
-                  </strong>
-                  <p>{item.summary}</p>
-                  <p className="list-muted">
-                    {item.workspace ? `${item.workspace.name} | ` : ''}
-                    {item.actor ? `${item.actor.displayName ?? item.actor.email ?? item.actor.id} | ` : ''}
-                    {formatUtcDateTime(item.occurredAt)}
-                  </p>
-                  <p className="list-muted">
-                    {item.targetType ? `${item.targetType}` : 'no target'}
-                    {item.targetId ? ` | ${item.targetId}` : ''}
-                    {item.status ? ` | ${item.status}` : ''}
-                    {item.severity ? ` | ${item.severity}` : ''}
-                  </p>
-                </div>
-                <div className="billing-history-meta">
-                  <span className={item.stream === 'security' || item.status === 'failure' ? 'tag warn' : 'tag'}>
-                    {item.stream}
+              <div className="event-row" key={item.id}>
+                <span className={
+                  item.stream === 'security' || item.status === 'failure' || item.severity === 'warn' || item.severity === 'error'
+                    ? 'event-dot event-dot--warn'
+                    : item.stream === 'domain'
+                      ? 'event-dot event-dot--ai'
+                      : item.stream === 'activity'
+                        ? 'event-dot event-dot--activity'
+                        : 'event-dot event-dot--info'
+                } />
+                <div className="event-row__body">
+                  <span className="event-row__type">{item.stream} · {item.eventType}</span>
+                  {item.summary ? <p className="event-row__summary">{item.summary}</p> : null}
+                  <span className="event-row__context">
+                    {item.workspace ? `${item.workspace.name} · ` : ''}
+                    {item.actor ? `${item.actor.displayName ?? item.actor.email ?? item.actor.id} · ` : ''}
+                    {item.targetType ?? 'no target'}
+                    {item.targetId ? ` ${item.targetId}` : ''}
                   </span>
-                  {isExtensionLifecycleEventType(item.eventType) ? (
-                    <span
-                      className={
-                        item.eventType === 'extension.bootstrap_refresh_failed' || item.eventType === 'extension.runtime_error'
-                          ? 'tag warn'
-                          : 'tag'
-                      }
-                    >
-                      extension lifecycle
+                </div>
+                <div className="event-row__meta">
+                  <div className="tag-row" style={{ justifyContent: 'flex-end', gap: '4px', marginBottom: '4px' }}>
+                    <span className={item.stream === 'security' || item.status === 'failure' ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
+                      {item.stream}
                     </span>
-                  ) : null}
+                    {isExtensionLifecycleEventType(item.eventType) ? (
+                      <span className={
+                        item.eventType === 'extension.bootstrap_refresh_failed' || item.eventType === 'extension.runtime_error'
+                          ? 'tag-soft tag-soft--orange'
+                          : 'tag-soft tag-soft--gray'
+                      }>
+                        lifecycle
+                      </span>
+                    ) : null}
+                  </div>
+                  {formatUtcDateTime(item.occurredAt)}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p>No log entries matched the current filter set.</p>
+          <div className="empty-state" style={{ padding: '32px 0' }}>
+            <span className="micro-label">No entries</span>
+            <h2>No log entries matched the current filter set</h2>
+          </div>
         )}
       </section>
-    </div>
+    </>
   );
 }
