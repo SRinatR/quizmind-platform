@@ -13,31 +13,31 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
 
   return (
     <AuthShell
-      description="This recovery page now lands on a real reset token flow instead of a stub. Successful resets rotate every active session before the browser receives a new one."
-      eyebrow="QuizMind Platform"
+      description="Enter your new password below to regain access to your account."
+      eyebrow="QuizMind"
       highlights={[
         {
-          eyebrow: 'Token',
-          title: 'Expiring recovery link',
-          description: 'Reset links are time-bound and validated against the Prisma-backed password reset table.',
+          eyebrow: 'Secure',
+          title: 'Link expires automatically',
+          description: 'Reset links are time-limited. Request a new one if yours has expired.',
         },
         {
-          eyebrow: 'Rotation',
-          title: 'Sessions get replaced',
-          description: 'When the new password lands, existing sessions are revoked and a fresh session is issued.',
+          eyebrow: 'Protected',
+          title: 'All sessions are replaced',
+          description: 'Setting a new password signs out all other devices for your security.',
         },
         {
-          eyebrow: 'After reset',
-          title: 'Straight into the app',
-          description: 'The browser receives a connected session cookie so the user can continue without another login prompt.',
+          eyebrow: 'Ready',
+          title: 'Continue right away',
+          description: 'After reset, you are signed in immediately — no extra steps.',
         },
       ]}
       links={[
-        { href: '/', label: 'Back to landing' },
+        { href: '/', label: 'Back to home' },
         { href: '/auth/login', label: 'Sign in' },
-        { href: '/auth/forgot-password', label: 'Request reset link' },
+        { href: '/auth/forgot-password', label: 'Request new link' },
       ]}
-      title="Rotate access with one secure link."
+      title="Set your new password."
     >
       <ResetPasswordClient nextPath={nextPath} token={token} />
     </AuthShell>

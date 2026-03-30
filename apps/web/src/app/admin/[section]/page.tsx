@@ -1180,12 +1180,12 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         )
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Route Gate</span>
-          <h2>The current persona cannot access this admin section.</h2>
+          <span className="micro-label">Access restricted</span>
+          <h2>You don&apos;t have permission to view this section.</h2>
           <p>
-            The route exists, but the access model hides it because the required permissions are not present in
-            the computed context.
+            Your account does not have the required permissions for this admin section.
           </p>
+          <a className="btn-ghost" href="/admin">Back to admin</a>
         </section>
       )}
     </SiteShell>

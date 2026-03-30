@@ -33,17 +33,14 @@ const validBrowsers = new Set<CompatibilityHandshake['browser']>([
 
 function readTrimmedSearchParam(value: string | string[] | undefined): string | undefined {
   const normalized = readSearchParam(value)?.trim();
-
   return normalized ? normalized : undefined;
 }
 
 function readBrowserSearchParam(value: string | string[] | undefined): CompatibilityHandshake['browser'] | undefined {
   const normalized = readTrimmedSearchParam(value);
-
   if (!normalized || !validBrowsers.has(normalized as CompatibilityHandshake['browser'])) {
     return undefined;
   }
-
   return normalized as CompatibilityHandshake['browser'];
 }
 
@@ -53,16 +50,11 @@ function buildCurrentPath(searchParams?: Record<string, string | string[] | unde
   for (const [key, value] of Object.entries(searchParams ?? {})) {
     if (Array.isArray(value)) {
       value.forEach((entry) => {
-        if (entry) {
-          params.append(key, entry);
-        }
+        if (entry) params.append(key, entry);
       });
       continue;
     }
-
-    if (value) {
-      params.set(key, value);
-    }
+    if (value) params.set(key, value);
   }
 
   return params.size > 0 ? `/app/extension/connect?${params.toString()}` : '/app/extension/connect';
@@ -127,7 +119,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
       : null;
 
   const accessToken = await getAccessTokenFromCookies();
-  const session = accessToken ? await getSession('platform-admin', accessToken) : null;
+  const session = accessToken ? await getSession('connected-user', accessToken) : null;
   const nextPath = buildCurrentPath(resolvedSearchParams);
   const loginHref = `/auth/login?next=${encodeURIComponent(nextPath)}`;
   const registerHref = `/auth/register?next=${encodeURIComponent(nextPath)}`;
@@ -138,31 +130,31 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
 
   return (
     <AuthShell
-      description="This bridge binds a browser extension installation to the current site session without exposing the raw user bearer token to the extension runtime."
-      eyebrow="Extension Connect"
+      description="Sign in to link your browser extension to your QuizMind account."
+      eyebrow="Extension setup"
       highlights={[
         {
-          eyebrow: 'Session boundary',
-          title: 'Web keeps the cookie-backed auth session',
-          description: 'The site reads HttpOnly cookies server-side and exchanges them for a short-lived installation token.',
+          eyebrow: 'Secure',
+          title: 'Your credentials stay protected',
+          description: 'The extension never receives your password or full account token — only a limited installation key.',
         },
         {
-          eyebrow: 'Managed client',
-          title: 'The extension gets only installation-scoped auth',
-          description: 'After bind, the extension uses installation auth for bootstrap refresh and usage telemetry.',
+          eyebrow: 'Quick',
+          title: 'One-time setup',
+          description: 'Connect once and the extension stays linked to your workspace automatically.',
         },
         {
-          eyebrow: 'Bootstrap source',
-          title: 'Compatibility, flags, config, and AI policy come from platform',
-          description: 'The extension should treat bootstrap v2 as the live control-plane payload and cache only the last known state.',
+          eyebrow: 'Flexible',
+          title: 'Works across browsers',
+          description: 'Chrome, Edge, Brave, Firefox, and Safari are all supported.',
         },
       ]}
       links={[
-        { href: '/', label: 'Back to landing' },
-        { href: '/app', label: 'Open dashboard' },
-        { href: '/app/settings', label: 'Open settings' },
+        { href: '/', label: 'Back to home' },
+        { href: '/app', label: 'Dashboard' },
+        { href: '/app/settings', label: 'Settings' },
       ]}
-      title="Securely connect the extension"
+      title="Connect your extension."
     >
       {session ? (
         <ExtensionConnectClient
@@ -181,52 +173,31 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
       ) : (
         <div className="auth-form-shell">
           <span className="micro-label">Sign in required</span>
-          <h2>Open a connected site session first.</h2>
+          <h2>Sign in to connect your extension.</h2>
           <p className="auth-form-copy">
-            The extension bridge can bind an installation only for an authenticated platform user. Sign in on the
-            site, then reopen this bridge from the extension.
+            You need a QuizMind account to link your browser extension. Sign in or create an account, then
+            reopen this page from the extension.
           </p>
 
-          <div className="auth-session-card">
-            <strong>Incoming handshake</strong>
-            <p>
-              Installation: <span className="monospace">{installationId ?? 'missing'}</span>
-            </p>
-            <p>
-              Version: <span className="monospace">{extensionVersion ?? 'missing'}</span>
-              {' '}| Schema: <span className="monospace">{schemaVersion ?? 'missing'}</span>
-            </p>
-            <div className="tag-row">
-              {capabilities.map((capability) => (
-                <span className="tag" key={capability}>
-                  {capability}
-                </span>
-              ))}
-              {browser ? <span className="tag warn">{browser}</span> : null}
-            </div>
-          </div>
-
-          {missingFields.length > 0 ? (
+          {platformOriginValidation.securityIssue ? (
             <div className="auth-highlight">
-              <span className="micro-label">Missing parameters</span>
-              <strong>The extension did not open the bridge with a full handshake.</strong>
-              <p>{missingFields.join(', ')}</p>
+              <span className="micro-label">Security notice</span>
+              <strong>This connection request could not be verified.</strong>
+              <p>{platformOriginValidation.securityIssue}</p>
             </div>
-          ) : null}
-
-          {platformOriginValidation.warning ? (
+          ) : platformOriginValidation.warning ? (
             <div className="auth-highlight">
-              <span className="micro-label">Bridge origin</span>
-              <strong>Bridge launch origin mismatch detected.</strong>
+              <span className="micro-label">Notice</span>
+              <strong>Connection origin mismatch.</strong>
               <p>{platformOriginValidation.warning}</p>
             </div>
           ) : null}
 
-          {platformOriginValidation.securityIssue ? (
+          {missingFields.length > 0 ? (
             <div className="auth-highlight">
-              <span className="micro-label">Bridge security</span>
-              <strong>Bridge launch origin mismatch blocked.</strong>
-              <p>{platformOriginValidation.securityIssue}</p>
+              <span className="micro-label">Incomplete request</span>
+              <strong>The extension did not send a complete handshake.</strong>
+              <p>Please reopen this page directly from the extension.</p>
             </div>
           ) : null}
 

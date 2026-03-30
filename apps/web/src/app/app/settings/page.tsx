@@ -50,6 +50,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {session ? (
         <SettingsPageClient
           authSessions={authSessions}
+          isAdmin={isAdmin}
           isConnectedSession={isConnectedSession}
           providerCatalog={providerCatalog}
           providerCredentialInventory={providerCredentialInventory}
