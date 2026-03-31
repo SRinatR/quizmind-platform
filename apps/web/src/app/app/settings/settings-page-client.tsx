@@ -75,7 +75,6 @@ export function SettingsPageClient({
   const primaryWorkspace = session.workspaces[0] ?? null;
   const currentSessionCount = sessionItems.length;
   const currentSession = sessionItems.find((item) => item.current) ?? null;
-  const isVerified = Boolean(session.user.emailVerifiedAt);
   const currentDisplayName = profileState?.displayName || session.user.displayName || 'Your account';
   const currentEmail = profileState?.email ?? session.user.email;
 
@@ -174,12 +173,8 @@ export function SettingsPageClient({
       <section className="metrics-grid">
         <article className="stat-card">
           <span className="micro-label">Email</span>
-          <p className="stat-value">{isVerified ? 'Verified' : 'Unverified'}</p>
-          <p className="metric-copy">
-            {isVerified
-              ? formatUtcDateTime(session.user.emailVerifiedAt)
-              : 'Check your inbox to verify.'}
-          </p>
+          <p className="stat-value">Active</p>
+          <p className="metric-copy">{session.user.email}</p>
         </article>
         <article className="stat-card">
           <span className="micro-label">Sessions</span>
@@ -220,9 +215,6 @@ export function SettingsPageClient({
           </div>
 
           <div className="tag-row">
-            <span className={isVerified ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
-              {isVerified ? 'Email verified' : 'Verification pending'}
-            </span>
             {/* Show internal system roles only for admin users */}
             {isAdmin
               ? session.principal.systemRoles.map((role) => (

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { adminNavigation, dashboardNavigation, publicNavigation } from '@quizmind/ui';
+import { LogoutButton } from './logout-button';
 
 interface SiteShellProps {
   apiState: string;
@@ -9,6 +10,7 @@ interface SiteShellProps {
   description: string;
   eyebrow: string;
   isAdmin?: boolean;
+  isSignedIn?: boolean;
   pathname: string;
   showPersonaSwitcher?: boolean;
   title: string;
@@ -29,6 +31,7 @@ export function SiteShell({
   description,
   eyebrow,
   isAdmin = false,
+  isSignedIn = false,
   pathname,
   showPersonaSwitcher: _showPersonaSwitcher = true,
   title,
@@ -112,6 +115,7 @@ export function SiteShell({
           <p className="app-session-status" title={apiState}>
             {apiState}
           </p>
+          {isSignedIn ? <LogoutButton /> : null}
           <div className="app-sidebar__public-links">
             {publicNavigation.slice(0, 5).map((item) => (
               <Link

@@ -57,6 +57,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       description=""
       eyebrow="Wallet"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/billing"
       showPersonaSwitcher={false}
       title="Balance &amp; top-up"

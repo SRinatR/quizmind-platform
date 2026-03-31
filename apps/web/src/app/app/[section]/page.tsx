@@ -32,6 +32,7 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
       description=""
       eyebrow="Dashboard"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname={`/app/${resolvedParams.section}`}
       showPersonaSwitcher={false}
       title={section?.title ?? resolvedParams.section}

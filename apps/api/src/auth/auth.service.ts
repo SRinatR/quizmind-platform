@@ -95,14 +95,15 @@ export class AuthService {
     }
 
     const passwordHash = await hashPassword(request.password);
+    const verifiedAt = new Date();
     const user = await this.userRepository.create({
       email,
       passwordHash,
       displayName,
+      emailVerifiedAt: verifiedAt,
     });
 
     const sessionResult = await this.issueSession(user, metadata);
-    const emailStatus = await this.issueVerificationEmail(user);
 
     this.logSecurityEvent('auth.register_success', user.id, {
       email,
@@ -112,7 +113,7 @@ export class AuthService {
 
     return {
       session: sessionResult.payload,
-      emailVerification: emailStatus,
+      emailVerification: { required: false, emailVerifiedAt: verifiedAt.toISOString() },
     };
   }
 
@@ -156,12 +157,10 @@ export class AuthService {
 
     const userWithLastLogin = await this.userRepository.touchLastLogin(user.id);
     const sessionResult = await this.issueSession(userWithLastLogin, metadata);
-    const emailStatus = userWithLastLogin.emailVerifiedAt
-      ? {
-          required: false,
-          emailVerifiedAt: userWithLastLogin.emailVerifiedAt.toISOString(),
-        }
-      : await this.issueVerificationEmail(userWithLastLogin);
+    const emailStatus: import('@quizmind/contracts').AuthEmailVerificationStatus = {
+      required: false,
+      emailVerifiedAt: userWithLastLogin.emailVerifiedAt?.toISOString() ?? null,
+    };
 
     this.logSecurityEvent('auth.login_success', userWithLastLogin.id, {
       email,

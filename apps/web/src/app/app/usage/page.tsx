@@ -63,6 +63,7 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
       description=""
       eyebrow="Usage"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/usage"
       showPersonaSwitcher={false}
       title="Workspace usage"

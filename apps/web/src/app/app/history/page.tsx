@@ -217,6 +217,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
       description=""
       eyebrow="History"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/history"
       showPersonaSwitcher={false}
       title="Usage history"

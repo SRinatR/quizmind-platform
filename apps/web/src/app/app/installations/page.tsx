@@ -44,6 +44,7 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
       description=""
       eyebrow="Installations"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/installations"
       showPersonaSwitcher={false}
       title="Extension installations"

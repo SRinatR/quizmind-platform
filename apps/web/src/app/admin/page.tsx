@@ -66,6 +66,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       description=""
       eyebrow="Admin"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/admin"
       showPersonaSwitcher={false}
       title="Platform administration"

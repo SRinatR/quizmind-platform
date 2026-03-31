@@ -30,6 +30,7 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
       description=""
       eyebrow="Dashboard"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app"
       showPersonaSwitcher={false}
       title="Overview"

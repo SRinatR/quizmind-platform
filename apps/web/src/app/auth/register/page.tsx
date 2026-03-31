@@ -25,9 +25,9 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
           description: 'Your account is ready immediately after sign-up. Connect your extension and go.',
         },
         {
-          eyebrow: 'Secure',
-          title: 'Email verification included',
-          description: 'We verify your inbox so your account stays protected and recoverable.',
+          eyebrow: 'AI-powered',
+          title: 'Smart quiz answers',
+          description: 'The browser extension routes quiz requests through your AI provider of choice.',
         },
         {
           eyebrow: 'Flexible',
