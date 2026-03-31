@@ -397,13 +397,21 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
             </div>
           </section>
         </>
-      ) : session ? (
+      ) : session && workspaceId ? (
         <section className="empty-state">
           <span className="micro-label">History access</span>
-          <h2>Usage history is unavailable for this workspace right now.</h2>
+          <h2>No usage history recorded yet.</h2>
           <p>
-            The session is active, but the history stream could not be loaded. This usually means the workspace has no
-            accessible history rows yet or the API is still starting.
+            The workspace is active but has no history rows yet. Events appear here as the extension is used.
+          </p>
+        </section>
+      ) : session ? (
+        <section className="empty-state">
+          <span className="micro-label">No workspace</span>
+          <h2>No workspace linked to your account yet.</h2>
+          <p>
+            Your session is active but your account is not yet linked to a workspace.
+            Contact your administrator to get access.
           </p>
         </section>
       ) : (
