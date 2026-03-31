@@ -12,7 +12,6 @@ import { WalletController } from './wallet/wallet.controller';
 import { WalletRepository } from './wallet/wallet.repository';
 import { WalletService } from './wallet/wallet.service';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
-import { EmailVerificationRepository } from './auth/repositories/email-verification.repository';
 import { PasswordResetRepository } from './auth/repositories/password-reset.repository';
 import { SessionRepository } from './auth/repositories/session.repository';
 import { UserRepository } from './auth/repositories/user.repository';
@@ -60,7 +59,6 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     AuthService,
     BillingService,
     BillingWebhookRepository,
-    EmailVerificationRepository,
     ExtensionCompatibilityRepository,
     ExtensionControlService,
     ExtensionEventRepository,

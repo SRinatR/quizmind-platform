@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import {
   ACCESS_TOKEN_LIFETIME_MINUTES,
-  EMAIL_VERIFICATION_LIFETIME_HOURS,
   PASSWORD_RESET_LIFETIME_HOURS,
   REFRESH_TOKEN_LIFETIME_DAYS,
   assertPasswordPolicy,
@@ -30,12 +29,10 @@ import {
   type AuthLogoutResult,
   type AuthRefreshRequest,
   type AuthRegisterRequest,
-  type AuthEmailVerificationStatus,
   type AuthResetPasswordRequest,
   type AuthResetPasswordResult,
   type AuthSessionPayload,
   type AuthSessionsPayload,
-  type AuthVerifyEmailResult,
   type EmailQueueJobPayload,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
@@ -44,13 +41,11 @@ import {
   passwordResetTemplate,
   sendTemplatedEmail,
   type EmailTemplate,
-  verifyEmailTemplate,
 } from '@quizmind/email';
 import { createQueueDispatchRequest } from '@quizmind/queue';
 
 import { type AuthSessionRecord, SessionRepository } from './repositories/session.repository';
 import { type AuthUserRecord, UserRepository } from './repositories/user.repository';
-import { EmailVerificationRepository } from './repositories/email-verification.repository';
 import { PasswordResetRepository } from './repositories/password-reset.repository';
 import { type CurrentSessionSnapshot, type RequestSessionMetadata } from './auth.types';
 import { createApiEmailAdapter } from '../email/email-adapter';
@@ -71,8 +66,6 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     @Inject(SessionRepository)
     private readonly sessionRepository: SessionRepository,
-    @Inject(EmailVerificationRepository)
-    private readonly emailVerificationRepository: EmailVerificationRepository,
     @Inject(PasswordResetRepository)
     private readonly passwordResetRepository: PasswordResetRepository,
     @Inject(QueueDispatchService)
@@ -157,7 +150,7 @@ export class AuthService {
 
     const userWithLastLogin = await this.userRepository.touchLastLogin(user.id);
     const sessionResult = await this.issueSession(userWithLastLogin, metadata);
-    const emailStatus: import('@quizmind/contracts').AuthEmailVerificationStatus = {
+    const emailStatus = {
       required: false,
       emailVerifiedAt: userWithLastLogin.emailVerifiedAt?.toISOString() ?? null,
     };
@@ -377,36 +370,6 @@ export class AuthService {
     };
   }
 
-  async verifyEmail(token: string): Promise<AuthVerifyEmailResult> {
-    this.assertConnectedMode();
-
-    if (!token.trim()) {
-      throw new BadRequestException('Email verification token is required.');
-    }
-
-    const verification = await this.emailVerificationRepository.findActiveByTokenHash(
-      hashOpaqueToken(token, this.env.jwtRefreshSecret),
-    );
-
-    if (!verification) {
-      throw new UnauthorizedException('Invalid or expired email verification token.');
-    }
-
-    const verifiedAt = new Date();
-
-    await this.emailVerificationRepository.markVerified(verification.id, verifiedAt);
-    await this.userRepository.markEmailVerified(verification.userId, verifiedAt);
-
-    this.logSecurityEvent('auth.email_verified', verification.userId, {
-      verificationId: verification.id,
-    });
-
-    return {
-      verified: true,
-      emailVerifiedAt: verifiedAt.toISOString(),
-    };
-  }
-
   async getCurrentSession(accessToken: string): Promise<CurrentSessionSnapshot> {
     this.assertConnectedMode();
 
@@ -481,37 +444,6 @@ export class AuthService {
     };
   }
 
-  private async issueVerificationEmail(user: AuthUserRecord) {
-    const verificationToken = createOpaqueToken();
-    const verificationHash = hashOpaqueToken(verificationToken, this.env.jwtRefreshSecret);
-    const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_LIFETIME_HOURS * 60 * 60 * 1000);
-
-    await this.emailVerificationRepository.create({
-      userId: user.id,
-      tokenHash: verificationHash,
-      expiresAt,
-    });
-
-    const delivery = await this.enqueueEmailDeliveryJob({
-      to: user.email,
-      templateKey: 'auth.verify-email',
-      variables: {
-        productName: 'QuizMind',
-        displayName: user.displayName ?? undefined,
-        verifyUrl: `${this.env.appUrl}/auth/verify?token=${verificationToken}`,
-        supportEmail: 'support@quizmind.dev',
-      },
-      fallbackTemplate: verifyEmailTemplate,
-      requestedByUserId: user.id,
-    });
-
-    return {
-      required: true,
-      delivery,
-      emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
-    };
-  }
-
   private async enqueueEmailDeliveryJob(input: {
     to: string;
     templateKey: EmailQueueJobPayload['templateKey'];
@@ -519,7 +451,7 @@ export class AuthService {
     fallbackTemplate: EmailTemplate<any>;
     workspaceId?: string;
     requestedByUserId?: string;
-  }): Promise<NonNullable<AuthEmailVerificationStatus['delivery']>> {
+  }): Promise<{ provider: string; messageId: string; acceptedAt: string }> {
     const queuePayload: EmailQueueJobPayload = {
       to: input.to,
       templateKey: input.templateKey,

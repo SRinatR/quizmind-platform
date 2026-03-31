@@ -19,7 +19,7 @@ export const apiRoutes: ApiRouteDefinition[] = [
   {
     method: 'POST',
     path: '/auth/register',
-    summary: 'Register a new user, create a session, and send an email verification link.',
+    summary: 'Register a new user and create a session immediately.',
   },
   {
     method: 'POST',
@@ -60,11 +60,6 @@ export const apiRoutes: ApiRouteDefinition[] = [
     method: 'GET',
     path: '/auth/sessions',
     summary: 'List active sessions for the current user and flag the current browser session.',
-  },
-  {
-    method: 'GET',
-    path: '/auth/verify-email',
-    summary: 'Verify a pending email verification token and mark the email as confirmed.',
   },
   {
     method: 'GET',
