@@ -16,31 +16,31 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
 
   return (
     <AuthShell
-      description="Email verification is now wired to the live API. The page can both guide a just-registered user and redeem a verification token from the transactional email."
-      eyebrow="QuizMind Platform"
+      description="Verify your email address to secure your account and enable password recovery."
+      eyebrow="QuizMind"
       highlights={[
         {
-          eyebrow: 'Ownership',
-          title: 'Inbox confirmation is first-class',
-          description: 'Verification links now update the real user record instead of stopping at a mocked success screen.',
+          eyebrow: 'Required',
+          title: 'One-time step',
+          description: 'Email verification only needs to happen once. You will not be asked again.',
         },
         {
-          eyebrow: 'Flow',
-          title: 'Registration and verification connect',
-          description: 'After registration, the user lands here with a clear next step instead of a dead end.',
+          eyebrow: 'Safe',
+          title: 'Protects your account',
+          description: 'A verified email makes it easier to recover your account if you ever lose access.',
         },
         {
-          eyebrow: 'Recovery',
-          title: 'Safer password reset posture',
-          description: 'Verified inbox ownership makes recovery and future security checks much less fragile.',
+          eyebrow: 'Quick',
+          title: 'Check your inbox',
+          description: 'The verification email arrives within a few minutes. Check your spam folder if needed.',
         },
       ]}
       links={[
-        { href: '/', label: 'Back to landing' },
+        { href: '/', label: 'Back to home' },
         { href: withNextPath('/auth/login', nextPath), label: 'Sign in' },
         { href: withNextPath('/auth/register', nextPath), label: 'Create account' },
       ]}
-      title="Confirm inbox ownership before deeper access."
+      title="Confirm your email address."
     >
       <VerifyClient
         email={email}

@@ -97,7 +97,7 @@ export function AiAccessClient({
   });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(
-    'Manage BYOK credentials through the control plane. Secrets are encrypted server-side and never shown again after save.',
+    'Manage your API keys for AI providers. Keys are stored securely and never displayed again after saving.',
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRevokingId, setIsRevokingId] = useState<string | null>(null);
@@ -293,7 +293,7 @@ export function AiAccessClient({
       scopes: '',
     }));
     setErrorMessage(null);
-    setStatusMessage('Manage BYOK credentials through the control plane. Secrets are encrypted server-side and never shown again after save.');
+    setStatusMessage('Manage your API keys for AI providers. Keys are stored securely and never displayed again after saving.');
   }
 
   return (

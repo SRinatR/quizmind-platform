@@ -7,6 +7,7 @@ import {
   getSession,
   resolvePersona,
 } from '../../../lib/api';
+import { isAdminSession } from '../../../lib/admin-guard';
 import { InstallationsPageClient } from './installations-page-client';
 
 interface InstallationsPageProps {
@@ -34,18 +35,18 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
       ? requestedWorkspaceId
       : session?.workspaces[0]?.id;
   const inventory = workspaceId ? await getExtensionInstallationInventory(workspaceId, accessToken) : null;
+  const isAdmin = session ? isAdminSession(session) : false;
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="The dashboard now has a dedicated managed-client inventory for extension installations, active installation sessions, compatibility state, and reconnect controls."
+      description=""
       eyebrow="Installations"
+      isAdmin={isAdmin}
       pathname="/app/installations"
       showPersonaSwitcher={false}
-      title="Extension installation inventory"
+      title="Extension installations"
     >
       {session && inventory ? (
         <>

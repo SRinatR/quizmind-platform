@@ -12,35 +12,34 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   const resolvedSearchParams = await searchParams;
   const nextPath = resolveNextPath(resolvedSearchParams?.next);
   const accessToken = await getAccessTokenFromCookies();
-  const currentSession = accessToken ? await getSession('platform-admin', accessToken) : null;
+  const currentSession = accessToken ? await getSession('connected-user', accessToken) : null;
 
   return (
     <AuthShell
-      description="The registration flow now issues a real connected session, sends a verification email, and feeds directly into the production auth surface instead of a static placeholder."
-      eyebrow="QuizMind Platform"
+      description="Join QuizMind to start using your AI-powered quiz extension."
+      eyebrow="QuizMind"
       highlights={[
         {
-          eyebrow: 'Connected auth',
-          title: 'Real Nest + Prisma session',
-          description: 'Registration now creates the same access and refresh tokens used by the dashboard and admin surfaces.',
+          eyebrow: 'Instant access',
+          title: 'Start in seconds',
+          description: 'Your account is ready immediately after sign-up. Connect your extension and go.',
         },
         {
-          eyebrow: 'Email verification',
-          title: 'Inbox ownership is explicit',
-          description: 'New accounts immediately receive a verification link so we can enforce safer recovery and account changes.',
+          eyebrow: 'Secure',
+          title: 'Email verification included',
+          description: 'We verify your inbox so your account stays protected and recoverable.',
         },
         {
-          eyebrow: 'Next step',
-          title: 'Recovery flow is live too',
-          description: 'Forgot-password and reset-password now run on the same connected auth stack.',
+          eyebrow: 'Flexible',
+          title: 'Works with your workflow',
+          description: 'Use your personal workspace or collaborate with a team — your choice.',
         },
       ]}
       links={[
-        { href: '/', label: 'Back to landing' },
+        { href: '/', label: 'Back to home' },
         { href: withNextPath('/auth/login', nextPath), label: 'Sign in' },
-        { href: '/pricing', label: 'View pricing' },
       ]}
-      title="Create the first secure session."
+      title="Create your account."
     >
       <RegisterClient initialSession={currentSession} nextPath={nextPath} />
     </AuthShell>

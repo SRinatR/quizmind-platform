@@ -4,6 +4,7 @@ import { buildAccessContext } from '@quizmind/auth';
 import { SiteShell } from '../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../lib/auth-session';
 import { getSession, getUsageSummary, resolvePersona } from '../../lib/api';
+import { isAdminSession } from '../../lib/admin-guard';
 import { getVisibleDashboardSections } from '../../features/navigation/visibility';
 
 interface AppPageProps {
@@ -15,21 +16,20 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
-  const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
   const usage = workspaceId ? await getUsageSummary(persona, workspaceId, accessToken) : null;
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
+  const isAdmin = session ? isAdminSession(session) : false;
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="Your workspace at a glance — session, usage overview, and available sections."
+      description=""
       eyebrow="Dashboard"
+      isAdmin={isAdmin}
       pathname="/app"
       showPersonaSwitcher={false}
       title="Overview"
@@ -47,7 +47,6 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
                 >
                   <h2>{section.title}</h2>
                   <p>{section.description}</p>
-                  <span className="list-muted monospace">{section.href}</span>
                 </Link>
               ))}
             </section>
@@ -56,40 +55,19 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
           {/* ── Session + workspace ── */}
           <section className="split-grid">
             <article className="panel">
-              <span className="micro-label">Session</span>
-              <h2>{session.user.displayName}</h2>
+              <span className="micro-label">Account</span>
+              <h2>{session.user.displayName ?? session.user.email}</h2>
               <p>{session.user.email}</p>
-              <div className="tag-row">
-                {session.principal.systemRoles.map((role) => (
-                  <span className="tag" key={role}>
-                    {role}
-                  </span>
-                ))}
-                {session.principal.systemRoles.length === 0 ? (
-                  <span className="tag warn">workspace only</span>
-                ) : null}
-              </div>
-              {session.notes.length > 0 ? (
-                <div className="mini-list">
-                  {session.notes.map((note) => (
-                    <div className="list-item" key={note}>
-                      <span className="list-muted">{note}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
             </article>
 
             <article className="panel">
-              <span className="micro-label">Workspaces</span>
-              <h2>Memberships in scope</h2>
+              <span className="micro-label">Workspace</span>
+              <h2>{session.workspaces[0]?.name ?? 'No workspace'}</h2>
               <div className="list-stack">
                 {session.workspaces.map((workspace) => (
                   <div className="list-item" key={workspace.id}>
                     <strong>{workspace.name}</strong>
-                    <p>
-                      {workspace.slug} &middot; {workspace.role}
-                    </p>
+                    <p>{workspace.slug} &middot; {workspace.role}</p>
                   </div>
                 ))}
               </div>
@@ -97,42 +75,20 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
           </section>
 
           {/* ── Usage ── */}
-          <section className="panel">
-            <span className="micro-label">Usage</span>
-            <h2>{usage?.workspace.name ?? 'Workspace'} quota health</h2>
-            {usage ? (
-              <>
-                <div className="tag-row">
-                  <span className="tag">{usage.installations.length} installations</span>
-                  <span className="tag">{usage.recentEvents.length} recent events</span>
-                </div>
-                <div className="list-stack">
-                  {usage.quotas.slice(0, 3).map((quota) => (
-                    <div className="list-item" key={quota.key}>
-                      <strong>{quota.label}</strong>
-                      <p>
-                        {quota.consumed}
-                        {typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''} &middot; {quota.status}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="list-muted">Usage snapshot unavailable — API offline.</p>
-            )}
-          </section>
-
-          {/* ── Permissions sample ── */}
-          {session.permissions.length > 0 ? (
+          {usage ? (
             <section className="panel">
-              <span className="micro-label">Permissions</span>
-              <h2>Resolved capability sample</h2>
-              <div className="tag-row">
-                {session.permissions.slice(0, 12).map((permission) => (
-                  <span className="tag" key={permission}>
-                    {permission}
-                  </span>
+              <span className="micro-label">Usage</span>
+              <h2>Quota overview</h2>
+              <div className="list-stack">
+                {usage.quotas.slice(0, 4).map((quota) => (
+                  <div className="list-item" key={quota.key}>
+                    <strong>{quota.label}</strong>
+                    <p>
+                      {quota.consumed}
+                      {typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''}{' '}
+                      &middot; {quota.status}
+                    </p>
+                  </div>
                 ))}
               </div>
             </section>
@@ -140,12 +96,12 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
         </>
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Offline</span>
-          <h2>API not reachable</h2>
-          <p>Start <code>apps/api</code> and reload to hydrate dashboard data from the backend.</p>
+          <span className="micro-label">Not signed in</span>
+          <h2>Sign in to view your dashboard</h2>
+          <p>Your workspace, usage, and extension activity will appear here.</p>
           <div className="link-row" style={{ justifyContent: 'center' }}>
-            <Link className="btn-ghost" href="/auth/login">Sign in</Link>
-            <Link className="btn-ghost" href="/">Back to site</Link>
+            <Link className="btn-primary" href="/auth/login">Sign in</Link>
+            <Link className="btn-ghost" href="/">Back to home</Link>
           </div>
         </section>
       )}

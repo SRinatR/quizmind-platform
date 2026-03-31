@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { SiteShell } from '../../../components/site-shell';
 import { buildAdminSectionHref } from '../../../features/admin/admin-section-href';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
+import { isAdminSession } from '../../../lib/admin-guard';
 import {
   getAdminExtensionFleet,
   getAdminProviderGovernance,
@@ -127,6 +128,35 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
+  const isAdmin = session ? isAdminSession(session) : false;
+
+  // Block non-admin access early before expensive data fetching
+  if (!session || !isAdmin) {
+    const sessionLabel = session?.user.displayName || session?.user.email;
+    return (
+      <SiteShell
+        apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
+        currentPersona={persona}
+        description=""
+        eyebrow="Admin"
+        isAdmin={false}
+        pathname={`/admin/${resolvedParams.section}`}
+        showPersonaSwitcher={false}
+        title="Access restricted"
+      >
+        <section className="empty-state">
+          <span className="micro-label">Access restricted</span>
+          <h2>You don&apos;t have permission to view this area.</h2>
+          <p>Admin access is required. If you believe this is a mistake, contact your platform administrator.</p>
+          <div className="link-row" style={{ justifyContent: 'center' }}>
+            <a className="btn-primary" href="/app">Go to dashboard</a>
+            {!session ? <a className="btn-ghost" href="/auth/login">Sign in</a> : null}
+          </div>
+        </section>
+      </SiteShell>
+    );
+  }
+
   const workspaceId = readSearchParam(resolvedSearchParams, 'workspaceId') ?? session?.workspaces[0]?.id;
   const sessionWorkspaceId = workspaceId;
   const isSecurityRoute = resolvedParams.section === 'security';
@@ -244,15 +274,14 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={`Connected \u2014 ${sessionLabel}`}
       currentPersona={persona}
-      description="Admin detail routes reuse the same gating rules as the parent admin shell."
-      eyebrow="Admin Route"
+      description=""
+      eyebrow="Admin"
+      isAdmin={isAdmin}
       pathname={`/admin/${resolvedParams.section}`}
       showPersonaSwitcher={false}
-      title={section?.title ?? 'Admin route unavailable'}
+      title={section?.title ?? resolvedParams.section}
     >
       {section && session ? (
         section.id === 'support' ? (
@@ -1151,12 +1180,12 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         )
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Route Gate</span>
-          <h2>The current persona cannot access this admin section.</h2>
+          <span className="micro-label">Access restricted</span>
+          <h2>You don&apos;t have permission to view this section.</h2>
           <p>
-            The route exists, but the access model hides it because the required permissions are not present in
-            the computed context.
+            Your account does not have the required permissions for this admin section.
           </p>
+          <a className="btn-ghost" href="/admin">Back to admin</a>
         </section>
       )}
     </SiteShell>

@@ -8,6 +8,7 @@ import {
   getWalletTopUps,
   resolvePersona,
 } from '../../../lib/api';
+import { isAdminSession } from '../../../lib/admin-guard';
 import { BillingPageClient } from './billing-page-client';
 
 interface BillingPageProps {
@@ -47,18 +48,18 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       workspaceId &&
       session.workspaces.some((ws) => ws.id === workspaceId),
   );
+  const isAdmin = session ? isAdminSession(session) : false;
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="Баланс рабочего пространства, история пополнений и оплата через YooKassa."
-      eyebrow="Кошелёк"
+      description=""
+      eyebrow="Wallet"
+      isAdmin={isAdmin}
       pathname="/app/billing"
-      showPersonaSwitcher={!isConnectedSession}
-      title="Баланс и пополнение"
+      showPersonaSwitcher={false}
+      title="Balance &amp; top-up"
     >
       {session && workspaceId ? (
         <BillingPageClient

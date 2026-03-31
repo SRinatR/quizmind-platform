@@ -4,6 +4,7 @@ import { type UsageHistoryRequest, type UsageHistorySourceFilter } from '@quizmi
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { getSession, getUsageHistory, resolvePersona } from '../../../lib/api';
+import { isAdminSession } from '../../../lib/admin-guard';
 import { formatUtcDateTime } from '../../../lib/datetime';
 
 interface HistoryPageProps {
@@ -161,6 +162,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     ...(source !== 'telemetry' && actorId ? { actorId } : {}),
   };
   const history = workspaceId ? await getUsageHistory(persona, historyRequest, accessToken) : null;
+  const isAdmin = session ? isAdminSession(session) : false;
   const effectivePage = history
     ? Math.min(requestedPage, Math.max(1, Math.ceil(history.items.length / pageSize)))
     : requestedPage;
@@ -210,15 +212,14 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
 
   return (
     <SiteShell
-      apiState={
-        session ? `Connected ${sessionLabel}` : 'Session unavailable'
-      }
+      apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
-      description="History mode gives a filterable event stream for telemetry, workspace activity, and AI proxy requests so teams can debug usage quickly."
+      description=""
       eyebrow="History"
+      isAdmin={isAdmin}
       pathname="/app/history"
       showPersonaSwitcher={false}
-      title="Usage history and event timeline"
+      title="Usage history"
     >
       {session && workspaceId && history ? (
         <>

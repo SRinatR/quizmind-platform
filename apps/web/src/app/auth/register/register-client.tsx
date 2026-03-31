@@ -44,26 +44,23 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
   const [, startNavigation] = useTransition();
 
   const isAuthenticated = Boolean(initialSession);
-  const sessionRoles = initialSession?.principal.systemRoles ?? [];
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords must match before creating the account.');
+      setErrorMessage('Passwords do not match.');
       return;
     }
 
-    setStatusMessage('Creating your QuizMind account...');
+    setStatusMessage('Creating your account\u2026');
     setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           email,
           password,
@@ -76,11 +73,11 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSubmitting(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to create the account right now.');
+        setErrorMessage(payload?.error?.message ?? 'Unable to create the account right now. Please try again.');
         return;
       }
 
-      setStatusMessage('Account created. Redirecting to email verification...');
+      setStatusMessage('Account created. Check your inbox to verify your email\u2026');
 
       startNavigation(() => {
         const params = new URLSearchParams({
@@ -94,24 +91,22 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     } catch {
       setIsSubmitting(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the registration route right now.');
+      setErrorMessage('Unable to reach the server right now. Please try again.');
     }
   }
 
   async function handleLogout() {
     setErrorMessage(null);
-    setStatusMessage('Ending your session...');
+    setStatusMessage('Signing out\u2026');
     setIsSigningOut(true);
 
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-      });
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
 
       if (!response.ok) {
         setIsSigningOut(false);
         setStatusMessage(null);
-        setErrorMessage('Unable to clear the current session right now.');
+        setErrorMessage('Unable to sign out right now. Please try again.');
         return;
       }
 
@@ -121,41 +116,28 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     } catch {
       setIsSigningOut(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to clear the current session right now.');
+      setErrorMessage('Unable to sign out right now. Please try again.');
     }
   }
 
   if (isAuthenticated && initialSession) {
+    const userName = initialSession.user.displayName || initialSession.user.email;
+
     return (
       <div className="auth-form-shell">
-        <span className="micro-label">Active session</span>
-        <h2>You already have an active account session.</h2>
-        <p className="auth-form-copy">
-          {initialSession.user.displayName || initialSession.user.email} - {initialSession.user.email}
-        </p>
-
-        <div className="auth-session-card">
-          <strong>{initialSession.personaLabel}</strong>
-          <p>{initialSession.notes[0] ?? 'Connected session is active in this browser.'}</p>
-          <div className="tag-row">
-            {sessionRoles.map((role) => (
-              <span className="tag" key={role}>
-                {role}
-              </span>
-            ))}
-            {sessionRoles.length === 0 ? <span className="tag warn">workspace-only session</span> : null}
-          </div>
-        </div>
+        <span className="micro-label">Already signed in</span>
+        <h2>You already have an account, {userName}.</h2>
+        <p className="auth-form-copy">{initialSession.user.email}</p>
 
         <div className="auth-form-actions">
           <Link className="btn-primary" href={nextPath}>
-            Continue
+            Continue to dashboard
           </Link>
           <Link className="btn-ghost" href="/app">
-            Open dashboard
+            Go to dashboard
           </Link>
           <button className="btn-ghost" disabled={isSigningOut} onClick={handleLogout} type="button">
-            {isSigningOut ? 'Signing out...' : 'Sign out'}
+            {isSigningOut ? 'Signing out\u2026' : 'Sign out'}
           </button>
         </div>
 
@@ -167,20 +149,18 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
 
   return (
     <div className="auth-form-shell">
-      <span className="micro-label">Register</span>
-      <h2>Create your account</h2>
-      <p className="auth-form-copy">
-        Start with a connected QuizMind session, then verify your inbox to unlock production-safe account recovery.
-      </p>
+      <span className="micro-label">Create account</span>
+      <h2>Get started with QuizMind</h2>
+      <p className="auth-form-copy">Create your account to connect the extension and start using the platform.</p>
 
       <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="auth-field">
-          <span>Display name</span>
+          <span>Name</span>
           <input
             autoComplete="name"
             name="displayName"
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="QuizMind Owner"
+            placeholder="Your name"
             type="text"
             value={displayName}
           />
@@ -192,7 +172,8 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
             autoComplete="email"
             name="email"
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="owner@quizmind.dev"
+            placeholder="you@example.com"
+            required
             type="email"
             value={email}
           />
@@ -205,6 +186,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
             name="password"
             onChange={(event) => setPassword(event.target.value)}
             placeholder="At least 8 characters"
+            required
             type="password"
             value={password}
           />
@@ -216,14 +198,15 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
             autoComplete="new-password"
             name="confirmPassword"
             onChange={(event) => setConfirmPassword(event.target.value)}
-            placeholder="Repeat the password"
+            placeholder="Repeat your password"
+            required
             type="password"
             value={confirmPassword}
           />
         </label>
 
         <button className="btn-primary auth-submit" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Creating account...' : 'Create account'}
+          {isSubmitting ? 'Creating account\u2026' : 'Create account'}
         </button>
       </form>
 
@@ -232,7 +215,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
 
       <div className="auth-links">
         <Link href={`/auth/login?next=${encodeURIComponent(nextPath)}`}>Already have an account?</Link>
-        <Link href="/auth/forgot-password">Need a reset link?</Link>
+        <Link href="/auth/forgot-password">Forgot password?</Link>
       </div>
     </div>
   );

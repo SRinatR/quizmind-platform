@@ -18,6 +18,7 @@ import { AiAccessClient } from './ai-access-client';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
+  isAdmin: boolean;
   isConnectedSession: boolean;
   providerCatalog: ProviderCatalogSnapshot | null;
   providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
@@ -46,6 +47,7 @@ function normalizeProfileInput(value: string): string | null {
 
 export function SettingsPageClient({
   authSessions,
+  isAdmin,
   isConnectedSession,
   providerCatalog,
   providerCredentialInventory,
@@ -74,8 +76,10 @@ export function SettingsPageClient({
   const currentSessionCount = sessionItems.length;
   const currentSession = sessionItems.find((item) => item.current) ?? null;
   const isVerified = Boolean(session.user.emailVerifiedAt);
-  const currentDisplayName = profileState?.displayName || session.user.displayName || 'Connected account';
+  const currentDisplayName = profileState?.displayName || session.user.displayName || 'Your account';
   const currentEmail = profileState?.email ?? session.user.email;
+
+  // Admin-only access matrix derived data
   const blockedAccessRows = accessMatrix.filter((row) => !row.allowed);
   const allowedDashboardRows = accessMatrix.filter((row) => row.scope === 'dashboard' && row.allowed);
   const allowedAdminRows = accessMatrix.filter((row) => row.scope === 'admin' && row.allowed);
@@ -85,11 +89,11 @@ export function SettingsPageClient({
     setErrorMessage(null);
 
     if (!isConnectedSession) {
-      setErrorMessage('Connected session required to update profile settings.');
+      setErrorMessage('Sign in with a connected account to update profile settings.');
       return;
     }
 
-    setStatusMessage('Saving profile...');
+    setStatusMessage('Saving profile\u2026');
     setIsSavingProfile(true);
 
     try {
@@ -119,18 +123,18 @@ export function SettingsPageClient({
         locale: payload.data.locale ?? '',
         timezone: payload.data.timezone ?? '',
       });
-      setStatusMessage('Profile updated successfully.');
+      setStatusMessage('Profile updated.');
       setIsSavingProfile(false);
     } catch {
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the profile settings route right now.');
+      setErrorMessage('Unable to save profile right now. Please try again.');
       setIsSavingProfile(false);
     }
   }
 
   async function handleLogoutAll() {
     setErrorMessage(null);
-    setStatusMessage('Ending all sessions...');
+    setStatusMessage('Signing out everywhere\u2026');
     setIsRevokingEverywhere(true);
 
     try {
@@ -140,7 +144,7 @@ export function SettingsPageClient({
       if (!response.ok || !payload?.ok || !payload.data?.revoked) {
         setIsRevokingEverywhere(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to revoke active sessions right now.');
+        setErrorMessage(payload?.error?.message ?? 'Unable to sign out of all sessions right now.');
         return;
       }
 
@@ -152,7 +156,7 @@ export function SettingsPageClient({
     } catch {
       setIsRevokingEverywhere(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the logout-all route right now.');
+      setErrorMessage('Unable to sign out everywhere right now. Please try again.');
     }
   }
 
@@ -170,7 +174,7 @@ export function SettingsPageClient({
       <section className="metrics-grid">
         <article className="stat-card">
           <span className="micro-label">Email</span>
-          <p className="stat-value">{isVerified ? 'Verified' : 'Pending'}</p>
+          <p className="stat-value">{isVerified ? 'Verified' : 'Unverified'}</p>
           <p className="metric-copy">
             {isVerified
               ? formatUtcDateTime(session.user.emailVerifiedAt)
@@ -181,7 +185,7 @@ export function SettingsPageClient({
           <span className="micro-label">Sessions</span>
           <p className="stat-value">{currentSessionCount}</p>
           <p className="metric-copy">
-            {isConnectedSession ? 'Active browser sessions' : 'Persona preview only'}
+            {isConnectedSession ? 'Active browser sessions' : 'Sign in to view sessions'}
           </p>
         </article>
         <article className="stat-card">
@@ -189,11 +193,20 @@ export function SettingsPageClient({
           <p className="stat-value">{session.workspaces.length}</p>
           <p className="metric-copy">{primaryWorkspace?.name ?? 'No workspace yet'}</p>
         </article>
-        <article className="stat-card">
-          <span className="micro-label">Permissions</span>
-          <p className="stat-value">{session.permissions.length}</p>
-          <p className="metric-copy">Resolved from backend policy</p>
-        </article>
+        {/* Permissions stat is useful for admins; normal users see their role instead */}
+        {isAdmin ? (
+          <article className="stat-card">
+            <span className="micro-label">Permissions</span>
+            <p className="stat-value">{session.permissions.length}</p>
+            <p className="metric-copy">Resolved capabilities</p>
+          </article>
+        ) : (
+          <article className="stat-card">
+            <span className="micro-label">Role</span>
+            <p className="stat-value">{primaryWorkspace?.role ?? '\u2014'}</p>
+            <p className="metric-copy">{primaryWorkspace?.name ?? 'No workspace'}</p>
+          </article>
+        )}
       </section>
 
       {/* ── Account + Security ── */}
@@ -210,12 +223,12 @@ export function SettingsPageClient({
             <span className={isVerified ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
               {isVerified ? 'Email verified' : 'Verification pending'}
             </span>
-            {session.principal.systemRoles.map((role) => (
-              <span className="tag-soft" key={role}>{role}</span>
-            ))}
-            {session.principal.systemRoles.length === 0 ? (
-              <span className="tag-soft tag-soft--gray">Workspace-only account</span>
-            ) : null}
+            {/* Show internal system roles only for admin users */}
+            {isAdmin
+              ? session.principal.systemRoles.map((role) => (
+                  <span className="tag-soft" key={role}>{role}</span>
+                ))
+              : null}
           </div>
 
           <form className="settings-profile-form" onSubmit={(event) => void handleProfileSave(event)}>
@@ -267,10 +280,10 @@ export function SettingsPageClient({
                 disabled={!isConnectedSession || isSavingProfile}
                 type="submit"
               >
-                {isSavingProfile ? 'Saving...' : 'Save profile'}
+                {isSavingProfile ? 'Saving\u2026' : 'Save profile'}
               </button>
               {!isConnectedSession ? (
-                <span className="list-muted">Connected session required.</span>
+                <span className="list-muted">Sign in to update your profile.</span>
               ) : (
                 <span className="list-muted">Leave optional fields blank to clear.</span>
               )}
@@ -295,7 +308,7 @@ export function SettingsPageClient({
               onClick={() => void handleLogoutAll()}
               type="button"
             >
-              {isRevokingEverywhere ? 'Signing out...' : 'Sign out everywhere'}
+              {isRevokingEverywhere ? 'Signing out\u2026' : 'Sign out everywhere'}
             </button>
             <Link className="btn-ghost" href="/auth/forgot-password">
               Reset password
@@ -333,7 +346,7 @@ export function SettingsPageClient({
       <section className="split-grid">
         <article className="panel settings-card">
           <span className="micro-label">Active sessions</span>
-          <h2>Browser inventory</h2>
+          <h2>Browser sessions</h2>
           {sessionItems.length > 0 ? (
             <div className="session-list">
               {sessionItems.map((item) => (
@@ -343,7 +356,7 @@ export function SettingsPageClient({
                       {item.deviceName || item.browser || 'Unnamed session'}
                     </span>
                     <span className="session-row__detail">
-                      {item.ipAddress ?? 'Unknown IP'} · Expires {formatUtcDateTime(item.expiresAt)}
+                      {item.ipAddress ?? 'Unknown IP'} &middot; Expires {formatUtcDateTime(item.expiresAt)}
                     </span>
                   </div>
                   <div className="session-row__right">
@@ -359,7 +372,7 @@ export function SettingsPageClient({
               <p>
                 {isConnectedSession
                   ? 'No active sessions found.'
-                  : 'Session inventory requires a connected account.'}
+                  : 'Sign in to view your active sessions.'}
               </p>
             </div>
           )}
@@ -371,11 +384,11 @@ export function SettingsPageClient({
           <h2>{primaryWorkspace?.name ?? 'No workspace'}</h2>
           <div className="kv-list">
             <div className="kv-row">
-              <span className="kv-row__key">Role</span>
-              <span className="kv-row__value">{primaryWorkspace?.role ?? '—'}</span>
+              <span className="kv-row__key">Your role</span>
+              <span className="kv-row__value">{primaryWorkspace?.role ?? '\u2014'}</span>
             </div>
             <div className="kv-row">
-              <span className="kv-row__key">Visible sections</span>
+              <span className="kv-row__key">Dashboard sections</span>
               <span className="kv-row__value">{visibleSections.length}</span>
             </div>
           </div>
@@ -386,48 +399,52 @@ export function SettingsPageClient({
         </article>
       </section>
 
-      {/* ── Access matrix (collapsible) ── */}
-      <section className="panel settings-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-          <div>
-            <span className="micro-label">Access matrix</span>
-            <h2>Section permissions</h2>
+      {/* ── Access matrix — admin only ── */}
+      {isAdmin ? (
+        <section className="panel settings-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+            <div>
+              <span className="micro-label">Access matrix</span>
+              <h2>Section permissions</h2>
+            </div>
+            <div className="tag-row">
+              <span className="tag-soft tag-soft--green">
+                {allowedDashboardRows.length + allowedAdminRows.length} allowed
+              </span>
+              {blockedAccessRows.length > 0 ? (
+                <span className="tag-soft tag-soft--orange">{blockedAccessRows.length} blocked</span>
+              ) : null}
+              <button
+                className="btn-ghost"
+                onClick={() => setShowAccessMatrix((v) => !v)}
+                style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                type="button"
+              >
+                {showAccessMatrix ? 'Hide' : 'Show all'}
+              </button>
+            </div>
           </div>
-          <div className="tag-row">
-            <span className="tag-soft tag-soft--green">{allowedDashboardRows.length + allowedAdminRows.length} allowed</span>
-            {blockedAccessRows.length > 0 ? (
-              <span className="tag-soft tag-soft--orange">{blockedAccessRows.length} blocked</span>
-            ) : null}
-            <button
-              className="btn-ghost"
-              onClick={() => setShowAccessMatrix((v) => !v)}
-              style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-              type="button"
-            >
-              {showAccessMatrix ? 'Hide' : 'Show all'}
-            </button>
-          </div>
-        </div>
 
-        {showAccessMatrix ? (
-          <div className="access-matrix">
-            {accessMatrix.map((row) => (
-              <div className="access-row" key={`settings-matrix:${row.scope}:${row.id}`}>
-                <span className={row.allowed ? 'access-row__dot access-row__dot--allowed' : 'access-row__dot access-row__dot--blocked'} />
-                <span className="access-row__title">{row.title}</span>
-                <span className="access-row__scope">{row.scope}</span>
-                {!row.allowed && row.reason ? (
-                  <span className="access-row__reason">{row.reason}</span>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="list-muted" style={{ fontSize: '0.88rem' }}>
-            Click &ldquo;Show all&rdquo; to inspect route-level allow/deny decisions for this session.
-          </p>
-        )}
-      </section>
+          {showAccessMatrix ? (
+            <div className="access-matrix">
+              {accessMatrix.map((row) => (
+                <div className="access-row" key={`settings-matrix:${row.scope}:${row.id}`}>
+                  <span className={row.allowed ? 'access-row__dot access-row__dot--allowed' : 'access-row__dot access-row__dot--blocked'} />
+                  <span className="access-row__title">{row.title}</span>
+                  <span className="access-row__scope">{row.scope}</span>
+                  {!row.allowed && row.reason ? (
+                    <span className="access-row__reason">{row.reason}</span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="list-muted" style={{ fontSize: '0.88rem' }}>
+              Click &ldquo;Show all&rdquo; to inspect route-level permissions for this session.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       {/* ── AI provider credentials ── */}
       <AiAccessClient
