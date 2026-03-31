@@ -35,6 +35,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
   const accessMatrix = context ? buildAccessMatrixRows({ context, workspaceId }) : [];
   const isAdmin = session ? isAdminSession(session) : false;
+  const workspaceName = session?.workspaces[0]?.name;
 
   return (
     <SiteShell
@@ -47,6 +48,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       pathname="/app/settings"
       showPersonaSwitcher={false}
       title="Account &amp; workspace"
+      workspaceName={workspaceName}
+      userDisplayName={session?.user.displayName ?? undefined}
     >
       {session ? (
         <SettingsPageClient

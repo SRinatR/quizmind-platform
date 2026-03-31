@@ -21,7 +21,7 @@ interface BillingPageClientProps {
 const PRESET_AMOUNTS_KOPECKS = [10_000, 30_000, 50_000, 100_000, 300_000] as const;
 
 function formatRub(kopecks: number): string {
-  return new Intl.NumberFormat('ru-RU', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'RUB',
     maximumFractionDigits: 0,
@@ -29,9 +29,9 @@ function formatRub(kopecks: number): string {
 }
 
 function formatDate(value?: string | null): string {
-  if (!value) return '—';
+  if (!value) return '\u2014';
 
-  return new Intl.DateTimeFormat('ru-RU', {
+  return new Intl.DateTimeFormat('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -43,13 +43,13 @@ function formatDate(value?: string | null): string {
 function statusLabel(status: string): string {
   switch (status) {
     case 'pending':
-      return 'Ожидает оплаты';
+      return 'Pending';
     case 'succeeded':
-      return 'Оплачено';
+      return 'Paid';
     case 'canceled':
-      return 'Отменено';
+      return 'Cancelled';
     case 'refunded':
-      return 'Возврат';
+      return 'Refunded';
     default:
       return status;
   }
@@ -136,7 +136,7 @@ export function BillingPageClient({
 
     async function mountWidget() {
       if (!window.YooMoneyCheckoutWidget) {
-        setErrorMessage('Не удалось загрузить виджет оплаты. Попробуйте обновить страницу.');
+        setErrorMessage('Failed to load the payment widget. Try refreshing the page.');
         return;
       }
 
@@ -148,9 +148,9 @@ export function BillingPageClient({
         error_callback: (err) => {
           if (err.error === 'token_expired') {
             setWidgetToken(null);
-            setErrorMessage('Время сессии оплаты истекло. Создайте новый платёж.');
+            setErrorMessage('Payment session expired. Please start a new payment.');
           } else {
-            setErrorMessage(`Ошибка виджета: ${err.error}`);
+            setErrorMessage(`Widget error: ${err.error}`);
           }
           setActiveAction(null);
         },
@@ -162,7 +162,7 @@ export function BillingPageClient({
         await widget.render(container);
         setWidgetReady(true);
       } catch {
-        setErrorMessage('Не удалось отобразить виджет оплаты.');
+        setErrorMessage('Failed to render the payment widget.');
         setActiveAction(null);
       }
     }
@@ -180,13 +180,13 @@ export function BillingPageClient({
   async function handleCreateTopUp() {
     if (!canManageBilling) return;
     if (!customAmountValid) {
-      setErrorMessage('Введите корректную сумму (от 10 ₽ до 1 000 000 ₽).');
+      setErrorMessage('Enter a valid amount (\u20BD10\u2013\u20BD1,000,000).');
       return;
     }
 
     setActiveAction('create_topup');
     setErrorMessage(null);
-    setStatusMessage('Создаём платёж...');
+    setStatusMessage('Creating payment\u2026');
 
     try {
       const response = await fetch('/api/wallet/topups/create', {
@@ -199,7 +199,7 @@ export function BillingPageClient({
       if (!response.ok || !payload?.ok || !payload.data?.confirmationToken) {
         setActiveAction(null);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Не удалось создать платёж. Попробуйте ещё раз.');
+        setErrorMessage(payload?.error?.message ?? 'Unable to create payment. Please try again.');
         return;
       }
 
@@ -223,12 +223,12 @@ export function BillingPageClient({
       ]);
 
       setWidgetToken(result.confirmationToken);
-      setStatusMessage('Платёж создан. Завершите оплату в форме ниже.');
+      setStatusMessage('Payment created. Complete checkout in the form below.');
       setActiveAction(null);
     } catch {
       setActiveAction(null);
       setStatusMessage(null);
-      setErrorMessage('Не удалось связаться с сервером. Попробуйте ещё раз.');
+      setErrorMessage('Unable to reach the server. Please try again.');
     }
   }
 
@@ -265,20 +265,20 @@ export function BillingPageClient({
       {/* Balance card + top-up trigger */}
       <section className="wallet-hero">
         <article className="wallet-balance-card panel">
-          <span className="micro-label">Текущий баланс</span>
+          <span className="micro-label">Current balance</span>
           <div className="wallet-balance-amount">
-            {balance ? formatRub(balance.balanceKopecks) : '—'}
+            {balance ? formatRub(balance.balanceKopecks) : '\u2014'}
           </div>
-          <p className="wallet-balance-currency">Рубли · Рабочее пространство</p>
+          <p className="wallet-balance-currency">RUB \u00B7 Workspace</p>
           {canManageBilling && isConnectedSession ? (
             <button className="btn-primary wallet-topup-btn" onClick={handleOpenModal} type="button">
-              Пополнить баланс
+              Add funds
             </button>
           ) : (
             <p className="list-muted">
               {isConnectedSession
-                ? 'Недостаточно прав для пополнения баланса.'
-                : 'Войдите в аккаунт для управления балансом.'}
+                ? 'Insufficient permissions to add funds.'
+                : 'Sign in to manage your balance.'}
             </p>
           )}
         </article>
@@ -286,17 +286,17 @@ export function BillingPageClient({
 
       {/* Top-up modal */}
       {showModal ? (
-        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label="Пополнение баланса">
+        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label="Add funds">
           <article className="wallet-modal panel">
             <div className="wallet-modal-header">
-              <h2>Пополнение баланса</h2>
+              <h2>Add funds</h2>
               <button
                 className="wallet-modal-close"
                 onClick={handleCloseModal}
                 type="button"
-                aria-label="Закрыть"
+                aria-label="Close"
               >
-                ✕
+                &#x2715;
               </button>
             </div>
 
@@ -311,7 +311,7 @@ export function BillingPageClient({
             {!widgetToken ? (
               <>
                 <div className="wallet-amount-section">
-                  <span className="micro-label">Выберите сумму</span>
+                  <span className="micro-label">Select amount</span>
                   <div className="wallet-preset-grid">
                     {PRESET_AMOUNTS_KOPECKS.map((amount) => (
                       <button
@@ -335,14 +335,14 @@ export function BillingPageClient({
                       onClick={() => setUseCustom(true)}
                       type="button"
                     >
-                      Другая
+                      Custom
                     </button>
                   </div>
 
                   {useCustom ? (
                     <div className="wallet-custom-amount">
                       <label className="micro-label" htmlFor="custom-amount">
-                        Сумма в рублях
+                        Amount (RUB)
                       </label>
                       <div className="wallet-custom-input-wrap">
                         <input
@@ -351,23 +351,23 @@ export function BillingPageClient({
                           inputMode="decimal"
                           min="10"
                           max="1000000"
-                          placeholder="Например: 500"
+                          placeholder="e.g. 500"
                           type="number"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
                         />
-                        <span className="wallet-custom-suffix">₽</span>
+                        <span className="wallet-custom-suffix">&#x20BD;</span>
                       </div>
                       {useCustom && customAmount && !customAmountValid ? (
-                        <p className="wallet-input-error">Введите сумму от 10 ₽ до 1 000 000 ₽</p>
+                        <p className="wallet-input-error">Enter an amount from &#x20BD;10 to &#x20BD;1,000,000</p>
                       ) : null}
                     </div>
                   ) : null}
                 </div>
 
                 <div className="wallet-pay-summary">
-                  <span>К оплате:</span>
-                  <strong>{customAmountValid ? formatRub(effectiveKopecks) : '—'}</strong>
+                  <span>Total:</span>
+                  <strong>{customAmountValid ? formatRub(effectiveKopecks) : '\u2014'}</strong>
                 </div>
 
                 <button
@@ -380,7 +380,7 @@ export function BillingPageClient({
                   onClick={() => void handleCreateTopUp()}
                   type="button"
                 >
-                  {activeAction === 'create_topup' ? 'Создаём платёж...' : 'Перейти к оплате'}
+                  {activeAction === 'create_topup' ? 'Creating payment\u2026' : 'Continue to payment'}
                 </button>
               </>
             ) : null}
@@ -391,7 +391,7 @@ export function BillingPageClient({
                 {!widgetReady ? (
                   <div className="wallet-widget-loading">
                     <div className="wallet-spinner" />
-                    <span>Загружаем форму оплаты...</span>
+                    <span>Loading payment form\u2026</span>
                   </div>
                 ) : null}
                 <div
@@ -407,8 +407,10 @@ export function BillingPageClient({
 
       {/* Top-up history */}
       <section className="panel">
-        <span className="micro-label">История пополнений</span>
-        <h2>Транзакции</h2>
+        <div className="page-section__head">
+          <span className="page-section__label">Transaction history</span>
+        </div>
+        <h2>Transactions</h2>
 
         {topUps.length > 0 ? (
           <div className="wallet-history">
@@ -421,12 +423,12 @@ export function BillingPageClient({
                 <div className="wallet-history-right">
                   <span className="list-muted wallet-history-date">
                     {topUp.status === 'succeeded' && topUp.paidAt
-                      ? `Оплачено ${formatDate(topUp.paidAt)}`
-                      : `Создано ${formatDate(topUp.createdAt)}`}
+                      ? `Paid ${formatDate(topUp.paidAt)}`
+                      : `Created ${formatDate(topUp.createdAt)}`}
                   </span>
                   {topUp.providerPaymentId ? (
                     <span className="wallet-history-ref" title={topUp.providerPaymentId}>
-                      {topUp.providerPaymentId.slice(0, 8)}…
+                      {topUp.providerPaymentId.slice(0, 8)}\u2026
                     </span>
                   ) : null}
                 </div>
@@ -435,9 +437,10 @@ export function BillingPageClient({
           </div>
         ) : (
           <div className="empty-state">
-            <span className="micro-label">История пуста</span>
-            <h2>Пополнений ещё не было.</h2>
-            <p>После первого пополнения здесь появится история транзакций.</p>
+            <span className="empty-state-icon" aria-hidden="true">&#x1F4CB;</span>
+            <span className="micro-label">No transactions yet</span>
+            <h2>No top-ups recorded.</h2>
+            <p>Your transaction history will appear here after your first top-up.</p>
           </div>
         )}
       </section>

@@ -78,7 +78,6 @@ export function SettingsPageClient({
   const currentDisplayName = profileState?.displayName || session.user.displayName || 'Your account';
   const currentEmail = profileState?.email ?? session.user.email;
 
-  // Admin-only access matrix derived data
   const blockedAccessRows = accessMatrix.filter((row) => !row.allowed);
   const allowedDashboardRows = accessMatrix.filter((row) => row.scope === 'dashboard' && row.allowed);
   const allowedAdminRows = accessMatrix.filter((row) => row.scope === 'admin' && row.allowed);
@@ -161,7 +160,7 @@ export function SettingsPageClient({
 
   return (
     <>
-      {/* ── Banners ── */}
+      {/* ── Global status banners ── */}
       {statusMessage ? (
         <div className="banner banner-info">{statusMessage}</div>
       ) : null}
@@ -173,7 +172,7 @@ export function SettingsPageClient({
       <section className="metrics-grid">
         <article className="stat-card">
           <span className="micro-label">Email</span>
-          <p className="stat-value">Active</p>
+          <p className="stat-value stat-value--sm">Active</p>
           <p className="metric-copy">{session.user.email}</p>
         </article>
         <article className="stat-card">
@@ -188,7 +187,6 @@ export function SettingsPageClient({
           <p className="stat-value">{session.workspaces.length}</p>
           <p className="metric-copy">{primaryWorkspace?.name ?? 'No workspace yet'}</p>
         </article>
-        {/* Permissions stat is useful for admins; normal users see their role instead */}
         {isAdmin ? (
           <article className="stat-card">
             <span className="micro-label">Permissions</span>
@@ -198,24 +196,29 @@ export function SettingsPageClient({
         ) : (
           <article className="stat-card">
             <span className="micro-label">Role</span>
-            <p className="stat-value">{primaryWorkspace?.role ?? '\u2014'}</p>
+            <p className="stat-value stat-value--sm">{primaryWorkspace?.role ?? '\u2014'}</p>
             <p className="metric-copy">{primaryWorkspace?.name ?? 'No workspace'}</p>
           </article>
         )}
       </section>
 
-      {/* ── Account + Security ── */}
-      <section className="settings-layout">
-        {/* Profile card */}
+      {/* ══════════════════════════════════════════
+          SECTION: Account
+      ══════════════════════════════════════════ */}
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <h3 className="settings-section__title">Account</h3>
+          <p className="settings-section__desc">Your profile, display name, and preferences.</p>
+        </div>
+
         <article className="panel settings-card">
           <div className="settings-card-copy">
-            <span className="micro-label">Account</span>
+            <span className="micro-label">Profile</span>
             <h2>{currentDisplayName}</h2>
             <p>{currentEmail}</p>
           </div>
 
           <div className="tag-row">
-            {/* Show internal system roles only for admin users */}
             {isAdmin
               ? session.principal.systemRoles.map((role) => (
                   <span className="tag-soft" key={role}>{role}</span>
@@ -282,95 +285,112 @@ export function SettingsPageClient({
             </div>
           </form>
         </article>
+      </div>
 
-        {/* Security card */}
-        <article className="panel settings-card">
-          <div className="settings-card-copy">
-            <span className="micro-label">Security</span>
-            <h2>Session controls</h2>
-            <p>
-              Sign out of all browsers at once if a device was lost, shared, or compromised.
-            </p>
-          </div>
+      {/* ══════════════════════════════════════════
+          SECTION: Security
+      ══════════════════════════════════════════ */}
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <h3 className="settings-section__title">Security</h3>
+          <p className="settings-section__desc">Session management and password controls.</p>
+        </div>
 
-          <div className="settings-inline-actions">
-            <button
-              className="btn-danger"
-              disabled={!isConnectedSession || isRevokingEverywhere}
-              onClick={() => void handleLogoutAll()}
-              type="button"
-            >
-              {isRevokingEverywhere ? 'Signing out\u2026' : 'Sign out everywhere'}
-            </button>
-            <Link className="btn-ghost" href="/auth/forgot-password">
-              Reset password
-            </Link>
-          </div>
-
-          {currentSession ? (
-            <div className="kv-list">
-              <div className="kv-row">
-                <span className="kv-row__key">Current browser</span>
-                <span className="kv-row__value">
-                  {currentSession.deviceName || currentSession.browser || 'Unnamed'}
-                </span>
-              </div>
-              <div className="kv-row">
-                <span className="kv-row__key">Expires</span>
-                <span className="kv-row__value">{formatUtcDateTime(currentSession.expiresAt)}</span>
-              </div>
-              <div className="kv-row">
-                <span className="kv-row__key">IP address</span>
-                <span className="kv-row__value">{currentSession.ipAddress ?? 'Unknown'}</span>
-              </div>
-            </div>
-          ) : (
-            <p className="list-muted">
-              {isConnectedSession
-                ? 'Current session details unavailable.'
-                : 'Sign in with a connected account to manage live sessions.'}
-            </p>
-          )}
-        </article>
-      </section>
-
-      {/* ── Active sessions ── */}
-      <section className="split-grid">
-        <article className="panel settings-card">
-          <span className="micro-label">Active sessions</span>
-          <h2>Browser sessions</h2>
-          {sessionItems.length > 0 ? (
-            <div className="session-list">
-              {sessionItems.map((item) => (
-                <div className="session-row" key={item.id}>
-                  <div className="session-row__info">
-                    <span className="session-row__name">
-                      {item.deviceName || item.browser || 'Unnamed session'}
-                    </span>
-                    <span className="session-row__detail">
-                      {item.ipAddress ?? 'Unknown IP'} &middot; Expires {formatUtcDateTime(item.expiresAt)}
-                    </span>
-                  </div>
-                  <div className="session-row__right">
-                    {item.current ? (
-                      <span className="tag-soft tag-soft--green">current</span>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
+        <section className="settings-layout">
+          <article className="panel settings-card">
+            <div className="settings-card-copy">
+              <span className="micro-label">Session controls</span>
+              <h2>Sign out everywhere</h2>
               <p>
-                {isConnectedSession
-                  ? 'No active sessions found.'
-                  : 'Sign in to view your active sessions.'}
+                Revoke all active sessions at once if a device was lost, shared, or compromised.
               </p>
             </div>
-          )}
-        </article>
 
-        {/* Workspace snapshot */}
+            <div className="settings-inline-actions">
+              <button
+                className="btn-danger"
+                disabled={!isConnectedSession || isRevokingEverywhere}
+                onClick={() => void handleLogoutAll()}
+                type="button"
+              >
+                {isRevokingEverywhere ? 'Signing out\u2026' : 'Sign out everywhere'}
+              </button>
+              <Link className="btn-ghost" href="/auth/forgot-password">
+                Reset password
+              </Link>
+            </div>
+
+            {currentSession ? (
+              <div className="kv-list">
+                <div className="kv-row">
+                  <span className="kv-row__key">Current browser</span>
+                  <span className="kv-row__value">
+                    {currentSession.deviceName || currentSession.browser || 'Unnamed'}
+                  </span>
+                </div>
+                <div className="kv-row">
+                  <span className="kv-row__key">Session expires</span>
+                  <span className="kv-row__value">{formatUtcDateTime(currentSession.expiresAt)}</span>
+                </div>
+                <div className="kv-row">
+                  <span className="kv-row__key">IP address</span>
+                  <span className="kv-row__value">{currentSession.ipAddress ?? 'Unknown'}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="list-muted">
+                {isConnectedSession
+                  ? 'Current session details unavailable.'
+                  : 'Sign in with a connected account to manage live sessions.'}
+              </p>
+            )}
+          </article>
+
+          <article className="panel settings-card">
+            <span className="micro-label">Active sessions</span>
+            <h2>Browser sessions</h2>
+            {sessionItems.length > 0 ? (
+              <div className="session-list">
+                {sessionItems.map((item) => (
+                  <div className="session-row" key={item.id}>
+                    <div className="session-row__info">
+                      <span className="session-row__name">
+                        {item.deviceName || item.browser || 'Unnamed session'}
+                      </span>
+                      <span className="session-row__detail">
+                        {item.ipAddress ?? 'Unknown IP'} &middot; Expires {formatUtcDateTime(item.expiresAt)}
+                      </span>
+                    </div>
+                    <div className="session-row__right">
+                      {item.current ? (
+                        <span className="tag-soft tag-soft--green">current</span>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state" style={{ padding: '20px 0 0' }}>
+                <p>
+                  {isConnectedSession
+                    ? 'No active sessions found.'
+                    : 'Sign in to view your active sessions.'}
+                </p>
+              </div>
+            )}
+          </article>
+        </section>
+      </div>
+
+      {/* ══════════════════════════════════════════
+          SECTION: Workspace
+      ══════════════════════════════════════════ */}
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <h3 className="settings-section__title">Workspace</h3>
+          <p className="settings-section__desc">Your workspace membership, role, and quick links.</p>
+        </div>
+
         <article className="panel settings-card">
           <span className="micro-label">Workspace</span>
           <h2>{primaryWorkspace?.name ?? 'No workspace'}</h2>
@@ -380,7 +400,7 @@ export function SettingsPageClient({
               <span className="kv-row__value">{primaryWorkspace?.role ?? '\u2014'}</span>
             </div>
             <div className="kv-row">
-              <span className="kv-row__key">Dashboard sections</span>
+              <span className="kv-row__key">Accessible sections</span>
               <span className="kv-row__value">{visibleSections.length}</span>
             </div>
           </div>
@@ -389,67 +409,82 @@ export function SettingsPageClient({
             <Link className="btn-ghost" href="/app/usage">Usage</Link>
           </div>
         </article>
-      </section>
+      </div>
 
-      {/* ── Access matrix — admin only ── */}
+      {/* ══════════════════════════════════════════
+          SECTION: Access matrix — admin only
+      ══════════════════════════════════════════ */}
       {isAdmin ? (
-        <section className="panel settings-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-            <div>
-              <span className="micro-label">Access matrix</span>
-              <h2>Section permissions</h2>
-            </div>
-            <div className="tag-row">
-              <span className="tag-soft tag-soft--green">
-                {allowedDashboardRows.length + allowedAdminRows.length} allowed
-              </span>
-              {blockedAccessRows.length > 0 ? (
-                <span className="tag-soft tag-soft--orange">{blockedAccessRows.length} blocked</span>
-              ) : null}
-              <button
-                className="btn-ghost"
-                onClick={() => setShowAccessMatrix((v) => !v)}
-                style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-                type="button"
-              >
-                {showAccessMatrix ? 'Hide' : 'Show all'}
-              </button>
-            </div>
+        <div className="settings-section">
+          <div className="settings-section__header">
+            <h3 className="settings-section__title">Access matrix</h3>
+            <p className="settings-section__desc">Route-level permissions resolved for this session.</p>
           </div>
 
-          {showAccessMatrix ? (
-            <div className="access-matrix">
-              {accessMatrix.map((row) => (
-                <div className="access-row" key={`settings-matrix:${row.scope}:${row.id}`}>
-                  <span className={row.allowed ? 'access-row__dot access-row__dot--allowed' : 'access-row__dot access-row__dot--blocked'} />
-                  <span className="access-row__title">{row.title}</span>
-                  <span className="access-row__scope">{row.scope}</span>
-                  {!row.allowed && row.reason ? (
-                    <span className="access-row__reason">{row.reason}</span>
-                  ) : null}
-                </div>
-              ))}
+          <section className="panel settings-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+              <span className="micro-label">Section permissions</span>
+              <div className="tag-row">
+                <span className="tag-soft tag-soft--green">
+                  {allowedDashboardRows.length + allowedAdminRows.length} allowed
+                </span>
+                {blockedAccessRows.length > 0 ? (
+                  <span className="tag-soft tag-soft--orange">{blockedAccessRows.length} blocked</span>
+                ) : null}
+                <button
+                  className="btn-ghost"
+                  onClick={() => setShowAccessMatrix((v) => !v)}
+                  style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                  type="button"
+                >
+                  {showAccessMatrix ? 'Hide' : 'Show all'}
+                </button>
+              </div>
             </div>
-          ) : (
-            <p className="list-muted" style={{ fontSize: '0.88rem' }}>
-              Click &ldquo;Show all&rdquo; to inspect route-level permissions for this session.
-            </p>
-          )}
-        </section>
+
+            {showAccessMatrix ? (
+              <div className="access-matrix">
+                {accessMatrix.map((row) => (
+                  <div className="access-row" key={`settings-matrix:${row.scope}:${row.id}`}>
+                    <span className={row.allowed ? 'access-row__dot access-row__dot--allowed' : 'access-row__dot access-row__dot--blocked'} />
+                    <span className="access-row__title">{row.title}</span>
+                    <span className="access-row__scope">{row.scope}</span>
+                    {!row.allowed && row.reason ? (
+                      <span className="access-row__reason">{row.reason}</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="list-muted" style={{ fontSize: '0.88rem' }}>
+                Click &ldquo;Show all&rdquo; to inspect route-level permissions for this session.
+              </p>
+            )}
+          </section>
+        </div>
       ) : null}
 
-      {/* ── AI provider credentials ── */}
-      <AiAccessClient
-        currentWorkspaceId={primaryWorkspace?.id}
-        isConnectedSession={isConnectedSession}
-        providerCatalog={providerCatalog}
-        providerCredentialInventory={providerCredentialInventory}
-        workspaceOptions={session.workspaces.map((workspace) => ({
-          id: workspace.id,
-          name: workspace.name,
-          role: workspace.role,
-        }))}
-      />
+      {/* ══════════════════════════════════════════
+          SECTION: AI Access
+      ══════════════════════════════════════════ */}
+      <div className="settings-section">
+        <div className="settings-section__header">
+          <h3 className="settings-section__title">AI Access</h3>
+          <p className="settings-section__desc">Bring-your-own-key credentials and provider policy.</p>
+        </div>
+
+        <AiAccessClient
+          currentWorkspaceId={primaryWorkspace?.id}
+          isConnectedSession={isConnectedSession}
+          providerCatalog={providerCatalog}
+          providerCredentialInventory={providerCredentialInventory}
+          workspaceOptions={session.workspaces.map((workspace) => ({
+            id: workspace.id,
+            name: workspace.name,
+            role: workspace.role,
+          }))}
+        />
+      </div>
     </>
   );
 }

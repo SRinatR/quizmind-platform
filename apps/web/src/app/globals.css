@@ -4029,3 +4029,368 @@ code {
   line-height: 1.6;
   max-width: 68ch;
 }
+
+/* ============================================================
+   UI/UX POLISH — Additional premium improvements
+   Applied on top of all existing component definitions
+   ============================================================ */
+
+/* ── Stronger active nav item: inset left accent bar ── */
+.app-nav-item--active {
+  background: rgba(184, 92, 56, 0.13);
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.app-nav-item--active:hover {
+  background: rgba(184, 92, 56, 0.18);
+  color: var(--accent);
+}
+
+/* ── Nav item icon ── */
+.app-nav-item__icon {
+  flex-shrink: 0;
+  width: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2px;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.app-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* ── Topbar right cluster ── */
+.app-topbar__workspace-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  background: rgba(184, 92, 56, 0.09);
+  color: #7c3516;
+  border: 1px solid rgba(184, 92, 56, 0.16);
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 120ms ease;
+}
+
+.app-topbar__workspace-chip:hover {
+  background: rgba(184, 92, 56, 0.14);
+}
+
+.app-topbar__avatar-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #8a3c19);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(184, 92, 56, 0.28);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  user-select: none;
+}
+
+.app-topbar__avatar-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(184, 92, 56, 0.36);
+}
+
+/* ── Sidebar footer user row ── */
+.app-sidebar__footer-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.app-sidebar__avatar {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #8a3c19);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+/* Override app-session-status to fit in the user row */
+.app-sidebar__footer-user .app-session-status {
+  padding: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Dashboard quota grid ── */
+.dashboard-quota-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* ── Stat value size variant ── */
+.stat-value--sm {
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stat-value--green {
+  color: #1a5c38;
+}
+
+/* ── Settings section grouping ── */
+.settings-section {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-section + .settings-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(31, 41, 51, 0.07);
+}
+
+.settings-section__header {
+  padding: 0 2px;
+  display: grid;
+  gap: 2px;
+}
+
+.settings-section__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.settings-section__desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Landing page improvements ── */
+
+/* Hero trust row */
+.lp-hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: -4px;
+}
+
+.lp-trust-item {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.lp-trust-sep {
+  color: var(--line);
+  opacity: 0.8;
+}
+
+/* Section subtitle */
+.lp-section-sub {
+  margin: -24px 0 32px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--muted);
+  max-width: 52ch;
+}
+
+/* Feature card: icon wrap + body layout */
+.lp-feature-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(184, 92, 56, 0.08);
+  border: 1px solid rgba(184, 92, 56, 0.12);
+  flex-shrink: 0;
+}
+
+.lp-feature-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.lp-feature-body {
+  display: grid;
+  gap: 6px;
+}
+
+.lp-feature-card {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.lp-feature-card h3 {
+  margin: 0 0 2px;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.lp-feature-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* CTA card */
+.lp-cta {
+  padding: 0;
+}
+
+.lp-cta-card {
+  margin: 0 24px 72px;
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, rgba(255, 249, 240, 0.98), rgba(248, 236, 220, 0.96)),
+    linear-gradient(160deg, rgba(184, 92, 56, 0.10), transparent);
+  border: 1px solid rgba(184, 92, 56, 0.18);
+  box-shadow: 0 18px 56px rgba(71, 56, 44, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+.lp-cta-card::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 92, 56, 0.12), transparent 68%);
+  pointer-events: none;
+}
+
+.lp-cta-inner {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 64px 48px;
+}
+
+.lp-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.lp-cta-inner h2 {
+  margin: 0;
+  font-size: clamp(1.9rem, 3.5vw, 2.9rem);
+  letter-spacing: -0.05em;
+  color: var(--ink);
+}
+
+.lp-cta-inner p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 48ch;
+  line-height: 1.6;
+}
+
+.lp-cta-note {
+  font-size: 0.8rem !important;
+  opacity: 0.7;
+}
+
+/* Differentiate marketing background from app UI */
+.lp-root {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(184, 92, 56, 0.14), transparent 28%),
+    radial-gradient(circle at 85% 8%, rgba(44, 93, 136, 0.12), transparent 24%),
+    linear-gradient(180deg, #fefaf5 0%, #f5ede3 55%, #ede0ce 100%);
+}
+
+/* Responsive CTA card */
+@media (max-width: 860px) {
+  .lp-cta-card {
+    margin: 0 16px 56px;
+    border-radius: 22px;
+  }
+
+  .lp-cta-inner {
+    padding: 48px 28px;
+  }
+
+  .lp-feature-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 600px) {
+  .lp-cta-actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .lp-cta-actions .btn-primary,
+  .lp-cta-actions .btn-ghost {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lp-hero-trust {
+    gap: 4px 8px;
+  }
+}
+
+/* ── App body: prevent marketing bg gradient from bleeding into app pages ── */
+.app-shell ~ * {
+  background: none;
+}
+
+/* ── Improved body background only for marketing ── */
+.lp-root + body,
+body:has(.lp-root) {
+  background:
+    radial-gradient(circle at top left, rgba(184, 92, 56, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(44, 93, 136, 0.14), transparent 24%),
+    linear-gradient(180deg, #fefaf5 0%, var(--bg) 50%, #ede2d3 100%);
+}
