@@ -63,6 +63,7 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
       description=""
       eyebrow="Usage"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/usage"
       showPersonaSwitcher={false}
       title="Workspace usage"
@@ -207,13 +208,21 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
             </div>
           </article>
         </>
-      ) : session ? (
+      ) : session && workspaceId ? (
         <section className="empty-state">
           <span className="micro-label">No data</span>
           <h2>Usage data not available yet</h2>
           <p>
-            The session is active but quota counters could not be loaded. This usually means the workspace has
-            no usage snapshot yet or the API is still starting.
+            The workspace is active but has no usage snapshot yet. Data appears here as the extension is used.
+          </p>
+        </section>
+      ) : session ? (
+        <section className="empty-state">
+          <span className="micro-label">No workspace</span>
+          <h2>No workspace linked to your account yet.</h2>
+          <p>
+            Your session is active but your account is not yet linked to a workspace.
+            Contact your administrator to get access.
           </p>
         </section>
       ) : (

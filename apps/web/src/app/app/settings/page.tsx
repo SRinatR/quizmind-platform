@@ -43,6 +43,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       description=""
       eyebrow="Settings"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/settings"
       showPersonaSwitcher={false}
       title="Account &amp; workspace"

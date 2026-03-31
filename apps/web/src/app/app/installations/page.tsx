@@ -34,7 +34,7 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
     requestedWorkspaceId && session?.workspaces.some((workspace) => workspace.id === requestedWorkspaceId)
       ? requestedWorkspaceId
       : session?.workspaces[0]?.id;
-  const inventory = workspaceId ? await getExtensionInstallationInventory(workspaceId, accessToken) : null;
+  const inventory = accessToken && workspaceId ? await getExtensionInstallationInventory(workspaceId, accessToken) : null;
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -44,6 +44,7 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
       description=""
       eyebrow="Installations"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/installations"
       showPersonaSwitcher={false}
       title="Extension installations"
@@ -70,13 +71,13 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
 
           <InstallationsPageClient snapshot={inventory} />
         </>
-      ) : session ? (
+      ) : session && workspaceId ? (
         <section className="empty-state">
           <span className="micro-label">Installations</span>
-          <h2>Installation inventory is not available for this workspace yet.</h2>
+          <h2>No extension installations found yet.</h2>
           <p>
-            This usually means the workspace has no bound extension installations yet or your current session does not
-            have installation read access.
+            The workspace has no bound extension installations yet, or your session does not have installation read
+            access.
           </p>
           <div className="link-row">
             <Link className="btn-ghost" href="/app/usage">
@@ -84,6 +85,20 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
             </Link>
             <Link className="btn-ghost" href="/app/settings">
               Open settings
+            </Link>
+          </div>
+        </section>
+      ) : session ? (
+        <section className="empty-state">
+          <span className="micro-label">No workspace</span>
+          <h2>No workspace linked to your account yet.</h2>
+          <p>
+            Your session is active but your account is not yet linked to a workspace.
+            Contact your administrator to get access.
+          </p>
+          <div className="link-row">
+            <Link className="btn-ghost" href="/app/settings">
+              View settings
             </Link>
           </div>
         </section>

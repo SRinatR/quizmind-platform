@@ -279,6 +279,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       description=""
       eyebrow="Admin"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname={`/admin/${resolvedParams.section}`}
       showPersonaSwitcher={false}
       title={section?.title ?? resolvedParams.section}

@@ -57,6 +57,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       description=""
       eyebrow="Wallet"
       isAdmin={isAdmin}
+      isSignedIn={Boolean(session)}
       pathname="/app/billing"
       showPersonaSwitcher={false}
       title="Balance &amp; top-up"
@@ -69,6 +70,20 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           isConnectedSession={isConnectedSession}
           workspaceId={workspaceId}
         />
+      ) : session ? (
+        <section className="empty-state">
+          <span className="micro-label">No workspace</span>
+          <h2>No workspace linked to your account yet.</h2>
+          <p>
+            Your session is active but your account is not yet linked to a workspace.
+            Contact your administrator to get access.
+          </p>
+          <div className="billing-inline-actions">
+            <Link className="btn-ghost" href="/app/settings">
+              View settings
+            </Link>
+          </div>
+        </section>
       ) : (
         <section className="empty-state">
           <span className="micro-label">Вход в аккаунт</span>

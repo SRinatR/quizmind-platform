@@ -7,7 +7,6 @@ import {
   Inject,
   Ip,
   Post,
-  Query,
   ServiceUnavailableException,
   UnauthorizedException,
   UseGuards,
@@ -123,17 +122,6 @@ export class AuthController {
     }
 
     return ok(await this.authService.logoutAll(currentUser.userId));
-  }
-
-  @Get('verify-email')
-  async verifyEmail(@Query('token') token?: string) {
-    this.assertConnectedMode();
-
-    if (!token) {
-      throw new BadRequestException('Email verification token is required.');
-    }
-
-    return ok(await this.authService.verifyEmail(token));
   }
 
   @Get('me')

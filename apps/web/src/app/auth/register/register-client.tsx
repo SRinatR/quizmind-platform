@@ -21,10 +21,6 @@ interface RegisterRouteResponse {
       email: string;
       displayName?: string;
     };
-    emailVerification: {
-      required: boolean;
-      emailVerifiedAt?: string | null;
-    };
   };
   error?: {
     message?: string;
@@ -77,15 +73,10 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
         return;
       }
 
-      setStatusMessage('Account created. Check your inbox to verify your email\u2026');
+      setStatusMessage('Account created. Taking you in\u2026');
 
       startNavigation(() => {
-        const params = new URLSearchParams({
-          sent: '1',
-          email: payload.data?.user.email ?? email,
-          next: nextPath,
-        });
-        router.push(`/auth/verify?${params.toString()}`);
+        router.push(nextPath);
         router.refresh();
       });
     } catch {

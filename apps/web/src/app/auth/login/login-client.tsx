@@ -21,10 +21,6 @@ interface LoginRouteResponse {
       email: string;
       displayName?: string;
     };
-    emailVerification: {
-      required: boolean;
-      emailVerifiedAt?: string | null;
-    };
   };
   error?: {
     message?: string;

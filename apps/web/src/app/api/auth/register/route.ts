@@ -68,7 +68,6 @@ export async function POST(request: Request) {
     data: {
       expiresAt: payload.data.session.expiresAt,
       user: payload.data.session.user,
-      emailVerification: payload.data.emailVerification,
     },
   });
 }
