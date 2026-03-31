@@ -2211,6 +2211,128 @@ a {
   letter-spacing: -0.03em;
 }
 
+/* ── Shared button system ── */
+/*
+ * These classes are used across the entire app (auth, app shell, admin,
+ * settings, billing, forms, landing page, etc).  They were accidentally
+ * removed when the lp-* landing-page block was extracted to marketing.css.
+ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  white-space: nowrap;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.btn-primary:hover {
+  background: #a04e2e;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(184, 92, 56, 0.32);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-primary:disabled,
+.btn-primary[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 120ms ease, background 120ms ease;
+  white-space: nowrap;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.btn-ghost:hover {
+  border-color: rgba(31, 41, 51, 0.28);
+  background: rgba(31, 41, 51, 0.04);
+}
+
+.btn-ghost:active {
+  background: rgba(31, 41, 51, 0.08);
+}
+
+.btn-ghost:disabled,
+.btn-ghost[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1.5px solid rgba(31, 41, 51, 0.22);
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 120ms ease, background 120ms ease;
+  line-height: 1.2;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.btn-outline:hover {
+  border-color: var(--ink);
+  background: rgba(31, 41, 51, 0.04);
+}
+
+.btn-outline:disabled,
+.btn-outline[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-lg {
+  padding: 14px 28px;
+  font-size: 1rem;
+}
+
+.btn-block {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 /* ── Improved button focus states (accessibility) ── */
 .btn-primary:focus-visible,
 .btn-ghost:focus-visible,
