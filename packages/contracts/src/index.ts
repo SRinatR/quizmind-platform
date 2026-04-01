@@ -382,6 +382,18 @@ export interface AuthSessionsPayload {
   items: AuthSessionSummary[];
 }
 
+/**
+ * Per-user UI preferences stored server-side.
+ * All fields are optional so partial updates are safe.
+ */
+export interface UiPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  language?: 'en' | 'ru';
+  density?: 'comfortable' | 'compact';
+  reducedMotion?: boolean;
+  sidebarCollapsed?: boolean;
+}
+
 export interface UserProfilePayload {
   id: string;
   email: string;
@@ -389,6 +401,7 @@ export interface UserProfilePayload {
   avatarUrl?: string | null;
   locale?: string | null;
   timezone?: string | null;
+  uiPreferences?: UiPreferences | null;
   emailVerifiedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -399,6 +412,7 @@ export interface UserProfileUpdateRequest {
   avatarUrl?: string | null;
   locale?: string | null;
   timezone?: string | null;
+  uiPreferences?: UiPreferences | null;
 }
 
 export interface WorkspaceSummary {

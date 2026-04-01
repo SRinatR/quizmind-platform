@@ -90,10 +90,14 @@ export async function PATCH(request: Request) {
     return badRequest('Request body is required.');
   }
 
-  const hasMutableField = ['displayName', 'avatarUrl', 'locale', 'timezone'].some((field) => field in body);
+  const hasMutableField = ['displayName', 'avatarUrl', 'locale', 'timezone', 'uiPreferences'].some(
+    (field) => field in body,
+  );
 
   if (!hasMutableField) {
-    return badRequest('At least one profile field must be provided: displayName, avatarUrl, locale, timezone.');
+    return badRequest(
+      'At least one profile field must be provided: displayName, avatarUrl, locale, timezone, uiPreferences.',
+    );
   }
 
   const response = await fetch(`${API_URL}/user/profile`, {
@@ -108,6 +112,7 @@ export async function PATCH(request: Request) {
       ...('avatarUrl' in body ? { avatarUrl: body.avatarUrl } : {}),
       ...('locale' in body ? { locale: body.locale } : {}),
       ...('timezone' in body ? { timezone: body.timezone } : {}),
+      ...('uiPreferences' in body ? { uiPreferences: body.uiPreferences } : {}),
     }),
   });
 

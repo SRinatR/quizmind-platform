@@ -13,6 +13,7 @@ import {
   resolvePersona,
 } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
+import { ServerPrefsSync } from '../../../lib/preferences';
 import { SettingsPageClient } from './settings-page-client';
 
 interface SettingsPageProps {
@@ -51,6 +52,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       workspaceName={workspaceName}
       userDisplayName={session?.user.displayName ?? undefined}
     >
+      {/* Restore server-saved preferences on page load */}
+      <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
+
       {session ? (
         <SettingsPageClient
           authSessions={authSessions}

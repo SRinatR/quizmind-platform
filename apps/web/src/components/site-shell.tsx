@@ -1,7 +1,10 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { adminNavigation, dashboardNavigation, publicNavigation } from '@quizmind/ui';
 import { LogoutButton } from './logout-button';
+import { usePreferences } from '../lib/preferences';
 
 // Inline SVG icons for nav items — zero runtime dependency
 const NAV_ICONS: Record<string, ReactNode> = {
@@ -43,6 +46,16 @@ const NAV_ICONS: Record<string, ReactNode> = {
       <path d="M7 1.5V3M7 11v1.5M1.5 7H3M11 7h1.5M3.4 3.4l1.1 1.1M9.5 9.5l1.1 1.1M10.6 3.4 9.5 4.5M4.5 9.5l-1.1 1.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   ),
+};
+
+// Maps nav item hrefs to translation keys
+const NAV_LABEL_KEYS: Record<string, 'overview' | 'billing' | 'usage' | 'history' | 'installations' | 'settings'> = {
+  '/app':               'overview',
+  '/app/billing':       'billing',
+  '/app/usage':         'usage',
+  '/app/history':       'history',
+  '/app/installations': 'installations',
+  '/app/settings':      'settings',
 };
 
 interface SiteShellProps {
@@ -92,6 +105,7 @@ export function SiteShell({
   workspaceName,
   userDisplayName,
 }: SiteShellProps) {
+  const { t } = usePreferences();
   const isConnected = apiState.startsWith('Connected');
   const initials = userDisplayName ? getInitials(userDisplayName) : null;
 
@@ -122,7 +136,7 @@ export function SiteShell({
           <label
             className="app-sidebar__close-btn"
             htmlFor="app-nav-toggle"
-            aria-label="Close navigation"
+            aria-label={t.shell.closeNav}
           >
             ✕
           </label>
@@ -131,9 +145,10 @@ export function SiteShell({
         <nav className="app-sidebar__nav">
           {/* Dashboard nav group */}
           <div className="app-nav-group">
-            <span className="app-nav-group__label">Dashboard</span>
+            <span className="app-nav-group__label">{t.nav.dashboardGroup}</span>
             {dashboardNavigation.map((item) => {
               const active = isActiveRoute(item.href, pathname);
+              const labelKey = NAV_LABEL_KEYS[item.href];
               return (
                 <Link
                   key={item.href}
@@ -145,7 +160,7 @@ export function SiteShell({
                       {NAV_ICONS[item.href]}
                     </span>
                   ) : null}
-                  {item.label}
+                  {labelKey != null ? t.nav[labelKey] : item.label}
                 </Link>
               );
             })}
@@ -154,7 +169,7 @@ export function SiteShell({
           {/* Admin nav group — only rendered for admins */}
           {isAdmin ? (
             <div className="app-nav-group">
-              <span className="app-nav-group__label">Admin</span>
+              <span className="app-nav-group__label">{t.nav.adminGroup}</span>
               {adminNavigation.map((item) => (
                 <Link
                   key={item.href}
@@ -183,7 +198,7 @@ export function SiteShell({
             <p className="app-session-status" title={apiState}>
               {isConnected
                 ? (userDisplayName ?? apiState.replace('Connected \u2014 ', ''))
-                : 'Not signed in'}
+                : t.shell.notSignedIn}
             </p>
           </div>
           {isSignedIn ? <LogoutButton /> : null}
@@ -210,7 +225,7 @@ export function SiteShell({
             <label
               className="app-topbar__menu-btn"
               htmlFor="app-nav-toggle"
-              aria-label="Open navigation"
+              aria-label={t.shell.openNav}
             >
               <span className="app-hamburger" aria-hidden="true" />
             </label>
@@ -243,7 +258,7 @@ export function SiteShell({
               </div>
             ) : (
               <Link href="/auth/login" className="btn-ghost" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
-                Sign in
+                {t.shell.signIn}
               </Link>
             )}
           </div>

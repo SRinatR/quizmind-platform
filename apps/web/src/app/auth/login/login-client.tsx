@@ -6,6 +6,7 @@ import type { FormEvent } from 'react';
 import { useState, useTransition } from 'react';
 
 import type { SessionSnapshot } from '../../../lib/api';
+import { usePreferences } from '../../../lib/preferences';
 
 interface LoginClientProps {
   initialSession: SessionSnapshot | null;
@@ -29,6 +30,8 @@ interface LoginRouteResponse {
 
 export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const tl = t.auth.login;
   const [email, setEmail] = useState<string>(initialSession?.user.email ?? '');
   const [password, setPassword] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -41,12 +44,12 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
   const hasAdminAccess = (initialSession?.principal.systemRoles.length ?? 0) > 0;
   const registerHref = `/auth/register?next=${encodeURIComponent(nextPath)}`;
   const continueLabel =
-    nextPath.startsWith('/app/extension/connect') ? 'Return to extension setup' : 'Continue to dashboard';
+    nextPath.startsWith('/app/extension/connect') ? tl.continueExtension : tl.continueDashboard;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
-    setStatusMessage('Signing you in\u2026');
+    setStatusMessage(tl.signingIn);
     setIsSubmitting(true);
 
     try {
@@ -61,11 +64,11 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSubmitting(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Incorrect email or password. Please try again.');
+        setErrorMessage(payload?.error?.message ?? tl.invalidCredentials);
         return;
       }
 
-      setStatusMessage('Signed in. Redirecting\u2026');
+      setStatusMessage(tl.signedInRedirecting);
 
       startNavigation(() => {
         router.push(nextPath);
@@ -74,13 +77,13 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
     } catch {
       setIsSubmitting(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the server right now. Please try again.');
+      setErrorMessage(tl.serverError);
     }
   }
 
   async function handleLogout() {
     setErrorMessage(null);
-    setStatusMessage('Signing out\u2026');
+    setStatusMessage(tl.signingOut);
     setIsSigningOut(true);
 
     try {
@@ -89,7 +92,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
       if (!response.ok) {
         setIsSigningOut(false);
         setStatusMessage(null);
-        setErrorMessage('Unable to sign out right now. Please try again.');
+        setErrorMessage(tl.signOutError);
         return;
       }
 
@@ -99,7 +102,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
     } catch {
       setIsSigningOut(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to sign out right now. Please try again.');
+      setErrorMessage(tl.signOutError);
     }
   }
 
@@ -108,8 +111,8 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
 
     return (
       <div className="auth-form-shell">
-        <span className="micro-label">Signed in</span>
-        <h2>Welcome back, {userName}.</h2>
+        <span className="micro-label">{tl.alreadySignedIn}</span>
+        <h2>{tl.welcomeBack}, {userName}.</h2>
         <p className="auth-form-copy">{initialSession.user.email}</p>
 
         <div className="auth-form-actions">
@@ -117,15 +120,15 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
             {continueLabel}
           </Link>
           <Link className="btn-ghost" href="/app">
-            Go to dashboard
+            {tl.goToDashboard}
           </Link>
           {hasAdminAccess ? (
             <Link className="btn-ghost" href="/admin">
-              Admin panel
+              {tl.adminPanel}
             </Link>
           ) : null}
           <button className="btn-ghost" disabled={isSigningOut} onClick={handleLogout} type="button">
-            {isSigningOut ? 'Signing out\u2026' : 'Sign out'}
+            {isSigningOut ? tl.signingOut : tl.signOut}
           </button>
         </div>
 
@@ -137,13 +140,13 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
 
   return (
     <div className="auth-form-shell">
-      <span className="micro-label">Sign in</span>
-      <h2>Welcome back</h2>
-      <p className="auth-form-copy">Sign in to your QuizMind account.</p>
+      <span className="micro-label">{tl.eyebrow}</span>
+      <h2>{tl.heading}</h2>
+      <p className="auth-form-copy">{tl.subheading}</p>
 
       <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="auth-field">
-          <span>Email</span>
+          <span>{tl.emailLabel}</span>
           <input
             autoComplete="email"
             name="email"
@@ -156,7 +159,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
         </label>
 
         <label className="auth-field">
-          <span>Password</span>
+          <span>{tl.passwordLabel}</span>
           <input
             autoComplete="current-password"
             name="password"
@@ -169,7 +172,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
         </label>
 
         <button className="btn-primary auth-submit" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Signing in\u2026' : 'Sign in'}
+          {isSubmitting ? tl.signingIn : tl.submitButton}
         </button>
       </form>
 
@@ -177,8 +180,8 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
       {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
 
       <div className="auth-links">
-        <Link href={registerHref}>Create account</Link>
-        <Link href="/auth/forgot-password">Forgot password?</Link>
+        <Link href={registerHref}>{tl.createAccount}</Link>
+        <Link href="/auth/forgot-password">{tl.forgotPassword}</Link>
       </div>
     </div>
   );

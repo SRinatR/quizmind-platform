@@ -115,6 +115,7 @@ model User {
   avatarUrl              String?
   timezone               String?
   locale                 String?
+  uiPreferences          Json?
   suspendedAt            DateTime?
   suspendReason          String?
   lastLoginAt            DateTime?

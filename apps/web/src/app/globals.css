@@ -1,5 +1,6 @@
 @import '../styles/marketing.css';
 
+/* ── Light theme (default) ── */
 :root {
   --bg: #f5ede3;
   --bg-strong: #efe2d2;
@@ -12,7 +13,99 @@
   --line: rgba(31, 41, 51, 0.12);
   --shadow: 0 18px 48px rgba(71, 56, 44, 0.12);
   --radius: 24px;
+  color-scheme: light;
 }
+
+/* ── Dark theme ── */
+[data-theme="dark"] {
+  --bg: #1a1612;
+  --bg-strong: #211d18;
+  --surface: rgba(32, 27, 22, 0.96);
+  --surface-strong: #2a2420;
+  --ink: #ede8e0;
+  --muted: #9a8e82;
+  --accent: #d4724c;
+  --accent-soft: #3d1e0e;
+  --line: rgba(237, 232, 224, 0.10);
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+  --radius: 24px;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at top left, rgba(212, 114, 76, 0.14), transparent 32%),
+    radial-gradient(circle at top right, rgba(44, 93, 136, 0.10), transparent 28%),
+    linear-gradient(180deg, #1a1612 0%, var(--bg) 45%, #110e0a 100%);
+}
+
+/* Keep hero/panel gradients readable in dark mode */
+[data-theme="dark"] .hero-card {
+  background:
+    linear-gradient(135deg, rgba(42, 36, 30, 0.9), rgba(50, 40, 30, 0.95)),
+    linear-gradient(120deg, rgba(212, 114, 76, 0.10), transparent);
+}
+
+[data-theme="dark"] .app-sidebar {
+  background: var(--surface);
+  border-right-color: var(--line);
+}
+
+[data-theme="dark"] .app-topbar {
+  background: var(--surface);
+  border-bottom-color: var(--line);
+}
+
+/* ── Compact density modifier ── */
+[data-density="compact"] {
+  --radius: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+}
+
+[data-density="compact"] .panel,
+[data-density="compact"] .stat-card,
+[data-density="compact"] .section-card,
+[data-density="compact"] .hero-card {
+  padding: 16px 20px;
+}
+
+[data-density="compact"] .app-content {
+  padding: 16px;
+}
+
+[data-density="compact"] .metrics-grid {
+  gap: 10px;
+}
+
+[data-density="compact"] .settings-section {
+  margin-bottom: 20px;
+}
+
+[data-density="compact"] .app-nav-item {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+[data-density="compact"] .btn-primary,
+[data-density="compact"] .btn-ghost,
+[data-density="compact"] .btn-outline {
+  padding: 7px 16px;
+  font-size: 0.86rem;
+}
+
+/* ── Reduced-motion modifier ── */
+[data-motion="reduced"] *,
+[data-motion="reduced"] *::before,
+[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 
 * {
   box-sizing: border-box;
@@ -3644,3 +3737,228 @@ code {
   line-height: 1.5;
 }
 
+
+/* ══════════════════════════════════════════════════════════════════
+   Settings tabs
+══════════════════════════════════════════════════════════════════ */
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  background: var(--surface-raised, rgba(0,0,0,.04));
+  border-radius: 10px;
+  margin-bottom: 4px;
+}
+
+.settings-tab {
+  padding: 7px 16px;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.settings-tab:hover {
+  color: var(--ink);
+  background: rgba(0,0,0,.04);
+}
+
+.settings-tab--active {
+  color: var(--ink);
+  background: var(--surface, #fff);
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+
+[data-theme="dark"] .settings-tabs {
+  background: rgba(255,255,255,.05);
+}
+
+[data-theme="dark"] .settings-tab--active {
+  background: rgba(255,255,255,.08);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Appearance / Preference controls
+══════════════════════════════════════════════════════════════════ */
+
+.appearance-settings {
+  display: grid;
+  gap: 28px;
+}
+
+/* Preference group */
+.pref-group {
+  display: grid;
+  gap: 12px;
+}
+
+.pref-group__header {
+  display: grid;
+  gap: 3px;
+}
+
+.pref-group__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.pref-group__desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Option row (radio buttons styled as cards) */
+.pref-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pref-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border, rgba(0,0,0,.12));
+  cursor: pointer;
+  background: transparent;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  user-select: none;
+}
+
+.pref-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pref-option:hover {
+  border-color: var(--accent, #c8965a);
+  background: rgba(200,150,90,.06);
+}
+
+.pref-option--active {
+  border-color: var(--accent, #c8965a);
+  background: rgba(200,150,90,.10);
+  box-shadow: 0 0 0 3px rgba(200,150,90,.15);
+}
+
+.pref-option__icon {
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pref-option--active .pref-option__icon {
+  color: var(--accent, #c8965a);
+}
+
+.pref-option__flag {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pref-option__label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Toggle (checkbox styled as pill switch) */
+.pref-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  width: fit-content;
+}
+
+.pref-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pref-toggle__track {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--border, rgba(0,0,0,.18));
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.pref-toggle input:checked ~ .pref-toggle__track {
+  background: var(--accent, #c8965a);
+}
+
+.pref-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform 0.2s;
+}
+
+.pref-toggle input:checked ~ .pref-toggle__track .pref-toggle__thumb {
+  transform: translateX(18px);
+}
+
+.pref-toggle__label {
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Footer hint */
+.pref-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border, rgba(0,0,0,.08));
+}
+
+[data-theme="dark"] .pref-option {
+  border-color: rgba(255,255,255,.12);
+}
+
+[data-theme="dark"] .pref-option:hover {
+  background: rgba(200,150,90,.08);
+}
+
+[data-theme="dark"] .pref-option--active {
+  background: rgba(200,150,90,.14);
+  box-shadow: 0 0 0 3px rgba(200,150,90,.18);
+}
+
+[data-theme="dark"] .pref-toggle__track {
+  background: rgba(255,255,255,.2);
+}
