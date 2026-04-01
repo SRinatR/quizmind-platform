@@ -717,8 +717,343 @@
 }
 
 /* ════════════════════════════════════════════════
-   13. Dark theme overrides for public pages
+   12. Platform compatibility strip
    ════════════════════════════════════════════════ */
+.lp-compat-strip {
+  background: var(--bg-strong);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 20px 0;
+}
+
+.lp-compat-strip-inner {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+  justify-content: center;
+}
+
+.lp-compat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.lp-compat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.lp-compat-chip {
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.lp-compat-chip:hover {
+  border-color: rgba(184, 92, 56, 0.3);
+  color: var(--ink);
+}
+
+/* ════════════════════════════════════════════════
+   13. Use cases section
+   ════════════════════════════════════════════════ */
+.lp-usecases {
+  background: var(--bg);
+}
+
+.lp-usecases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.lp-usecase-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 22px;
+  display: grid;
+  gap: 14px;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+
+.lp-usecase-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: rgba(184, 92, 56, 0.22);
+}
+
+.lp-usecase-icon {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.lp-usecase-body {
+  display: grid;
+  gap: 6px;
+}
+
+.lp-usecase-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.lp-usecase-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.58;
+  color: var(--muted);
+}
+
+/* ════════════════════════════════════════════════
+   14. Product showcase / control center
+   ════════════════════════════════════════════════ */
+.lp-showcase {
+  background: var(--bg-strong);
+}
+
+.lp-showcase-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.lp-showcase-copy {
+  display: grid;
+  gap: 22px;
+}
+
+.lp-showcase-title {
+  margin-bottom: 0 !important;
+}
+
+.lp-showcase-sub {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 48ch;
+}
+
+.lp-showcase-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.lp-showcase-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.93rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.lp-showcase-list li::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ── Dashboard UI mockup ── */
+.lp-showcase-visual {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.lp-dash-mockup {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 28px 64px rgba(71, 56, 44, 0.16);
+  overflow: hidden;
+}
+
+.lp-dash-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: var(--bg-strong);
+  border-bottom: 1px solid var(--line);
+}
+
+.lp-dash-brand {
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--accent);
+}
+
+.lp-dash-ws-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #7c3516;
+  background: rgba(184, 92, 56, 0.1);
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(184, 92, 56, 0.16);
+}
+
+.lp-dash-layout {
+  display: flex;
+}
+
+.lp-dash-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border-right: 1px solid var(--line);
+  min-width: 90px;
+}
+
+.lp-dash-nav {
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 5px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.lp-dash-nav--active {
+  background: rgba(184, 92, 56, 0.11);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.lp-dash-content {
+  flex: 1;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.lp-dash-stats {
+  display: flex;
+  gap: 6px;
+}
+
+.lp-dash-stat-card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 8px 6px;
+  display: grid;
+  gap: 2px;
+}
+
+.lp-dash-stat-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.lp-dash-stat-lbl {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.lp-dash-bars {
+  display: grid;
+  gap: 8px;
+}
+
+.lp-dash-bar-row {
+  display: grid;
+  gap: 4px;
+}
+
+.lp-dash-bar-lbl {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.lp-dash-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(31, 41, 51, 0.08);
+  overflow: hidden;
+}
+
+.lp-dash-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  opacity: 0.75;
+}
+
+.lp-dash-bar-fill--ok {
+  background: #2da05a;
+}
+
+/* ════════════════════════════════════════════════
+   15. Responsive — new sections
+   ════════════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .lp-showcase-inner {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .lp-showcase-visual {
+    justify-content: center;
+  }
+
+  .lp-usecases-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .lp-compat-strip-inner {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .lp-usecases-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 [data-theme="dark"] .lp-root {
   background:
     radial-gradient(circle at 15% 10%, rgba(212, 114, 76, 0.10), transparent 28%),

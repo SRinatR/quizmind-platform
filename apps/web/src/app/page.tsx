@@ -93,6 +93,18 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Platform compatibility strip ── */}
+      <div className="lp-compat-strip">
+        <div className="lp-compat-strip-inner">
+          <span className="lp-compat-label">Works everywhere you learn</span>
+          <div className="lp-compat-chips">
+            {['Google Forms', 'Coursera', 'Canvas LMS', 'Moodle', 'Any webpage'].map((p) => (
+              <span className="lp-compat-chip" key={p}>{p}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ── Features ── */}
       <section className="lp-section lp-features">
         <div className="lp-section-inner">
@@ -115,6 +127,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Use cases / Who it's for ── */}
+      <section className="lp-section lp-usecases">
+        <div className="lp-section-inner">
+          <span className="lp-section-label">Who it&rsquo;s for</span>
+          <h2 className="lp-section-title">Built for how you learn</h2>
+          <p className="lp-section-sub">
+            Whether you&rsquo;re a student, a fast reviewer, or a team managing AI access &mdash; QuizMind fits your workflow.
+          </p>
+          <div className="lp-usecases-grid">
+            {USE_CASES.map((uc) => (
+              <article className="lp-usecase-card" key={uc.title}>
+                <div className="lp-usecase-icon" aria-hidden="true">{uc.icon}</div>
+                <div className="lp-usecase-body">
+                  <h3>{uc.title}</h3>
+                  <p>{uc.desc}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── How it works ── */}
       <section className="lp-section lp-how">
         <div className="lp-section-inner">
@@ -130,6 +164,94 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Product showcase / Control center ── */}
+      <section className="lp-section lp-showcase">
+        <div className="lp-section-inner lp-showcase-inner">
+          <div className="lp-showcase-copy">
+            <span className="lp-section-label">Dashboard</span>
+            <h2 className="lp-section-title lp-showcase-title">
+              More than just an extension
+            </h2>
+            <p className="lp-showcase-sub">
+              A full control center behind every answer. Manage workspace AI policies,
+              provider keys, usage analytics, and billing &mdash; all in one place.
+            </p>
+            <ul className="lp-showcase-list">
+              <li>Workspace-level AI model policies</li>
+              <li>Bring-your-own-key for any provider</li>
+              <li>Usage analytics and question history</li>
+              <li>Flexible wallet and top-up billing</li>
+              <li>Team extension installation management</li>
+            </ul>
+            <div className="lp-hero-actions">
+              <Link href="/auth/login" className="btn-primary btn-lg">Open dashboard</Link>
+              <Link href="/features" className="btn-ghost btn-lg">{th.seeAllFeatures}</Link>
+            </div>
+          </div>
+
+          <div className="lp-showcase-visual">
+            <div className="lp-dash-mockup">
+              <div className="lp-dash-topbar">
+                <span className="lp-dash-brand">QuizMind</span>
+                <span className="lp-dash-ws-chip">My Workspace</span>
+              </div>
+              <div className="lp-dash-layout">
+                <nav className="lp-dash-sidebar">
+                  {[
+                    { label: 'Overview', active: true },
+                    { label: 'Billing', active: false },
+                    { label: 'Usage', active: false },
+                    { label: 'History', active: false },
+                    { label: 'Settings', active: false },
+                  ].map((item) => (
+                    <span
+                      key={item.label}
+                      className={`lp-dash-nav${item.active ? ' lp-dash-nav--active' : ''}`}
+                    >
+                      {item.label}
+                    </span>
+                  ))}
+                </nav>
+                <div className="lp-dash-content">
+                  <div className="lp-dash-stats">
+                    {([
+                      { val: 'Active', lbl: 'Session' },
+                      { val: '6', lbl: 'Sections' },
+                      { val: '\u20BD500', lbl: 'Balance' },
+                    ] as const).map(({ val, lbl }) => (
+                      <div className="lp-dash-stat-card" key={lbl}>
+                        <span className="lp-dash-stat-val">{val}</span>
+                        <span className="lp-dash-stat-lbl">{lbl}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="lp-dash-bars">
+                    <div className="lp-dash-bar-row">
+                      <span className="lp-dash-bar-lbl">AI usage</span>
+                      <div className="lp-dash-bar">
+                        <div className="lp-dash-bar-fill" style={{ width: '42%' }} />
+                      </div>
+                    </div>
+                    <div className="lp-dash-bar-row">
+                      <span className="lp-dash-bar-lbl">Questions</span>
+                      <div className="lp-dash-bar">
+                        <div className="lp-dash-bar-fill lp-dash-bar-fill--ok" style={{ width: '18%' }} />
+                      </div>
+                    </div>
+                    <div className="lp-dash-bar-row">
+                      <span className="lp-dash-bar-lbl">History</span>
+                      <div className="lp-dash-bar">
+                        <div className="lp-dash-bar-fill" style={{ width: '71%' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -210,6 +332,29 @@ const FEATURES = [
     icon: '\u2699\uFE0F',
     title: 'Team config',
     desc: 'Workspace admins can push settings and model policies to the whole team.',
+  },
+];
+
+const USE_CASES = [
+  {
+    icon: '\uD83C\uDF93',
+    title: 'Students & learners',
+    desc: 'Get instant answers with full explanations on any quiz, homework, or LMS platform.',
+  },
+  {
+    icon: '\uD83D\uDCF8',
+    title: 'Visual questions',
+    desc: 'Screenshot diagrams, charts, and equations \u2014 QuizMind handles visual content natively.',
+  },
+  {
+    icon: '\u26A1',
+    title: 'Fast review',
+    desc: 'Power through practice tests and study sessions with AI-assisted recall and context.',
+  },
+  {
+    icon: '\uD83C\uDFE2',
+    title: 'Teams & workspaces',
+    desc: 'Admins control AI policies, manage provider keys, and track usage across the whole workspace.',
   },
 ];
 

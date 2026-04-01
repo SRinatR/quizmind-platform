@@ -219,7 +219,7 @@ export function SettingsPageClient({
       </section>
 
       {/* ── Tab bar ── */}
-      <nav className="settings-tabs" aria-label="Settings sections">
+      <nav className="settings-tabs settings-tabs--pill" aria-label="Settings sections">
         {tabs
           .filter((tab) => !tab.adminOnly || isAdmin)
           .map((tab) => (

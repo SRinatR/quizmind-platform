@@ -306,49 +306,51 @@ export function AiAccessClient({
           <span className="micro-label">AI access</span>
           <h2>Provider policy</h2>
           {providerCredentialInventory ? (
-            <div className="mini-list">
-              <div className="list-item">
-                <strong>Current mode</strong>
-                <p>{providerCredentialInventory.aiAccessPolicy.mode}</p>
+            <div className="ai-policy-grid">
+              <div className="ai-policy-row">
+                <span className="ai-policy-key">Current mode</span>
+                <span className="ai-policy-val ai-policy-val--code">{providerCredentialInventory.aiAccessPolicy.mode}</span>
               </div>
-              <div className="list-item">
-                <strong>Effective key behavior</strong>
-                <p>{policyBehavior}</p>
+              <div className="ai-policy-row ai-policy-row--full">
+                <span className="ai-policy-key">Key behavior</span>
+                <span className="ai-policy-val">{policyBehavior}</span>
               </div>
-              <div className="list-item">
-                <strong>Default provider</strong>
-                <p>{providerCredentialInventory.aiAccessPolicy.defaultProvider ?? 'platform-selected'}</p>
+              <div className="ai-policy-row">
+                <span className="ai-policy-key">Default provider</span>
+                <span className="ai-policy-val">{providerCredentialInventory.aiAccessPolicy.defaultProvider ?? 'platform-selected'}</span>
               </div>
-              <div className="list-item">
-                <strong>Allowed providers</strong>
-                <p>{providerCredentialInventory.aiAccessPolicy.providers.join(', ') || 'No BYOK providers enabled.'}</p>
+              <div className="ai-policy-row">
+                <span className="ai-policy-key">Policy scope</span>
+                <span className="ai-policy-val ai-policy-val--code">
+                  {providerCredentialInventory.policy.scopeType}
+                </span>
               </div>
-              <div className="list-item">
-                <strong>Routing policy</strong>
-                <p>{providerCredentialInventory.aiAccessPolicy.reason ?? 'Provider routing stays proxy-only in this phase.'}</p>
+              <div className="ai-policy-row">
+                <span className="ai-policy-key">Admin approval</span>
+                <span className={`ai-policy-val ${providerCredentialInventory.policy.requireAdminApproval ? 'ai-policy-val--warn' : 'ai-policy-val--ok'}`}>
+                  {String(providerCredentialInventory.policy.requireAdminApproval ?? false)}
+                </span>
               </div>
-              <div className="list-item">
-                <strong>Policy scope</strong>
-                <p>
-                  {providerCredentialInventory.policy.scopeType} | {providerCredentialInventory.policy.scopeKey}
-                </p>
+              <div className="ai-policy-row">
+                <span className="ai-policy-key">Shared keys</span>
+                <span className="ai-policy-val">
+                  {String(providerCredentialInventory.policy.allowWorkspaceSharedCredentials ?? false)}
+                </span>
               </div>
-              <div className="list-item">
-                <strong>BYOK controls</strong>
-                <p>
-                  shared keys {String(providerCredentialInventory.policy.allowWorkspaceSharedCredentials ?? false)} | admin approval{' '}
-                  {String(providerCredentialInventory.policy.requireAdminApproval ?? false)} | vision on user keys{' '}
+              <div className="ai-policy-row">
+                <span className="ai-policy-key">Vision on user keys</span>
+                <span className="ai-policy-val">
                   {String(providerCredentialInventory.policy.allowVisionOnUserKeys ?? false)}
-                </p>
+                </span>
               </div>
-              <div className="list-item">
-                <strong>Allowed model tags</strong>
-                <p>{(providerCredentialInventory.policy.allowedModelTags ?? []).join(', ') || 'No model-tag restriction.'}</p>
-              </div>
-              <div className="list-item">
-                <strong>Validation depth</strong>
-                <p>Stored key validation here is local shape-check only; provider acceptance is verified on real runtime calls.</p>
-              </div>
+              {(providerCredentialInventory.policy.allowedModelTags ?? []).length > 0 ? (
+                <div className="ai-policy-row ai-policy-row--full">
+                  <span className="ai-policy-key">Allowed model tags</span>
+                  <span className="ai-policy-val">
+                    {providerCredentialInventory.policy.allowedModelTags?.join(', ')}
+                  </span>
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="empty-state">
@@ -357,13 +359,19 @@ export function AiAccessClient({
               <p>Connected sessions can attach encrypted provider keys to user or workspace ownership.</p>
             </div>
           )}
-          <div className="tag-row">
-            {(availableProviders.length > 0 ? availableProviders : providerCatalog?.providers ?? []).map((provider) => (
-              <span className="tag" key={provider.provider}>
-                {provider.displayName} | {provider.availability}
-              </span>
-            ))}
-          </div>
+          {(availableProviders.length > 0 ? availableProviders : providerCatalog?.providers ?? []).length > 0 ? (
+            <div className="ai-provider-badges">
+              <span className="micro-label" style={{ opacity: 0.6, marginBottom: 6 }}>Allowed providers</span>
+              <div className="tag-row">
+                {(availableProviders.length > 0 ? availableProviders : providerCatalog?.providers ?? []).map((provider) => (
+                  <span className="tag-soft" key={provider.provider}>
+                    {provider.displayName}
+                    <span className="ai-provider-avail">{provider.availability}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </article>
 
         <article className="panel settings-card">
@@ -485,27 +493,35 @@ export function AiAccessClient({
       </section>
 
       <section className="panel settings-card">
-        <span className="micro-label">Stored credentials</span>
-        <h2>Current key inventory</h2>
+        <div className="page-section__head">
+          <span className="page-section__label">Stored credentials</span>
+        </div>
+        <h2>Key inventory</h2>
         {credentials.length > 0 ? (
-          <div className="settings-session-list">
+          <div className="ai-credential-list">
             {credentials.map((credential) => (
-              <div className="settings-session-row" key={credential.id}>
-                <div>
-                  <strong>
-                    {credential.provider} | {credential.ownerType}
-                  </strong>
-                  <p className="list-muted">
-                    {credential.secretPreview ?? 'Secret preview unavailable'} | {credential.validationStatus}
+              <div className="ai-credential-row" key={credential.id}>
+                <div className="ai-credential-info">
+                  <div className="ai-credential-title">
+                    <span className="ai-credential-provider">{credential.provider}</span>
+                    <span className="tag-soft tag-soft--gray">{credential.ownerType}</span>
+                    {credential.revokedAt ? <span className="tag-soft tag-soft--orange">revoked</span> : null}
+                    {!credential.revokedAt ? (
+                      <span className={`tag-soft ${credential.validationStatus === 'valid' ? 'tag-soft--green' : ''}`}>
+                        {credential.validationStatus}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="ai-credential-meta">
+                    {credential.secretPreview ?? 'preview unavailable'}
+                    {credential.scopes.length > 0 ? ` \u00b7 scopes: ${credential.scopes.join(', ')}` : ''}
+                    {' \u00b7 updated '}{formatUtcDateTime(credential.updatedAt)}
                   </p>
-                  <p className="list-muted">
-                    scopes {credential.scopes.join(', ') || 'default'} | updated {formatUtcDateTime(credential.updatedAt)}
-                  </p>
-                  {credential.validationMessage ? <p className="list-muted">{credential.validationMessage}</p> : null}
+                  {credential.validationMessage ? (
+                    <p className="ai-credential-message">{credential.validationMessage}</p>
+                  ) : null}
                 </div>
-                <div className="billing-history-meta">
-                  {credential.revokedAt ? <span className="tag warn">revoked</span> : null}
-                  <span className="tag">{credential.id.slice(0, 10)}</span>
+                <div className="ai-credential-actions">
                   {!credential.revokedAt && canRotate ? (
                     <button
                       className="btn-ghost"
@@ -525,12 +541,12 @@ export function AiAccessClient({
                   ) : null}
                   {!credential.revokedAt && canRotate ? (
                     <button
-                      className="btn-ghost"
+                      className="btn-danger"
                       disabled={isRevokingId === credential.id}
                       onClick={() => void handleRevoke(credential.id)}
                       type="button"
                     >
-                      {isRevokingId === credential.id ? 'Revoking...' : 'Revoke'}
+                      {isRevokingId === credential.id ? 'Revoking\u2026' : 'Revoke'}
                     </button>
                   ) : null}
                 </div>
@@ -540,8 +556,8 @@ export function AiAccessClient({
         ) : (
           <div className="empty-state">
             <span className="micro-label">No stored keys</span>
-            <h2>No provider credentials are attached to this workspace context yet.</h2>
-            <p>{policy?.reason ?? 'Platform-managed routing remains the default until a BYOK credential is added and validated.'}</p>
+            <h2>No provider credentials attached yet.</h2>
+            <p>{policy?.reason ?? 'Platform-managed routing is the default until a BYOK credential is added and validated.'}</p>
           </div>
         )}
       </section>

@@ -252,10 +252,13 @@ export function BillingPageClient({
         onLoad={() => setScriptLoaded(true)}
       />
 
-      {/* Balance card */}
+      {/* Balance section */}
       <section className="wallet-hero">
         <article className="wallet-balance-card panel">
-          <span className="micro-label">{tb.currentBalance}</span>
+          <div className="wallet-balance-header">
+            <span className="micro-label">{tb.currentBalance}</span>
+            <span className="wallet-balance-provider-badge">YooKassa</span>
+          </div>
           <div className="wallet-balance-amount">
             {balance ? formatRub(balance.balanceKopecks) : '\u2014'}
           </div>
@@ -269,6 +272,25 @@ export function BillingPageClient({
               {isConnectedSession ? tb.insufficientPermissions : tb.signInToManage}
             </p>
           )}
+        </article>
+
+        <article className="wallet-info-card panel">
+          <span className="micro-label">How it works</span>
+          <h2>Pre-paid wallet</h2>
+          <div className="wallet-info-list">
+            <div className="wallet-info-row">
+              <span className="wallet-info-dot" aria-hidden="true" />
+              <p>Top up your balance with any amount and use it for AI requests.</p>
+            </div>
+            <div className="wallet-info-row">
+              <span className="wallet-info-dot" aria-hidden="true" />
+              <p>Balance is shared across your workspace. Usage is tracked per request.</p>
+            </div>
+            <div className="wallet-info-row">
+              <span className="wallet-info-dot" aria-hidden="true" />
+              <p>Payments are processed securely via YooKassa. Minimum top-up is &#x20BD;10.</p>
+            </div>
+          </div>
         </article>
       </section>
 
@@ -375,11 +397,13 @@ export function BillingPageClient({
       ) : null}
 
       {/* Transaction history */}
-      <section className="panel">
-        <div className="page-section__head">
-          <span className="page-section__label">{tb.transactionHistory}</span>
+      <section className="panel wallet-history-panel">
+        <div className="wallet-history-panel-head">
+          <div>
+            <span className="page-section__label">{tb.transactionHistory}</span>
+            <h2 className="wallet-history-title">{tb.transactions}</h2>
+          </div>
         </div>
-        <h2>{tb.transactions}</h2>
 
         {topUps.length > 0 ? (
           <div className="wallet-history">
