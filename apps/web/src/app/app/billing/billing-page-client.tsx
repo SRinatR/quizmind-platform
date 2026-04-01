@@ -4,6 +4,8 @@ import Script from 'next/script';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type WalletBalanceSnapshot, type WalletTopUpEntry, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
+import { usePreferences } from '../../../lib/preferences';
+
 interface BillingRouteResponse<T> {
   ok: boolean;
   data?: T;
@@ -30,7 +32,6 @@ function formatRub(kopecks: number): string {
 
 function formatDate(value?: string | null): string {
   if (!value) return '\u2014';
-
   return new Intl.DateTimeFormat('en-US', {
     day: 'numeric',
     month: 'short',
@@ -40,32 +41,13 @@ function formatDate(value?: string | null): string {
   }).format(new Date(value));
 }
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'pending':
-      return 'Pending';
-    case 'succeeded':
-      return 'Paid';
-    case 'canceled':
-      return 'Cancelled';
-    case 'refunded':
-      return 'Refunded';
-    default:
-      return status;
-  }
-}
-
 function statusClass(status: string): string {
   switch (status) {
-    case 'succeeded':
-      return 'tag wallet-tag-success';
-    case 'pending':
-      return 'tag wallet-tag-pending';
+    case 'succeeded': return 'tag wallet-tag-success';
+    case 'pending':   return 'tag wallet-tag-pending';
     case 'canceled':
-    case 'refunded':
-      return 'tag warn';
-    default:
-      return 'tag';
+    case 'refunded':  return 'tag warn';
+    default:          return 'tag';
   }
 }
 
@@ -89,6 +71,8 @@ export function BillingPageClient({
   isConnectedSession,
   workspaceId,
 }: BillingPageClientProps) {
+  const { t } = usePreferences();
+  const tb = t.billing;
   const [balance, setBalance] = useState<WalletBalanceSnapshot | null>(initialBalance);
   const [topUps, setTopUps] = useState<WalletTopUpEntry[]>(initialTopUps);
   const [showModal, setShowModal] = useState(false);
@@ -111,32 +95,39 @@ export function BillingPageClient({
     !useCustom ||
     (Number.isFinite(effectiveKopecks) && effectiveKopecks >= 1_000 && effectiveKopecks <= 100_000_000);
 
+  // Translate payment status to current language
+  function statusLabel(status: string): string {
+    switch (status) {
+      case 'pending':   return tb.pending;
+      case 'succeeded': return tb.paid;
+      case 'canceled':  return tb.cancelled;
+      case 'refunded':  return tb.refunded;
+      default:          return status;
+    }
+  }
+
   const refreshBalance = useCallback(async () => {
     try {
       const res = await fetch(`/api/wallet/balance?workspaceId=${encodeURIComponent(workspaceId)}`, {
         cache: 'no-store',
       });
       const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
-
       if (res.ok && payload?.ok && payload.data) {
         setBalance(payload.data);
       }
     } catch {
-      // non-critical, keep current balance
+      // non-critical
     }
   }, [workspaceId]);
 
-  // Mount/destroy YooKassa widget when token changes
   useEffect(() => {
-    if (!widgetToken || !scriptLoaded) {
-      return;
-    }
+    if (!widgetToken || !scriptLoaded) return;
 
     const container = 'yookassa-widget-container';
 
     async function mountWidget() {
       if (!window.YooMoneyCheckoutWidget) {
-        setErrorMessage('Failed to load the payment widget. Try refreshing the page.');
+        setErrorMessage(tb.widgetLoadError);
         return;
       }
 
@@ -148,9 +139,9 @@ export function BillingPageClient({
         error_callback: (err) => {
           if (err.error === 'token_expired') {
             setWidgetToken(null);
-            setErrorMessage('Payment session expired. Please start a new payment.');
+            setErrorMessage(tb.tokenExpired);
           } else {
-            setErrorMessage(`Widget error: ${err.error}`);
+            setErrorMessage(`${tb.widgetError} ${err.error}`);
           }
           setActiveAction(null);
         },
@@ -162,7 +153,7 @@ export function BillingPageClient({
         await widget.render(container);
         setWidgetReady(true);
       } catch {
-        setErrorMessage('Failed to render the payment widget.');
+        setErrorMessage(tb.widgetRenderError);
         setActiveAction(null);
       }
     }
@@ -180,13 +171,13 @@ export function BillingPageClient({
   async function handleCreateTopUp() {
     if (!canManageBilling) return;
     if (!customAmountValid) {
-      setErrorMessage('Enter a valid amount (\u20BD10\u2013\u20BD1,000,000).');
+      setErrorMessage(tb.invalidAmount);
       return;
     }
 
     setActiveAction('create_topup');
     setErrorMessage(null);
-    setStatusMessage('Creating payment\u2026');
+    setStatusMessage(tb.creatingPayment);
 
     try {
       const response = await fetch('/api/wallet/topups/create', {
@@ -199,13 +190,12 @@ export function BillingPageClient({
       if (!response.ok || !payload?.ok || !payload.data?.confirmationToken) {
         setActiveAction(null);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to create payment. Please try again.');
+        setErrorMessage(payload?.error?.message ?? tb.creatingPaymentError);
         return;
       }
 
       const result = payload.data;
 
-      // Add pending top-up to list immediately for UX
       setTopUps((prev) => [
         {
           id: result.topUpId,
@@ -223,12 +213,12 @@ export function BillingPageClient({
       ]);
 
       setWidgetToken(result.confirmationToken);
-      setStatusMessage('Payment created. Complete checkout in the form below.');
+      setStatusMessage(tb.paymentCreated);
       setActiveAction(null);
     } catch {
       setActiveAction(null);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the server. Please try again.');
+      setErrorMessage(tb.serverError);
     }
   }
 
@@ -262,23 +252,21 @@ export function BillingPageClient({
         onLoad={() => setScriptLoaded(true)}
       />
 
-      {/* Balance card + top-up trigger */}
+      {/* Balance card */}
       <section className="wallet-hero">
         <article className="wallet-balance-card panel">
-          <span className="micro-label">Current balance</span>
+          <span className="micro-label">{tb.currentBalance}</span>
           <div className="wallet-balance-amount">
             {balance ? formatRub(balance.balanceKopecks) : '\u2014'}
           </div>
-          <p className="wallet-balance-currency">RUB \u00B7 Workspace</p>
+          <p className="wallet-balance-currency">{tb.currency}</p>
           {canManageBilling && isConnectedSession ? (
             <button className="btn-primary wallet-topup-btn" onClick={handleOpenModal} type="button">
-              Add funds
+              {tb.addFunds}
             </button>
           ) : (
             <p className="list-muted">
-              {isConnectedSession
-                ? 'Insufficient permissions to add funds.'
-                : 'Sign in to manage your balance.'}
+              {isConnectedSession ? tb.insufficientPermissions : tb.signInToManage}
             </p>
           )}
         </article>
@@ -286,45 +274,33 @@ export function BillingPageClient({
 
       {/* Top-up modal */}
       {showModal ? (
-        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label="Add funds">
+        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label={tb.addFunds}>
           <article className="wallet-modal panel">
             <div className="wallet-modal-header">
-              <h2>Add funds</h2>
+              <h2>{tb.addFunds}</h2>
               <button
                 className="wallet-modal-close"
                 onClick={handleCloseModal}
                 type="button"
-                aria-label="Close"
+                aria-label={t.common.close}
               >
                 &#x2715;
               </button>
             </div>
 
-            {statusMessage ? (
-              <div className="billing-banner billing-banner-info">{statusMessage}</div>
-            ) : null}
-            {errorMessage ? (
-              <div className="billing-banner billing-banner-error">{errorMessage}</div>
-            ) : null}
+            {statusMessage ? <div className="billing-banner billing-banner-info">{statusMessage}</div> : null}
+            {errorMessage ? <div className="billing-banner billing-banner-error">{errorMessage}</div> : null}
 
-            {/* Only show amount selector if widget not yet opened */}
             {!widgetToken ? (
               <>
                 <div className="wallet-amount-section">
-                  <span className="micro-label">Select amount</span>
+                  <span className="micro-label">{tb.selectAmount}</span>
                   <div className="wallet-preset-grid">
                     {PRESET_AMOUNTS_KOPECKS.map((amount) => (
                       <button
                         key={amount}
-                        className={
-                          !useCustom && selectedKopecks === amount
-                            ? 'wallet-preset-btn active'
-                            : 'wallet-preset-btn'
-                        }
-                        onClick={() => {
-                          setUseCustom(false);
-                          setSelectedKopecks(amount);
-                        }}
+                        className={!useCustom && selectedKopecks === amount ? 'wallet-preset-btn active' : 'wallet-preset-btn'}
+                        onClick={() => { setUseCustom(false); setSelectedKopecks(amount); }}
                         type="button"
                       >
                         {formatRub(amount)}
@@ -335,15 +311,13 @@ export function BillingPageClient({
                       onClick={() => setUseCustom(true)}
                       type="button"
                     >
-                      Custom
+                      {tb.custom}
                     </button>
                   </div>
 
                   {useCustom ? (
                     <div className="wallet-custom-amount">
-                      <label className="micro-label" htmlFor="custom-amount">
-                        Amount (RUB)
-                      </label>
+                      <label className="micro-label" htmlFor="custom-amount">{tb.amountRub}</label>
                       <div className="wallet-custom-input-wrap">
                         <input
                           className="wallet-custom-input"
@@ -359,39 +333,34 @@ export function BillingPageClient({
                         <span className="wallet-custom-suffix">&#x20BD;</span>
                       </div>
                       {useCustom && customAmount && !customAmountValid ? (
-                        <p className="wallet-input-error">Enter an amount from &#x20BD;10 to &#x20BD;1,000,000</p>
+                        <p className="wallet-input-error">{tb.invalidAmount}</p>
                       ) : null}
                     </div>
                   ) : null}
                 </div>
 
                 <div className="wallet-pay-summary">
-                  <span>Total:</span>
+                  <span>{tb.total}</span>
                   <strong>{customAmountValid ? formatRub(effectiveKopecks) : '\u2014'}</strong>
                 </div>
 
                 <button
                   className="btn-primary wallet-pay-btn"
-                  disabled={
-                    !customAmountValid ||
-                    activeAction === 'create_topup' ||
-                    effectiveKopecks < 1_000
-                  }
+                  disabled={!customAmountValid || activeAction === 'create_topup' || effectiveKopecks < 1_000}
                   onClick={() => void handleCreateTopUp()}
                   type="button"
                 >
-                  {activeAction === 'create_topup' ? 'Creating payment\u2026' : 'Continue to payment'}
+                  {activeAction === 'create_topup' ? tb.creatingPayment : tb.continueToPayment}
                 </button>
               </>
             ) : null}
 
-            {/* YooKassa widget container */}
             {widgetToken ? (
               <div className="wallet-widget-section">
                 {!widgetReady ? (
                   <div className="wallet-widget-loading">
                     <div className="wallet-spinner" />
-                    <span>Loading payment form\u2026</span>
+                    <span>{tb.loadingPaymentForm}</span>
                   </div>
                 ) : null}
                 <div
@@ -405,12 +374,12 @@ export function BillingPageClient({
         </div>
       ) : null}
 
-      {/* Top-up history */}
+      {/* Transaction history */}
       <section className="panel">
         <div className="page-section__head">
-          <span className="page-section__label">Transaction history</span>
+          <span className="page-section__label">{tb.transactionHistory}</span>
         </div>
-        <h2>Transactions</h2>
+        <h2>{tb.transactions}</h2>
 
         {topUps.length > 0 ? (
           <div className="wallet-history">
@@ -423,8 +392,8 @@ export function BillingPageClient({
                 <div className="wallet-history-right">
                   <span className="list-muted wallet-history-date">
                     {topUp.status === 'succeeded' && topUp.paidAt
-                      ? `Paid ${formatDate(topUp.paidAt)}`
-                      : `Created ${formatDate(topUp.createdAt)}`}
+                      ? `${tb.paidLabel} ${formatDate(topUp.paidAt)}`
+                      : `${tb.createdLabel} ${formatDate(topUp.createdAt)}`}
                   </span>
                   {topUp.providerPaymentId ? (
                     <span className="wallet-history-ref" title={topUp.providerPaymentId}>
@@ -438,9 +407,9 @@ export function BillingPageClient({
         ) : (
           <div className="empty-state">
             <span className="empty-state-icon" aria-hidden="true">&#x1F4CB;</span>
-            <span className="micro-label">No transactions yet</span>
-            <h2>No top-ups recorded.</h2>
-            <p>Your transaction history will appear here after your first top-up.</p>
+            <span className="micro-label">{tb.noTransactionsYet}</span>
+            <h2>{tb.noTransactions}</h2>
+            <p>{tb.noTransactionsDesc}</p>
           </div>
         )}
       </section>
