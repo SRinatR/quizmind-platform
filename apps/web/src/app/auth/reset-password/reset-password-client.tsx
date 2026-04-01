@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import type { FormEvent } from 'react';
 import { useState, useTransition } from 'react';
 
+import { usePreferences } from '../../../lib/preferences';
+
 interface ResetPasswordClientProps {
   nextPath: string;
   token?: string;
@@ -28,6 +30,8 @@ interface ResetPasswordRouteResponse {
 
 export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProps) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const tr = t.auth.resetPassword;
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,28 +44,23 @@ export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProp
     setErrorMessage(null);
 
     if (!token) {
-      setErrorMessage('Password reset token is missing from this link.');
+      setErrorMessage(tr.missingToken);
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords must match before continuing.');
+      setErrorMessage(tr.passwordMismatch);
       return;
     }
 
-    setStatusMessage('Updating your password and rotating sessions...');
+    setStatusMessage(tr.resetting);
     setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          password,
-        }),
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token, password }),
       });
 
       const payload = (await response.json().catch(() => null)) as ResetPasswordRouteResponse | null;
@@ -69,11 +68,11 @@ export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProp
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSubmitting(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to reset the password right now.');
+        setErrorMessage(payload?.error?.message ?? tr.resetError);
         return;
       }
 
-      setStatusMessage('Password updated. Redirecting into the connected app...');
+      setStatusMessage(tr.passwordUpdated);
 
       startNavigation(() => {
         router.push(nextPath);
@@ -82,25 +81,23 @@ export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProp
     } catch {
       setIsSubmitting(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the password reset route right now.');
+      setErrorMessage(tr.serverError);
     }
   }
 
   if (!token) {
     return (
       <div className="auth-form-shell">
-        <span className="micro-label">Reset link</span>
-        <h2>This reset link is incomplete.</h2>
-        <p className="auth-form-copy">
-          The password reset page needs a token from the email link. Request a new reset email to continue.
-        </p>
+        <span className="micro-label">{tr.noTokenEyebrow}</span>
+        <h2>{tr.noTokenHeading}</h2>
+        <p className="auth-form-copy">{tr.noTokenDesc}</p>
 
         <div className="auth-form-actions">
           <Link className="btn-primary" href="/auth/forgot-password">
-            Request new link
+            {tr.requestNewLink}
           </Link>
           <Link className="btn-ghost" href="/auth/login">
-            Back to sign in
+            {tr.backToSignIn}
           </Link>
         </div>
       </div>
@@ -109,39 +106,37 @@ export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProp
 
   return (
     <div className="auth-form-shell">
-      <span className="micro-label">Reset password</span>
-      <h2>Choose a new password</h2>
-      <p className="auth-form-copy">
-        This will revoke active sessions tied to the account and create a fresh connected session in this browser.
-      </p>
+      <span className="micro-label">{tr.eyebrow}</span>
+      <h2>{tr.heading}</h2>
+      <p className="auth-form-copy">{tr.subheading}</p>
 
       <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="auth-field">
-          <span>New password</span>
+          <span>{tr.newPasswordLabel}</span>
           <input
             autoComplete="new-password"
             name="password"
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={tr.passwordPlaceholder}
             type="password"
             value={password}
           />
         </label>
 
         <label className="auth-field">
-          <span>Confirm new password</span>
+          <span>{tr.confirmPasswordLabel}</span>
           <input
             autoComplete="new-password"
             name="confirmPassword"
             onChange={(event) => setConfirmPassword(event.target.value)}
-            placeholder="Repeat the new password"
+            placeholder={tr.confirmPlaceholder}
             type="password"
             value={confirmPassword}
           />
         </label>
 
         <button className="btn-primary auth-submit" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Updating password...' : 'Reset password'}
+          {isSubmitting ? tr.resetting : tr.submitButton}
         </button>
       </form>
 
@@ -149,8 +144,8 @@ export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProp
       {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
 
       <div className="auth-links">
-        <Link href="/auth/login">Back to sign in</Link>
-        <Link href="/auth/forgot-password">Request another link</Link>
+        <Link href="/auth/login">{tr.backToSignIn}</Link>
+        <Link href="/auth/forgot-password">{tr.requestAnother}</Link>
       </div>
     </div>
   );

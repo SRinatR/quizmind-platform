@@ -4,6 +4,8 @@ import Script from 'next/script';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type WalletBalanceSnapshot, type WalletTopUpEntry, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
+import { usePreferences } from '../../../lib/preferences';
+
 interface BillingRouteResponse<T> {
   ok: boolean;
   data?: T;
@@ -21,7 +23,7 @@ interface BillingPageClientProps {
 const PRESET_AMOUNTS_KOPECKS = [10_000, 30_000, 50_000, 100_000, 300_000] as const;
 
 function formatRub(kopecks: number): string {
-  return new Intl.NumberFormat('ru-RU', {
+  return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'RUB',
     maximumFractionDigits: 0,
@@ -29,9 +31,8 @@ function formatRub(kopecks: number): string {
 }
 
 function formatDate(value?: string | null): string {
-  if (!value) return '—';
-
-  return new Intl.DateTimeFormat('ru-RU', {
+  if (!value) return '\u2014';
+  return new Intl.DateTimeFormat('en-US', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -40,32 +41,13 @@ function formatDate(value?: string | null): string {
   }).format(new Date(value));
 }
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'pending':
-      return 'Ожидает оплаты';
-    case 'succeeded':
-      return 'Оплачено';
-    case 'canceled':
-      return 'Отменено';
-    case 'refunded':
-      return 'Возврат';
-    default:
-      return status;
-  }
-}
-
 function statusClass(status: string): string {
   switch (status) {
-    case 'succeeded':
-      return 'tag wallet-tag-success';
-    case 'pending':
-      return 'tag wallet-tag-pending';
+    case 'succeeded': return 'tag wallet-tag-success';
+    case 'pending':   return 'tag wallet-tag-pending';
     case 'canceled':
-    case 'refunded':
-      return 'tag warn';
-    default:
-      return 'tag';
+    case 'refunded':  return 'tag warn';
+    default:          return 'tag';
   }
 }
 
@@ -89,6 +71,8 @@ export function BillingPageClient({
   isConnectedSession,
   workspaceId,
 }: BillingPageClientProps) {
+  const { t } = usePreferences();
+  const tb = t.billing;
   const [balance, setBalance] = useState<WalletBalanceSnapshot | null>(initialBalance);
   const [topUps, setTopUps] = useState<WalletTopUpEntry[]>(initialTopUps);
   const [showModal, setShowModal] = useState(false);
@@ -111,32 +95,39 @@ export function BillingPageClient({
     !useCustom ||
     (Number.isFinite(effectiveKopecks) && effectiveKopecks >= 1_000 && effectiveKopecks <= 100_000_000);
 
+  // Translate payment status to current language
+  function statusLabel(status: string): string {
+    switch (status) {
+      case 'pending':   return tb.pending;
+      case 'succeeded': return tb.paid;
+      case 'canceled':  return tb.cancelled;
+      case 'refunded':  return tb.refunded;
+      default:          return status;
+    }
+  }
+
   const refreshBalance = useCallback(async () => {
     try {
       const res = await fetch(`/api/wallet/balance?workspaceId=${encodeURIComponent(workspaceId)}`, {
         cache: 'no-store',
       });
       const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
-
       if (res.ok && payload?.ok && payload.data) {
         setBalance(payload.data);
       }
     } catch {
-      // non-critical, keep current balance
+      // non-critical
     }
   }, [workspaceId]);
 
-  // Mount/destroy YooKassa widget when token changes
   useEffect(() => {
-    if (!widgetToken || !scriptLoaded) {
-      return;
-    }
+    if (!widgetToken || !scriptLoaded) return;
 
     const container = 'yookassa-widget-container';
 
     async function mountWidget() {
       if (!window.YooMoneyCheckoutWidget) {
-        setErrorMessage('Не удалось загрузить виджет оплаты. Попробуйте обновить страницу.');
+        setErrorMessage(tb.widgetLoadError);
         return;
       }
 
@@ -148,9 +139,9 @@ export function BillingPageClient({
         error_callback: (err) => {
           if (err.error === 'token_expired') {
             setWidgetToken(null);
-            setErrorMessage('Время сессии оплаты истекло. Создайте новый платёж.');
+            setErrorMessage(tb.tokenExpired);
           } else {
-            setErrorMessage(`Ошибка виджета: ${err.error}`);
+            setErrorMessage(`${tb.widgetError} ${err.error}`);
           }
           setActiveAction(null);
         },
@@ -162,7 +153,7 @@ export function BillingPageClient({
         await widget.render(container);
         setWidgetReady(true);
       } catch {
-        setErrorMessage('Не удалось отобразить виджет оплаты.');
+        setErrorMessage(tb.widgetRenderError);
         setActiveAction(null);
       }
     }
@@ -180,13 +171,13 @@ export function BillingPageClient({
   async function handleCreateTopUp() {
     if (!canManageBilling) return;
     if (!customAmountValid) {
-      setErrorMessage('Введите корректную сумму (от 10 ₽ до 1 000 000 ₽).');
+      setErrorMessage(tb.invalidAmount);
       return;
     }
 
     setActiveAction('create_topup');
     setErrorMessage(null);
-    setStatusMessage('Создаём платёж...');
+    setStatusMessage(tb.creatingPayment);
 
     try {
       const response = await fetch('/api/wallet/topups/create', {
@@ -199,13 +190,12 @@ export function BillingPageClient({
       if (!response.ok || !payload?.ok || !payload.data?.confirmationToken) {
         setActiveAction(null);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Не удалось создать платёж. Попробуйте ещё раз.');
+        setErrorMessage(payload?.error?.message ?? tb.creatingPaymentError);
         return;
       }
 
       const result = payload.data;
 
-      // Add pending top-up to list immediately for UX
       setTopUps((prev) => [
         {
           id: result.topUpId,
@@ -223,12 +213,12 @@ export function BillingPageClient({
       ]);
 
       setWidgetToken(result.confirmationToken);
-      setStatusMessage('Платёж создан. Завершите оплату в форме ниже.');
+      setStatusMessage(tb.paymentCreated);
       setActiveAction(null);
     } catch {
       setActiveAction(null);
       setStatusMessage(null);
-      setErrorMessage('Не удалось связаться с сервером. Попробуйте ещё раз.');
+      setErrorMessage(tb.serverError);
     }
   }
 
@@ -262,23 +252,21 @@ export function BillingPageClient({
         onLoad={() => setScriptLoaded(true)}
       />
 
-      {/* Balance card + top-up trigger */}
+      {/* Balance card */}
       <section className="wallet-hero">
         <article className="wallet-balance-card panel">
-          <span className="micro-label">Текущий баланс</span>
+          <span className="micro-label">{tb.currentBalance}</span>
           <div className="wallet-balance-amount">
-            {balance ? formatRub(balance.balanceKopecks) : '—'}
+            {balance ? formatRub(balance.balanceKopecks) : '\u2014'}
           </div>
-          <p className="wallet-balance-currency">Рубли · Рабочее пространство</p>
+          <p className="wallet-balance-currency">{tb.currency}</p>
           {canManageBilling && isConnectedSession ? (
             <button className="btn-primary wallet-topup-btn" onClick={handleOpenModal} type="button">
-              Пополнить баланс
+              {tb.addFunds}
             </button>
           ) : (
             <p className="list-muted">
-              {isConnectedSession
-                ? 'Недостаточно прав для пополнения баланса.'
-                : 'Войдите в аккаунт для управления балансом.'}
+              {isConnectedSession ? tb.insufficientPermissions : tb.signInToManage}
             </p>
           )}
         </article>
@@ -286,45 +274,33 @@ export function BillingPageClient({
 
       {/* Top-up modal */}
       {showModal ? (
-        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label="Пополнение баланса">
+        <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label={tb.addFunds}>
           <article className="wallet-modal panel">
             <div className="wallet-modal-header">
-              <h2>Пополнение баланса</h2>
+              <h2>{tb.addFunds}</h2>
               <button
                 className="wallet-modal-close"
                 onClick={handleCloseModal}
                 type="button"
-                aria-label="Закрыть"
+                aria-label={t.common.close}
               >
-                ✕
+                &#x2715;
               </button>
             </div>
 
-            {statusMessage ? (
-              <div className="billing-banner billing-banner-info">{statusMessage}</div>
-            ) : null}
-            {errorMessage ? (
-              <div className="billing-banner billing-banner-error">{errorMessage}</div>
-            ) : null}
+            {statusMessage ? <div className="billing-banner billing-banner-info">{statusMessage}</div> : null}
+            {errorMessage ? <div className="billing-banner billing-banner-error">{errorMessage}</div> : null}
 
-            {/* Only show amount selector if widget not yet opened */}
             {!widgetToken ? (
               <>
                 <div className="wallet-amount-section">
-                  <span className="micro-label">Выберите сумму</span>
+                  <span className="micro-label">{tb.selectAmount}</span>
                   <div className="wallet-preset-grid">
                     {PRESET_AMOUNTS_KOPECKS.map((amount) => (
                       <button
                         key={amount}
-                        className={
-                          !useCustom && selectedKopecks === amount
-                            ? 'wallet-preset-btn active'
-                            : 'wallet-preset-btn'
-                        }
-                        onClick={() => {
-                          setUseCustom(false);
-                          setSelectedKopecks(amount);
-                        }}
+                        className={!useCustom && selectedKopecks === amount ? 'wallet-preset-btn active' : 'wallet-preset-btn'}
+                        onClick={() => { setUseCustom(false); setSelectedKopecks(amount); }}
                         type="button"
                       >
                         {formatRub(amount)}
@@ -335,15 +311,13 @@ export function BillingPageClient({
                       onClick={() => setUseCustom(true)}
                       type="button"
                     >
-                      Другая
+                      {tb.custom}
                     </button>
                   </div>
 
                   {useCustom ? (
                     <div className="wallet-custom-amount">
-                      <label className="micro-label" htmlFor="custom-amount">
-                        Сумма в рублях
-                      </label>
+                      <label className="micro-label" htmlFor="custom-amount">{tb.amountRub}</label>
                       <div className="wallet-custom-input-wrap">
                         <input
                           className="wallet-custom-input"
@@ -351,47 +325,42 @@ export function BillingPageClient({
                           inputMode="decimal"
                           min="10"
                           max="1000000"
-                          placeholder="Например: 500"
+                          placeholder="e.g. 500"
                           type="number"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
                         />
-                        <span className="wallet-custom-suffix">₽</span>
+                        <span className="wallet-custom-suffix">&#x20BD;</span>
                       </div>
                       {useCustom && customAmount && !customAmountValid ? (
-                        <p className="wallet-input-error">Введите сумму от 10 ₽ до 1 000 000 ₽</p>
+                        <p className="wallet-input-error">{tb.invalidAmount}</p>
                       ) : null}
                     </div>
                   ) : null}
                 </div>
 
                 <div className="wallet-pay-summary">
-                  <span>К оплате:</span>
-                  <strong>{customAmountValid ? formatRub(effectiveKopecks) : '—'}</strong>
+                  <span>{tb.total}</span>
+                  <strong>{customAmountValid ? formatRub(effectiveKopecks) : '\u2014'}</strong>
                 </div>
 
                 <button
                   className="btn-primary wallet-pay-btn"
-                  disabled={
-                    !customAmountValid ||
-                    activeAction === 'create_topup' ||
-                    effectiveKopecks < 1_000
-                  }
+                  disabled={!customAmountValid || activeAction === 'create_topup' || effectiveKopecks < 1_000}
                   onClick={() => void handleCreateTopUp()}
                   type="button"
                 >
-                  {activeAction === 'create_topup' ? 'Создаём платёж...' : 'Перейти к оплате'}
+                  {activeAction === 'create_topup' ? tb.creatingPayment : tb.continueToPayment}
                 </button>
               </>
             ) : null}
 
-            {/* YooKassa widget container */}
             {widgetToken ? (
               <div className="wallet-widget-section">
                 {!widgetReady ? (
                   <div className="wallet-widget-loading">
                     <div className="wallet-spinner" />
-                    <span>Загружаем форму оплаты...</span>
+                    <span>{tb.loadingPaymentForm}</span>
                   </div>
                 ) : null}
                 <div
@@ -405,10 +374,12 @@ export function BillingPageClient({
         </div>
       ) : null}
 
-      {/* Top-up history */}
+      {/* Transaction history */}
       <section className="panel">
-        <span className="micro-label">История пополнений</span>
-        <h2>Транзакции</h2>
+        <div className="page-section__head">
+          <span className="page-section__label">{tb.transactionHistory}</span>
+        </div>
+        <h2>{tb.transactions}</h2>
 
         {topUps.length > 0 ? (
           <div className="wallet-history">
@@ -421,12 +392,12 @@ export function BillingPageClient({
                 <div className="wallet-history-right">
                   <span className="list-muted wallet-history-date">
                     {topUp.status === 'succeeded' && topUp.paidAt
-                      ? `Оплачено ${formatDate(topUp.paidAt)}`
-                      : `Создано ${formatDate(topUp.createdAt)}`}
+                      ? `${tb.paidLabel} ${formatDate(topUp.paidAt)}`
+                      : `${tb.createdLabel} ${formatDate(topUp.createdAt)}`}
                   </span>
                   {topUp.providerPaymentId ? (
                     <span className="wallet-history-ref" title={topUp.providerPaymentId}>
-                      {topUp.providerPaymentId.slice(0, 8)}…
+                      {topUp.providerPaymentId.slice(0, 8)}\u2026
                     </span>
                   ) : null}
                 </div>
@@ -435,9 +406,10 @@ export function BillingPageClient({
           </div>
         ) : (
           <div className="empty-state">
-            <span className="micro-label">История пуста</span>
-            <h2>Пополнений ещё не было.</h2>
-            <p>После первого пополнения здесь появится история транзакций.</p>
+            <span className="empty-state-icon" aria-hidden="true">&#x1F4CB;</span>
+            <span className="micro-label">{tb.noTransactionsYet}</span>
+            <h2>{tb.noTransactions}</h2>
+            <p>{tb.noTransactionsDesc}</p>
           </div>
         )}
       </section>

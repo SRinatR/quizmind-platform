@@ -65,6 +65,7 @@ export type UserCountAggregateOutputType = {
   avatarUrl: number
   timezone: number
   locale: number
+  uiPreferences: number
   suspendedAt: number
   suspendReason: number
   lastLoginAt: number
@@ -115,6 +116,7 @@ export type UserCountAggregateInputType = {
   avatarUrl?: true
   timezone?: true
   locale?: true
+  uiPreferences?: true
   suspendedAt?: true
   suspendReason?: true
   lastLoginAt?: true
@@ -204,6 +206,7 @@ export type UserGroupByOutputType = {
   avatarUrl: string | null
   timezone: string | null
   locale: string | null
+  uiPreferences: runtime.JsonValue | null
   suspendedAt: Date | null
   suspendReason: string | null
   lastLoginAt: Date | null
@@ -241,6 +244,7 @@ export type UserWhereInput = {
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
   timezone?: Prisma.StringNullableFilter<"User"> | string | null
   locale?: Prisma.StringNullableFilter<"User"> | string | null
+  uiPreferences?: Prisma.JsonNullableFilter<"User">
   suspendedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   suspendReason?: Prisma.StringNullableFilter<"User"> | string | null
   lastLoginAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -275,6 +279,7 @@ export type UserOrderByWithRelationInput = {
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrderInput | Prisma.SortOrder
   locale?: Prisma.SortOrderInput | Prisma.SortOrder
+  uiPreferences?: Prisma.SortOrderInput | Prisma.SortOrder
   suspendedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   suspendReason?: Prisma.SortOrderInput | Prisma.SortOrder
   lastLoginAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -312,6 +317,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   avatarUrl?: Prisma.StringNullableFilter<"User"> | string | null
   timezone?: Prisma.StringNullableFilter<"User"> | string | null
   locale?: Prisma.StringNullableFilter<"User"> | string | null
+  uiPreferences?: Prisma.JsonNullableFilter<"User">
   suspendedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   suspendReason?: Prisma.StringNullableFilter<"User"> | string | null
   lastLoginAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -346,6 +352,7 @@ export type UserOrderByWithAggregationInput = {
   avatarUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   timezone?: Prisma.SortOrderInput | Prisma.SortOrder
   locale?: Prisma.SortOrderInput | Prisma.SortOrder
+  uiPreferences?: Prisma.SortOrderInput | Prisma.SortOrder
   suspendedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   suspendReason?: Prisma.SortOrderInput | Prisma.SortOrder
   lastLoginAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -368,6 +375,7 @@ export type UserScalarWhereWithAggregatesInput = {
   avatarUrl?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   timezone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   locale?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  uiPreferences?: Prisma.JsonNullableWithAggregatesFilter<"User">
   suspendedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   suspendReason?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   lastLoginAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
@@ -384,6 +392,7 @@ export type UserCreateInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -418,6 +427,7 @@ export type UserUncheckedCreateInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -452,6 +462,7 @@ export type UserUpdateInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -486,6 +497,7 @@ export type UserUncheckedUpdateInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -520,6 +532,7 @@ export type UserCreateManyInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -536,6 +549,7 @@ export type UserUpdateManyMutationInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -552,6 +566,7 @@ export type UserUncheckedUpdateManyInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -568,6 +583,7 @@ export type UserCountOrderByAggregateInput = {
   avatarUrl?: Prisma.SortOrder
   timezone?: Prisma.SortOrder
   locale?: Prisma.SortOrder
+  uiPreferences?: Prisma.SortOrder
   suspendedAt?: Prisma.SortOrder
   suspendReason?: Prisma.SortOrder
   lastLoginAt?: Prisma.SortOrder
@@ -904,6 +920,7 @@ export type UserCreateWithoutAccountsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -937,6 +954,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -986,6 +1004,7 @@ export type UserUpdateWithoutAccountsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1019,6 +1038,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1052,6 +1072,7 @@ export type UserCreateWithoutSessionsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1085,6 +1106,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1134,6 +1156,7 @@ export type UserUpdateWithoutSessionsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1167,6 +1190,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1200,6 +1224,7 @@ export type UserCreateWithoutEmailVerificationsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1233,6 +1258,7 @@ export type UserUncheckedCreateWithoutEmailVerificationsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1282,6 +1308,7 @@ export type UserUpdateWithoutEmailVerificationsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1315,6 +1342,7 @@ export type UserUncheckedUpdateWithoutEmailVerificationsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1348,6 +1376,7 @@ export type UserCreateWithoutPasswordResetsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1381,6 +1410,7 @@ export type UserUncheckedCreateWithoutPasswordResetsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1430,6 +1460,7 @@ export type UserUpdateWithoutPasswordResetsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1463,6 +1494,7 @@ export type UserUncheckedUpdateWithoutPasswordResetsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1496,6 +1528,7 @@ export type UserCreateWithoutMembershipsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1529,6 +1562,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1578,6 +1612,7 @@ export type UserUpdateWithoutMembershipsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1611,6 +1646,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1644,6 +1680,7 @@ export type UserCreateWithoutSystemRoleAssignmentsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1677,6 +1714,7 @@ export type UserUncheckedCreateWithoutSystemRoleAssignmentsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1726,6 +1764,7 @@ export type UserUpdateWithoutSystemRoleAssignmentsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1759,6 +1798,7 @@ export type UserUncheckedUpdateWithoutSystemRoleAssignmentsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1792,6 +1832,7 @@ export type UserCreateWithoutAiRequestsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1825,6 +1866,7 @@ export type UserUncheckedCreateWithoutAiRequestsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1874,6 +1916,7 @@ export type UserUpdateWithoutAiRequestsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1907,6 +1950,7 @@ export type UserUncheckedUpdateWithoutAiRequestsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1940,6 +1984,7 @@ export type UserCreateWithoutFeatureFlagOverridesInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -1973,6 +2018,7 @@ export type UserUncheckedCreateWithoutFeatureFlagOverridesInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2022,6 +2068,7 @@ export type UserUpdateWithoutFeatureFlagOverridesInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2055,6 +2102,7 @@ export type UserUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2088,6 +2136,7 @@ export type UserCreateWithoutRemoteConfigVersionsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2121,6 +2170,7 @@ export type UserUncheckedCreateWithoutRemoteConfigVersionsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2170,6 +2220,7 @@ export type UserUpdateWithoutRemoteConfigVersionsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2203,6 +2254,7 @@ export type UserUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2236,6 +2288,7 @@ export type UserCreateWithoutExtensionInstallationsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2269,6 +2322,7 @@ export type UserUncheckedCreateWithoutExtensionInstallationsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2318,6 +2372,7 @@ export type UserUpdateWithoutExtensionInstallationsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2351,6 +2406,7 @@ export type UserUncheckedUpdateWithoutExtensionInstallationsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2384,6 +2440,7 @@ export type UserCreateWithoutExtensionInstallationSessionsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2417,6 +2474,7 @@ export type UserUncheckedCreateWithoutExtensionInstallationSessionsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2466,6 +2524,7 @@ export type UserUpdateWithoutExtensionInstallationSessionsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2499,6 +2558,7 @@ export type UserUncheckedUpdateWithoutExtensionInstallationSessionsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2532,6 +2592,7 @@ export type UserCreateWithoutProviderCredentialsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2565,6 +2626,7 @@ export type UserUncheckedCreateWithoutProviderCredentialsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2614,6 +2676,7 @@ export type UserUpdateWithoutProviderCredentialsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2647,6 +2710,7 @@ export type UserUncheckedUpdateWithoutProviderCredentialsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2680,6 +2744,7 @@ export type UserCreateWithoutAiProviderPoliciesUpdatedInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2713,6 +2778,7 @@ export type UserUncheckedCreateWithoutAiProviderPoliciesUpdatedInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2762,6 +2828,7 @@ export type UserUpdateWithoutAiProviderPoliciesUpdatedInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2795,6 +2862,7 @@ export type UserUncheckedUpdateWithoutAiProviderPoliciesUpdatedInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2828,6 +2896,7 @@ export type UserCreateWithoutSupportTicketsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2861,6 +2930,7 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2899,6 +2969,7 @@ export type UserCreateWithoutAssignedSupportTicketsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2932,6 +3003,7 @@ export type UserUncheckedCreateWithoutAssignedSupportTicketsInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -2981,6 +3053,7 @@ export type UserUpdateWithoutSupportTicketsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3014,6 +3087,7 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3058,6 +3132,7 @@ export type UserUpdateWithoutAssignedSupportTicketsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3091,6 +3166,7 @@ export type UserUncheckedUpdateWithoutAssignedSupportTicketsInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3124,6 +3200,7 @@ export type UserCreateWithoutSupportTicketPresetFavoritesInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -3157,6 +3234,7 @@ export type UserUncheckedCreateWithoutSupportTicketPresetFavoritesInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -3206,6 +3284,7 @@ export type UserUpdateWithoutSupportTicketPresetFavoritesInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3239,6 +3318,7 @@ export type UserUncheckedUpdateWithoutSupportTicketPresetFavoritesInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3272,6 +3352,7 @@ export type UserCreateWithoutSupportImpersonationSessionsStartedInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -3305,6 +3386,7 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsStartedInput =
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -3343,6 +3425,7 @@ export type UserCreateWithoutSupportImpersonationSessionsTargetedInput = {
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -3376,6 +3459,7 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsTargetedInput 
   avatarUrl?: string | null
   timezone?: string | null
   locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Date | string | null
   suspendReason?: string | null
   lastLoginAt?: Date | string | null
@@ -3425,6 +3509,7 @@ export type UserUpdateWithoutSupportImpersonationSessionsStartedInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3458,6 +3543,7 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsStartedInput =
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3502,6 +3588,7 @@ export type UserUpdateWithoutSupportImpersonationSessionsTargetedInput = {
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3535,6 +3622,7 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsTargetedInput 
   avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -3752,6 +3840,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   avatarUrl?: boolean
   timezone?: boolean
   locale?: boolean
+  uiPreferences?: boolean
   suspendedAt?: boolean
   suspendReason?: boolean
   lastLoginAt?: boolean
@@ -3787,6 +3876,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   avatarUrl?: boolean
   timezone?: boolean
   locale?: boolean
+  uiPreferences?: boolean
   suspendedAt?: boolean
   suspendReason?: boolean
   lastLoginAt?: boolean
@@ -3803,6 +3893,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   avatarUrl?: boolean
   timezone?: boolean
   locale?: boolean
+  uiPreferences?: boolean
   suspendedAt?: boolean
   suspendReason?: boolean
   lastLoginAt?: boolean
@@ -3819,6 +3910,7 @@ export type UserSelectScalar = {
   avatarUrl?: boolean
   timezone?: boolean
   locale?: boolean
+  uiPreferences?: boolean
   suspendedAt?: boolean
   suspendReason?: boolean
   lastLoginAt?: boolean
@@ -3826,7 +3918,7 @@ export type UserSelectScalar = {
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "emailVerifiedAt" | "displayName" | "avatarUrl" | "timezone" | "locale" | "suspendedAt" | "suspendReason" | "lastLoginAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "emailVerifiedAt" | "displayName" | "avatarUrl" | "timezone" | "locale" | "uiPreferences" | "suspendedAt" | "suspendReason" | "lastLoginAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   accounts?: boolean | Prisma.User$accountsArgs<ExtArgs>
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
@@ -3882,6 +3974,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     avatarUrl: string | null
     timezone: string | null
     locale: string | null
+    uiPreferences: runtime.JsonValue | null
     suspendedAt: Date | null
     suspendReason: string | null
     lastLoginAt: Date | null
@@ -4336,6 +4429,7 @@ export interface UserFieldRefs {
   readonly avatarUrl: Prisma.FieldRef<"User", 'String'>
   readonly timezone: Prisma.FieldRef<"User", 'String'>
   readonly locale: Prisma.FieldRef<"User", 'String'>
+  readonly uiPreferences: Prisma.FieldRef<"User", 'Json'>
   readonly suspendedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly suspendReason: Prisma.FieldRef<"User", 'String'>
   readonly lastLoginAt: Prisma.FieldRef<"User", 'DateTime'>

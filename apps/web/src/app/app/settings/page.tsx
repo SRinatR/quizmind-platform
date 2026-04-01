@@ -13,6 +13,7 @@ import {
   resolvePersona,
 } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
+import { ServerPrefsSync } from '../../../lib/preferences';
 import { SettingsPageClient } from './settings-page-client';
 
 interface SettingsPageProps {
@@ -35,6 +36,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
   const accessMatrix = context ? buildAccessMatrixRows({ context, workspaceId }) : [];
   const isAdmin = session ? isAdminSession(session) : false;
+  const workspaceName = session?.workspaces[0]?.name;
 
   return (
     <SiteShell
@@ -47,7 +49,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       pathname="/app/settings"
       showPersonaSwitcher={false}
       title="Account &amp; workspace"
+      workspaceName={workspaceName}
+      userDisplayName={session?.user.displayName ?? undefined}
     >
+      {/* Restore server-saved preferences on page load */}
+      <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
+
       {session ? (
         <SettingsPageClient
           authSessions={authSessions}

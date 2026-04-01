@@ -4,6 +4,8 @@ import Link from 'next/link';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 
+import { usePreferences } from '../../../lib/preferences';
+
 interface ForgotPasswordRouteResponse {
   ok: boolean;
   data?: {
@@ -16,6 +18,8 @@ interface ForgotPasswordRouteResponse {
 }
 
 export function ForgotPasswordClient() {
+  const { t } = usePreferences();
+  const tf = t.auth.forgotPassword;
   const [email, setEmail] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -26,18 +30,14 @@ export function ForgotPasswordClient() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
-    setStatusMessage('Submitting your reset request...');
+    setStatusMessage(tf.sending);
     setIsSubmitting(true);
 
     try {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-        }),
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
       });
 
       const payload = (await response.json().catch(() => null)) as ForgotPasswordRouteResponse | null;
@@ -45,7 +45,7 @@ export function ForgotPasswordClient() {
       if (!response.ok || !payload?.ok || !payload.data?.accepted) {
         setIsSubmitting(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to submit a reset request right now.');
+        setErrorMessage(payload?.error?.message ?? tf.requestError);
         return;
       }
 
@@ -53,28 +53,28 @@ export function ForgotPasswordClient() {
       setExpiresInMinutes(payload.data.expiresInMinutes);
       setIsSubmitting(false);
       setStatusMessage(
-        'If an account exists for that email, a secure password reset link is on the way.',
+        `${tf.successIntro} ${email}, ${tf.successSuffix} ${payload.data.expiresInMinutes ?? 60} ${tf.expiresMinutes}`,
       );
     } catch {
       setIsSubmitting(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the password reset route right now.');
+      setErrorMessage(tf.serverError);
     }
   }
 
   if (submitted) {
     return (
       <div className="auth-form-shell">
-        <span className="micro-label">Check your inbox</span>
-        <h2>Password reset request received</h2>
+        <span className="micro-label">{tf.successEyebrow}</span>
+        <h2>{tf.successHeading}</h2>
         <p className="auth-form-copy">
-          If an account exists for <strong>{email}</strong>, a reset link will arrive shortly and expire in{' '}
-          {expiresInMinutes ?? 60} minutes.
+          {tf.successIntro} <strong>{email}</strong>, {tf.successSuffix}{' '}
+          {expiresInMinutes ?? 60} {tf.expiresMinutes}
         </p>
 
         <div className="auth-session-card">
-          <strong>What happens next</strong>
-          <p>Open the email, follow the secure link, and choose a new password to rotate every active session.</p>
+          <strong>{tf.whatNext}</strong>
+          <p>{tf.whatNextDesc}</p>
         </div>
 
         {statusMessage ? <p className="auth-inline-status">{statusMessage}</p> : null}
@@ -82,10 +82,10 @@ export function ForgotPasswordClient() {
 
         <div className="auth-form-actions">
           <Link className="btn-primary" href="/auth/login">
-            Back to sign in
+            {tf.backToSignIn}
           </Link>
           <Link className="btn-ghost" href="/auth/register">
-            Create account
+            {tf.createAccount}
           </Link>
         </div>
       </div>
@@ -94,15 +94,13 @@ export function ForgotPasswordClient() {
 
   return (
     <div className="auth-form-shell">
-      <span className="micro-label">Forgot password</span>
-      <h2>Request a reset link</h2>
-      <p className="auth-form-copy">
-        Enter the email used for your QuizMind account. We will send a recovery link if the account exists.
-      </p>
+      <span className="micro-label">{tf.eyebrow}</span>
+      <h2>{tf.heading}</h2>
+      <p className="auth-form-copy">{tf.subheading}</p>
 
       <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="auth-field">
-          <span>Email</span>
+          <span>{tf.emailLabel}</span>
           <input
             autoComplete="email"
             name="email"
@@ -114,7 +112,7 @@ export function ForgotPasswordClient() {
         </label>
 
         <button className="btn-primary auth-submit" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Sending link...' : 'Send reset link'}
+          {isSubmitting ? tf.sending : tf.submitButton}
         </button>
       </form>
 
@@ -122,8 +120,8 @@ export function ForgotPasswordClient() {
       {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
 
       <div className="auth-links">
-        <Link href="/auth/login">Back to sign in</Link>
-        <Link href="/auth/register">Create a new account</Link>
+        <Link href="/auth/login">{tf.backToSignIn}</Link>
+        <Link href="/auth/register">{tf.createAccount}</Link>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import type { FormEvent } from 'react';
 import { useState, useTransition } from 'react';
 
 import type { SessionSnapshot } from '../../../lib/api';
+import { usePreferences } from '../../../lib/preferences';
 
 interface RegisterClientProps {
   initialSession: SessionSnapshot | null;
@@ -29,6 +30,8 @@ interface RegisterRouteResponse {
 
 export function RegisterClient({ initialSession, nextPath }: RegisterClientProps) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const tr = t.auth.register;
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,11 +49,11 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     setErrorMessage(null);
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+      setErrorMessage(tr.passwordMismatch);
       return;
     }
 
-    setStatusMessage('Creating your account\u2026');
+    setStatusMessage(tr.creating);
     setIsSubmitting(true);
 
     try {
@@ -69,11 +72,11 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSubmitting(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to create the account right now. Please try again.');
+        setErrorMessage(payload?.error?.message ?? tr.createError);
         return;
       }
 
-      setStatusMessage('Account created. Taking you in\u2026');
+      setStatusMessage(tr.accountCreated);
 
       startNavigation(() => {
         router.push(nextPath);
@@ -82,13 +85,13 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     } catch {
       setIsSubmitting(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the server right now. Please try again.');
+      setErrorMessage(tr.createError);
     }
   }
 
   async function handleLogout() {
     setErrorMessage(null);
-    setStatusMessage('Signing out\u2026');
+    setStatusMessage(tr.signingOut);
     setIsSigningOut(true);
 
     try {
@@ -97,7 +100,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
       if (!response.ok) {
         setIsSigningOut(false);
         setStatusMessage(null);
-        setErrorMessage('Unable to sign out right now. Please try again.');
+        setErrorMessage(tr.signOutError);
         return;
       }
 
@@ -107,7 +110,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     } catch {
       setIsSigningOut(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to sign out right now. Please try again.');
+      setErrorMessage(tr.signOutError);
     }
   }
 
@@ -116,19 +119,19 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
 
     return (
       <div className="auth-form-shell">
-        <span className="micro-label">Already signed in</span>
-        <h2>You already have an account, {userName}.</h2>
+        <span className="micro-label">{tr.alreadySignedIn}</span>
+        <h2>{tr.alreadyHaveAccount}, {userName}.</h2>
         <p className="auth-form-copy">{initialSession.user.email}</p>
 
         <div className="auth-form-actions">
           <Link className="btn-primary" href={nextPath}>
-            Continue to dashboard
+            {tr.continueDashboard}
           </Link>
           <Link className="btn-ghost" href="/app">
-            Go to dashboard
+            {tr.goToDashboard}
           </Link>
           <button className="btn-ghost" disabled={isSigningOut} onClick={handleLogout} type="button">
-            {isSigningOut ? 'Signing out\u2026' : 'Sign out'}
+            {isSigningOut ? tr.signingOut : tr.signOut}
           </button>
         </div>
 
@@ -140,25 +143,25 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
 
   return (
     <div className="auth-form-shell">
-      <span className="micro-label">Create account</span>
-      <h2>Get started with QuizMind</h2>
-      <p className="auth-form-copy">Create your account to connect the extension and start using the platform.</p>
+      <span className="micro-label">{tr.eyebrow}</span>
+      <h2>{tr.heading}</h2>
+      <p className="auth-form-copy">{tr.subheading}</p>
 
       <form className="auth-form" onSubmit={(event) => void handleSubmit(event)}>
         <label className="auth-field">
-          <span>Name</span>
+          <span>{tr.nameLabel}</span>
           <input
             autoComplete="name"
             name="displayName"
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="Your name"
+            placeholder={tr.namePlaceholder}
             type="text"
             value={displayName}
           />
         </label>
 
         <label className="auth-field">
-          <span>Email</span>
+          <span>{tr.emailLabel}</span>
           <input
             autoComplete="email"
             name="email"
@@ -171,12 +174,12 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
         </label>
 
         <label className="auth-field">
-          <span>Password</span>
+          <span>{tr.passwordLabel}</span>
           <input
             autoComplete="new-password"
             name="password"
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={tr.passwordPlaceholder}
             required
             type="password"
             value={password}
@@ -184,12 +187,12 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
         </label>
 
         <label className="auth-field">
-          <span>Confirm password</span>
+          <span>{tr.confirmPasswordLabel}</span>
           <input
             autoComplete="new-password"
             name="confirmPassword"
             onChange={(event) => setConfirmPassword(event.target.value)}
-            placeholder="Repeat your password"
+            placeholder={tr.confirmPasswordPlaceholder}
             required
             type="password"
             value={confirmPassword}
@@ -197,7 +200,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
         </label>
 
         <button className="btn-primary auth-submit" disabled={isSubmitting} type="submit">
-          {isSubmitting ? 'Creating account\u2026' : 'Create account'}
+          {isSubmitting ? tr.creating : tr.submitButton}
         </button>
       </form>
 
@@ -205,8 +208,8 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
       {errorMessage ? <p className="auth-inline-error">{errorMessage}</p> : null}
 
       <div className="auth-links">
-        <Link href={`/auth/login?next=${encodeURIComponent(nextPath)}`}>Already have an account?</Link>
-        <Link href="/auth/forgot-password">Forgot password?</Link>
+        <Link href={`/auth/login?next=${encodeURIComponent(nextPath)}`}>{tr.haveAccount}</Link>
+        <Link href="/auth/forgot-password">{t.auth.login.forgotPassword}</Link>
       </div>
     </div>
   );

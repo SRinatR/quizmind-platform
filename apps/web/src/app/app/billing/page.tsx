@@ -30,6 +30,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const session = await getSession(persona, accessToken);
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
+  const workspaceName = session?.workspaces[0]?.name;
   const requestedWorkspaceId = readSearchParam(resolvedSearchParams?.workspaceId);
   const workspaceId =
     requestedWorkspaceId && session?.workspaces.some((workspace) => workspace.id === requestedWorkspaceId)
@@ -61,6 +62,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       pathname="/app/billing"
       showPersonaSwitcher={false}
       title="Balance &amp; top-up"
+      workspaceName={workspaceName}
+      userDisplayName={session?.user.displayName ?? undefined}
     >
       {session && workspaceId ? (
         <BillingPageClient
@@ -72,6 +75,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         />
       ) : session ? (
         <section className="empty-state">
+          <span className="empty-state-icon" aria-hidden="true">&#x1F3E2;</span>
           <span className="micro-label">No workspace</span>
           <h2>No workspace linked to your account yet.</h2>
           <p>
@@ -86,14 +90,15 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         </section>
       ) : (
         <section className="empty-state">
-          <span className="micro-label">Вход в аккаунт</span>
-          <h2>Войдите, чтобы управлять балансом.</h2>
+          <span className="empty-state-icon" aria-hidden="true">&#x1F510;</span>
+          <span className="micro-label">Sign in required</span>
+          <h2>Sign in to manage your balance.</h2>
           <p>
-            Для просмотра баланса и пополнения кошелька необходима активная сессия.
+            An active session is required to view your balance and add funds.
           </p>
           <div className="billing-inline-actions">
             <Link className="btn-primary" href="/auth/login?next=/app/billing">
-              Войти
+              Sign in
             </Link>
           </div>
         </section>
@@ -101,6 +106,3 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     </SiteShell>
   );
 }
-
-
-

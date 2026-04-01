@@ -1,4 +1,4 @@
-import { type AdminUserDirectoryEntry, type UserProfilePayload } from '@quizmind/contracts';
+import { type AdminUserDirectoryEntry, type UiPreferences, type UserProfilePayload } from '@quizmind/contracts';
 
 import { type AuthUserRecord } from '../auth/repositories/user.repository';
 
@@ -28,6 +28,7 @@ export function mapUserRecordToProfile(user: AuthUserRecord): UserProfilePayload
     avatarUrl: user.avatarUrl ?? null,
     locale: user.locale ?? null,
     timezone: user.timezone ?? null,
+    uiPreferences: (user.uiPreferences as UiPreferences | null) ?? null,
     emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),

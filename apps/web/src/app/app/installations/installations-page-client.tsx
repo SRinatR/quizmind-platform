@@ -9,6 +9,8 @@ import {
 } from '@quizmind/contracts';
 import { useState, useTransition } from 'react';
 
+import { usePreferences } from '../../../lib/preferences';
+
 interface InstallationsPageClientProps {
   snapshot: ExtensionInstallationInventorySnapshot;
 }
@@ -16,24 +18,17 @@ interface InstallationsPageClientProps {
 interface DisconnectRouteResponse {
   ok: boolean;
   data?: ExtensionInstallationDisconnectResult;
-  error?: {
-    message?: string;
-  };
+  error?: { message?: string };
 }
 
 interface RotateSessionRouteResponse {
   ok: boolean;
   data?: ExtensionInstallationRotateSessionResult;
-  error?: {
-    message?: string;
-  };
+  error?: { message?: string };
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) {
-    return 'Unavailable';
-  }
-
+  if (!value) return '—';
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
@@ -42,12 +37,10 @@ function formatDateTime(value?: string | null) {
   }).format(new Date(value));
 }
 
-function formatCompatibilityTone(status: string) {
-  return status === 'supported' ? 'tag' : 'tag warn';
-}
-
 export function InstallationsPageClient({ snapshot }: InstallationsPageClientProps) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const ti = t.installs;
   const [actionReason, setActionReason] = useState('');
   const [pendingInstallationId, setPendingInstallationId] = useState<string | null>(null);
   const [pendingRotationInstallationId, setPendingRotationInstallationId] = useState<string | null>(null);
@@ -66,7 +59,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
   async function handleDisconnect(installationId: string) {
     if (!normalizedActionReason) {
-      setErrorMessage('Provide an operator reason before disconnecting or rotating installation sessions.');
+      setErrorMessage(ti.provideReasonError);
       return;
     }
 
@@ -77,9 +70,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     try {
       const response = await fetch('/api/extension/installations/disconnect', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           installationId,
           workspaceId: snapshot.workspace.id,
@@ -90,27 +81,25 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
       if (!response.ok || !payload?.ok || !payload.data) {
         setPendingInstallationId(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to disconnect the installation right now.');
+        setErrorMessage(payload?.error?.message ?? ti.disconnectError);
         return;
       }
 
       setPendingInstallationId(null);
       setStatusMessage(
-        `${payload.data.installationId} disconnected. Revoked ${payload.data.revokedSessionCount} active installation session${payload.data.revokedSessionCount === 1 ? '' : 's'}.`,
+        `${payload.data.installationId} — ${ti.disconnect.toLowerCase()}. ${payload.data.revokedSessionCount} ${ti.activeSessions.toLowerCase()}.`,
       );
 
-      startTransition(() => {
-        router.refresh();
-      });
+      startTransition(() => { router.refresh(); });
     } catch {
       setPendingInstallationId(null);
-      setErrorMessage('Unable to disconnect the installation right now.');
+      setErrorMessage(ti.disconnectError);
     }
   }
 
   async function handleRotateSession(installationId: string) {
     if (!normalizedActionReason) {
-      setErrorMessage('Provide an operator reason before disconnecting or rotating installation sessions.');
+      setErrorMessage(ti.provideReasonError);
       return;
     }
 
@@ -123,9 +112,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     try {
       const response = await fetch('/api/extension/installations/rotate-session', {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           installationId,
           workspaceId: snapshot.workspace.id,
@@ -136,51 +123,42 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
       if (!response.ok || !payload?.ok || !payload.data) {
         setPendingRotationInstallationId(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to rotate the installation session right now.');
+        setErrorMessage(payload?.error?.message ?? ti.rotateError);
         return;
       }
 
       setPendingRotationInstallationId(null);
       setRotatedSession(payload.data);
       setStatusMessage(
-        `${payload.data.installationId} rotated. Revoked ${payload.data.revokedSessionCount} active installation session${payload.data.revokedSessionCount === 1 ? '' : 's'}.`,
+        `${payload.data.installationId} — ${ti.rotateToken.toLowerCase()}. ${payload.data.revokedSessionCount} ${ti.activeSessions.toLowerCase()}.`,
       );
 
-      startTransition(() => {
-        router.refresh();
-      });
+      startTransition(() => { router.refresh(); });
     } catch {
       setPendingRotationInstallationId(null);
-      setErrorMessage('Unable to rotate the installation session right now.');
+      setErrorMessage(ti.rotateError);
     }
   }
 
   async function handleCopyRotatedToken() {
-    if (!rotatedSession?.session.token) {
-      return;
-    }
-
+    if (!rotatedSession?.session.token) return;
     try {
       await navigator.clipboard.writeText(rotatedSession.session.token);
       setCopiedRotatedToken(true);
     } catch {
-      setErrorMessage('Unable to copy the rotated token right now.');
+      setErrorMessage(ti.copyTokenError);
     }
   }
 
   if (snapshot.items.length === 0) {
     return (
       <section className="empty-state">
-        <span className="micro-label">Installations</span>
-        <h2>No extension installations are bound to this workspace yet.</h2>
-        <p>Open the extension and use the site bridge to connect the first managed installation.</p>
+        <span className="micro-label">{ti.installationsLabel}</span>
+        <h2>{ti.noInstallations}</h2>
+        <p>{ti.noInstallationsDesc}</p>
         <div className="link-row">
-          <Link className="btn-ghost" href="/app/usage">
-            Open usage
-          </Link>
-          <Link className="btn-ghost" href="/app/settings">
-            Open settings
-          </Link>
+          <Link className="btn-ghost" href="/app/usage">{ti.openUsage}</Link>
+          <Link className="btn-ghost" href="/app/settings">{ti.openSettings}</Link>
         </div>
       </section>
     );
@@ -190,39 +168,39 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     <>
       <section className="metrics-grid">
         <article className="stat-card">
-          <span className="micro-label">Installations</span>
+          <span className="micro-label">{ti.installationsLabel}</span>
           <p className="stat-value">{snapshot.items.length}</p>
           <p className="metric-copy">{snapshot.workspace.name}</p>
         </article>
         <article className="stat-card">
-          <span className="micro-label">Active sessions</span>
+          <span className="micro-label">{ti.activeSessions}</span>
           <p className="stat-value">{activeSessionTotal}</p>
-          <p className="metric-copy">Short-lived installation tokens currently alive</p>
+          <p className="metric-copy">{ti.activeSessionsDesc}</p>
         </article>
         <article className="stat-card">
-          <span className="micro-label">Reconnect required</span>
+          <span className="micro-label">{ti.reconnectRequired}</span>
           <p className="stat-value">{reconnectRequiredCount}</p>
-          <p className="metric-copy">Installations that must rebind or refresh auth</p>
+          <p className="metric-copy">{ti.reconnectRequiredDesc}</p>
         </article>
         <article className="stat-card">
-          <span className="micro-label">Compatibility warnings</span>
+          <span className="micro-label">{ti.compatibilityWarnings}</span>
           <p className="stat-value">{compatibilityWarningCount}</p>
-          <p className="metric-copy">Deprecated, warning, or unsupported installation versions</p>
+          <p className="metric-copy">{ti.compatibilityWarningsDesc}</p>
         </article>
       </section>
 
       <section className="panel">
-        <span className="micro-label">Fleet</span>
-        <h2>Managed extension installations</h2>
-        <p>
-          Platform bind, compatibility, and installation session state are now visible in one workspace-scoped inventory.
-        </p>
+        <span className="micro-label">{ti.fleet}</span>
+        <h2>{ti.managedInstallations}</h2>
+        <p>{ti.fleetDesc}</p>
         <label className="form-field">
-          <span className="form-field__label">Operator reason <span className="list-muted">(required for rotate / disconnect)</span></span>
+          <span className="form-field__label">
+            {ti.operatorReason} <span className="list-muted">{ti.operatorReasonHint}</span>
+          </span>
           <textarea
             maxLength={500}
             onChange={(event) => setActionReason(event.target.value)}
-            placeholder="Example: Investigating suspicious token activity reported by support."
+            placeholder={ti.operatorReasonPlaceholder}
             rows={3}
             value={actionReason}
           />
@@ -233,21 +211,21 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
         {rotatedSession ? (
           <div className="connect-success" style={{ marginTop: '12px' }}>
-            <span className="micro-label">Rotated token</span>
-            <p><strong>New session issued for {rotatedSession.installationId}</strong></p>
+            <span className="micro-label">{ti.rotatedToken}</span>
+            <p><strong>{ti.newSessionFor} {rotatedSession.installationId}</strong></p>
             <div className="connect-code-block">
               <code>{rotatedSession.session.token}</code>
               <button className="connect-code-block__copy" onClick={() => void handleCopyRotatedToken()} type="button">
-                {copiedRotatedToken ? 'Copied' : 'Copy'}
+                {copiedRotatedToken ? ti.copied : ti.copy}
               </button>
             </div>
             <div className="kv-list" style={{ marginTop: '8px' }}>
               <div className="kv-row">
-                <span className="kv-row__key">Expires</span>
+                <span className="kv-row__key">{ti.expires}</span>
                 <span className="kv-row__value">{formatDateTime(rotatedSession.session.expiresAt)}</span>
               </div>
               <div className="kv-row">
-                <span className="kv-row__key">Refresh after</span>
+                <span className="kv-row__key">{ti.refreshAfter}</span>
                 <span className="kv-row__value">{rotatedSession.session.refreshAfterSeconds}s</span>
               </div>
             </div>
@@ -277,10 +255,10 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                       {installation.compatibility.status}
                     </span>
                     <span className={installation.requiresReconnect ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--green'}>
-                      {installation.requiresReconnect ? 'reconnect required' : 'connected'}
+                      {installation.requiresReconnect ? ti.reconnectRequiredBadge : ti.connected}
                     </span>
                     <span className="tag-soft tag-soft--gray">
-                      {installation.activeSessionCount} session{installation.activeSessionCount === 1 ? '' : 's'}
+                      {installation.activeSessionCount} {ti.activeSessions.toLowerCase()}
                     </span>
                   </div>
                 </div>
@@ -296,19 +274,19 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                 ) : null}
                 <div className="kv-list" style={{ marginTop: '8px' }}>
                   <div className="kv-row">
-                    <span className="kv-row__key">Bound</span>
+                    <span className="kv-row__key">{ti.bound}</span>
                     <span className="kv-row__value">{formatDateTime(installation.boundAt)}</span>
                   </div>
                   <div className="kv-row">
-                    <span className="kv-row__key">Last seen</span>
+                    <span className="kv-row__key">{ti.lastSeen}</span>
                     <span className="kv-row__value">{formatDateTime(installation.lastSeenAt)}</span>
                   </div>
                   <div className="kv-row">
-                    <span className="kv-row__key">Token expires</span>
+                    <span className="kv-row__key">{ti.tokenExpires}</span>
                     <span className="kv-row__value">{formatDateTime(installation.lastSessionExpiresAt)}</span>
                   </div>
                   <div className="kv-row">
-                    <span className="kv-row__key">Schema</span>
+                    <span className="kv-row__key">{ti.schema}</span>
                     <span className="kv-row__value">{installation.schemaVersion}</span>
                   </div>
                 </div>
@@ -319,7 +297,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     onClick={() => void handleRotateSession(installation.installationId)}
                     type="button"
                   >
-                    {pendingRotationInstallationId === installation.installationId ? 'Rotating...' : 'Rotate token'}
+                    {pendingRotationInstallationId === installation.installationId ? ti.rotating : ti.rotateToken}
                   </button>
                   <button
                     className={disconnectDisabled ? 'btn-ghost' : 'btn-danger'}
@@ -328,13 +306,13 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     type="button"
                   >
                     {pendingInstallationId === installation.installationId
-                      ? 'Disconnecting...'
+                      ? ti.disconnecting
                       : installation.activeSessionCount === 0
-                        ? 'No active sessions'
-                        : 'Disconnect'}
+                        ? ti.noActiveSessions
+                        : ti.disconnect}
                   </button>
                   <Link className="btn-ghost" href={`/app/usage?workspaceId=${snapshot.workspace.id}`}>
-                    Usage
+                    {ti.usage}
                   </Link>
                 </div>
               </div>

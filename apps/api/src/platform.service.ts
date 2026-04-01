@@ -64,6 +64,7 @@ import {
   type SupportTicketQueueSnapshot,
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
+  type UiPreferences,
   type UserProfilePayload,
   type UserProfileUpdateRequest,
   type UsageExportRequest,
@@ -495,6 +496,51 @@ function normalizeAvatarUrl(value: string | null | undefined): string | null | u
   return parsed.toString();
 }
 
+const validThemes = new Set(['light', 'dark', 'system']);
+const validLanguages = new Set(['en', 'ru']);
+const validDensities = new Set(['comfortable', 'compact']);
+
+function normalizeUiPreferences(value: UiPreferences | null | undefined): Prisma.InputJsonValue | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new BadRequestException('uiPreferences must be an object or null.');
+  }
+  const result: UiPreferences = {};
+  if ('theme' in value) {
+    if (value.theme !== undefined && !validThemes.has(value.theme)) {
+      throw new BadRequestException('uiPreferences.theme must be light, dark, or system.');
+    }
+    result.theme = value.theme;
+  }
+  if ('language' in value) {
+    if (value.language !== undefined && !validLanguages.has(value.language)) {
+      throw new BadRequestException('uiPreferences.language must be en or ru.');
+    }
+    result.language = value.language;
+  }
+  if ('density' in value) {
+    if (value.density !== undefined && !validDensities.has(value.density)) {
+      throw new BadRequestException('uiPreferences.density must be comfortable or compact.');
+    }
+    result.density = value.density;
+  }
+  if ('reducedMotion' in value) {
+    if (value.reducedMotion !== undefined && typeof value.reducedMotion !== 'boolean') {
+      throw new BadRequestException('uiPreferences.reducedMotion must be a boolean.');
+    }
+    result.reducedMotion = value.reducedMotion;
+  }
+  if ('sidebarCollapsed' in value) {
+    if (value.sidebarCollapsed !== undefined && typeof value.sidebarCollapsed !== 'boolean') {
+      throw new BadRequestException('uiPreferences.sidebarCollapsed must be a boolean.');
+    }
+    result.sidebarCollapsed = value.sidebarCollapsed;
+  }
+  return result as Prisma.InputJsonValue;
+}
+
 function normalizeUsageHistoryLimit(value: number | undefined): number {
   if (typeof value === 'undefined') {
     return defaultUsageHistoryLimit;
@@ -905,9 +951,14 @@ export class PlatformService {
       mutationCount += 1;
     }
 
+    if ('uiPreferences' in request) {
+      updateData.uiPreferences = normalizeUiPreferences(request.uiPreferences ?? null);
+      mutationCount += 1;
+    }
+
     if (mutationCount === 0) {
       throw new BadRequestException(
-        'At least one profile field must be provided: displayName, avatarUrl, locale, timezone.',
+        'At least one profile field must be provided: displayName, avatarUrl, locale, timezone, uiPreferences.',
       );
     }
 
