@@ -17,11 +17,11 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
+  // workspaceId kept internally as compatibility layer — not exposed in UI
   const workspaceId = session?.workspaces[0]?.id;
-  const workspaceName = session?.workspaces[0]?.name;
   const usage = workspaceId ? await getUsageSummary(persona, workspaceId, accessToken) : null;
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
+  const visibleSections = context ? getVisibleDashboardSections(context) : [];
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -35,7 +35,6 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
       pathname="/app"
       showPersonaSwitcher={false}
       title="Overview"
-      workspaceName={workspaceName}
       userDisplayName={session?.user.displayName ?? undefined}
     >
       {session ? (

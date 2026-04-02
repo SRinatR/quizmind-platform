@@ -63,7 +63,6 @@ function buildCurrentPath(searchParams?: Record<string, string | string[] | unde
 export default async function ExtensionConnectPage({ searchParams }: ExtensionConnectPageProps) {
   const resolvedSearchParams = await searchParams;
   const installationId = readTrimmedSearchParam(resolvedSearchParams?.installationId);
-  const workspaceId = readTrimmedSearchParam(resolvedSearchParams?.workspaceId);
   const extensionVersion = readTrimmedSearchParam(resolvedSearchParams?.extensionVersion);
   const buildId = readTrimmedSearchParam(resolvedSearchParams?.buildId);
   const schemaVersion = readTrimmedSearchParam(resolvedSearchParams?.schemaVersion);
@@ -114,7 +113,6 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
             browser,
             ...(buildId ? { buildId } : {}),
           },
-          ...(workspaceId ? { workspaceId } : {}),
         }
       : null;
 
@@ -141,7 +139,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
         {
           eyebrow: 'Quick',
           title: 'One-time setup',
-          description: 'Connect once and the extension stays linked to your workspace automatically.',
+          description: 'Connect once and the extension stays linked to your account automatically.',
         },
         {
           eyebrow: 'Flexible',
@@ -168,7 +166,6 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           relayUrl={relayUrl}
           requestId={requestId}
           targetOrigin={targetOrigin}
-          workspaces={session.workspaces}
         />
       ) : (
         <div className="auth-form-shell">

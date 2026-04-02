@@ -19,9 +19,8 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const workspaceId = session?.workspaces[0]?.id;
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
+  const visibleSections = context ? getVisibleDashboardSections(context) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
   const isAdmin = session ? isAdminSession(session) : false;
 
@@ -36,6 +35,7 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
       pathname={`/app/${resolvedParams.section}`}
       showPersonaSwitcher={false}
       title={section?.title ?? resolvedParams.section}
+      userDisplayName={session?.user.displayName ?? undefined}
     >
       {section && session ? (
         <section className="split-grid">
@@ -45,16 +45,16 @@ export default async function AppSectionPage({ params, searchParams }: AppSectio
             <p>{section.description}</p>
           </article>
           <article className="panel">
-            <span className="micro-label">Workspace</span>
-            <h2>{session.workspaces[0]?.name ?? 'No workspace'}</h2>
-            <p>Role: {session.workspaces[0]?.role ?? 'n/a'}</p>
+            <span className="micro-label">Account</span>
+            <h2>{session.user.displayName ?? session.user.email?.split('@')[0] ?? '\u2014'}</h2>
+            <p>{session.user.email}</p>
           </article>
         </section>
       ) : (
         <section className="empty-state">
           <span className="micro-label">Not available</span>
           <h2>This section is not accessible with your current account.</h2>
-          <p>Return to the dashboard to see sections available for your workspace.</p>
+          <p>Return to the dashboard to see what is available for your account.</p>
           <div className="link-row" style={{ justifyContent: 'center' }}>
             <Link className="btn-primary" href="/app">Go to dashboard</Link>
           </div>

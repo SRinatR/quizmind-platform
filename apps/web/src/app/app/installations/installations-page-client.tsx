@@ -170,7 +170,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         <article className="stat-card">
           <span className="micro-label">{ti.installationsLabel}</span>
           <p className="stat-value">{snapshot.items.length}</p>
-          <p className="metric-copy">{snapshot.workspace.name}</p>
+          <p className="metric-copy">{ti.managedInstallations}</p>
         </article>
         <article className="stat-card">
           <span className="micro-label">{ti.activeSessions}</span>
@@ -311,7 +311,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                         ? ti.noActiveSessions
                         : ti.disconnect}
                   </button>
-                  <Link className="btn-ghost" href={`/app/usage?workspaceId=${snapshot.workspace.id}`}>
+                  <Link className="btn-ghost" href="/app/usage">
                     {ti.usage}
                   </Link>
                 </div>

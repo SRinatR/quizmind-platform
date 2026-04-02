@@ -5,7 +5,7 @@ import {
   type ExtensionInstallationBindResult,
 } from '@quizmind/contracts';
 
-import { API_URL, type ApiEnvelope } from '../../../../lib/api';
+import { API_URL, getSession, type ApiEnvelope } from '../../../../lib/api';
 import {
   BindCodeStoreUnavailableError,
   issueBindFallbackCode,
@@ -169,7 +169,9 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Partial<ExtensionInstallationBindRequest> | null;
   const installationId = typeof body?.installationId === 'string' ? body.installationId.trim() : '';
-  const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
+  // workspaceId resolved internally from session — compatibility layer, not exposed in UI
+  const session = await getSession('connected-user', accessToken);
+  const workspaceId = session?.workspaces[0]?.id ?? '';
   const rawEnvironment = typeof body?.environment === 'string' ? body.environment : undefined;
   const environment = normalizeEnvironment(body?.environment);
   const handshake = normalizeHandshake(body?.handshake);

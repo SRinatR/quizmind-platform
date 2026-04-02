@@ -259,7 +259,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const canManageSupportSessions = Boolean(isConnectedSession && supportImpersonationSessions?.accessDecision.allowed);
   const canManageUserAccess = Boolean(isConnectedSession && adminUsers?.writeDecision.allowed);
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleAdminSections(context, sessionWorkspaceId) : [];
+  const visibleSections = context ? getVisibleAdminSections(context) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
   const previewRoles = session
     ? [

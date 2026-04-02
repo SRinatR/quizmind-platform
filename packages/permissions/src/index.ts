@@ -144,11 +144,33 @@ const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
 export const allSystemRoles = [...systemRoles];
 export const allWorkspaceRoles = [...workspaceRoles];
 
+/**
+ * Base permissions granted to all authenticated users regardless of workspace membership.
+ * These cover the personal account scope (dashboard, billing, settings, installations, credentials).
+ */
+export const authenticatedUserPermissions: Permission[] = [
+  'installations:read',
+  'installations:write',
+  'credentials:read',
+  'credentials:write',
+  'credentials:rotate',
+  'usage:read',
+  'usage:export',
+];
+
 export function resolvePermissions(input: {
   systemRoles?: SystemRole[];
   workspaceRoles?: WorkspaceRole[];
+  /** When true, includes the base authenticated-user permission set */
+  authenticatedUser?: boolean;
 }): Permission[] {
   const granted = new Set<Permission>();
+
+  if (input.authenticatedUser) {
+    for (const permission of authenticatedUserPermissions) {
+      granted.add(permission);
+    }
+  }
 
   for (const role of input.systemRoles ?? []) {
     for (const permission of systemRolePermissions[role]) {

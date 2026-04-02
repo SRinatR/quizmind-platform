@@ -69,8 +69,6 @@ interface SiteShellProps {
   pathname: string;
   showPersonaSwitcher?: boolean;
   title: string;
-  /** Workspace display name shown in the topbar right cluster */
-  workspaceName?: string;
   /** User display name used for avatar initials in topbar */
   userDisplayName?: string;
 }
@@ -102,7 +100,6 @@ export function SiteShell({
   pathname,
   showPersonaSwitcher: _showPersonaSwitcher = true,
   title,
-  workspaceName,
   userDisplayName,
 }: SiteShellProps) {
   const { t } = usePreferences();
@@ -243,12 +240,6 @@ export function SiteShell({
 
           {/* Topbar right cluster */}
           <div className="app-topbar__right">
-            {workspaceName ? (
-              <span className="app-topbar__workspace-chip" title={`Workspace: ${workspaceName}`}>
-                <span className="app-topbar__ws-dot" aria-hidden="true" />
-                {workspaceName}
-              </span>
-            ) : null}
             {isConnected ? (
               <div
                 className="app-topbar__avatar-btn"

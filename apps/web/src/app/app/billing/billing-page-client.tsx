@@ -17,7 +17,6 @@ interface BillingPageClientProps {
   initialBalance: WalletBalanceSnapshot | null;
   initialTopUps: WalletTopUpEntry[];
   isConnectedSession: boolean;
-  workspaceId: string;
 }
 
 const PRESET_AMOUNTS_KOPECKS = [10_000, 30_000, 50_000, 100_000, 300_000] as const;
@@ -69,7 +68,6 @@ export function BillingPageClient({
   initialBalance,
   initialTopUps,
   isConnectedSession,
-  workspaceId,
 }: BillingPageClientProps) {
   const { t } = usePreferences();
   const tb = t.billing;
@@ -108,7 +106,7 @@ export function BillingPageClient({
 
   const refreshBalance = useCallback(async () => {
     try {
-      const res = await fetch(`/api/wallet/balance?workspaceId=${encodeURIComponent(workspaceId)}`, {
+      const res = await fetch('/api/wallet/balance', {
         cache: 'no-store',
       });
       const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
@@ -118,7 +116,7 @@ export function BillingPageClient({
     } catch {
       // non-critical
     }
-  }, [workspaceId]);
+  }, []);
 
   useEffect(() => {
     if (!widgetToken || !scriptLoaded) return;
@@ -165,8 +163,7 @@ export function BillingPageClient({
       widgetRef.current = null;
       setWidgetReady(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widgetToken, scriptLoaded]);
+  }, [widgetToken, scriptLoaded, tb]);
 
   async function handleCreateTopUp() {
     if (!canManageBilling) return;
@@ -183,7 +180,7 @@ export function BillingPageClient({
       const response = await fetch('/api/wallet/topups/create', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ workspaceId, amountKopecks: effectiveKopecks }),
+        body: JSON.stringify({ amountKopecks: effectiveKopecks }),
       });
       const payload = (await response.json().catch(() => null)) as BillingRouteResponse<WalletTopUpCreateResult> | null;
 
@@ -284,7 +281,7 @@ export function BillingPageClient({
             </div>
             <div className="wallet-info-row">
               <span className="wallet-info-dot" aria-hidden="true" />
-              <p>Balance is shared across your workspace. Usage is tracked per request.</p>
+              <p>Balance belongs to your account. Usage is tracked per request.</p>
             </div>
             <div className="wallet-info-row">
               <span className="wallet-info-dot" aria-hidden="true" />

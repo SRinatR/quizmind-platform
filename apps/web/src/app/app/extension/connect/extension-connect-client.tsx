@@ -4,7 +4,6 @@ import Link from 'next/link';
 import {
   type ExtensionInstallationBindRequest,
   type ExtensionInstallationBindResult,
-  type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -28,7 +27,6 @@ interface ExtensionConnectClientProps {
   relayUrl?: string;
   requestId?: string;
   targetOrigin?: string;
-  workspaces: WorkspaceSummary[];
 }
 
 interface BindRouteResponse {
@@ -80,18 +78,10 @@ export function ExtensionConnectClient({
   relayUrl,
   requestId,
   targetOrigin,
-  workspaces,
 }: ExtensionConnectClientProps) {
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>(
-    initialRequest?.workspaceId ?? workspaces[0]?.id ?? '',
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(
-    missingFields.length > 0
-      ? null
-      : initialRequest?.workspaceId || workspaces.length <= 1
-        ? 'Preparing secure extension bind...'
-        : 'Choose the workspace that should own this extension installation.',
+    missingFields.length > 0 ? null : 'Preparing secure extension bind...',
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bindResult, setBindResult] = useState<ExtensionInstallationBindResult | null>(null);
@@ -120,11 +110,9 @@ export function ExtensionConnectClient({
     resolvedBridgeNonce,
   });
   const effectiveBridgeSecurityIssue = platformOriginSecurityIssue ?? bridgeSecurityIssue;
-  const hasWorkspaceMembership = workspaces.length > 0;
 
   const canConnect =
     Boolean(initialRequest) &&
-    hasWorkspaceMembership &&
     missingFields.length === 0 &&
     !isSubmitting &&
     !effectiveBridgeSecurityIssue &&
@@ -170,23 +158,6 @@ export function ExtensionConnectClient({
       return;
     }
 
-    if (!hasWorkspaceMembership) {
-      const message =
-        'This account has no workspace access. Ask an admin to assign workspace_member (or higher), then reconnect the extension.';
-      setErrorMessage(message);
-      setStatusMessage(null);
-
-      postBridgeMessage({
-        type: 'quizmind.extension.bind_error',
-        requestId: bridgeRequestIdRef.current,
-        error: {
-          code: 'workspace_access_required',
-          message,
-        },
-      });
-      return;
-    }
-
     if (effectiveBridgeSecurityIssue) {
       setErrorMessage(effectiveBridgeSecurityIssue);
       setStatusMessage(null);
@@ -223,10 +194,7 @@ export function ExtensionConnectClient({
       const response = await fetch('/api/extension/bind', {
         method: 'POST',
         headers: bindHeaders,
-        body: JSON.stringify({
-          ...initialRequest,
-          ...(selectedWorkspaceId ? { workspaceId: selectedWorkspaceId } : {}),
-        } satisfies ExtensionInstallationBindRequest),
+        body: JSON.stringify(initialRequest satisfies ExtensionInstallationBindRequest),
       });
       const payload = (await response.json().catch(() => null)) as BindRouteResponse | null;
 
@@ -400,13 +368,9 @@ export function ExtensionConnectClient({
       return;
     }
 
-    if (!initialRequest.workspaceId && workspaces.length > 1) {
-      return;
-    }
-
     autoBindAttemptedRef.current = true;
     void handleConnect();
-  }, [bridgeReturnChannelIssue, effectiveBridgeSecurityIssue, initialRequest, missingFields, workspaces.length]);
+  }, [bridgeReturnChannelIssue, effectiveBridgeSecurityIssue, initialRequest, missingFields]);
 
   return (
     <div className="connect-flow">
@@ -442,35 +406,7 @@ export function ExtensionConnectClient({
         </div>
       ) : null}
 
-      {/* ── Workspace selector ── */}
-      {workspaces.length > 1 ? (
-        <label className="form-field">
-          <span className="form-field__label">Workspace</span>
-          <select
-            onChange={(event) => setSelectedWorkspaceId(event.target.value)}
-            value={selectedWorkspaceId}
-          >
-            {workspaces.map((workspace) => (
-              <option key={workspace.id} value={workspace.id}>
-                {workspace.name} ({workspace.role})
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-
       {/* ── Issue cards ── */}
-      {workspaces.length === 0 ? (
-        <div className="connect-issue">
-          <span className="connect-issue__label">Workspace required</span>
-          <p className="connect-issue__title">No workspace membership found</p>
-          <p className="connect-issue__detail">
-            Ask an admin to assign your account as <code>workspace_member</code> or higher, then
-            reopen the connect bridge from the extension.
-          </p>
-        </div>
-      ) : null}
-
       {missingFields.length > 0 ? (
         <div className="connect-issue">
           <span className="connect-issue__label">Incomplete handshake</span>

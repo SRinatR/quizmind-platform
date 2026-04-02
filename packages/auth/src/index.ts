@@ -80,6 +80,7 @@ export function getPrincipalPermissions(principal: SessionPrincipal, workspaceId
   return resolvePermissions({
     systemRoles: principal.systemRoles,
     workspaceRoles,
+    authenticatedUser: true,
   });
 }
 

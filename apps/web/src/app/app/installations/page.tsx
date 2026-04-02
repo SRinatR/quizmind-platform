@@ -14,26 +14,14 @@ interface InstallationsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function readSearchParam(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
-
-  return value;
-}
-
 export default async function InstallationsPage({ searchParams }: InstallationsPageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
-  const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const requestedWorkspaceId = readSearchParam(resolvedSearchParams?.workspaceId);
-  const workspaceId =
-    requestedWorkspaceId && session?.workspaces.some((workspace) => workspace.id === requestedWorkspaceId)
-      ? requestedWorkspaceId
-      : session?.workspaces[0]?.id;
+  // workspaceId resolved internally from session — not exposed in UI
+  const workspaceId = session?.workspaces[0]?.id;
   const inventory = accessToken && workspaceId ? await getExtensionInstallationInventory(workspaceId, accessToken) : null;
   const isAdmin = session ? isAdminSession(session) : false;
 
@@ -48,70 +36,33 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
       pathname="/app/installations"
       showPersonaSwitcher={false}
       title="Extension installations"
+      userDisplayName={session?.user.displayName ?? undefined}
     >
       {session && inventory ? (
-        <>
-          {session.workspaces.length > 1 ? (
-            <section className="panel">
-              <span className="micro-label">Workspace scope</span>
-              <h2>Select the workspace installation fleet</h2>
-              <div className="link-row">
-                {session.workspaces.map((workspace) => (
-                  <Link
-                    className={workspace.id === inventory.workspace.id ? 'btn-primary' : 'btn-ghost'}
-                    href={`/app/installations?workspaceId=${workspace.id}`}
-                    key={workspace.id}
-                  >
-                    {workspace.name}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <InstallationsPageClient snapshot={inventory} />
-        </>
-      ) : session && workspaceId ? (
+        <InstallationsPageClient snapshot={inventory} />
+      ) : session ? (
         <section className="empty-state">
           <span className="micro-label">Installations</span>
           <h2>No extension installations found yet.</h2>
           <p>
-            The workspace has no bound extension installations yet, or your session does not have installation read
-            access.
+            No extension installations are bound to your account yet, or your session does not have
+            installation read access.
           </p>
           <div className="link-row">
-            <Link className="btn-ghost" href="/app/usage">
-              Open usage
-            </Link>
-            <Link className="btn-ghost" href="/app/settings">
-              Open settings
-            </Link>
-          </div>
-        </section>
-      ) : session ? (
-        <section className="empty-state">
-          <span className="micro-label">No workspace</span>
-          <h2>No workspace linked to your account yet.</h2>
-          <p>
-            Your session is active but your account is not yet linked to a workspace.
-            Contact your administrator to get access.
-          </p>
-          <div className="link-row">
-            <Link className="btn-ghost" href="/app/settings">
-              View settings
-            </Link>
+            <Link className="btn-ghost" href="/app/usage">Open usage</Link>
+            <Link className="btn-ghost" href="/app/settings">Open settings</Link>
           </div>
         </section>
       ) : (
         <section className="empty-state">
           <span className="micro-label">Sign in</span>
           <h2>Open a connected session to manage extension installations.</h2>
-          <p>Installation inventory, disconnect controls, and reconnect guidance require an authenticated dashboard session.</p>
+          <p>Installation inventory, disconnect controls, and reconnect guidance require an authenticated session.</p>
+          <div className="link-row">
+            <Link className="btn-primary" href="/auth/login?next=/app/installations">Sign in</Link>
+          </div>
         </section>
       )}
     </SiteShell>
   );
 }
-
-
-

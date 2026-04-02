@@ -24,7 +24,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const sessionLabel = session?.user.displayName || session?.user.email;
   const workspaceId = session?.workspaces[0]?.id;
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleAdminSections(context, workspaceId) : [];
+  const visibleSections = context ? getVisibleAdminSections(context) : [];
   const isAdmin = session ? isAdminSession(session) : false;
 
   // Access guard — non-admin users are shown a clean blocked state
