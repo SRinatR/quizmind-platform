@@ -3962,3 +3962,430 @@ code {
 [data-theme="dark"] .pref-toggle__track {
   background: rgba(255,255,255,.2);
 }
+
+/* ============================================================
+   REDESIGN PASS — Dashboard, Billing, Settings, Shell
+   New component styles layered on the existing system.
+   ============================================================ */
+
+/* ── Topbar workspace chip — status dot ── */
+.app-topbar__ws-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2da05a;
+  flex-shrink: 0;
+}
+
+/* ── Dashboard sign-in prompt ── */
+.dash-signin-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 56px 32px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.dash-signin-icon {
+  font-size: 2.8rem;
+  opacity: 0.55;
+  line-height: 1;
+}
+
+.dash-signin-copy {
+  display: grid;
+  gap: 8px;
+  max-width: 42ch;
+}
+
+.dash-signin-copy h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: -0.03em;
+}
+
+.dash-signin-copy p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.dash-signin-actions {
+  justify-content: center;
+}
+
+/* ── Dashboard onboarding card (no workspace) ── */
+.dash-onboarding-card {
+  background:
+    linear-gradient(145deg, rgba(255, 249, 240, 0.96), rgba(248, 240, 230, 0.88)),
+    var(--surface) !important;
+  border-color: rgba(184, 92, 56, 0.15) !important;
+}
+
+.dash-onboarding-inner {
+  display: grid;
+  gap: 20px;
+}
+
+.dash-onboarding-icon {
+  font-size: 2rem;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.dash-onboarding-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.dash-onboarding-copy h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.025em;
+}
+
+.dash-onboarding-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.dash-onboarding-steps {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(31, 41, 51, 0.07);
+}
+
+.dash-onboard-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.dash-onboard-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(184, 92, 56, 0.12);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.dash-onboard-step > div {
+  display: grid;
+  gap: 3px;
+}
+
+.dash-onboard-step strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dash-onboard-step p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── Dashboard extension card ── */
+.dash-extension-card {
+  position: relative;
+}
+
+.dash-ext-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dash-ext-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(31, 41, 51, 0.18);
+}
+
+/* ── Billing — wallet hero two-column ── */
+.wallet-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .wallet-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wallet-balance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wallet-balance-provider-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+/* Billing info card */
+.wallet-info-card {
+  display: grid;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.55) !important;
+}
+
+.wallet-info-card h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.wallet-info-list {
+  display: grid;
+  gap: 10px;
+}
+
+.wallet-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.wallet-info-dot {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-top: 7px;
+  opacity: 0.7;
+}
+
+.wallet-info-row p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Transaction history panel */
+.wallet-history-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.wallet-history-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.wallet-history-title {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.025em;
+}
+
+/* ── AI access — policy grid ── */
+.ai-policy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(31, 41, 51, 0.07);
+}
+
+.ai-policy-row {
+  display: grid;
+  gap: 3px;
+}
+
+.ai-policy-row--full {
+  grid-column: 1 / -1;
+}
+
+.ai-policy-key {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.ai-policy-val {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.ai-policy-val--code {
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.ai-policy-val--ok {
+  color: #1a5c38;
+  font-weight: 700;
+}
+
+.ai-policy-val--warn {
+  color: #7c3516;
+  font-weight: 700;
+}
+
+/* Provider badges */
+.ai-provider-badges {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-provider-avail {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  opacity: 0.7;
+  margin-left: 5px;
+}
+
+/* AI credential inventory */
+.ai-credential-list {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-credential-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(31, 41, 51, 0.08);
+  transition: background var(--transition-fast);
+  flex-wrap: wrap;
+}
+
+.ai-credential-row:hover {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.ai-credential-info {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-credential-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-credential-provider {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: Consolas, "Cascadia Mono", monospace;
+}
+
+.ai-credential-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-family: Consolas, "Cascadia Mono", monospace;
+  line-height: 1.5;
+}
+
+.ai-credential-message {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.ai-credential-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Dark mode additions ── */
+[data-theme="dark"] .dash-onboarding-card {
+  background:
+    linear-gradient(145deg, rgba(42, 36, 30, 0.9), rgba(50, 40, 30, 0.88)) !important;
+}
+
+[data-theme="dark"] .wallet-info-card {
+  background: rgba(40, 35, 28, 0.6) !important;
+}
+
+[data-theme="dark"] .ai-policy-grid {
+  background: rgba(40, 35, 28, 0.5);
+  border-color: rgba(237, 232, 224, 0.07);
+}
+
+[data-theme="dark"] .ai-credential-row {
+  background: rgba(40, 35, 28, 0.55);
+  border-color: rgba(237, 232, 224, 0.07);
+}
+
+[data-theme="dark"] .ai-credential-row:hover {
+  background: rgba(50, 44, 36, 0.75);
+}
+
+[data-theme="dark"] .dash-onboarding-steps {
+  background: rgba(40, 35, 28, 0.5);
+}
+
+[data-theme="dark"] .lp-compat-chip {
+  background: rgba(40, 35, 28, 0.7);
+  border-color: rgba(237, 232, 224, 0.1);
+}
+
+[data-theme="dark"] .lp-usecase-card {
+  background: var(--surface-strong);
+}
+
+[data-theme="dark"] .lp-dash-mockup {
+  background: var(--surface-strong);
+}
+
+[data-theme="dark"] .lp-showcase-list li::before {
+  background: var(--accent);
+}
+

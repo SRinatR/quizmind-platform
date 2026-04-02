@@ -154,19 +154,50 @@ export function DashboardContentClient({
             </div>
           </article>
         ) : (
-          <article className="panel">
-            <div className="empty-state">
-              <span className="empty-state-icon" aria-hidden="true">\uD83C\uDFE2</span>
-              <span className="micro-label">{td.noWorkspace}</span>
-              <h2>{td.noWorkspaceLinked}</h2>
-              <p>{td.noWorkspaceLinkedDesc}</p>
-              <Link className="btn-ghost" href="/app/settings">{td.viewSettings}</Link>
+          <article className="panel dash-onboarding-card">
+            <div className="dash-onboarding-inner">
+              <div className="dash-onboarding-icon" aria-hidden="true">&#x1F3E2;</div>
+              <div className="dash-onboarding-copy">
+                <span className="micro-label">{td.noWorkspace}</span>
+                <h2>{td.noWorkspaceLinked}</h2>
+                <p>{td.noWorkspaceLinkedDesc}</p>
+              </div>
+              <div className="dash-onboarding-steps">
+                <div className="dash-onboard-step">
+                  <span className="dash-onboard-num">1</span>
+                  <div>
+                    <strong>Connect your workspace</strong>
+                    <p>Go to Settings to link or request access to a workspace.</p>
+                  </div>
+                </div>
+                <div className="dash-onboard-step">
+                  <span className="dash-onboard-num">2</span>
+                  <div>
+                    <strong>Install the extension</strong>
+                    <p>Add QuizMind to Chrome and connect it to your account.</p>
+                  </div>
+                </div>
+                <div className="dash-onboard-step">
+                  <span className="dash-onboard-num">3</span>
+                  <div>
+                    <strong>Start asking questions</strong>
+                    <p>Highlight text on any quiz or form and get instant AI answers.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="link-row">
+                <Link className="btn-primary" href="/app/settings">{td.viewSettings}</Link>
+                <Link className="btn-ghost" href="/app/installations">Install extension</Link>
+              </div>
             </div>
           </article>
         )}
 
-        <article className="panel">
-          <span className="micro-label">{td.extensionSection}</span>
+        <article className="panel dash-extension-card">
+          <div className="dash-ext-header">
+            <span className="micro-label">{td.extensionSection}</span>
+            <span className="dash-ext-status-dot" aria-hidden="true" />
+          </div>
           <h2>{td.extensionTitle}</h2>
           <p>{td.extensionDesc}</p>
           <div className="link-row">
@@ -183,12 +214,14 @@ export function DashboardSignInPrompt() {
   const { t } = usePreferences();
   const td = t.dash;
   return (
-    <section className="empty-state">
-      <span className="empty-state-icon" aria-hidden="true">\uD83D\uDD10</span>
-      <span className="micro-label">{td.authRequired}</span>
-      <h2>{td.authRequiredHeading}</h2>
-      <p>{td.authRequiredDesc}</p>
-      <div className="link-row" style={{ justifyContent: 'center' }}>
+    <section className="dash-signin-prompt">
+      <div className="dash-signin-icon" aria-hidden="true">&#x1F510;</div>
+      <div className="dash-signin-copy">
+        <span className="micro-label">{td.authRequired}</span>
+        <h2>{td.authRequiredHeading}</h2>
+        <p>{td.authRequiredDesc}</p>
+      </div>
+      <div className="link-row dash-signin-actions">
         <Link className="btn-primary" href="/auth/login">{td.signIn}</Link>
         <Link className="btn-ghost" href="/">{td.backToHome}</Link>
       </div>

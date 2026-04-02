@@ -245,6 +245,7 @@ export function SiteShell({
           <div className="app-topbar__right">
             {workspaceName ? (
               <span className="app-topbar__workspace-chip" title={`Workspace: ${workspaceName}`}>
+                <span className="app-topbar__ws-dot" aria-hidden="true" />
                 {workspaceName}
               </span>
             ) : null}
