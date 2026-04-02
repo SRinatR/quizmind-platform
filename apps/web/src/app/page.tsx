@@ -96,11 +96,13 @@ export default function HomePage() {
       {/* ── Platform compatibility strip ── */}
       <div className="lp-compat-strip">
         <div className="lp-compat-strip-inner">
-          <span className="lp-compat-label">Works everywhere you learn</span>
+          <span className="lp-compat-label">Works on any quiz, form, or learning platform</span>
           <div className="lp-compat-chips">
-            {['Google Forms', 'Coursera', 'Canvas LMS', 'Moodle', 'Any webpage'].map((p) => (
-              <span className="lp-compat-chip" key={p}>{p}</span>
-            ))}
+            <span className="lp-compat-chip">Any webpage</span>
+            <span className="lp-compat-chip">Online quizzes</span>
+            <span className="lp-compat-chip">LMS platforms</span>
+            <span className="lp-compat-chip">Google Forms</span>
+            <span className="lp-compat-chip">Screenshot mode</span>
           </div>
         </div>
       </div>
