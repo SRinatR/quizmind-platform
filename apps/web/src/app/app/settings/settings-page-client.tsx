@@ -11,7 +11,6 @@ import {
   type SessionSnapshot,
   type UserProfileSnapshot,
 } from '../../../lib/api';
-import { type DashboardSection } from '../../../features/dashboard/sections';
 import { type NavigationAccessMatrixRow } from '../../../features/navigation/access-matrix';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { usePreferences } from '../../../lib/preferences';
@@ -28,7 +27,6 @@ interface SettingsPageClientProps {
   providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
   session: SessionSnapshot;
   userProfile: UserProfileSnapshot | null;
-  visibleSections: DashboardSection[];
   accessMatrix: NavigationAccessMatrixRow[];
 }
 
@@ -57,7 +55,6 @@ export function SettingsPageClient({
   providerCredentialInventory,
   session,
   userProfile,
-  visibleSections,
   accessMatrix,
 }: SettingsPageClientProps) {
   const router = useRouter();
@@ -87,6 +84,7 @@ export function SettingsPageClient({
   const blockedAccessRows = accessMatrix.filter((row) => !row.allowed);
   const allowedDashboardRows = accessMatrix.filter((row) => row.scope === 'dashboard' && row.allowed);
   const allowedAdminRows = accessMatrix.filter((row) => row.scope === 'admin' && row.allowed);
+  const activeKeyCount = (providerCredentialInventory?.items ?? []).filter((k) => !k.revokedAt).length;
 
   async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -186,7 +184,7 @@ export function SettingsPageClient({
       <section className="metrics-grid">
         <article className="stat-card">
           <span className="micro-label">{s.stats.email}</span>
-          <p className="stat-value stat-value--sm">{s.stats.active}</p>
+          <p className="stat-value stat-value--sm stat-value--green">{s.stats.active}</p>
           <p className="metric-copy">{session.user.email}</p>
         </article>
         <article className="stat-card">
@@ -197,9 +195,27 @@ export function SettingsPageClient({
           </p>
         </article>
         <article className="stat-card">
-          <span className="micro-label">{s.stats.sections}</span>
-          <p className="stat-value">{visibleSections.length}</p>
-          <p className="metric-copy">{s.stats.accessibleSections}</p>
+          <span className="micro-label">{s.stats.aiKeys}</span>
+          {isConnectedSession ? (
+            activeKeyCount > 0 ? (
+              <>
+                <p className="stat-value">{activeKeyCount}</p>
+                <p className="metric-copy">
+                  {activeKeyCount === 1 ? s.stats.personalKeys : s.stats.personalKeysPlural}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="stat-value stat-value--sm">&mdash;</p>
+                <p className="metric-copy">{s.stats.platformManaged}</p>
+              </>
+            )
+          ) : (
+            <>
+              <p className="stat-value stat-value--sm">&mdash;</p>
+              <p className="metric-copy">{s.stats.signInToView}</p>
+            </>
+          )}
         </article>
         {isAdmin ? (
           <article className="stat-card">
@@ -253,15 +269,16 @@ export function SettingsPageClient({
               <p>{currentEmail}</p>
             </div>
 
-            <div className="tag-row">
-              {isAdmin
-                ? session.principal.systemRoles.map((role) => (
-                    <span className="tag-soft" key={role}>{role}</span>
-                  ))
-                : null}
-            </div>
+            {isAdmin ? (
+              <div className="tag-row">
+                {session.principal.systemRoles.map((role) => (
+                  <span className="tag-soft" key={role}>{role}</span>
+                ))}
+              </div>
+            ) : null}
 
             <form className="settings-profile-form" onSubmit={(event) => void handleProfileSave(event)}>
+              {/* Primary fields */}
               <div className="form-grid">
                 <label className="form-field">
                   <span className="form-field__label">{s.account.displayNameLabel}</span>
@@ -271,26 +288,6 @@ export function SettingsPageClient({
                     placeholder={s.account.displayNamePlaceholder}
                     type="text"
                     value={profileDraft.displayName}
-                  />
-                </label>
-                <label className="form-field">
-                  <span className="form-field__label">{s.account.avatarUrlLabel}</span>
-                  <input
-                    name="avatarUrl"
-                    onChange={(e) => setProfileDraft((c) => ({ ...c, avatarUrl: e.target.value }))}
-                    placeholder="https://cdn.example.com/avatar.png"
-                    type="url"
-                    value={profileDraft.avatarUrl}
-                  />
-                </label>
-                <label className="form-field">
-                  <span className="form-field__label">{s.account.localeLabel}</span>
-                  <input
-                    name="locale"
-                    onChange={(e) => setProfileDraft((c) => ({ ...c, locale: e.target.value }))}
-                    placeholder={s.account.localePlaceholder}
-                    type="text"
-                    value={profileDraft.locale}
                   />
                 </label>
                 <label className="form-field">
@@ -304,6 +301,27 @@ export function SettingsPageClient({
                   />
                 </label>
               </div>
+
+              {/* Advanced / optional fields */}
+              <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(31,41,51,0.07)', marginTop: '4px' }}>
+                <span className="micro-label" style={{ opacity: 0.55, display: 'block', marginBottom: '10px' }}>
+                  {s.account.advancedLabel}
+                </span>
+                <div className="form-grid">
+                  <label className="form-field">
+                    <span className="form-field__label">{s.account.avatarUrlLabel}</span>
+                    <input
+                      name="avatarUrl"
+                      onChange={(e) => setProfileDraft((c) => ({ ...c, avatarUrl: e.target.value }))}
+                      placeholder="https://cdn.example.com/avatar.png"
+                      type="url"
+                      value={profileDraft.avatarUrl}
+                    />
+                    <span className="form-field__hint">{s.account.avatarUrlHint}</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="settings-inline-actions">
                 <button
                   className="btn-primary"
@@ -334,53 +352,67 @@ export function SettingsPageClient({
           </div>
 
           <section className="settings-layout">
-            <article className="panel settings-card">
-              <div className="settings-card-copy">
-                <span className="micro-label">{s.security.sessionControls}</span>
-                <h2>{s.security.signOutEverywhere}</h2>
-                <p>{s.security.signOutDesc}</p>
-              </div>
-
-              <div className="settings-inline-actions">
-                <button
-                  className="btn-danger"
-                  disabled={!isConnectedSession || isRevokingEverywhere}
-                  onClick={() => void handleLogoutAll()}
-                  type="button"
-                >
-                  {isRevokingEverywhere ? s.security.signingOut : s.security.signOutEverywhere}
-                </button>
-                <Link className="btn-ghost" href="/auth/forgot-password">
-                  {s.security.resetPassword}
-                </Link>
-              </div>
-
-              {currentSession ? (
-                <div className="kv-list">
-                  <div className="kv-row">
-                    <span className="kv-row__key">{s.security.currentBrowser}</span>
-                    <span className="kv-row__value">
-                      {currentSession.deviceName || currentSession.browser || s.security.unnamed}
-                    </span>
-                  </div>
-                  <div className="kv-row">
-                    <span className="kv-row__key">{s.security.sessionExpires}</span>
-                    <span className="kv-row__value">{formatUtcDateTime(currentSession.expiresAt)}</span>
-                  </div>
-                  <div className="kv-row">
-                    <span className="kv-row__key">{s.security.ipAddress}</span>
-                    <span className="kv-row__value">{currentSession.ipAddress ?? s.security.unknown}</span>
-                  </div>
+            {/* Left column: session controls + current session info */}
+            <div style={{ display: 'grid', gap: '16px' }}>
+              <article className="panel settings-card">
+                <div className="settings-card-copy">
+                  <span className="micro-label">{s.security.sessionControls}</span>
+                  <h2>{s.security.signOutEverywhere}</h2>
+                  <p>{s.security.signOutDesc}</p>
                 </div>
-              ) : (
-                <p className="list-muted">
-                  {isConnectedSession
-                    ? s.security.sessionUnavailable
-                    : s.security.signInToManageSessions}
-                </p>
-              )}
-            </article>
 
+                <div className="settings-inline-actions">
+                  <button
+                    className="btn-danger"
+                    disabled={!isConnectedSession || isRevokingEverywhere}
+                    onClick={() => void handleLogoutAll()}
+                    type="button"
+                  >
+                    {isRevokingEverywhere ? s.security.signingOut : s.security.signOutEverywhere}
+                  </button>
+                </div>
+
+                {currentSession ? (
+                  <div className="kv-list">
+                    <div className="kv-row">
+                      <span className="kv-row__key">{s.security.currentBrowser}</span>
+                      <span className="kv-row__value">
+                        {currentSession.deviceName || currentSession.browser || s.security.unnamed}
+                      </span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="kv-row__key">{s.security.sessionExpires}</span>
+                      <span className="kv-row__value">{formatUtcDateTime(currentSession.expiresAt)}</span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="kv-row__key">{s.security.ipAddress}</span>
+                      <span className="kv-row__value">{currentSession.ipAddress ?? s.security.unknown}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="list-muted">
+                    {isConnectedSession
+                      ? s.security.sessionUnavailable
+                      : s.security.signInToManageSessions}
+                  </p>
+                )}
+              </article>
+
+              <article className="panel settings-card">
+                <div className="settings-card-copy">
+                  <span className="micro-label">{s.security.changePassword}</span>
+                  <h2>{s.security.changePassword}</h2>
+                  <p>{s.security.changePasswordDesc}</p>
+                </div>
+                <div className="settings-inline-actions">
+                  <Link className="btn-ghost" href="/auth/forgot-password">
+                    {s.security.sendResetLink}
+                  </Link>
+                </div>
+              </article>
+            </div>
+
+            {/* Right column: active sessions list */}
             <article className="panel settings-card">
               <span className="micro-label">{s.security.activeSessions}</span>
               <h2>{s.security.browserSessions}</h2>

@@ -2,7 +2,6 @@ import { buildAccessContext } from '@quizmind/auth';
 
 import { SiteShell } from '../../../components/site-shell';
 import { buildAccessMatrixRows } from '../../../features/navigation/access-matrix';
-import { getVisibleDashboardSections } from '../../../features/navigation/visibility';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAuthSessions,
@@ -32,7 +31,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const providerCatalog = await getProviderCatalog();
   const providerCredentialInventory = await getProviderCredentialInventory(accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleDashboardSections(context) : [];
   const accessMatrix = context ? buildAccessMatrixRows({ context }) : [];
   const isAdmin = session ? isAdminSession(session) : false;
 
@@ -62,7 +60,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           session={session}
           userProfile={userProfile}
           accessMatrix={accessMatrix}
-          visibleSections={visibleSections}
         />
       ) : (
         <section className="empty-state">
