@@ -20,9 +20,7 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  // workspaceId resolved internally from session — not exposed in UI
-  const workspaceId = session?.workspaces[0]?.id;
-  const inventory = accessToken && workspaceId ? await getExtensionInstallationInventory(workspaceId, accessToken) : null;
+  const inventory = accessToken ? await getExtensionInstallationInventory(accessToken) : null;
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (

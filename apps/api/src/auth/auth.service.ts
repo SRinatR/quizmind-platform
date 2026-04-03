@@ -34,7 +34,6 @@ import {
   type AuthSessionPayload,
   type AuthSessionsPayload,
   type EmailQueueJobPayload,
-  type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { createSecurityLogEvent } from '@quizmind/logger';
 import {
@@ -506,20 +505,9 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       systemRoles: this.userRepository.getSystemRoles(user),
-      workspaceMemberships: user.memberships.map((membership) => ({
-        workspaceId: membership.workspaceId,
-        role: membership.role,
-      })),
       entitlements: [],
       featureFlags: [],
     };
-    const workspaces: WorkspaceSummary[] = this.userRepository.getWorkspaceMemberships(user).map((membership) => ({
-      id: membership.workspaceId,
-      slug: membership.workspaceSlug,
-      name: membership.workspaceName,
-      role: membership.role,
-    }));
-    const preferredWorkspaceId = workspaces[0]?.id;
 
     return {
       personaKey: 'connected-user',
@@ -532,8 +520,7 @@ export class AuthService {
         emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       },
       principal,
-      workspaces,
-      permissions: getPrincipalPermissions(principal, preferredWorkspaceId),
+      permissions: getPrincipalPermissions(principal),
     };
   }
 

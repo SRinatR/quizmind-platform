@@ -8,7 +8,7 @@ import {
   type SupportTicketQueueEntry,
   type WorkspaceSummary,
 } from '@quizmind/contracts';
-import { allSystemRoles, allWorkspaceRoles, permissionRegistry } from '@quizmind/permissions';
+import { allSystemRoles, permissionRegistry } from '@quizmind/permissions';
 
 import { starterFlags, starterRemoteConfig } from './bootstrap/platform-blueprint';
 import { apiModules } from './modules';
@@ -63,10 +63,6 @@ const personaCatalog: Record<PersonaKey, DemoPersona> = {
       userId: 'user_platform_admin',
       email: 'admin@quizmind.dev',
       systemRoles: ['platform_admin'],
-      workspaceMemberships: [
-        { workspaceId: 'ws_alpha', role: 'workspace_owner' },
-        { workspaceId: 'ws_beta', role: 'workspace_admin' },
-      ],
       entitlements: [
         'feature.text_answering',
         'feature.screenshot_answering',
@@ -93,7 +89,6 @@ const personaCatalog: Record<PersonaKey, DemoPersona> = {
       userId: 'user_support_admin',
       email: 'support@quizmind.dev',
       systemRoles: ['support_admin'],
-      workspaceMemberships: [{ workspaceId: 'ws_alpha', role: 'workspace_viewer' }],
       entitlements: ['feature.text_answering', 'feature.remote_sync'],
       featureFlags: ['ops.force-upgrade-banner'],
     },
@@ -115,7 +110,6 @@ const personaCatalog: Record<PersonaKey, DemoPersona> = {
       userId: 'user_workspace_viewer',
       email: 'viewer@quizmind.dev',
       systemRoles: [],
-      workspaceMemberships: [{ workspaceId: 'ws_alpha', role: 'workspace_viewer' }],
       entitlements: ['feature.text_answering'],
       featureFlags: [],
     },
@@ -187,16 +181,7 @@ export function getPersona(input?: string): DemoPersona {
 }
 
 export function getAccessibleWorkspaces(persona: DemoPersona): WorkspaceSummary[] {
-  const roleByWorkspaceId = new Map(
-    persona.principal.workspaceMemberships.map((membership) => [membership.workspaceId, membership.role]),
-  );
-
-  return demoWorkspaces
-    .filter((workspace) => roleByWorkspaceId.has(workspace.id))
-    .map((workspace) => ({
-      ...workspace,
-      role: roleByWorkspaceId.get(workspace.id) ?? workspace.role,
-    }));
+  return demoWorkspaces.filter((workspace) => workspace.id === persona.preferredWorkspaceId);
 }
 
 export function getWorkspaceSummary(workspaceId?: string): WorkspaceSummary {
@@ -361,7 +346,6 @@ export function getFoundationOverview() {
     schemas: databaseSchemas,
     roles: {
       system: allSystemRoles,
-      workspace: allWorkspaceRoles,
     },
     permissions: [...permissionRegistry],
     featureFlags: starterFlags,
@@ -372,7 +356,6 @@ export function getFoundationOverview() {
       label: persona.label,
       email: persona.user.email,
       systemRoles: persona.principal.systemRoles,
-      workspaceMemberships: persona.principal.workspaceMemberships,
       notes: persona.notes,
     })),
   };

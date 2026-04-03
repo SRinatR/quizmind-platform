@@ -123,15 +123,9 @@ export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
 export type PrimitiveValue = string | number | boolean | null;
 
-export interface WorkspaceMembership {
-  workspaceId: string;
-  role: WorkspaceRole;
-}
-
 export interface AccessContext {
   userId: string;
   systemRoles: SystemRole[];
-  workspaceMemberships: WorkspaceMembership[];
   entitlements: string[];
   featureFlags: string[];
   attributes?: Record<string, PrimitiveValue>;
@@ -237,12 +231,9 @@ export interface AuditEvent {
 
 export interface AccessRequirement {
   permission: ResourceAction;
-  workspaceId?: string;
   requiredEntitlements?: string[];
   requiredFlags?: string[];
   requireSystemRole?: SystemRole;
-  requireWorkspaceRole?: WorkspaceRole;
-  requireOwnership?: boolean;
 }
 
 export interface AccessDecision {
@@ -420,12 +411,6 @@ export interface WorkspaceSummary {
   slug: string;
   name: string;
   role: WorkspaceRole;
-}
-
-export interface WorkspaceDetailSnapshot {
-  workspace: WorkspaceSummary;
-  accessDecision: AccessDecision;
-  permissions: string[];
 }
 
 export interface AdminUserWorkspaceMembership {
@@ -821,7 +806,6 @@ export interface ExtensionInstallationInventoryItem {
 }
 
 export interface ExtensionInstallationInventorySnapshot {
-  workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   disconnectDecision: AccessDecision;
   items: ExtensionInstallationInventoryItem[];
@@ -830,7 +814,6 @@ export interface ExtensionInstallationInventorySnapshot {
 
 export interface ExtensionInstallationDisconnectRequest {
   installationId: string;
-  workspaceId?: string;
   reason: string;
 }
 
@@ -844,7 +827,6 @@ export interface ExtensionInstallationDisconnectResult {
 
 export interface ExtensionInstallationRotateSessionRequest {
   installationId: string;
-  workspaceId?: string;
   reason: string;
 }
 
@@ -1055,7 +1037,6 @@ export interface UsageRecentEventSummary {
 }
 
 export interface UsageHistoryRequest {
-  workspaceId?: string;
   source?: UsageHistorySourceFilter;
   eventType?: string;
   installationId?: string;
@@ -1064,7 +1045,6 @@ export interface UsageHistoryRequest {
 }
 
 export interface UsageHistoryFilters {
-  workspaceId: string;
   source: UsageHistorySourceFilter;
   eventType?: string;
   installationId?: string;
@@ -1073,7 +1053,6 @@ export interface UsageHistoryFilters {
 }
 
 export interface WorkspaceUsageHistorySnapshot {
-  workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
   filters: UsageHistoryFilters;
@@ -1082,7 +1061,6 @@ export interface WorkspaceUsageHistorySnapshot {
 }
 
 export interface WorkspaceUsageSnapshot {
-  workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
   currentPeriodStart?: string;
@@ -1155,7 +1133,6 @@ export interface ProviderCredentialSummary {
 }
 
 export interface ProviderCredentialInventory {
-  workspace?: WorkspaceSummary;
   accessDecision: AccessDecision;
   writeDecision: AccessDecision;
   rotateDecision: AccessDecision;
@@ -1243,7 +1220,6 @@ export interface ProviderCredentialCreateRequest {
   provider: AiProvider;
   ownerType: CredentialOwnerType;
   ownerId?: string;
-  workspaceId?: string;
   label?: string;
   secret: string;
   scopes?: string[];
@@ -1285,7 +1261,6 @@ export interface UserApiKeySummary {
 }
 
 export interface UserApiKeyInventoryPayload {
-  workspace: WorkspaceSummary;
   items: UserApiKeySummary[];
 }
 
@@ -1293,7 +1268,6 @@ export interface UserApiKeyCreateRequest {
   provider: AiProvider;
   secret: string;
   label?: string;
-  workspaceId?: string;
 }
 
 export interface UserApiKeyCreateResult {
@@ -1645,7 +1619,6 @@ export interface ApiRouteDefinition {
 export type WalletTopUpStatus = 'pending' | 'succeeded' | 'canceled' | 'refunded';
 
 export interface WalletBalanceSnapshot {
-  workspaceId: string;
   currency: string;
   balanceKopecks: number;
   balanceRub: number;
@@ -1665,12 +1638,10 @@ export interface WalletTopUpEntry {
 }
 
 export interface WalletTopUpsPayload {
-  workspaceId: string;
   items: WalletTopUpEntry[];
 }
 
 export interface WalletTopUpCreateRequest {
-  workspaceId: string;
   amountKopecks: number;
 }
 

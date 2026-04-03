@@ -14,9 +14,7 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  // workspaceId resolved internally from session — compatibility layer, not exposed in UI
-  const workspaceId = session?.workspaces[0]?.id;
-  const usage = workspaceId ? await getUsageSummary(persona, workspaceId, accessToken) : null;
+  const usage = await getUsageSummary(persona, accessToken);
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (

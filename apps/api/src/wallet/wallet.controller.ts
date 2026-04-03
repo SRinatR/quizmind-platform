@@ -5,7 +5,6 @@ import {
   Headers,
   Inject,
   Post,
-  Query,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -34,18 +33,16 @@ export class WalletController {
 
   @Get('wallet/balance')
   async getBalance(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    return ok(await this.walletService.getBalance(await this.requireSession(authorization), workspaceId));
+    return ok(await this.walletService.getBalance(await this.requireSession(authorization)));
   }
 
   @Get('wallet/topups')
   async listTopUps(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    return ok(await this.walletService.listTopUps(await this.requireSession(authorization), workspaceId));
+    return ok(await this.walletService.listTopUps(await this.requireSession(authorization)));
   }
 
   @Post('wallet/topups/create')

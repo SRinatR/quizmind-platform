@@ -169,9 +169,7 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Partial<ExtensionInstallationBindRequest> | null;
   const installationId = typeof body?.installationId === 'string' ? body.installationId.trim() : '';
-  // workspaceId resolved internally from session — compatibility layer, not exposed in UI
   const session = await getSession('connected-user', accessToken);
-  const workspaceId = session?.workspaces[0]?.id ?? '';
   const rawEnvironment = typeof body?.environment === 'string' ? body.environment : undefined;
   const environment = normalizeEnvironment(body?.environment);
   const handshake = normalizeHandshake(body?.handshake);
@@ -238,7 +236,6 @@ export async function POST(request: Request) {
         installationId,
         environment,
         handshake,
-        ...(workspaceId ? { workspaceId } : {}),
       } satisfies ExtensionInstallationBindRequest),
     });
   } catch (error) {
@@ -247,7 +244,7 @@ export async function POST(request: Request) {
         eventType: 'extension.bind_proxy_request_failed',
         occurredAt: new Date().toISOString(),
         installationId,
-        workspaceId: workspaceId || null,
+        workspaceId: null,
         environment,
         errorMessage: error instanceof Error ? error.message : String(error),
       }),
@@ -273,7 +270,7 @@ export async function POST(request: Request) {
         eventType: 'extension.bind_proxy_upstream_failed',
         occurredAt: new Date().toISOString(),
         installationId,
-        workspaceId: workspaceId || null,
+        workspaceId: null,
         environment,
         status: response.status,
         errorMessage: fallbackMessage ?? 'Unable to bind the extension installation right now.',

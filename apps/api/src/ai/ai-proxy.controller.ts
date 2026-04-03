@@ -87,13 +87,11 @@ export class AiProxyController {
 
   @Get('ai/models')
   async listModels(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     return ok(
       await this.aiProxyService.listModelsForCurrentSession(
         await this.requireConnectedSession(authorization),
-        workspaceId,
       ),
     );
   }

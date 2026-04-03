@@ -27,14 +27,6 @@ export async function POST(request: Request) {
     return badRequest('amountKopecks must be a positive integer.');
   }
 
-  // Resolve workspaceId from session — compatibility layer, hidden from client
-  const session = await getSession('connected-user', accessToken);
-  const workspaceId = session?.workspaces[0]?.id;
-
-  if (!workspaceId) {
-    return badRequest('No account wallet found.', 404);
-  }
-
   const response = await fetch(`${API_URL}/wallet/topups/create`, {
     method: 'POST',
     cache: 'no-store',
@@ -42,7 +34,7 @@ export async function POST(request: Request) {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ workspaceId, amountKopecks }),
+    body: JSON.stringify({ amountKopecks }),
   });
 
   const payload = (await response.json().catch(() => null)) as

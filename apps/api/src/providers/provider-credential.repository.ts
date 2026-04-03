@@ -38,7 +38,7 @@ interface ProviderCredentialLogInput {
 
 interface ListAccessibleProviderCredentialsInput {
   userId: string;
-  workspaceIds: string[];
+  workspaceId?: string | null;
   includePlatform?: boolean;
 }
 
@@ -115,11 +115,9 @@ export class ProviderCredentialRepository {
       },
     ];
 
-    if (input.workspaceIds.length > 0) {
+    if (input.workspaceId) {
       predicates.push({
-        workspaceId: {
-          in: input.workspaceIds,
-        },
+        workspaceId: input.workspaceId,
       });
     }
 

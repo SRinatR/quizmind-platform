@@ -551,17 +551,10 @@ export function ExtensionControlClient({
         </article>
 
         <article className="panel">
-          <span className="micro-label">Workspace snapshot</span>
+          <span className="micro-label">Usage snapshot</span>
           <h2>Current usage state</h2>
           {usageSummary ? (
             <div className="list-stack">
-              <div className="list-item">
-                <strong>Workspace</strong>
-                <p>{usageSummary.workspace.name}</p>
-                <span className="list-muted">
-                  {usageSummary.workspace.name}
-                </span>
-              </div>
               <div className="list-item">
                 <strong>Current window</strong>
                 <p>{formatWindow(usageSummary.currentPeriodStart, usageSummary.currentPeriodEnd)}</p>

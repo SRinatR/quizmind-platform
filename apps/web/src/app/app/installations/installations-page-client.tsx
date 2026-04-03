@@ -73,7 +73,6 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           installationId,
-          workspaceId: snapshot.workspace.id,
           reason: normalizedActionReason,
         }),
       });
@@ -115,7 +114,6 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           installationId,
-          workspaceId: snapshot.workspace.id,
           reason: normalizedActionReason,
         }),
       });

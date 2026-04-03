@@ -4,240 +4,124 @@ import { type AccessDecision } from '@quizmind/contracts';
 
 export function canPublishRemoteConfig(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'remote_config:publish',
-  });
+  return evaluateAccess(context, { permission: 'remote_config:publish' });
 }
 
 export function canReadFeatureFlags(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'feature_flags:read',
-  });
+  return evaluateAccess(context, { permission: 'feature_flags:read' });
 }
 
 export function canWriteFeatureFlags(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'feature_flags:write',
-  });
+  return evaluateAccess(context, { permission: 'feature_flags:write' });
 }
 
 export function canReadUsers(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'users:read',
-  });
+  return evaluateAccess(context, { permission: 'users:read' });
 }
 
 export function canUpdateUsers(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'users:update',
-  });
+  return evaluateAccess(context, { permission: 'users:update' });
 }
 
-export function canReadAuditLogs(principal: SessionPrincipal, workspaceId?: string): AccessDecision {
+export function canReadAuditLogs(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'audit_logs:read',
-    ...(workspaceId ? { workspaceId } : {}),
-  });
+  return evaluateAccess(context, { permission: 'audit_logs:read' });
 }
 
-export function canExportAuditLogs(principal: SessionPrincipal, workspaceId?: string): AccessDecision {
+export function canExportAuditLogs(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'audit_logs:export',
-    ...(workspaceId ? { workspaceId } : {}),
-  });
+  return evaluateAccess(context, { permission: 'audit_logs:export' });
 }
 
 export function canReadJobs(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'jobs:read',
-  });
+  return evaluateAccess(context, { permission: 'jobs:read' });
 }
 
 export function canRetryJobs(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'jobs:retry',
-  });
+  return evaluateAccess(context, { permission: 'jobs:retry' });
 }
 
-export function canReadWorkspace(principal: SessionPrincipal, workspaceId: string): AccessDecision {
+export function canReadExtensionInstallations(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'workspaces:read',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'installations:read' });
 }
 
-export function canReadExtensionInstallations(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
+export function canWriteExtensionInstallations(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'installations:read',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'installations:write' });
 }
 
-export function canWriteExtensionInstallations(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
+export function canReadProviderCredentials(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'installations:write',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'credentials:read' });
 }
 
-export function canReadProviderCredentials(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
+export function canWriteProviderCredentials(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'credentials:read',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'credentials:write' });
 }
 
-export function canWriteProviderCredentials(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
+export function canRotateProviderCredentials(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'credentials:write',
-    workspaceId,
-  });
-}
-
-export function canRotateProviderCredentials(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
-  const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'credentials:rotate',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'credentials:rotate' });
 }
 
 export function canManageAiProviders(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'ai_providers:manage',
-  });
+  return evaluateAccess(context, { permission: 'ai_providers:manage' });
 }
 
 export function canManageCompatibilityRules(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'compatibility_rules:manage',
-  });
+  return evaluateAccess(context, { permission: 'compatibility_rules:manage' });
 }
 
-export function canReadUsage(principal: SessionPrincipal, workspaceId: string): AccessDecision {
+export function canReadUsage(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'usage:read',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'usage:read' });
 }
 
-export function canExportUsage(principal: SessionPrincipal, workspaceId: string): AccessDecision {
+export function canExportUsage(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'usage:export',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'usage:export' });
 }
 
-export function canReadWorkspaceBilling(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
+export function canReadBilling(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'subscriptions:read',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'subscriptions:read' });
 }
 
-export function canUpdateWorkspaceBilling(
-  principal: SessionPrincipal,
-  workspaceId: string,
-): AccessDecision {
+export function canUpdateBilling(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'subscriptions:update',
-    workspaceId,
-  });
+  return evaluateAccess(context, { permission: 'subscriptions:update' });
 }
 
 export function canStartSupportImpersonation(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'support:impersonate',
-  });
+  return evaluateAccess(context, { permission: 'support:impersonate' });
 }
 
 export function canReadSupportImpersonationSessions(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'support:impersonate',
-  });
+  return evaluateAccess(context, { permission: 'support:impersonate' });
 }
 
 export function canReadSupportTickets(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'support:impersonate',
-  });
+  return evaluateAccess(context, { permission: 'support:impersonate' });
 }
 
 export function canEndSupportImpersonation(principal: SessionPrincipal): AccessDecision {
   const context = buildAccessContext(principal);
-
-  return evaluateAccess(context, {
-    permission: 'support:impersonate',
-  });
+  return evaluateAccess(context, { permission: 'support:impersonate' });
 }
 
-export function listPrincipalPermissions(
-  principal: SessionPrincipal,
-  workspaceId?: string,
-): string[] {
-  return getPrincipalPermissions(principal, workspaceId);
+export function listPrincipalPermissions(principal: SessionPrincipal): string[] {
+  return getPrincipalPermissions(principal);
 }

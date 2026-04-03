@@ -94,13 +94,11 @@ export class ProviderCredentialController {
 
   @Get('providers/credentials')
   async listCredentials(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     return ok(
       await this.providerCredentialService.listCredentialInventoryForCurrentSession(
         await this.requireConnectedSession(authorization),
-        workspaceId,
       ),
     );
   }
@@ -146,13 +144,11 @@ export class ProviderCredentialController {
 
   @Get('user/api-keys')
   async listUserApiKeys(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     return ok(
       await this.providerCredentialService.listUserApiKeysForCurrentSession(
         await this.requireConnectedSession(authorization),
-        workspaceId,
       ),
     );
   }

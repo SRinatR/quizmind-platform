@@ -111,7 +111,6 @@ export function UsageExplorerClient({
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          workspaceId: usageSummary.workspace.id,
           format: exportFormat,
           scope: exportScope,
         }),
@@ -152,9 +151,8 @@ export function UsageExplorerClient({
             <label className="filter-field">
               <span className="filter-field__label">Workspace</span>
               <select
-                disabled={!canSelectWorkspace}
-                onChange={(event) => updateWorkspaceScope(event.target.value)}
-                value={usageSummary.workspace.id}
+                disabled={true}
+                value=""
               >
                 {workspaceOptions.map((workspace) => (
                   <option key={workspace.id} value={workspace.id}>
@@ -202,14 +200,7 @@ export function UsageExplorerClient({
         <article className="panel">
           <span className="micro-label">Baseline</span>
           <h2>Current usage summary</h2>
-          <div className="tag-row" style={{ marginBottom: '12px' }}>
-            <span className="tag-soft tag-soft--gray">{usageSummary.workspace.name}</span>
-          </div>
           <div className="kv-list">
-            <div className="kv-row">
-              <span className="kv-row__key">Workspace</span>
-              <span className="kv-row__value">{usageSummary.workspace.name}</span>
-            </div>
             <div className="kv-row">
               <span className="kv-row__key">Primary quota</span>
               <span className="kv-row__value">

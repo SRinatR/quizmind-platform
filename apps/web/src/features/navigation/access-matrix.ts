@@ -41,20 +41,12 @@ export function describeAccessRequirement(requirement?: AccessRequirement): stri
     parts.push(`system role ${requirement.requireSystemRole}`);
   }
 
-  if (requirement.requireWorkspaceRole) {
-    parts.push(`workspace role ${requirement.requireWorkspaceRole}`);
-  }
-
   if (requirement.requiredEntitlements && requirement.requiredEntitlements.length > 0) {
     parts.push(`entitlements ${requirement.requiredEntitlements.join(', ')}`);
   }
 
   if (requirement.requiredFlags && requirement.requiredFlags.length > 0) {
     parts.push(`feature flags ${requirement.requiredFlags.join(', ')}`);
-  }
-
-  if (requirement.requireOwnership) {
-    parts.push('workspace ownership');
   }
 
   return parts.join(' | ');

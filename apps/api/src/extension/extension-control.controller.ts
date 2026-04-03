@@ -163,8 +163,6 @@ function mapProviderModelToExtensionShape(entry: ProviderModelCatalogEntry) {
 function buildInstallationRuntimeSession(
   installationSession: InstallationSessionSnapshot,
 ): CurrentSessionSnapshot {
-  const workspaceId = installationSession.installation.workspaceId;
-
   return {
     personaKey: 'extension-installation',
     personaLabel: 'Extension Installation',
@@ -177,27 +175,9 @@ function buildInstallationRuntimeSession(
       userId: installationSession.installation.userId,
       email: `installation+${installationSession.installation.userId}@quizmind.local`,
       systemRoles: [],
-      workspaceMemberships: workspaceId
-        ? [
-            {
-              workspaceId,
-              role: 'workspace_member',
-            },
-          ]
-        : [],
       entitlements: [],
       featureFlags: [],
     },
-    workspaces: workspaceId
-      ? [
-          {
-            id: workspaceId,
-            slug: 'installation-workspace',
-            name: 'Installation Workspace',
-            role: 'workspace_member',
-          },
-        ]
-      : [],
     permissions: [],
   };
 }
@@ -263,13 +243,11 @@ export class ExtensionControlController {
 
   @Get('extension/installations')
   async listInstallations(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     return ok(
       await this.extensionControlService.listInstallationsForCurrentSession(
         await this.requireConnectedSession(authorization),
-        workspaceId,
       ),
     );
   }
@@ -389,7 +367,7 @@ export class ExtensionControlController {
       }
 
       const session = buildInstallationRuntimeSession(installationSession);
-      const catalog = await this.aiProxyService.listModelsForCurrentSession(session, workspaceId);
+      const catalog = await this.aiProxyService.listModelsForCurrentSession(session);
       const typeFilter = (type ?? '').trim().toLowerCase();
       const filtered = catalog.models.filter((entry) => {
         if (typeFilter === 'image') {

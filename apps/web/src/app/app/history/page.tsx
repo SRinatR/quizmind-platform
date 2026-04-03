@@ -122,8 +122,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  // workspaceId resolved internally from session — compatibility layer, not exposed in UI
-  const workspaceId = session?.workspaces[0]?.id;
   const source = normalizeHistorySource(readSearchParam(resolvedSearchParams?.source));
   const pageSize = normalizePositiveInt(readSearchParam(resolvedSearchParams?.limit), 25);
   const requestedPage = normalizePositiveInt(readSearchParam(resolvedSearchParams?.page), 1);
@@ -134,12 +132,11 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const historyRequest: Partial<UsageHistoryRequest> = {
     source,
     limit: fetchLimit,
-    ...(workspaceId ? { workspaceId } : {}),
     ...(eventType ? { eventType } : {}),
     ...(source !== 'activity' && installationId ? { installationId } : {}),
     ...(source !== 'telemetry' && actorId ? { actorId } : {}),
   };
-  const history = workspaceId ? await getUsageHistory(persona, historyRequest, accessToken) : null;
+  const history = await getUsageHistory(persona, historyRequest, accessToken);
   const isAdmin = session ? isAdminSession(session) : false;
   const effectivePage = history
     ? Math.min(requestedPage, Math.max(1, Math.ceil(history.items.length / pageSize)))

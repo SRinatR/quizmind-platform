@@ -68,27 +68,6 @@ export class PlatformController {
     return ok(this.platformService.getFoundation());
   }
 
-  @Get('workspaces')
-  async listWorkspaces(
-    @Query('persona') persona?: string,
-    @Headers('authorization') authorization?: string,
-  ) {
-    void persona;
-    const session = await this.requireStrictConnectedSession(authorization);
-    return ok(await this.platformService.listWorkspacesForCurrentSession(session));
-  }
-
-  @Get('workspaces/:id')
-  async getWorkspace(
-    @Param('id') workspaceId: string,
-    @Query('persona') persona?: string,
-    @Headers('authorization') authorization?: string,
-  ) {
-    void persona;
-    const session = await this.requireStrictConnectedSession(authorization);
-    return ok(await this.platformService.getWorkspaceForCurrentSession(session, workspaceId));
-  }
-
   @Get('user/profile')
   async getUserProfile(@Headers('authorization') authorization?: string) {
     return ok(await this.platformService.getUserProfileForCurrentSession(await this.requireStrictConnectedSession(authorization)));
@@ -110,18 +89,16 @@ export class PlatformController {
   @Get('usage/summary')
   async getUsage(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
-    return ok(await this.platformService.getUsageForCurrentSession(session, workspaceId));
+    return ok(await this.platformService.getUsageForCurrentSession(session));
   }
 
   @Get('usage/history')
   async getUsageHistory(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Query('source') source?: string,
     @Query('eventType') eventType?: string,
     @Query('installationId') installationId?: string,
@@ -130,7 +107,6 @@ export class PlatformController {
     @Headers('authorization') authorization?: string,
   ) {
     const request: Partial<UsageHistoryRequest> = {
-      ...(workspaceId ? { workspaceId } : {}),
       ...(source ? { source: source as UsageHistoryRequest['source'] } : {}),
       ...(eventType ? { eventType } : {}),
       ...(installationId ? { installationId } : {}),

@@ -33,7 +33,6 @@ import {
   type UsageEventPayload,
   type WorkspaceUsageHistorySnapshot,
   type WorkspaceUsageSnapshot,
-  type WorkspaceSummary,
   type UserProfilePayload,
   type UserProfileUpdateRequest,
   type WalletBalanceSnapshot,
@@ -91,7 +90,6 @@ export interface FoundationSnapshot {
     label: string;
     email: string;
     systemRoles: string[];
-    workspaceMemberships: Array<{ workspaceId: string; role: string }>;
     notes: string[];
   }>;
   runtime: {
@@ -112,13 +110,7 @@ export interface SessionSnapshot {
     emailVerifiedAt?: string | null;
   };
   principal: SessionPrincipal;
-  workspaces: WorkspaceSummary[];
   permissions: string[];
-}
-
-export interface WorkspaceListSnapshot {
-  personaKey: string;
-  items: WorkspaceSummary[];
 }
 
 export interface FeatureFlagsSnapshot {
@@ -311,27 +303,18 @@ export async function getAuthSessions(accessToken?: string | null) {
   return readApiData<AuthSessionsSnapshot>('/auth/sessions', withAccessToken(undefined, accessToken));
 }
 
-export async function getWorkspaces(_persona: string, accessToken?: string | null) {
-  return readApiData<WorkspaceListSnapshot>('/workspaces', withAccessToken(undefined, accessToken));
-}
-
 export async function getProviderCatalog() {
   return readApiData<ProviderCatalogSnapshot>('/providers/catalog');
 }
 
 export async function getProviderCredentialInventory(
-  workspaceId?: string,
   accessToken?: string | null,
 ) {
   if (!accessToken) {
     return null;
   }
 
-  const path = withQuery('/providers/credentials', {
-    workspaceId,
-  });
-
-  return readApiData<ProviderCredentialInventorySnapshot>(path, withAccessToken(undefined, accessToken));
+  return readApiData<ProviderCredentialInventorySnapshot>('/providers/credentials', withAccessToken(undefined, accessToken));
 }
 
 export async function getAdminProviderGovernance(
@@ -376,15 +359,9 @@ export async function getCompatibilityRules(_persona: string, accessToken?: stri
 
 export async function getUsageSummary(
   _persona: string,
-  workspaceId?: string,
   accessToken?: string | null,
 ) {
-  const basePath = '/usage/summary';
-  const path = withQuery(basePath, {
-    workspaceId,
-  });
-
-  return readApiData<UsageSummarySnapshot>(path, withAccessToken(undefined, accessToken));
+  return readApiData<UsageSummarySnapshot>('/usage/summary', withAccessToken(undefined, accessToken));
 }
 
 export async function getUsageHistory(
@@ -394,7 +371,6 @@ export async function getUsageHistory(
 ) {
   const basePath = '/usage/history';
   const path = withQuery(basePath, {
-    workspaceId: request?.workspaceId,
     source: request?.source,
     eventType: request?.eventType,
     installationId: request?.installationId,
@@ -406,18 +382,13 @@ export async function getUsageHistory(
 }
 
 export async function getExtensionInstallationInventory(
-  workspaceId?: string,
   accessToken?: string | null,
 ) {
   if (!accessToken) {
     return null;
   }
 
-  const path = withQuery('/extension/installations', {
-    workspaceId,
-  });
-
-  return readApiData<ExtensionInstallationInventoryStateSnapshot>(path, withAccessToken(undefined, accessToken));
+  return readApiData<ExtensionInstallationInventoryStateSnapshot>('/extension/installations', withAccessToken(undefined, accessToken));
 }
 
 export async function getFeatureFlags(_persona: string, accessToken?: string | null) {
@@ -570,16 +541,12 @@ export async function getSupportTickets(
   return readApiData<SupportTicketsSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
-export async function getWalletBalance(workspaceId: string, accessToken: string): Promise<WalletBalanceSnapshot | null> {
-  const path = withQuery('/wallet/balance', { workspaceId });
-
-  return readApiData<WalletBalanceSnapshot>(path, withAccessToken(undefined, accessToken));
+export async function getWalletBalance(accessToken: string): Promise<WalletBalanceSnapshot | null> {
+  return readApiData<WalletBalanceSnapshot>('/wallet/balance', withAccessToken(undefined, accessToken));
 }
 
-export async function getWalletTopUps(workspaceId: string, accessToken: string): Promise<WalletTopUpsPayload | null> {
-  const path = withQuery('/wallet/topups', { workspaceId });
-
-  return readApiData<WalletTopUpsPayload>(path, withAccessToken(undefined, accessToken));
+export async function getWalletTopUps(accessToken: string): Promise<WalletTopUpsPayload | null> {
+  return readApiData<WalletTopUpsPayload>('/wallet/topups', withAccessToken(undefined, accessToken));
 }
 
 export function personaHref(pathname: string, _persona: string) {

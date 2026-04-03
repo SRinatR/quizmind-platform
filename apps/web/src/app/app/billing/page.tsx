@@ -23,12 +23,9 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
 
-  // workspaceId resolved internally as compatibility layer — not exposed in UI
-  const workspaceId = session?.workspaces[0]?.id;
-
   const [walletBalance, walletTopUps] = await Promise.all([
-    accessToken && workspaceId ? getWalletBalance(workspaceId, accessToken) : Promise.resolve(null),
-    accessToken && workspaceId ? getWalletTopUps(workspaceId, accessToken) : Promise.resolve(null),
+    accessToken ? getWalletBalance(accessToken) : Promise.resolve(null),
+    accessToken ? getWalletTopUps(accessToken) : Promise.resolve(null),
   ]);
 
   const canManageBilling = Boolean(isConnectedSession && session);

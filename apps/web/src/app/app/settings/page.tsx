@@ -27,12 +27,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const session = await getSession(persona, accessToken);
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
-  // workspaceId resolved internally for credential policy — not exposed in UI
-  const workspaceId = session?.workspaces[0]?.id;
   const userProfile = await getUserProfile(accessToken);
   const authSessions = await getAuthSessions(accessToken);
   const providerCatalog = await getProviderCatalog();
-  const providerCredentialInventory = await getProviderCredentialInventory(workspaceId, accessToken);
+  const providerCredentialInventory = await getProviderCredentialInventory(accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleDashboardSections(context) : [];
   const accessMatrix = context ? buildAccessMatrixRows({ context }) : [];

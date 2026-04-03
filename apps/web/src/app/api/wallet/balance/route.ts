@@ -20,15 +20,7 @@ export async function GET() {
     return badRequest('Sign in to view your wallet balance.', 401);
   }
 
-  // Resolve workspaceId from session — compatibility layer, hidden from client
-  const session = await getSession('connected-user', accessToken);
-  const workspaceId = session?.workspaces[0]?.id;
-
-  if (!workspaceId) {
-    return badRequest('No account wallet found.', 404);
-  }
-
-  const response = await fetch(`${API_URL}/wallet/balance?workspaceId=${encodeURIComponent(workspaceId)}`, {
+  const response = await fetch(`${API_URL}/wallet/balance`, {
     method: 'GET',
     cache: 'no-store',
     headers: {

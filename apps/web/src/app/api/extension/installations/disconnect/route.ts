@@ -64,7 +64,6 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Partial<ExtensionInstallationDisconnectRequest> | null;
   const installationId = typeof body?.installationId === 'string' ? body.installationId.trim() : '';
-  const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
   const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
 
   if (!installationId) {
@@ -84,7 +83,6 @@ export async function POST(request: Request) {
     },
     body: JSON.stringify({
       installationId,
-      ...(workspaceId ? { workspaceId } : {}),
       reason,
     } satisfies ExtensionInstallationDisconnectRequest),
   });

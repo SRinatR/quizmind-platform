@@ -17,7 +17,7 @@ import {
 } from '@quizmind/contracts';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
-import { canReadWorkspaceBilling, canUpdateWorkspaceBilling } from '../services/access-service';
+import { canReadBilling, canUpdateBilling } from '../services/access-service';
 import { YookassaClient } from './yookassa.client';
 import { WalletRepository } from './wallet.repository';
 
@@ -56,54 +56,40 @@ export class WalletService {
     }
   }
 
-  private resolveWorkspaceId(session: CurrentSessionSnapshot, requestedWorkspaceId?: string): string {
-    const workspaceId = requestedWorkspaceId?.trim() || session.workspaces[0]?.id;
-
-    if (!workspaceId) {
-      throw new NotFoundException('No workspace found for this session.');
-    }
-
-    if (!session.workspaces.some((ws) => ws.id === workspaceId)) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    return workspaceId;
-  }
-
-  async getBalance(session: CurrentSessionSnapshot, workspaceId?: string): Promise<WalletBalanceSnapshot> {
+  async getBalance(session: CurrentSessionSnapshot): Promise<WalletBalanceSnapshot> {
     this.requireConnectedMode();
 
-    const resolvedWorkspaceId = this.resolveWorkspaceId(session, workspaceId);
-    const accessDecision = canReadWorkspaceBilling(session.principal, resolvedWorkspaceId);
+    const accessDecision = canReadBilling(session.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const wallet = await this.walletRepository.findOrCreateWallet(resolvedWorkspaceId);
+    const wallet = await this.walletRepository.findOrCreateWalletForUser(session.user.id);
+
+    if (!wallet) {
+      throw new NotFoundException('No billing account found for this user.');
+    }
 
     return {
-      workspaceId: resolvedWorkspaceId,
       currency: wallet.currency,
       balanceKopecks: wallet.balanceKopecks,
       balanceRub: wallet.balanceKopecks / 100,
     };
   }
 
-  async listTopUps(session: CurrentSessionSnapshot, workspaceId?: string): Promise<WalletTopUpsPayload> {
+  async listTopUps(session: CurrentSessionSnapshot): Promise<WalletTopUpsPayload> {
     this.requireConnectedMode();
 
-    const resolvedWorkspaceId = this.resolveWorkspaceId(session, workspaceId);
-    const accessDecision = canReadWorkspaceBilling(session.principal, resolvedWorkspaceId);
+    const accessDecision = canReadBilling(session.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const topUps = await this.walletRepository.findTopUpsByWorkspaceId(resolvedWorkspaceId);
+    const topUps = await this.walletRepository.findTopUpsByUserId(session.user.id);
 
     return {
-      workspaceId: resolvedWorkspaceId,
       items: topUps.map((t) => ({
         id: t.id,
         amountKopecks: t.amountKopecks,
@@ -125,8 +111,7 @@ export class WalletService {
   ): Promise<WalletTopUpCreateResult> {
     this.requireConnectedMode();
 
-    const resolvedWorkspaceId = this.resolveWorkspaceId(session, request?.workspaceId);
-    const accessDecision = canUpdateWorkspaceBilling(session.principal, resolvedWorkspaceId);
+    const accessDecision = canUpdateBilling(session.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -146,7 +131,7 @@ export class WalletService {
       throw new BadRequestException(`Maximum top-up amount is ${MAX_TOPUP_KOPECKS / 100} ₽.`);
     }
 
-    const wallet = await this.walletRepository.findOrCreateWallet(resolvedWorkspaceId);
+    const wallet = await this.walletRepository.findOrCreateWalletForUser(session.user.id);
     const yookassa = this.buildYookassaClient();
     const idempotenceKey = randomUUID();
     const amountRub = (amountKopecks / 100).toFixed(2);
@@ -158,7 +143,7 @@ export class WalletService {
       returnUrl: this.resolveReturnUrl(),
       metadata: {
         walletId: wallet.id,
-        workspaceId: resolvedWorkspaceId,
+        workspaceId: wallet.workspaceId,
         userId: session.user.id,
         amountKopecks: String(amountKopecks),
       },
@@ -167,7 +152,7 @@ export class WalletService {
 
     const topUp = await this.walletRepository.createTopUp({
       walletId: wallet.id,
-      workspaceId: resolvedWorkspaceId,
+      workspaceId: wallet.workspaceId,
       createdByUserId: session.user.id,
       amountKopecks,
       currency: wallet.currency,
@@ -190,11 +175,6 @@ export class WalletService {
     };
   }
 
-  /**
-   * Called from the YooKassa webhook handler.
-   * Processes payment.succeeded / payment.canceled events for wallet top-ups.
-   * Idempotent — safe to call multiple times for the same payment.
-   */
   async processYookassaPaymentEvent(input: {
     eventType: string;
     paymentId: string;

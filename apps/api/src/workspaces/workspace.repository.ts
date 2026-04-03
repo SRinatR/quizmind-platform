@@ -48,4 +48,13 @@ export class WorkspaceRepository {
       },
     });
   }
+
+  async resolveUserWorkspaceId(userId: string): Promise<string | null> {
+    const membership = await this.prisma.workspaceMembership.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { workspaceId: true },
+    });
+    return membership?.workspaceId ?? null;
+  }
 }

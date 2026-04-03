@@ -73,8 +73,8 @@ import {
   type UsageHistorySourceFilter,
   type UsageEventIngestResult,
   type UsageEventPayload,
-  type WorkspaceDetailSnapshot,
   type WorkspaceRole,
+  type WorkspaceSummary,
   type WorkspaceUsageHistorySnapshot,
   type WorkspaceUsageSnapshot,
   type SystemRole,
@@ -101,7 +101,6 @@ import {
   canWriteFeatureFlags,
   canStartSupportImpersonation,
   canPublishRemoteConfig,
-  canReadWorkspace,
   listPrincipalPermissions,
 } from './services/access-service';
 import {
@@ -500,9 +499,9 @@ const validThemes = new Set(['light', 'dark', 'system']);
 const validLanguages = new Set(['en', 'ru']);
 const validDensities = new Set(['comfortable', 'compact']);
 
-function normalizeUiPreferences(value: UiPreferences | null | undefined): Prisma.InputJsonValue | null {
+function normalizeUiPreferences(value: UiPreferences | null | undefined): Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue {
   if (value === null || value === undefined) {
-    return null;
+    return Prisma.JsonNull;
   }
   if (typeof value !== 'object' || Array.isArray(value)) {
     throw new BadRequestException('uiPreferences must be an object or null.');
@@ -730,8 +729,7 @@ export class PlatformService {
       notes: persona.notes,
       user: persona.user,
       principal: persona.principal,
-      workspaces: getAccessibleWorkspaces(persona),
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -741,22 +739,6 @@ export class PlatformService {
     return {
       personaKey: persona.key,
       items: getAccessibleWorkspaces(persona),
-    };
-  }
-
-  getWorkspace(personaKey?: string, workspaceId?: string): WorkspaceDetailSnapshot {
-    const persona = getPersona(personaKey);
-    const requestedWorkspaceId = workspaceId?.trim() || persona.preferredWorkspaceId;
-    const workspace = getAccessibleWorkspaces(persona).find((candidate) => candidate.id === requestedWorkspaceId);
-
-    if (!workspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    return {
-      workspace,
-      accessDecision: canReadWorkspace(persona.principal as SessionPrincipal, workspace.id),
-      permissions: listPrincipalPermissions(persona.principal, workspace.id),
     };
   }
 
@@ -866,39 +848,6 @@ export class PlatformService {
     };
   }
 
-  async getWorkspaceForCurrentSession(
-    session: CurrentSessionSnapshot,
-    workspaceId: string,
-  ): Promise<WorkspaceDetailSnapshot> {
-    const requestedWorkspace = session.workspaces.find((workspace) => workspace.id === workspaceId) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const accessDecision = canReadWorkspace(session.principal as SessionPrincipal, requestedWorkspace.id);
-
-    if (!accessDecision.allowed) {
-      throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
-
-    const persistedWorkspace = await this.workspaceRepository.findById(requestedWorkspace.id);
-
-    if (!persistedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    return {
-      workspace: {
-        id: persistedWorkspace.id,
-        slug: persistedWorkspace.slug,
-        name: persistedWorkspace.name,
-        role: requestedWorkspace.role,
-      },
-      accessDecision,
-      permissions: session.permissions,
-    };
-  }
 
   async getUserProfileForCurrentSession(session: CurrentSessionSnapshot): Promise<UserProfilePayload> {
     const user = await this.userRepository.findById(session.user.id);
@@ -970,8 +919,8 @@ export class PlatformService {
   getUsage(personaKey?: string, workspaceId?: string): WorkspaceUsageSnapshot {
     const persona = getPersona(personaKey);
     const workspace = getWorkspaceSummary(workspaceId ?? persona.preferredWorkspaceId);
-    const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
-    const exportDecision = canExportUsage(persona.principal as SessionPrincipal, workspace.id);
+    const accessDecision = canReadUsage(persona.principal as SessionPrincipal);
+    const exportDecision = canExportUsage(persona.principal as SessionPrincipal);
     const currentPeriodStart = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
     const currentPeriodEnd = new Date(Date.now() + 24 * 60 * 60 * 1000);
     const seatCount = workspace.id === 'ws_beta' ? 3 : 2;
@@ -1032,7 +981,6 @@ export class PlatformService {
     });
 
     return {
-      workspace,
       accessDecision,
       exportDecision,
       currentPeriodStart: currentPeriodStart.toISOString(),
@@ -1045,31 +993,34 @@ export class PlatformService {
 
   async getUsageForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<WorkspaceUsageSnapshot> {
-    const requestedWorkspace =
-      (workspaceId ? session.workspaces.find((workspace) => workspace.id === workspaceId) : session.workspaces[0]) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const accessDecision = canReadUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
-    const exportDecision = canExportUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const accessDecision = canReadUsage(session.principal as SessionPrincipal);
+    const exportDecision = canExportUsage(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
+    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
+
+    if (!workspaceId) {
+      return {
+        accessDecision,
+        exportDecision,
+        quotas: [],
+        installations: [],
+        recentEvents: [],
+      };
+    }
+
     const [installations, counters, telemetry, activity, aiRequests] = await Promise.all([
-      this.usageRepository.listInstallationsByWorkspaceId(requestedWorkspace.id),
-      this.usageRepository.listQuotaCountersByWorkspaceId(requestedWorkspace.id),
-      this.usageRepository.listRecentTelemetryByWorkspaceId(requestedWorkspace.id),
-      this.usageRepository.listRecentActivityByWorkspaceId(requestedWorkspace.id),
-      this.usageRepository.listRecentAiRequestsByWorkspaceId(requestedWorkspace.id),
+      this.usageRepository.listInstallationsByWorkspaceId(workspaceId),
+      this.usageRepository.listQuotaCountersByWorkspaceId(workspaceId),
+      this.usageRepository.listRecentTelemetryByWorkspaceId(workspaceId),
+      this.usageRepository.listRecentActivityByWorkspaceId(workspaceId),
+      this.usageRepository.listRecentAiRequestsByWorkspaceId(workspaceId),
     ]);
     const usageSnapshot: WorkspaceUsageSnapshot = {
-      workspace: requestedWorkspace,
       accessDecision,
       exportDecision,
       quotas: buildUsageQuotas({
@@ -1083,7 +1034,7 @@ export class PlatformService {
         aiRequests,
       }),
     };
-    await this.enqueueQuotaResetsForExpiredUsageQuotas(usageSnapshot);
+    await this.enqueueQuotaResetsForExpiredUsageQuotas(workspaceId, usageSnapshot);
 
     return usageSnapshot;
   }
@@ -1093,13 +1044,11 @@ export class PlatformService {
     request?: Partial<UsageHistoryRequest>,
   ): WorkspaceUsageHistorySnapshot {
     const persona = getPersona(personaKey);
-    const workspaceId = request?.workspaceId?.trim() || persona.preferredWorkspaceId;
-    const workspace = getWorkspaceSummary(workspaceId);
-    const accessDecision = canReadUsage(persona.principal as SessionPrincipal, workspace.id);
-    const exportDecision = canExportUsage(persona.principal as SessionPrincipal, workspace.id);
+    const workspace = getWorkspaceSummary(persona.preferredWorkspaceId);
+    const accessDecision = canReadUsage(persona.principal as SessionPrincipal);
+    const exportDecision = canExportUsage(persona.principal as SessionPrincipal);
     const summary = this.getUsage(personaKey, workspace.id);
     const filters = this.normalizeUsageHistoryFilters({
-      workspaceId: workspace.id,
       source: request?.source,
       eventType: request?.eventType,
       installationId: request?.installationId,
@@ -1108,12 +1057,11 @@ export class PlatformService {
     });
 
     return {
-      workspace,
       accessDecision,
       exportDecision,
       filters,
       items: this.filterUsageHistoryItems(summary.recentEvents, filters),
-      permissions: listPrincipalPermissions(persona.principal, workspace.id),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -1121,24 +1069,16 @@ export class PlatformService {
     session: CurrentSessionSnapshot,
     request?: Partial<UsageHistoryRequest>,
   ): Promise<WorkspaceUsageHistorySnapshot> {
-    const requestedWorkspace =
-      ((request?.workspaceId?.trim()
-        ? session.workspaces.find((workspace) => workspace.id === request.workspaceId?.trim())
-        : session.workspaces[0]) as CurrentSessionSnapshot['workspaces'][number] | undefined) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const accessDecision = canReadUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const accessDecision = canReadUsage(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
-    const exportDecision = canExportUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+
+    const exportDecision = canExportUsage(session.principal as SessionPrincipal);
+    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
 
     const filters = this.normalizeUsageHistoryFilters({
-      workspaceId: requestedWorkspace.id,
       source: request?.source,
       eventType: request?.eventType,
       installationId: request?.installationId,
@@ -1147,28 +1087,28 @@ export class PlatformService {
     });
     const fetchLimit = Math.min(filters.limit * 2, maxUsageHistoryLimit);
     const telemetryPromise =
-      filters.source === 'activity' || filters.source === 'ai'
+      !workspaceId || filters.source === 'activity' || filters.source === 'ai'
         ? Promise.resolve([])
         : this.usageRepository.listTelemetryHistoryByWorkspaceId({
-            workspaceId: requestedWorkspace.id,
+            workspaceId,
             limit: fetchLimit,
             ...(filters.eventType ? { eventType: filters.eventType } : {}),
             ...(filters.installationId ? { installationId: filters.installationId } : {}),
           });
     const activityPromise =
-      filters.source === 'telemetry' || filters.source === 'ai'
+      !workspaceId || filters.source === 'telemetry' || filters.source === 'ai'
         ? Promise.resolve([])
         : this.usageRepository.listActivityHistoryByWorkspaceId({
-            workspaceId: requestedWorkspace.id,
+            workspaceId,
             limit: fetchLimit,
             ...(filters.eventType ? { eventType: filters.eventType } : {}),
             ...(filters.actorId ? { actorId: filters.actorId } : {}),
           });
     const aiRequestsPromise =
-      filters.source === 'telemetry' || filters.source === 'activity'
+      !workspaceId || filters.source === 'telemetry' || filters.source === 'activity'
         ? Promise.resolve([])
         : this.usageRepository.listAiRequestHistoryByWorkspaceId({
-            workspaceId: requestedWorkspace.id,
+            workspaceId,
             limit: fetchLimit,
             ...(filters.actorId ? { actorId: filters.actorId } : {}),
             ...(filters.installationId ? { installationId: filters.installationId } : {}),
@@ -1182,17 +1122,15 @@ export class PlatformService {
     });
 
     return {
-      workspace: requestedWorkspace,
       accessDecision,
       exportDecision,
       filters,
       items: this.filterUsageHistoryItems(items, filters),
-      permissions: listPrincipalPermissions(session.principal, requestedWorkspace.id),
+      permissions: listPrincipalPermissions(session.principal),
     };
   }
 
   private normalizeUsageHistoryFilters(input: {
-    workspaceId: string;
     source?: UsageHistoryRequest['source'];
     eventType?: string;
     installationId?: string;
@@ -1214,7 +1152,6 @@ export class PlatformService {
     }
 
     return {
-      workspaceId: input.workspaceId,
       source,
       ...(eventType ? { eventType } : {}),
       ...(installationId ? { installationId } : {}),
@@ -1235,7 +1172,7 @@ export class PlatformService {
       .slice(0, filters.limit);
   }
 
-  private async enqueueQuotaResetsForExpiredUsageQuotas(summary: WorkspaceUsageSnapshot): Promise<void> {
+  private async enqueueQuotaResetsForExpiredUsageQuotas(workspaceId: string, summary: WorkspaceUsageSnapshot): Promise<void> {
     const requestedAt = new Date().toISOString();
     const dispatches: Array<Promise<unknown>> = [];
 
@@ -1258,7 +1195,7 @@ export class PlatformService {
       const currentWindowMs = periodEnd.getTime() - periodStart.getTime();
       const windowDurationMs = currentWindowMs > 0 ? currentWindowMs : 24 * 60 * 60 * 1000;
       const queuePayload: QuotaResetJobPayload = {
-        workspaceId: summary.workspace.id,
+        workspaceId,
         key: quota.key,
         consumed: quota.consumed,
         periodStart: quota.periodStart,
@@ -1301,27 +1238,17 @@ export class PlatformService {
     session: CurrentSessionSnapshot,
     request?: Partial<UsageExportRequest>,
   ): Promise<UsageExportResult> {
-    const workspaceId = request?.workspaceId?.trim();
-
-    if (!workspaceId) {
-      throw new BadRequestException('workspaceId is required for usage export.');
-    }
-
-    const requestedWorkspace = session.workspaces.find((workspace) => workspace.id === workspaceId) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const accessDecision = canExportUsage(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const accessDecision = canExportUsage(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
+    const resolvedWorkspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? '';
     const exportResult = this.buildUsageExportResult(
-      await this.getUsageForCurrentSession(session, requestedWorkspace.id),
+      await this.getUsageForCurrentSession(session),
       request,
+      resolvedWorkspaceId,
     );
     const queuePayload: AuditExportJobPayload = {
       exportType: 'usage',
@@ -1346,7 +1273,7 @@ export class PlatformService {
   exportAdminLogs(personaKey?: string, request?: Partial<AdminLogExportRequest>): AdminLogExportResult {
     const snapshot = this.listAdminLogs(personaKey, request);
     const persona = getPersona(personaKey);
-    const accessDecision = canExportAuditLogs(persona.principal, snapshot.filters.workspaceId);
+    const accessDecision = canExportAuditLogs(persona.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -1359,8 +1286,8 @@ export class PlatformService {
     session: CurrentSessionSnapshot,
     request?: Partial<AdminLogExportRequest>,
   ): Promise<AdminLogExportResult> {
-    const resolvedWorkspaceId = request?.workspaceId?.trim() || session.workspaces[0]?.id;
-    const accessDecision = canExportAuditLogs(session.principal as SessionPrincipal, resolvedWorkspaceId);
+    const resolvedWorkspaceId = request?.workspaceId?.trim();
+    const accessDecision = canExportAuditLogs(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -1405,8 +1332,8 @@ export class PlatformService {
     }
 
     const normalizedFilters = this.normalizeAdminExtensionFleetFilters(filters, resolvedWorkspaceId);
-    const accessDecision = canReadExtensionInstallations(persona.principal, normalizedFilters.workspaceId);
-    const manageDecision = canWriteExtensionInstallations(persona.principal, normalizedFilters.workspaceId);
+    const accessDecision = canReadExtensionInstallations(persona.principal);
+    const manageDecision = canWriteExtensionInstallations(persona.principal);
     const workspace = getWorkspaceSummary(normalizedFilters.workspaceId);
     const baseItems = accessDecision.allowed
       ? this.buildFoundationAdminExtensionFleetItems(persona.key, workspace)
@@ -1429,7 +1356,7 @@ export class PlatformService {
       counts: filtered.counts,
       ...(normalizedFilters.installationId ? { selectedInstallationId: normalizedFilters.installationId } : {}),
       ...(selectedInstallation ? { selectedInstallation } : {}),
-      permissions: listPrincipalPermissions(persona.principal, normalizedFilters.workspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -1437,28 +1364,28 @@ export class PlatformService {
     session: CurrentSessionSnapshot,
     filters?: Partial<AdminExtensionFleetFilters>,
   ): Promise<AdminExtensionFleetSnapshot> {
-    const resolvedWorkspaceId = filters?.workspaceId?.trim() || session.workspaces[0]?.id;
-
-    if (!resolvedWorkspaceId) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const requestedWorkspace = session.workspaces.find((workspace) => workspace.id === resolvedWorkspaceId) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    const accessDecision = canReadExtensionInstallations(session.principal as SessionPrincipal, requestedWorkspace.id);
-    const manageDecision = canWriteExtensionInstallations(session.principal as SessionPrincipal, requestedWorkspace.id);
+    const resolvedWorkspaceId = filters?.workspaceId?.trim() ?? '';
+    const accessDecision = canReadExtensionInstallations(session.principal as SessionPrincipal);
+    const manageDecision = canWriteExtensionInstallations(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const normalizedFilters = this.normalizeAdminExtensionFleetFilters(filters, requestedWorkspace.id);
+    const normalizedFilters = this.normalizeAdminExtensionFleetFilters(filters, resolvedWorkspaceId);
+
+    // Fetch workspace from DB for admin display
+    const dbWorkspace = resolvedWorkspaceId
+      ? await this.workspaceRepository.findById(resolvedWorkspaceId)
+      : null;
+    const workspaceSummary: WorkspaceSummary = dbWorkspace
+      ? { id: dbWorkspace.id, slug: dbWorkspace.slug, name: dbWorkspace.name, role: 'workspace_owner' }
+      : { id: resolvedWorkspaceId, slug: resolvedWorkspaceId, name: resolvedWorkspaceId, role: 'workspace_owner' };
+
     const [installations, compatibilityRule] = await Promise.all([
-      this.extensionInstallationRepository.listByWorkspaceId(requestedWorkspace.id),
+      resolvedWorkspaceId
+        ? this.extensionInstallationRepository.listByWorkspaceId(resolvedWorkspaceId)
+        : Promise.resolve([]),
       this.extensionCompatibilityRepository.findLatest(),
     ]);
     const sessionStats = this.buildInstallationSessionStats(
@@ -1470,7 +1397,7 @@ export class PlatformService {
       ? mapExtensionCompatibilityRuleToPolicy(compatibilityRule, defaultCompatibilityPolicy)
       : defaultCompatibilityPolicy;
     const allItems = installations.map((installation) =>
-      this.mapAdminExtensionFleetItem(installation, requestedWorkspace, compatibilityPolicy, sessionStats),
+      this.mapAdminExtensionFleetItem(installation, workspaceSummary, compatibilityPolicy, sessionStats),
     );
     const filtered = this.filterAdminExtensionFleetItems(
       allItems,
@@ -1488,7 +1415,7 @@ export class PlatformService {
       personaKey: 'connected-user',
       accessDecision,
       manageDecision,
-      workspace: requestedWorkspace,
+      workspace: workspaceSummary,
       filters: normalizedFilters,
       items: filtered.items,
       counts: filtered.counts,
@@ -1514,7 +1441,7 @@ export class PlatformService {
       items: filtered.items,
       statusCounts: filtered.statusCounts,
       queues: this.buildAdminQueueSummaries(),
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -1610,9 +1537,9 @@ export class PlatformService {
   listAdminLogs(personaKey?: string, filters?: Partial<AdminLogFilters>): AdminLogsSnapshot {
     const persona = getPersona(personaKey);
     const normalizedFilters = this.normalizeAdminLogFilters(filters, filters?.workspaceId ?? persona.preferredWorkspaceId);
-    const accessDecision = canReadAuditLogs(persona.principal, normalizedFilters.workspaceId);
-    const exportDecision = canExportAuditLogs(persona.principal, normalizedFilters.workspaceId);
-    const permissions = listPrincipalPermissions(persona.principal, normalizedFilters.workspaceId);
+    const accessDecision = canReadAuditLogs(persona.principal);
+    const exportDecision = canExportAuditLogs(persona.principal);
+    const permissions = listPrincipalPermissions(persona.principal);
     const baseItems = accessDecision.allowed
       ? this.buildFoundationAdminLogEntries(normalizedFilters.workspaceId)
       : [];
@@ -1634,21 +1561,13 @@ export class PlatformService {
     session: CurrentSessionSnapshot,
     filters?: Partial<AdminLogFilters>,
   ): Promise<AdminLogsSnapshot> {
-    const resolvedWorkspaceId = filters?.workspaceId?.trim() || session.workspaces[0]?.id;
+    const resolvedWorkspaceId = filters?.workspaceId?.trim();
     const normalizedFilters = this.normalizeAdminLogFilters(filters, resolvedWorkspaceId);
-    const accessDecision = canReadAuditLogs(session.principal as SessionPrincipal, normalizedFilters.workspaceId);
-    const exportDecision = canExportAuditLogs(session.principal as SessionPrincipal, normalizedFilters.workspaceId);
+    const accessDecision = canReadAuditLogs(session.principal as SessionPrincipal);
+    const exportDecision = canExportAuditLogs(session.principal as SessionPrincipal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
-
-    if (normalizedFilters.workspaceId) {
-      const workspaceVisible = session.workspaces.some((workspace) => workspace.id === normalizedFilters.workspaceId);
-
-      if (!workspaceVisible) {
-        throw new NotFoundException('Workspace not found or not accessible.');
-      }
     }
 
     const records = await this.adminLogRepository.listRecent({
@@ -1659,16 +1578,11 @@ export class PlatformService {
     });
     const baseItems = this.mapConnectedAdminLogEntries(records);
     const filtered = this.filterAdminLogEntries(baseItems, normalizedFilters);
-    const workspace =
-      normalizedFilters.workspaceId
-        ? session.workspaces.find((candidate) => candidate.id === normalizedFilters.workspaceId) ?? undefined
-        : undefined;
 
     return {
       personaKey: 'connected-user',
       accessDecision,
       exportDecision,
-      ...(workspace ? { workspace } : {}),
       filters: normalizedFilters,
       items: filtered.items,
       streamCounts: filtered.streamCounts,
@@ -1705,7 +1619,7 @@ export class PlatformService {
       personaKey: persona.key,
       flags: foundation.featureFlags,
       writeDecision: canWriteFeatureFlags(persona.principal),
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -1719,7 +1633,7 @@ export class PlatformService {
       accessDecision,
       writeDecision,
       items: accessDecision.allowed ? listFoundationUsers() : [],
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -1803,10 +1717,6 @@ export class PlatformService {
         targetUserId: createdUser.id,
         email: createdUser.email,
         systemRoles: createdUser.systemRoleAssignments.map((assignment) => assignment.role),
-        workspaceMemberships: createdUser.memberships.map((membership) => ({
-          workspaceId: membership.workspaceId,
-          role: membership.role,
-        })),
       });
 
       return {
@@ -1938,10 +1848,6 @@ export class PlatformService {
         suspendedAt: updatedUser.suspendedAt?.toISOString() ?? null,
         suspendReason: updatedUser.suspendReason ?? null,
         systemRoles: updatedUser.systemRoleAssignments.map((assignment) => assignment.role),
-        workspaceMemberships: updatedUser.memberships.map((membership) => ({
-          workspaceId: membership.workspaceId,
-          role: membership.role,
-        })),
       });
 
       return {
@@ -1986,7 +1892,7 @@ export class PlatformService {
       personaKey: persona.key,
       publishDecision,
       items: this.buildFoundationCompatibilityRules(),
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -2162,7 +2068,7 @@ export class PlatformService {
         layers: activeLayers,
         context: previewContext,
       }),
-      permissions: listPrincipalPermissions(persona.principal, resolvedWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     };
   }
 
@@ -2176,7 +2082,7 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = workspaceId?.trim() || session.workspaces[0]?.id;
+    const resolvedWorkspaceId = workspaceId?.trim();
     const [activeLayerRecords, recentVersions] = await Promise.all([
       this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId),
       this.remoteConfigRepository.findRecentVersions(resolvedWorkspaceId),
@@ -2255,7 +2161,7 @@ export class PlatformService {
         layers: publishRequest.layers,
         context: {
           environment: 'development',
-          workspaceId: publishRequest.workspaceId ?? session.workspaces[0]?.id,
+          workspaceId: publishRequest.workspaceId,
           userId: session.user.id,
           activeFlags: ['beta.remote-config-v2'],
         },
@@ -3664,6 +3570,7 @@ export class PlatformService {
   private buildUsageExportResult(
     summary: WorkspaceUsageSnapshot,
     request?: Partial<UsageExportRequest>,
+    workspaceId = '',
   ): UsageExportResult {
     const format = request?.format === 'csv' ? 'csv' : 'json';
     const scope = request?.scope ?? 'full';
@@ -3673,7 +3580,7 @@ export class PlatformService {
       throw new BadRequestException('CSV export requires a specific scope: quotas, installations, or events.');
     }
 
-    const fileStem = `usage-${summary.workspace.slug}-${scope}-${exportedAt.slice(0, 10)}`;
+    const fileStem = `usage-${scope}-${exportedAt.slice(0, 10)}`;
 
     if (format === 'json') {
       const payload =
@@ -3686,7 +3593,7 @@ export class PlatformService {
               : summary;
 
       return {
-        workspaceId: summary.workspace.id,
+        workspaceId,
         format,
         scope,
         fileName: `${fileStem}.json`,
@@ -3697,7 +3604,7 @@ export class PlatformService {
     }
 
     return {
-      workspaceId: summary.workspace.id,
+      workspaceId,
       format,
       scope,
       fileName: `${fileStem}.csv`,
@@ -3812,7 +3719,7 @@ export class PlatformService {
       personaKey: persona.key,
       accessDecision,
       items,
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
     });
   }
 
@@ -3851,7 +3758,7 @@ export class PlatformService {
       items: accessDecision.allowed
         ? filterSupportTicketQueueEntries(listFoundationSupportTickets(), filters, persona.user.id)
         : [],
-      permissions: listPrincipalPermissions(persona.principal, persona.preferredWorkspaceId),
+      permissions: listPrincipalPermissions(persona.principal),
       filters,
       favoritePresets,
     });

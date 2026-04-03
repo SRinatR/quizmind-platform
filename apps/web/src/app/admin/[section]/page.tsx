@@ -157,7 +157,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     );
   }
 
-  const workspaceId = readSearchParam(resolvedSearchParams, 'workspaceId') ?? session?.workspaces[0]?.id;
+  const workspaceId = readSearchParam(resolvedSearchParams, 'workspaceId');
   const sessionWorkspaceId = workspaceId;
   const isSecurityRoute = resolvedParams.section === 'security';
   const supportTicketFilters: Partial<SupportTicketQueueFilters> = {
@@ -233,8 +233,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       getRemoteConfigState(persona, sessionWorkspaceId, accessToken),
       getSupportImpersonationSessions(persona, accessToken),
       getSupportTickets(persona, accessToken, supportTicketFilters),
-      (resolvedParams.section === 'extension-control' || resolvedParams.section === 'usage') && sessionWorkspaceId
-        ? getUsageSummary(persona, sessionWorkspaceId, accessToken)
+      resolvedParams.section === 'extension-control' || resolvedParams.section === 'usage'
+        ? getUsageSummary(persona, accessToken)
         : Promise.resolve(null),
       resolvedParams.section === 'extension-fleet'
         ? getAdminExtensionFleet(persona, extensionFleetFilters, accessToken)
@@ -261,16 +261,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleAdminSections(context) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${resolvedParams.section}`));
-  const previewRoles = session
-    ? [
-        ...session.principal.systemRoles,
-        ...(sessionWorkspaceId
-          ? session.principal.workspaceMemberships
-              .filter((membership) => membership.workspaceId === sessionWorkspaceId)
-              .map((membership) => membership.role)
-          : []),
-      ]
-    : [];
+  const previewRoles = session ? [...session.principal.systemRoles] : [];
 
   return (
     <SiteShell
@@ -357,11 +348,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   currentUserId={session.user.id}
                   isConnectedSession={isConnectedSession}
                   items={adminUsers.items}
-                  workspaceOptions={session.workspaces.map((workspace) => ({
-                    id: workspace.id,
-                    name: workspace.name,
-                    role: workspace.role,
-                  }))}
+                  workspaceOptions={[]}
                 />
               ) : (
                 <p>No users are available in the directory for this environment.</p>
@@ -423,11 +410,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   defaultStreamOnReset="all"
                   isConnectedSession={isConnectedSession}
                   snapshot={adminLogs}
-                  workspaceOptions={session.workspaces.map((workspace) => ({
-                    id: workspace.id,
-                    name: workspace.name,
-                    role: workspace.role,
-                  }))}
+                  workspaceOptions={[]}
                 />
             ) : (
               <section className="empty-state">
@@ -701,11 +684,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   defaultStreamOnReset="security"
                   isConnectedSession={isConnectedSession}
                   snapshot={adminSecurity}
-                  workspaceOptions={session.workspaces.map((workspace) => ({
-                    id: workspace.id,
-                    name: workspace.name,
-                    role: workspace.role,
-                  }))}
+                  workspaceOptions={[]}
                 />
               </>
             ) : (
@@ -916,11 +895,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               <AdminAiProvidersClient
                 governance={adminProviderGovernance}
                 isConnectedSession={isConnectedSession}
-                workspaceOptions={session.workspaces.map((workspace) => ({
-                  id: workspace.id,
-                  name: workspace.name,
-                  role: workspace.role,
-                }))}
+                workspaceOptions={[]}
               />
             ) : (
               <section className="empty-state">
@@ -953,13 +928,9 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </article>
               <article className="panel">
                 <span className="micro-label">Usage context</span>
-                <h2>Current workspace scope</h2>
+                <h2>Current usage scope</h2>
                 {usageSummary ? (
                   <div className="list-stack">
-                    <div className="list-item">
-                      <strong>Workspace</strong>
-                      <p>{usageSummary.workspace.name}</p>
-                    </div>
                     <div className="list-item">
                       <strong>Quota period</strong>
                       <p>
@@ -970,7 +941,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                     </div>
                   </div>
                 ) : (
-                  <p>Usage summary is unavailable for this workspace context.</p>
+                  <p>Usage summary is unavailable for this account context.</p>
                 )}
               </article>
             </section>
@@ -979,11 +950,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 canExportUsage={usageSummary.exportDecision.allowed}
                 isConnectedSession={isConnectedSession}
                 usageSummary={usageSummary}
-                workspaceOptions={session.workspaces.map((workspace) => ({
-                  id: workspace.id,
-                  name: workspace.name,
-                  role: workspace.role,
-                }))}
+                workspaceOptions={[]}
               />
             ) : (
               <section className="empty-state">
@@ -1045,11 +1012,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             {adminExtensionFleet ? (
               <ExtensionFleetClient
                 snapshot={adminExtensionFleet}
-                workspaceOptions={session.workspaces.map((workspace) => ({
-                  id: workspace.id,
-                  name: workspace.name,
-                  role: workspace.role,
-                }))}
+                workspaceOptions={[]}
               />
             ) : (
               <section className="empty-state">
@@ -1104,10 +1067,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 workspaceId: sessionWorkspaceId,
               })}
               usageSummary={usageSummary}
-              workspaceOptions={session.workspaces.map((workspace) => ({
-                id: workspace.id,
-                name: workspace.name,
-              }))}
+              workspaceOptions={[]}
             />
           </>
         ) : section.id === 'remote-config' ? (
