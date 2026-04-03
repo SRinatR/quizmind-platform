@@ -145,7 +145,6 @@ export class PlatformController {
   @Get('admin/logs')
   async listAdminLogs(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Query('stream') stream?: string,
     @Query('severity') severity?: string,
     @Query('search') search?: string,
@@ -153,7 +152,6 @@ export class PlatformController {
     @Headers('authorization') authorization?: string,
   ) {
     const filters: Partial<AdminLogFilters> = {
-      workspaceId,
       ...(stream ? { stream: stream as AdminLogFilters['stream'] } : {}),
       ...(severity ? { severity: severity as AdminLogFilters['severity'] } : {}),
       ...(search ? { search } : {}),
@@ -167,14 +165,12 @@ export class PlatformController {
   @Get('admin/security')
   async listAdminSecurity(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Query('severity') severity?: string,
     @Query('search') search?: string,
     @Query('limit') limit?: string,
     @Headers('authorization') authorization?: string,
   ) {
     const filters: Partial<AdminLogFilters> = {
-      workspaceId,
       stream: 'security',
       ...(severity ? { severity: severity as AdminLogFilters['severity'] } : {}),
       ...(search ? { search } : {}),

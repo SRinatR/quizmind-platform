@@ -34,6 +34,13 @@ export class ExtensionInstallationRepository {
     });
   }
 
+  listAll(): Promise<ExtensionInstallationRecord[]> {
+    return this.prisma.extensionInstallation.findMany({
+      orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
+      select: extensionInstallationSelect,
+    });
+  }
+
   listByWorkspaceId(workspaceId: string): Promise<ExtensionInstallationRecord[]> {
     return this.prisma.extensionInstallation.findMany({
       where: {

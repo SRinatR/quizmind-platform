@@ -4,7 +4,6 @@ export function createAccessContext(overrides: Partial<AccessContext> = {}): Acc
   return {
     userId: 'user_test',
     systemRoles: [],
-    workspaceMemberships: [],
     entitlements: [],
     featureFlags: [],
     attributes: {},

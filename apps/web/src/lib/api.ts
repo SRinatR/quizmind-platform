@@ -318,18 +318,13 @@ export async function getProviderCredentialInventory(
 }
 
 export async function getAdminProviderGovernance(
-  workspaceId?: string,
   accessToken?: string | null,
 ) {
   if (!accessToken) {
     return null;
   }
 
-  const path = withQuery('/admin/providers', {
-    workspaceId,
-  });
-
-  return readApiData<AdminProviderGovernanceStateSnapshot>(path, withAccessToken(undefined, accessToken));
+  return readApiData<AdminProviderGovernanceStateSnapshot>('/admin/providers', withAccessToken(undefined, accessToken));
 }
 
 export async function getAdminExtensionFleet(
@@ -339,7 +334,6 @@ export async function getAdminExtensionFleet(
 ) {
   const basePath = '/admin/installations';
   const path = withQuery(basePath, {
-    workspaceId: filters?.workspaceId,
     installationId: filters?.installationId,
     compatibility: filters?.compatibility,
     connection: filters?.connection,
@@ -474,7 +468,6 @@ export async function getAdminLogs(
 ) {
   const basePath = '/admin/logs';
   const path = withQuery(basePath, {
-    workspaceId: filters?.workspaceId,
     stream: filters?.stream,
     severity: filters?.severity,
     search: filters?.search,
@@ -491,7 +484,6 @@ export async function getAdminSecurity(
 ) {
   const basePath = '/admin/security';
   const path = withQuery(basePath, {
-    workspaceId: filters?.workspaceId,
     severity: filters?.severity,
     search: filters?.search,
     limit: filters?.limit,

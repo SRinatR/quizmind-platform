@@ -14,21 +14,14 @@ import {
   type ProviderCredentialRotateRequest,
 } from '@quizmind/contracts';
 import { useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { type AdminProviderGovernanceStateSnapshot } from '../../../lib/api';
 
-interface WorkspaceOption {
-  id: string;
-  name: string;
-  role: string;
-}
-
 interface Props {
   governance: AdminProviderGovernanceStateSnapshot;
   isConnectedSession: boolean;
-  workspaceOptions: WorkspaceOption[];
 }
 
 interface MutationRouteResponse<T> {
@@ -41,10 +34,10 @@ function normalizeCsv(value: string): string[] {
   return Array.from(new Set(value.split(',').map((item) => item.trim()).filter(Boolean))).sort();
 }
 
-function createPolicyState(governance: AdminProviderGovernanceStateSnapshot, workspaceOptions: WorkspaceOption[]) {
+function createPolicyState(governance: AdminProviderGovernanceStateSnapshot) {
   return {
     scopeType: governance.policy.scopeType as AiProviderPolicyScopeType,
-    workspaceId: governance.workspace?.id ?? workspaceOptions[0]?.id ?? '',
+    workspaceId: '',
     mode: governance.policy.mode as AiAccessPolicyMode,
     allowPlatformManaged: governance.policy.allowPlatformManaged,
     allowBringYourOwnKey: governance.policy.allowBringYourOwnKey,
@@ -82,10 +75,8 @@ function resolveCredentialPolicyBlockReason(input: {
   return null;
 }
 
-export function AdminAiProvidersClient({ governance, isConnectedSession, workspaceOptions }: Props) {
+export function AdminAiProvidersClient({ governance, isConnectedSession }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [editingCredentialId, setEditingCredentialId] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>('AI provider policy and credentials are now managed by the control plane.');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -93,11 +84,11 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
   const [isResettingPolicy, setIsResettingPolicy] = useState(false);
   const [isSubmittingCredential, setIsSubmittingCredential] = useState(false);
   const [isRevokingId, setIsRevokingId] = useState<string | null>(null);
-  const [policyState, setPolicyState] = useState(() => createPolicyState(governance, workspaceOptions));
+  const [policyState, setPolicyState] = useState(() => createPolicyState(governance));
   const [credentialState, setCredentialState] = useState({
     provider: governance.providers[0]?.provider ?? 'openrouter',
     ownerType: 'platform' as CredentialOwnerType,
-    workspaceId: governance.workspace?.id ?? workspaceOptions[0]?.id ?? '',
+    workspaceId: '',
     scopes: '',
     secret: '',
   });
@@ -115,13 +106,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
       : credentialState.ownerType === 'platform'
         ? canManagePlatform
         : canWriteCredentials && !credentialPolicyBlockReason;
-  const workspaceOverrideActive = governance.policy.scopeType === 'workspace' && Boolean(governance.workspace?.id);
-
-  function updateWorkspaceScope(workspaceId: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('workspaceId', workspaceId);
-    router.push(`${pathname}?${params.toString()}`);
-  }
+  const workspaceOverrideActive = governance.policy.scopeType === 'workspace';
 
   async function savePolicy() {
     const providers = normalizeCsv(policyState.providersText).filter((provider): provider is AiProvider =>
@@ -178,7 +163,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
   }
 
   async function resetWorkspacePolicy() {
-    if (!governance.workspace?.id || !workspaceOverrideActive) {
+    if (!workspaceOverrideActive) {
       return;
     }
 
@@ -195,7 +180,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          workspaceId: governance.workspace.id,
+          workspaceId: policyState.workspaceId,
         }),
       });
       const payload = (await response.json().catch(() => null)) as MutationRouteResponse<AiProviderPolicyResetResult> | null;
@@ -309,20 +294,8 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
 
       <section className="split-grid">
         <article className="panel">
-          <span className="micro-label">Workspace</span>
+          <span className="micro-label">Policy</span>
           <h2>Governance context</h2>
-          <div className="admin-ticket-editor">
-            <label className="admin-ticket-field">
-              <span className="micro-label">Workspace</span>
-              <select onChange={(event) => updateWorkspaceScope(event.target.value)} value={governance.workspace?.id ?? ''}>
-                {workspaceOptions.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name} ({workspace.role})
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
           <div className="mini-list">
             <div className="list-item">
               <strong>Resolved policy</strong>
@@ -354,7 +327,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
             <>
               <div className="admin-ticket-editor">
                 <label className="admin-ticket-field"><span className="micro-label">Scope</span><select onChange={(event) => setPolicyState((c) => ({ ...c, scopeType: event.target.value as AiProviderPolicyScopeType }))} value={policyState.scopeType}><option value="global">global</option><option value="workspace">workspace</option></select></label>
-                <label className="admin-ticket-field"><span className="micro-label">Scope workspace</span><select disabled={policyState.scopeType !== 'workspace'} onChange={(event) => setPolicyState((c) => ({ ...c, workspaceId: event.target.value }))} value={policyState.workspaceId}>{workspaceOptions.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Mode</span><select onChange={(event) => setPolicyState((c) => ({ ...c, mode: event.target.value as AiAccessPolicyMode }))} value={policyState.mode}><option value="platform_only">platform_only</option><option value="user_key_optional">user_key_optional</option><option value="user_key_required">user_key_required</option><option value="admin_approved_user_key">admin_approved_user_key</option><option value="enterprise_managed">enterprise_managed</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Providers</span><input onChange={(event) => setPolicyState((c) => ({ ...c, providersText: event.target.value }))} value={policyState.providersText} /></label>
                 <label className="admin-ticket-field"><span className="micro-label">Default provider</span><select onChange={(event) => setPolicyState((c) => ({ ...c, defaultProvider: event.target.value }))} value={policyState.defaultProvider}><option value="">platform-selected</option>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
@@ -388,7 +360,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession, workspa
           <div className="admin-ticket-editor">
             <label className="admin-ticket-field"><span className="micro-label">Provider</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, provider: event.target.value as AiProvider }))} value={credentialState.provider}>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
             <label className="admin-ticket-field"><span className="micro-label">Ownership</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, ownerType: event.target.value as CredentialOwnerType }))} value={credentialState.ownerType}><option value="platform">platform</option><option disabled={!governance.policy.allowBringYourOwnKey || governance.policy.requireAdminApproval || !governance.policy.allowWorkspaceSharedCredentials} value="workspace">workspace</option>{editingCredentialId && credentialState.ownerType === 'user' ? <option value="user">user</option> : null}</select></label>
-            <label className="admin-ticket-field"><span className="micro-label">Workspace</span><select disabled={Boolean(editingCredentialId) || credentialState.ownerType === 'platform'} onChange={(event) => setCredentialState((c) => ({ ...c, workspaceId: event.target.value }))} value={credentialState.workspaceId}>{workspaceOptions.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}</select></label>
             <label className="admin-ticket-field"><span className="micro-label">Scopes</span><input disabled={Boolean(credentialPolicyBlockReason)} onChange={(event) => setCredentialState((c) => ({ ...c, scopes: event.target.value }))} value={credentialState.scopes} /></label>
             <label className="admin-ticket-field"><span className="micro-label">Secret</span><input disabled={Boolean(credentialPolicyBlockReason)} type="password" onChange={(event) => setCredentialState((c) => ({ ...c, secret: event.target.value }))} value={credentialState.secret} /></label>
           </div>

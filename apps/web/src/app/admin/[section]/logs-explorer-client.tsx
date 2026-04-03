@@ -20,17 +20,10 @@ import {
   summarizeExtensionLifecycleEvents,
 } from '../../../features/admin/log-lifecycle';
 
-interface WorkspaceOption {
-  id: string;
-  name: string;
-  role: string;
-}
-
 interface LogsExplorerClientProps {
   snapshot: AdminLogsStateSnapshot;
   canExportLogs: boolean;
   isConnectedSession: boolean;
-  workspaceOptions: WorkspaceOption[];
   defaultStreamOnReset?: AdminLogFilters['stream'];
 }
 
@@ -55,19 +48,9 @@ function downloadExportFile(result: AdminLogExportResult) {
 
 function buildNextSearchParams(
   current: URLSearchParams,
-  next: Partial<AdminLogFilters & { workspaceId: string }>,
+  next: Partial<AdminLogFilters>,
 ) {
   const params = new URLSearchParams(current.toString());
-
-  if ('workspaceId' in next) {
-    const workspaceId = next.workspaceId?.trim();
-
-    if (workspaceId) {
-      params.set('workspaceId', workspaceId);
-    } else {
-      params.delete('workspaceId');
-    }
-  }
 
   if ('stream' in next) {
     const stream = next.stream?.trim();
@@ -116,7 +99,6 @@ export function LogsExplorerClient({
   snapshot,
   canExportLogs,
   isConnectedSession,
-  workspaceOptions,
   defaultStreamOnReset,
 }: LogsExplorerClientProps) {
   const router = useRouter();
@@ -131,7 +113,7 @@ export function LogsExplorerClient({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const extensionLifecycleSummary = summarizeExtensionLifecycleEvents(snapshot.items);
 
-  function pushFilters(next: Partial<AdminLogFilters & { workspaceId: string }>) {
+  function pushFilters(next: Partial<AdminLogFilters>) {
     const params = buildNextSearchParams(searchParams, next);
     const query = params.toString();
 
@@ -180,9 +162,6 @@ export function LogsExplorerClient({
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          ...(snapshot.workspace?.id ?? snapshot.filters.workspaceId
-            ? { workspaceId: snapshot.workspace?.id ?? snapshot.filters.workspaceId }
-            : {}),
           stream: snapshot.filters.stream,
           severity: snapshot.filters.severity,
           ...(snapshot.filters.search ? { search: snapshot.filters.search } : {}),
@@ -219,19 +198,6 @@ export function LogsExplorerClient({
           <span className="micro-label">Filters</span>
           <h2>Explore operational log streams</h2>
           <div className="filter-grid">
-            <label className="filter-field">
-              <span className="filter-field__label">Workspace</span>
-              <select
-                onChange={(event) => pushFilters({ workspaceId: event.target.value })}
-                value={snapshot.workspace?.id ?? snapshot.filters.workspaceId ?? ''}
-              >
-                {workspaceOptions.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name} ({workspace.role})
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="filter-field">
               <span className="filter-field__label">Stream</span>
               <select
@@ -361,10 +327,6 @@ export function LogsExplorerClient({
           </div>
           <div className="kv-list" style={{ marginTop: '16px' }}>
             <div className="kv-row">
-              <span className="kv-row__key">Workspace</span>
-              <span className="kv-row__value">{snapshot.workspace?.name ?? 'No workspace scope'}</span>
-            </div>
-            <div className="kv-row">
               <span className="kv-row__key">Visible events</span>
               <span className="kv-row__value">{snapshot.items.length} item{snapshot.items.length === 1 ? '' : 's'}</span>
             </div>
@@ -414,7 +376,6 @@ export function LogsExplorerClient({
                   <span className="event-row__type">{item.stream} · {item.eventType}</span>
                   {item.summary ? <p className="event-row__summary">{item.summary}</p> : null}
                   <span className="event-row__context">
-                    {item.workspace ? `${item.workspace.name} · ` : ''}
                     {item.actor ? `${item.actor.displayName ?? item.actor.email ?? item.actor.id} · ` : ''}
                     {item.targetType ?? 'no target'}
                     {item.targetId ? ` ${item.targetId}` : ''}

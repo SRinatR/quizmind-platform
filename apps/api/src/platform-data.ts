@@ -6,7 +6,6 @@ import {
   type AuthLoginRequest,
   type AuthSessionPayload,
   type SupportTicketQueueEntry,
-  type WorkspaceSummary,
 } from '@quizmind/contracts';
 import { allSystemRoles, permissionRegistry } from '@quizmind/permissions';
 
@@ -28,23 +27,7 @@ export interface DemoPersona {
   notes: string[];
   user: DemoUser;
   principal: SessionPrincipal;
-  preferredWorkspaceId: string;
 }
-
-export const demoWorkspaces: WorkspaceSummary[] = [
-  {
-    id: 'ws_alpha',
-    slug: 'acme-learning',
-    name: 'Acme Learning',
-    role: 'workspace_owner',
-  },
-  {
-    id: 'ws_beta',
-    slug: 'northwind-education',
-    name: 'Northwind Education',
-    role: 'workspace_admin',
-  },
-];
 
 const personaCatalog: Record<PersonaKey, DemoPersona> = {
   'platform-admin': {
@@ -71,7 +54,6 @@ const personaCatalog: Record<PersonaKey, DemoPersona> = {
       ],
       featureFlags: ['beta.remote-config-v2', 'ops.force-upgrade-banner'],
     },
-    preferredWorkspaceId: 'ws_alpha',
   },
   'support-admin': {
     key: 'support-admin',
@@ -92,7 +74,6 @@ const personaCatalog: Record<PersonaKey, DemoPersona> = {
       entitlements: ['feature.text_answering', 'feature.remote_sync'],
       featureFlags: ['ops.force-upgrade-banner'],
     },
-    preferredWorkspaceId: 'ws_alpha',
   },
   'workspace-viewer': {
     key: 'workspace-viewer',
@@ -113,7 +94,6 @@ const personaCatalog: Record<PersonaKey, DemoPersona> = {
       entitlements: ['feature.text_answering'],
       featureFlags: [],
     },
-    preferredWorkspaceId: 'ws_alpha',
   },
 };
 
@@ -180,17 +160,6 @@ export function getPersona(input?: string): DemoPersona {
   return personaCatalog[resolvePersonaKey(input)];
 }
 
-export function getAccessibleWorkspaces(persona: DemoPersona): WorkspaceSummary[] {
-  return demoWorkspaces.filter((workspace) => workspace.id === persona.preferredWorkspaceId);
-}
-
-export function getWorkspaceSummary(workspaceId?: string): WorkspaceSummary {
-  return (
-    demoWorkspaces.find((workspace) => workspace.id === workspaceId) ??
-    demoWorkspaces[0]
-  );
-}
-
 export function buildAuthSession(persona: DemoPersona): AuthSessionPayload {
   return {
     accessToken: `access_${persona.key}`,
@@ -214,12 +183,7 @@ export function listFoundationUsers(): AdminUserDirectoryEntry[] {
     suspendedAt: null,
     lastLoginAt: new Date(Date.UTC(2026, 2, 23, 10 + index, 0, 0)).toISOString(),
     systemRoles: persona.principal.systemRoles,
-    workspaces: getAccessibleWorkspaces(persona).map((workspace) => ({
-      workspaceId: workspace.id,
-      workspaceSlug: workspace.slug,
-      workspaceName: workspace.name,
-      role: workspace.role,
-    })),
+    workspaces: [],
   }));
 }
 
@@ -227,13 +191,12 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
   const viewerPersona = getPersona('workspace-viewer');
   const platformPersona = getPersona('platform-admin');
   const supportPersona = getPersona('support-admin');
-  const workspace = getWorkspaceSummary('ws_alpha');
 
   return [
     {
       id: 'support-ticket-demo-1',
       subject: 'Viewer cannot access billing settings',
-      body: 'The workspace viewer can open the product but lands on a denial state in billing settings.',
+      body: 'The account viewer can open the product but lands on a denial state in billing settings.',
       status: 'open',
       createdAt: '2026-03-23T10:15:00.000Z',
       updatedAt: '2026-03-23T10:20:00.000Z',
@@ -241,11 +204,6 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
         id: viewerPersona.user.id,
         email: viewerPersona.user.email,
         displayName: viewerPersona.user.displayName,
-      },
-      workspace: {
-        id: workspace.id,
-        slug: workspace.slug,
-        name: workspace.name,
       },
       timeline: [
         {
@@ -271,8 +229,8 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
     },
     {
       id: 'support-ticket-demo-2',
-      subject: 'Need help planning a workspace upgrade',
-      body: 'The admin wants support to verify workspace impact before upgrading the subscription plan.',
+      subject: 'Need help planning an account upgrade',
+      body: 'The admin wants support to verify account impact before upgrading the subscription plan.',
       status: 'in_progress',
       createdAt: '2026-03-23T09:30:00.000Z',
       updatedAt: '2026-03-23T09:55:00.000Z',
@@ -280,11 +238,6 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
         id: platformPersona.user.id,
         email: platformPersona.user.email,
         displayName: platformPersona.user.displayName,
-      },
-      workspace: {
-        id: workspace.id,
-        slug: workspace.slug,
-        name: workspace.name,
       },
       assignedTo: {
         id: supportPersona.user.id,

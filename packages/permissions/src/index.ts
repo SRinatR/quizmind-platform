@@ -15,8 +15,6 @@ export const permissionRegistry = [
   'workspaces:update',
   'installations:read',
   'installations:write',
-  'workspace_members:invite',
-  'workspace_members:remove',
   'subscriptions:read',
   'subscriptions:update',
   'payments:read',

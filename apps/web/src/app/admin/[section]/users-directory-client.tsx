@@ -2,23 +2,17 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import {
   type AdminUserMutationResult,
   type SupportImpersonationResult,
   systemRoles,
-  workspaceRoles,
 } from '@quizmind/contracts';
 
 import { type AdminUsersSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
 
 type DirectoryUser = AdminUsersSnapshot['items'][number];
-type WorkspaceOption = {
-  id: string;
-  name: string;
-  role: string;
-};
 
 interface UsersDirectoryClientProps {
   canManageUserAccess: boolean;
@@ -26,7 +20,6 @@ interface UsersDirectoryClientProps {
   currentUserId: string;
   isConnectedSession: boolean;
   items: DirectoryUser[];
-  workspaceOptions: WorkspaceOption[];
 }
 
 interface SupportImpersonationRouteResponse {
@@ -45,53 +38,8 @@ interface AdminUserMutationRouteResponse {
   };
 }
 
-function describePrimaryWorkspace(user: DirectoryUser) {
-  const workspace = user.workspaces[0];
-
-  if (!workspace) {
-    return null;
-  }
-
-  return `${workspace.workspaceName} (${workspace.role})`;
-}
-
-function buildWorkspaceDraft(
-  user: DirectoryUser,
-  workspaceOptions: WorkspaceOption[],
-): Record<string, string> {
-  const draft: Record<string, string> = {};
-
-  for (const workspace of workspaceOptions) {
-    draft[workspace.id] =
-      user.workspaces.find((entry) => entry.workspaceId === workspace.id)?.role ?? '';
-  }
-
-  for (const workspace of user.workspaces) {
-    if (!(workspace.workspaceId in draft)) {
-      draft[workspace.workspaceId] = workspace.role;
-    }
-  }
-
-  return draft;
-}
-
-function buildWorkspaceAssignments(workspaceRoleDraft: Record<string, string>) {
-  return Object.entries(workspaceRoleDraft)
-    .filter(([, role]) => workspaceRoles.includes(role as (typeof workspaceRoles)[number]))
-    .map(([workspaceId, role]) => ({
-      workspaceId,
-      role: role as (typeof workspaceRoles)[number],
-    }));
-}
-
 function buildRoleDraft(items: DirectoryUser[]) {
   return Object.fromEntries(items.map((item) => [item.id, item.systemRoles]));
-}
-
-function buildWorkspaceRoleDraft(items: DirectoryUser[], workspaceOptions: WorkspaceOption[]) {
-  return Object.fromEntries(
-    items.map((item) => [item.id, buildWorkspaceDraft(item, workspaceOptions)]),
-  );
 }
 
 function buildDisplayNameDraft(items: DirectoryUser[]) {
@@ -104,18 +52,6 @@ function buildSuspendDraft(items: DirectoryUser[]) {
 
 function buildSuspendReasonDraft(items: DirectoryUser[]) {
   return Object.fromEntries(items.map((item) => [item.id, '']));
-}
-
-function buildDefaultCreateWorkspaceRoles(workspaceOptions: WorkspaceOption[]): Record<string, string> {
-  const firstWorkspaceId = workspaceOptions[0]?.id;
-
-  if (!firstWorkspaceId) {
-    return {};
-  }
-
-  return {
-    [firstWorkspaceId]: 'workspace_member',
-  };
 }
 
 function applyMutation(items: DirectoryUser[], nextUser: DirectoryUser) {
@@ -131,7 +67,6 @@ export function UsersDirectoryClient({
   currentUserId,
   isConnectedSession,
   items,
-  workspaceOptions,
 }: UsersDirectoryClientProps) {
   const router = useRouter();
   const [directoryItems, setDirectoryItems] = useState<DirectoryUser[]>(items);
@@ -142,9 +77,6 @@ export function UsersDirectoryClient({
   const [draftOperatorNotes, setDraftOperatorNotes] = useState<Record<string, string>>({});
   const [draftSystemRoles, setDraftSystemRoles] =
     useState<Record<string, string[]>>(() => buildRoleDraft(items));
-  const [draftWorkspaceRoles, setDraftWorkspaceRoles] = useState<Record<string, Record<string, string>>>(
-    () => buildWorkspaceRoleDraft(items, workspaceOptions),
-  );
   const [draftDisplayNames, setDraftDisplayNames] = useState<Record<string, string>>(
     () => buildDisplayNameDraft(items),
   );
@@ -158,15 +90,12 @@ export function UsersDirectoryClient({
   const [createPassword, setCreatePassword] = useState('');
   const [createDisplayName, setCreateDisplayName] = useState('');
   const [createRoles, setCreateRoles] = useState<string[]>([]);
-  const [createWorkspaceRoles, setCreateWorkspaceRoles] = useState<Record<string, string>>(
-    () => buildDefaultCreateWorkspaceRoles(workspaceOptions),
-  );
   const [createEmailVerified, setCreateEmailVerified] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(
     isConnectedSession
       ? canManageUserAccess
-        ? 'Create users, assign admin roles, and adjust workspace rights directly from this directory.'
+        ? 'Create users, assign admin roles, and manage account access directly from this directory.'
         : canStartSupportSessions
           ? 'This connected session can start support sessions, but cannot change user access rights.'
           : 'This connected session can read users only.'
@@ -176,20 +105,8 @@ export function UsersDirectoryClient({
   const [lastStartedUser, setLastStartedUser] = useState<DirectoryUser | null>(null);
   const [, startRefresh] = useTransition();
 
-  const workspaceLabelById = useMemo(
-    () =>
-      new Map<string, string>(
-        workspaceOptions.map((workspace) => [workspace.id, `${workspace.name} (${workspace.role})`]),
-      ),
-    [workspaceOptions],
-  );
-
   function buildDefaultReason(user: DirectoryUser) {
-    const primaryWorkspace = user.workspaces[0];
-
-    return primaryWorkspace
-      ? `Support follow-up from /admin/users for ${user.email} in ${primaryWorkspace.workspaceName}.`
-      : `Support follow-up from /admin/users for ${user.email}.`;
+    return `Support follow-up from /admin/users for ${user.email}.`;
   }
 
   function getDraftReason(user: DirectoryUser) {
@@ -207,10 +124,6 @@ export function UsersDirectoryClient({
     return draftSystemRoles[user.id] ?? user.systemRoles;
   }
 
-  function getWorkspaceRoleDraft(user: DirectoryUser) {
-    return draftWorkspaceRoles[user.id] ?? buildWorkspaceDraft(user, workspaceOptions);
-  }
-
   function getDisplayNameDraft(user: DirectoryUser) {
     return draftDisplayNames[user.id] ?? user.displayName ?? '';
   }
@@ -225,10 +138,6 @@ export function UsersDirectoryClient({
 
   function resetDraftsForUser(user: DirectoryUser) {
     setDraftSystemRoles((current) => ({ ...current, [user.id]: user.systemRoles }));
-    setDraftWorkspaceRoles((current) => ({
-      ...current,
-      [user.id]: buildWorkspaceDraft(user, workspaceOptions),
-    }));
     setDraftDisplayNames((current) => ({ ...current, [user.id]: user.displayName ?? '' }));
     setDraftSuspended((current) => ({ ...current, [user.id]: Boolean(user.suspendedAt) }));
     setDraftSuspendReasons((current) => ({ ...current, [user.id]: '' }));
@@ -255,7 +164,6 @@ export function UsersDirectoryClient({
   }
 
   async function handleStartSupportSession(user: DirectoryUser) {
-    const primaryWorkspace = user.workspaces[0];
     const reason = getDraftReason(user).trim();
     const operatorNote = getDraftOperatorNote(user).trim() || undefined;
 
@@ -281,7 +189,6 @@ export function UsersDirectoryClient({
           targetUserId: user.id,
           reason,
           ...(operatorNote ? { operatorNote } : {}),
-          ...(primaryWorkspace ? { workspaceId: primaryWorkspace.workspaceId } : {}),
         }),
       });
 
@@ -319,7 +226,6 @@ export function UsersDirectoryClient({
     const email = createEmail.trim();
     const password = createPassword.trim();
     const displayName = createDisplayName.trim();
-    const workspaceMemberships = buildWorkspaceAssignments(createWorkspaceRoles);
 
     if (!email || !password) {
       setErrorMessage('Email and password are required to create a user.');
@@ -342,7 +248,6 @@ export function UsersDirectoryClient({
           password,
           ...(displayName ? { displayName } : {}),
           systemRoles: createRoles,
-          workspaceMemberships,
           emailVerified: createEmailVerified,
         }),
       });
@@ -363,10 +268,9 @@ export function UsersDirectoryClient({
       setCreatePassword('');
       setCreateDisplayName('');
       setCreateRoles([]);
-      setCreateWorkspaceRoles(buildDefaultCreateWorkspaceRoles(workspaceOptions));
       setCreateEmailVerified(false);
       setCreatingUser(false);
-      setStatusMessage(`User ${nextUser.email} created and access assignments were saved.`);
+      setStatusMessage(`User ${nextUser.email} created.`);
       startRefresh(() => {
         router.refresh();
       });
@@ -386,8 +290,6 @@ export function UsersDirectoryClient({
 
     const displayName = getDisplayNameDraft(user).trim();
     const systemRoleDraft = getSystemRoleDraft(user);
-    const workspaceRoleDraft = getWorkspaceRoleDraft(user);
-    const workspaceMemberships = buildWorkspaceAssignments(workspaceRoleDraft);
     const suspend = getSuspendedDraft(user);
     const suspendReason = getSuspendReasonDraft(user).trim();
 
@@ -405,7 +307,6 @@ export function UsersDirectoryClient({
           userId: user.id,
           displayName: displayName || null,
           systemRoles: systemRoleDraft,
-          workspaceMemberships,
           suspend,
           ...(suspend ? { suspendReason: suspendReason || null } : {}),
         }),
@@ -491,40 +392,10 @@ export function UsersDirectoryClient({
               </div>
             </label>
           </div>
-          <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0' }}>
+          <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0 12px' }}>
             User account: no system roles. Admin account: at least one system role (e.g.{' '}
             <span className="monospace">platform_admin</span>).
           </p>
-          <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0 12px' }}>
-            Extension access requires workspace membership (minimum:{' '}
-            <span className="monospace">workspace_member</span>).
-          </p>
-          {workspaceOptions.length > 0 ? (
-            <div className="form-grid" style={{ marginBottom: '12px' }}>
-              {workspaceOptions.map((workspace) => (
-                <label className="form-field" key={`create-workspace-${workspace.id}`}>
-                  <span className="form-field__label">{workspace.name}</span>
-                  <select
-                    disabled={creatingUser}
-                    onChange={(event) =>
-                      setCreateWorkspaceRoles((current) => ({
-                        ...current,
-                        [workspace.id]: event.target.value,
-                      }))
-                    }
-                    value={createWorkspaceRoles[workspace.id] ?? ''}
-                  >
-                    <option value="">No access</option>
-                    {workspaceRoles.map((role) => (
-                      <option key={`${workspace.id}:${role}`} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-            </div>
-          ) : null}
           <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <input
               checked={createEmailVerified}
@@ -561,7 +432,6 @@ export function UsersDirectoryClient({
       {directoryItems.length > 0 ? (
         <div style={{ display: 'grid', gap: '12px' }}>
           {directoryItems.map((user) => {
-            const primaryWorkspace = describePrimaryWorkspace(user);
             const canStartForUser =
               isConnectedSession &&
               canStartSupportSessions &&
@@ -569,10 +439,6 @@ export function UsersDirectoryClient({
               !user.suspendedAt;
             const canManageUser = isConnectedSession && canManageUserAccess;
             const roleDraft = getSystemRoleDraft(user);
-            const workspaceRoleDraft = getWorkspaceRoleDraft(user);
-            const workspaceScope = Array.from(
-              new Set([...workspaceOptions.map((workspace) => workspace.id), ...Object.keys(workspaceRoleDraft)]),
-            );
 
             return (
               <div className="panel" style={{ padding: '16px 20px' }} key={user.id}>
@@ -597,21 +463,7 @@ export function UsersDirectoryClient({
                 <div className="kv-list">
                   <div className="kv-row">
                     <span className="kv-row__key">Roles</span>
-                    <span className="kv-row__value">{user.systemRoles.length > 0 ? user.systemRoles.join(', ') : 'workspace-only'}</span>
-                  </div>
-                  <div className="kv-row">
-                    <span className="kv-row__key">Workspaces</span>
-                    <span className="kv-row__value">
-                      {user.workspaces.length > 0
-                        ? user.workspaces.map((workspace) => `${workspace.workspaceName} (${workspace.role})`).join(', ')
-                        : 'none'}
-                    </span>
-                  </div>
-                  <div className="kv-row">
-                    <span className="kv-row__key">Support scope</span>
-                    <span className="kv-row__value">
-                      {primaryWorkspace ?? 'User-level session without workspace'}
-                    </span>
+                    <span className="kv-row__value">{user.systemRoles.length > 0 ? user.systemRoles.join(', ') : 'no system roles'}</span>
                   </div>
                 </div>
 
@@ -650,35 +502,6 @@ export function UsersDirectoryClient({
                           ))}
                         </div>
                       </label>
-                      {workspaceScope.length > 0 ? (
-                        workspaceScope.map((workspaceId) => (
-                          <label className="form-field" key={`${user.id}:workspace:${workspaceId}`}>
-                            <span className="form-field__label">
-                              {workspaceLabelById.get(workspaceId) ?? workspaceId}
-                            </span>
-                            <select
-                              disabled={activeAccessUserId === user.id}
-                              onChange={(event) =>
-                                setDraftWorkspaceRoles((current) => ({
-                                  ...current,
-                                  [user.id]: {
-                                    ...(current[user.id] ?? {}),
-                                    [workspaceId]: event.target.value,
-                                  },
-                                }))
-                              }
-                              value={workspaceRoleDraft[workspaceId] ?? ''}
-                            >
-                              <option value="">No access</option>
-                              {workspaceRoles.map((role) => (
-                                <option key={`${user.id}:${workspaceId}:${role}`} value={role}>
-                                  {role}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ))
-                      ) : null}
                     </div>
                     <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', margin: '8px 0' }}>
                       <input

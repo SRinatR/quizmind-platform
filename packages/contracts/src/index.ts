@@ -441,7 +441,6 @@ export interface AdminUserCreateRequest {
   password: string;
   displayName?: string;
   systemRoles?: SystemRole[];
-  workspaceMemberships?: AdminUserWorkspaceMembershipInput[];
   emailVerified?: boolean;
 }
 
@@ -449,7 +448,6 @@ export interface AdminUserAccessUpdateRequest {
   userId: string;
   displayName?: string | null;
   systemRoles?: SystemRole[];
-  workspaceMemberships?: AdminUserWorkspaceMembershipInput[];
   suspend?: boolean;
   suspendReason?: string | null;
 }
@@ -480,7 +478,6 @@ export interface AdminLogWorkspaceSummary {
 }
 
 export interface AdminLogFilters {
-  workspaceId?: string;
   stream: AdminLogStreamFilter;
   severity: AdminLogSeverityFilter;
   search?: string;
@@ -513,7 +510,6 @@ export interface AdminLogsSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
-  workspace?: WorkspaceSummary;
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
@@ -564,7 +560,6 @@ export interface AdminSecuritySnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
-  workspace?: WorkspaceSummary;
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
@@ -575,7 +570,6 @@ export interface AdminSecuritySnapshot {
 }
 
 export interface AdminLogExportRequest {
-  workspaceId?: string;
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
   search?: string;
@@ -584,7 +578,6 @@ export interface AdminLogExportRequest {
 }
 
 export interface AdminLogExportResult {
-  workspaceId?: string;
   format: AdminLogExportFormat;
   fileName: string;
   contentType: string;
@@ -839,7 +832,6 @@ export interface ExtensionInstallationRotateSessionResult {
 }
 
 export interface AdminExtensionFleetFilters {
-  workspaceId: string;
   compatibility: AdminExtensionCompatibilityFilter;
   connection: AdminExtensionConnectionFilter;
   installationId?: string;
@@ -848,7 +840,6 @@ export interface AdminExtensionFleetFilters {
 }
 
 export interface AdminExtensionFleetItem {
-  workspace: WorkspaceSummary;
   userId: string;
   installationId: string;
   browser: CompatibilityHandshake['browser'];
@@ -901,7 +892,6 @@ export interface AdminExtensionFleetSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
   manageDecision: AccessDecision;
-  workspace: WorkspaceSummary;
   filters: AdminExtensionFleetFilters;
   items: AdminExtensionFleetItem[];
   counts: AdminExtensionFleetCounts;
@@ -1167,7 +1157,6 @@ export interface ProviderCredentialProviderBreakdown {
 }
 
 export interface AdminProviderGovernanceSnapshot {
-  workspace?: WorkspaceSummary;
   accessDecision: AccessDecision;
   writeDecision: AccessDecision;
   rotateDecision: AccessDecision;

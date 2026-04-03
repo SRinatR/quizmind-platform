@@ -224,7 +224,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     await Promise.all([
       getFeatureFlags(persona, accessToken),
       resolvedParams.section === 'ai-providers'
-        ? getAdminProviderGovernance(sessionWorkspaceId, accessToken)
+        ? getAdminProviderGovernance(accessToken)
         : Promise.resolve(null),
       resolvedParams.section === 'compatibility'
         ? getCompatibilityRules(persona, accessToken)
@@ -348,7 +348,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   currentUserId={session.user.id}
                   isConnectedSession={isConnectedSession}
                   items={adminUsers.items}
-                  workspaceOptions={[]}
                 />
               ) : (
                 <p>No users are available in the directory for this environment.</p>
@@ -385,7 +384,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   <div className="list-stack">
                     <div className="list-item">
                       <strong>Workspace</strong>
-                      <p>{adminLogs.workspace?.name ?? 'No workspace scope selected.'}</p>
+                      <p>{'Platform logs'}</p>
                     </div>
                     <div className="list-item">
                       <strong>Filter</strong>
@@ -410,7 +409,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   defaultStreamOnReset="all"
                   isConnectedSession={isConnectedSession}
                   snapshot={adminLogs}
-                  workspaceOptions={[]}
                 />
             ) : (
               <section className="empty-state">
@@ -442,7 +440,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   <div className="list-stack">
                     <div className="list-item">
                       <strong>Workspace</strong>
-                      <p>{adminSecurity.workspace?.name ?? 'No workspace scope selected.'}</p>
+                      <p>{'Platform security logs'}</p>
                     </div>
                     <div className="list-item">
                       <strong>Filter</strong>
@@ -684,7 +682,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   defaultStreamOnReset="security"
                   isConnectedSession={isConnectedSession}
                   snapshot={adminSecurity}
-                  workspaceOptions={[]}
                 />
               </>
             ) : (
@@ -875,7 +872,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   <div className="list-stack">
                     <div className="list-item">
                       <strong>Workspace</strong>
-                      <p>{adminProviderGovernance.workspace?.name ?? 'No workspace resolved.'}</p>
+                      <p>{'Platform'}</p>
                     </div>
                     <div className="list-item">
                       <strong>Policy mode</strong>
@@ -895,7 +892,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               <AdminAiProvidersClient
                 governance={adminProviderGovernance}
                 isConnectedSession={isConnectedSession}
-                workspaceOptions={[]}
               />
             ) : (
               <section className="empty-state">
@@ -950,7 +946,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 canExportUsage={usageSummary.exportDecision.allowed}
                 isConnectedSession={isConnectedSession}
                 usageSummary={usageSummary}
-                workspaceOptions={[]}
               />
             ) : (
               <section className="empty-state">
@@ -987,7 +982,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                   <div className="list-stack">
                     <div className="list-item">
                       <strong>Workspace</strong>
-                      <p>{adminExtensionFleet.workspace.name}</p>
+                      <p>{'All installations'}</p>
                     </div>
                     <div className="list-item">
                       <strong>Current filters</strong>
@@ -1012,7 +1007,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             {adminExtensionFleet ? (
               <ExtensionFleetClient
                 snapshot={adminExtensionFleet}
-                workspaceOptions={[]}
               />
             ) : (
               <section className="empty-state">
@@ -1067,7 +1061,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 workspaceId: sessionWorkspaceId,
               })}
               usageSummary={usageSummary}
-              workspaceOptions={[]}
             />
           </>
         ) : section.id === 'remote-config' ? (
