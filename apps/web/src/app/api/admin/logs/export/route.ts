@@ -41,7 +41,6 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => null)) as Partial<AdminLogExportRequest> | null;
-  const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
   const stream = body?.stream && validStreams.has(body.stream) ? body.stream : body?.stream === undefined ? undefined : null;
   const severity =
     body?.severity && validSeverities.has(body.severity) ? body.severity : body?.severity === undefined ? undefined : null;
@@ -70,7 +69,6 @@ export async function POST(request: Request) {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      ...(workspaceId ? { workspaceId } : {}),
       ...(stream ? { stream } : {}),
       ...(severity ? { severity } : {}),
       ...(search ? { search } : {}),

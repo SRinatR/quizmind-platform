@@ -88,6 +88,35 @@ export class WalletRepository {
     });
   }
 
+  async resolveUserWorkspaceId(userId: string): Promise<string | null> {
+    const membership = await this.prisma.workspaceMembership.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+      select: { workspaceId: true },
+    });
+    return membership?.workspaceId ?? null;
+  }
+
+  async findOrCreateWalletForUser(userId: string): Promise<WalletRecord & { workspaceId: string }> {
+    const workspaceId = await this.resolveUserWorkspaceId(userId);
+
+    if (!workspaceId) {
+      throw new Error(`No account scope found for user ${userId}.`);
+    }
+
+    return this.findOrCreateWallet(workspaceId);
+  }
+
+  async findTopUpsByUserId(userId: string, limit = 50): Promise<WalletTopUpRecord[]> {
+    const workspaceId = await this.resolveUserWorkspaceId(userId);
+
+    if (!workspaceId) {
+      return [];
+    }
+
+    return this.findTopUpsByWorkspaceId(workspaceId, limit);
+  }
+
   async findTopUpsByWorkspaceId(workspaceId: string, limit = 50): Promise<WalletTopUpRecord[]> {
     return this.prisma.walletTopUp.findMany({
       where: { workspaceId },

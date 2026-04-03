@@ -13,17 +13,10 @@ import { useState } from 'react';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { type UsageSummarySnapshot } from '../../../lib/api';
 
-interface WorkspaceOption {
-  id: string;
-  name: string;
-  role: string;
-}
-
 interface UsageExplorerClientProps {
   usageSummary: UsageSummarySnapshot;
   isConnectedSession: boolean;
   canExportUsage: boolean;
-  workspaceOptions: WorkspaceOption[];
 }
 
 interface MutationRouteResponse<T> {
@@ -59,7 +52,6 @@ export function UsageExplorerClient({
   usageSummary,
   isConnectedSession,
   canExportUsage,
-  workspaceOptions,
 }: UsageExplorerClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -111,7 +103,6 @@ export function UsageExplorerClient({
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          workspaceId: usageSummary.workspace.id,
           format: exportFormat,
           scope: exportScope,
         }),
@@ -136,7 +127,6 @@ export function UsageExplorerClient({
   }
 
   const availableScopes = exportFormat === 'csv' ? csvUsageExportScopes : usageExportScopes;
-  const canSelectWorkspace = workspaceOptions.length > 1;
   const highlightedQuota = usageSummary.quotas[0] ?? null;
 
   return (
@@ -149,20 +139,6 @@ export function UsageExplorerClient({
           <span className="micro-label">Export</span>
           <h2>Download usage snapshots</h2>
           <div className="filter-grid">
-            <label className="filter-field">
-              <span className="filter-field__label">Workspace</span>
-              <select
-                disabled={!canSelectWorkspace}
-                onChange={(event) => updateWorkspaceScope(event.target.value)}
-                value={usageSummary.workspace.id}
-              >
-                {workspaceOptions.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name} ({workspace.role})
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="filter-field">
               <span className="filter-field__label">Format</span>
               <select
@@ -202,14 +178,7 @@ export function UsageExplorerClient({
         <article className="panel">
           <span className="micro-label">Baseline</span>
           <h2>Current usage summary</h2>
-          <div className="tag-row" style={{ marginBottom: '12px' }}>
-            <span className="tag-soft tag-soft--gray">{usageSummary.workspace.name}</span>
-          </div>
           <div className="kv-list">
-            <div className="kv-row">
-              <span className="kv-row__key">Workspace</span>
-              <span className="kv-row__value">{usageSummary.workspace.name}</span>
-            </div>
             <div className="kv-row">
               <span className="kv-row__key">Primary quota</span>
               <span className="kv-row__value">

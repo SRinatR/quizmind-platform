@@ -123,15 +123,9 @@ export type SubjectType = 'user' | 'workspace' | 'system';
 export type ResourceAction = `${string}:${string}`;
 export type PrimitiveValue = string | number | boolean | null;
 
-export interface WorkspaceMembership {
-  workspaceId: string;
-  role: WorkspaceRole;
-}
-
 export interface AccessContext {
   userId: string;
   systemRoles: SystemRole[];
-  workspaceMemberships: WorkspaceMembership[];
   entitlements: string[];
   featureFlags: string[];
   attributes?: Record<string, PrimitiveValue>;
@@ -237,12 +231,9 @@ export interface AuditEvent {
 
 export interface AccessRequirement {
   permission: ResourceAction;
-  workspaceId?: string;
   requiredEntitlements?: string[];
   requiredFlags?: string[];
   requireSystemRole?: SystemRole;
-  requireWorkspaceRole?: WorkspaceRole;
-  requireOwnership?: boolean;
 }
 
 export interface AccessDecision {
@@ -422,12 +413,6 @@ export interface WorkspaceSummary {
   role: WorkspaceRole;
 }
 
-export interface WorkspaceDetailSnapshot {
-  workspace: WorkspaceSummary;
-  accessDecision: AccessDecision;
-  permissions: string[];
-}
-
 export interface AdminUserWorkspaceMembership {
   workspaceId: string;
   workspaceSlug: string;
@@ -456,7 +441,6 @@ export interface AdminUserCreateRequest {
   password: string;
   displayName?: string;
   systemRoles?: SystemRole[];
-  workspaceMemberships?: AdminUserWorkspaceMembershipInput[];
   emailVerified?: boolean;
 }
 
@@ -464,7 +448,6 @@ export interface AdminUserAccessUpdateRequest {
   userId: string;
   displayName?: string | null;
   systemRoles?: SystemRole[];
-  workspaceMemberships?: AdminUserWorkspaceMembershipInput[];
   suspend?: boolean;
   suspendReason?: string | null;
 }
@@ -495,7 +478,6 @@ export interface AdminLogWorkspaceSummary {
 }
 
 export interface AdminLogFilters {
-  workspaceId?: string;
   stream: AdminLogStreamFilter;
   severity: AdminLogSeverityFilter;
   search?: string;
@@ -528,7 +510,6 @@ export interface AdminLogsSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
-  workspace?: WorkspaceSummary;
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
@@ -579,7 +560,6 @@ export interface AdminSecuritySnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
-  workspace?: WorkspaceSummary;
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
@@ -590,7 +570,6 @@ export interface AdminSecuritySnapshot {
 }
 
 export interface AdminLogExportRequest {
-  workspaceId?: string;
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
   search?: string;
@@ -599,7 +578,6 @@ export interface AdminLogExportRequest {
 }
 
 export interface AdminLogExportResult {
-  workspaceId?: string;
   format: AdminLogExportFormat;
   fileName: string;
   contentType: string;
@@ -821,7 +799,6 @@ export interface ExtensionInstallationInventoryItem {
 }
 
 export interface ExtensionInstallationInventorySnapshot {
-  workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   disconnectDecision: AccessDecision;
   items: ExtensionInstallationInventoryItem[];
@@ -830,7 +807,6 @@ export interface ExtensionInstallationInventorySnapshot {
 
 export interface ExtensionInstallationDisconnectRequest {
   installationId: string;
-  workspaceId?: string;
   reason: string;
 }
 
@@ -844,7 +820,6 @@ export interface ExtensionInstallationDisconnectResult {
 
 export interface ExtensionInstallationRotateSessionRequest {
   installationId: string;
-  workspaceId?: string;
   reason: string;
 }
 
@@ -857,7 +832,6 @@ export interface ExtensionInstallationRotateSessionResult {
 }
 
 export interface AdminExtensionFleetFilters {
-  workspaceId: string;
   compatibility: AdminExtensionCompatibilityFilter;
   connection: AdminExtensionConnectionFilter;
   installationId?: string;
@@ -866,7 +840,6 @@ export interface AdminExtensionFleetFilters {
 }
 
 export interface AdminExtensionFleetItem {
-  workspace: WorkspaceSummary;
   userId: string;
   installationId: string;
   browser: CompatibilityHandshake['browser'];
@@ -919,7 +892,6 @@ export interface AdminExtensionFleetSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
   manageDecision: AccessDecision;
-  workspace: WorkspaceSummary;
   filters: AdminExtensionFleetFilters;
   items: AdminExtensionFleetItem[];
   counts: AdminExtensionFleetCounts;
@@ -1055,7 +1027,6 @@ export interface UsageRecentEventSummary {
 }
 
 export interface UsageHistoryRequest {
-  workspaceId?: string;
   source?: UsageHistorySourceFilter;
   eventType?: string;
   installationId?: string;
@@ -1064,7 +1035,6 @@ export interface UsageHistoryRequest {
 }
 
 export interface UsageHistoryFilters {
-  workspaceId: string;
   source: UsageHistorySourceFilter;
   eventType?: string;
   installationId?: string;
@@ -1073,7 +1043,6 @@ export interface UsageHistoryFilters {
 }
 
 export interface WorkspaceUsageHistorySnapshot {
-  workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
   filters: UsageHistoryFilters;
@@ -1082,7 +1051,6 @@ export interface WorkspaceUsageHistorySnapshot {
 }
 
 export interface WorkspaceUsageSnapshot {
-  workspace: WorkspaceSummary;
   accessDecision: AccessDecision;
   exportDecision: AccessDecision;
   currentPeriodStart?: string;
@@ -1155,7 +1123,6 @@ export interface ProviderCredentialSummary {
 }
 
 export interface ProviderCredentialInventory {
-  workspace?: WorkspaceSummary;
   accessDecision: AccessDecision;
   writeDecision: AccessDecision;
   rotateDecision: AccessDecision;
@@ -1190,7 +1157,6 @@ export interface ProviderCredentialProviderBreakdown {
 }
 
 export interface AdminProviderGovernanceSnapshot {
-  workspace?: WorkspaceSummary;
   accessDecision: AccessDecision;
   writeDecision: AccessDecision;
   rotateDecision: AccessDecision;
@@ -1243,7 +1209,6 @@ export interface ProviderCredentialCreateRequest {
   provider: AiProvider;
   ownerType: CredentialOwnerType;
   ownerId?: string;
-  workspaceId?: string;
   label?: string;
   secret: string;
   scopes?: string[];
@@ -1285,7 +1250,6 @@ export interface UserApiKeySummary {
 }
 
 export interface UserApiKeyInventoryPayload {
-  workspace: WorkspaceSummary;
   items: UserApiKeySummary[];
 }
 
@@ -1293,7 +1257,6 @@ export interface UserApiKeyCreateRequest {
   provider: AiProvider;
   secret: string;
   label?: string;
-  workspaceId?: string;
 }
 
 export interface UserApiKeyCreateResult {
@@ -1645,7 +1608,6 @@ export interface ApiRouteDefinition {
 export type WalletTopUpStatus = 'pending' | 'succeeded' | 'canceled' | 'refunded';
 
 export interface WalletBalanceSnapshot {
-  workspaceId: string;
   currency: string;
   balanceKopecks: number;
   balanceRub: number;
@@ -1665,12 +1627,10 @@ export interface WalletTopUpEntry {
 }
 
 export interface WalletTopUpsPayload {
-  workspaceId: string;
   items: WalletTopUpEntry[];
 }
 
 export interface WalletTopUpCreateRequest {
-  workspaceId: string;
   amountKopecks: number;
 }
 

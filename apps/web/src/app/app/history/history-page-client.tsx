@@ -16,16 +16,7 @@ interface HistoryItem {
   summary: string;
 }
 
-interface WorkspaceOption {
-  id: string;
-  name: string;
-}
-
 export interface HistoryPageClientProps {
-  sessionWorkspaces: WorkspaceOption[];
-  workspaceName: string | undefined;
-  workspaceRole: string | undefined;
-  workspaceId: string | undefined;
   visibleItems: HistoryItem[];
   totalLoaded: number;
   fetchLimit: number;
@@ -49,7 +40,6 @@ export interface HistoryPageClientProps {
   csvFilename: string;
   clearHref: string;
   hasSession: boolean;
-  hasWorkspace: boolean;
   hasHistory: boolean;
 }
 
@@ -58,8 +48,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
   const th = t.historyPage;
 
   const {
-    hasSession, hasWorkspace, hasHistory,
-    sessionWorkspaces, workspaceName, workspaceRole, workspaceId,
+    hasSession, hasHistory,
     visibleItems, totalLoaded, fetchLimit, maxFetchLimit,
     effectivePage, pageSize, hasPrev, hasNext, previousHref, nextHref,
     telemetryCount, activityCount, aiCount, lastEventAt,
@@ -73,16 +62,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
         <span className="micro-label">{th.signInRequired}</span>
         <h2>{th.signInRequiredHeading}</h2>
         <p>{th.signInRequiredDesc}</p>
-      </section>
-    );
-  }
-
-  if (!hasWorkspace) {
-    return (
-      <section className="empty-state">
-        <span className="micro-label">{th.noWorkspace}</span>
-        <h2>{th.noWorkspaceHeading}</h2>
-        <p>{th.noWorkspaceDesc}</p>
       </section>
     );
   }
@@ -101,9 +80,9 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
     <>
       <section className="metrics-grid">
         <article className="stat-card">
-          <span className="micro-label">{th.workspace}</span>
-          <p className="stat-value">{workspaceName}</p>
-          <p className="metric-copy">{workspaceRole}</p>
+          <span className="micro-label">{th.account}</span>
+          <p className="stat-value">{totalLoaded}</p>
+          <p className="metric-copy">{th.rowsLoaded}</p>
         </article>
         <article className="stat-card">
           <span className="micro-label">{th.events}</span>
@@ -133,16 +112,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
         </div>
         <form method="get">
           <div className="filter-grid">
-            <label className="filter-field">
-              <span className="filter-field__label">{th.workspaceFilter}</span>
-              <select defaultValue={workspaceId} name="workspaceId">
-                {sessionWorkspaces.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="filter-field">
               <span className="filter-field__label">{th.sourceFilter}</span>
               <select defaultValue={source} name="source">

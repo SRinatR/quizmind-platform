@@ -18,7 +18,7 @@ import { usePreferences } from '../../../lib/preferences';
 import { AiAccessClient } from './ai-access-client';
 import { AppearanceSettingsClient } from './appearance-settings-client';
 
-type SettingsTab = 'account' | 'security' | 'workspace' | 'aiAccess' | 'appearance' | 'accessMatrix';
+type SettingsTab = 'account' | 'security' | 'aiAccess' | 'appearance' | 'accessMatrix';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
@@ -79,7 +79,6 @@ export function SettingsPageClient({
   const [showAccessMatrix, setShowAccessMatrix] = useState(false);
   const [, startNavigation] = useTransition();
 
-  const primaryWorkspace = session.workspaces[0] ?? null;
   const currentSessionCount = sessionItems.length;
   const currentSession = sessionItems.find((item) => item.current) ?? null;
   const currentDisplayName = profileState?.displayName || session.user.displayName || 'Your account';
@@ -168,7 +167,6 @@ export function SettingsPageClient({
   const tabs: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
     { key: 'account',      label: s.tabs.account },
     { key: 'security',     label: s.tabs.security },
-    { key: 'workspace',    label: s.tabs.workspace },
     { key: 'aiAccess',     label: s.tabs.aiAccess },
     { key: 'appearance',   label: s.tabs.appearance },
     { key: 'accessMatrix', label: s.tabs.accessMatrix, adminOnly: true },
@@ -199,9 +197,9 @@ export function SettingsPageClient({
           </p>
         </article>
         <article className="stat-card">
-          <span className="micro-label">{s.stats.workspaces}</span>
-          <p className="stat-value">{session.workspaces.length}</p>
-          <p className="metric-copy">{primaryWorkspace?.name ?? s.stats.noWorkspaceYet}</p>
+          <span className="micro-label">{s.stats.sections}</span>
+          <p className="stat-value">{visibleSections.length}</p>
+          <p className="metric-copy">{s.stats.accessibleSections}</p>
         </article>
         {isAdmin ? (
           <article className="stat-card">
@@ -211,9 +209,9 @@ export function SettingsPageClient({
           </article>
         ) : (
           <article className="stat-card">
-            <span className="micro-label">{s.stats.role}</span>
-            <p className="stat-value stat-value--sm">{primaryWorkspace?.role ?? '\u2014'}</p>
-            <p className="metric-copy">{primaryWorkspace?.name ?? s.stats.noWorkspace}</p>
+            <span className="micro-label">{s.stats.account}</span>
+            <p className="stat-value stat-value--sm stat-value--green">{s.stats.active}</p>
+            <p className="metric-copy">{currentDisplayName}</p>
           </article>
         )}
       </section>
@@ -422,37 +420,6 @@ export function SettingsPageClient({
       ) : null}
 
       {/* ══════════════════════════════════════════
-          TAB: Workspace
-      ══════════════════════════════════════════ */}
-      {activeTab === 'workspace' ? (
-        <div className="settings-section">
-          <div className="settings-section__header">
-            <h3 className="settings-section__title">{s.workspace.title}</h3>
-            <p className="settings-section__desc">{s.workspace.desc}</p>
-          </div>
-
-          <article className="panel settings-card">
-            <span className="micro-label">{s.workspace.title}</span>
-            <h2>{primaryWorkspace?.name ?? s.workspace.noWorkspace}</h2>
-            <div className="kv-list">
-              <div className="kv-row">
-                <span className="kv-row__key">{s.workspace.yourRole}</span>
-                <span className="kv-row__value">{primaryWorkspace?.role ?? '\u2014'}</span>
-              </div>
-              <div className="kv-row">
-                <span className="kv-row__key">{s.workspace.accessibleSections}</span>
-                <span className="kv-row__value">{visibleSections.length}</span>
-              </div>
-            </div>
-            <div className="settings-inline-actions">
-              <Link className="btn-ghost" href="/app/billing">{s.workspace.billing}</Link>
-              <Link className="btn-ghost" href="/app/usage">{s.workspace.usage}</Link>
-            </div>
-          </article>
-        </div>
-      ) : null}
-
-      {/* ══════════════════════════════════════════
           TAB: AI Access
       ══════════════════════════════════════════ */}
       {activeTab === 'aiAccess' ? (
@@ -463,15 +430,9 @@ export function SettingsPageClient({
           </div>
 
           <AiAccessClient
-            currentWorkspaceId={primaryWorkspace?.id}
             isConnectedSession={isConnectedSession}
             providerCatalog={providerCatalog}
             providerCredentialInventory={providerCredentialInventory}
-            workspaceOptions={session.workspaces.map((workspace) => ({
-              id: workspace.id,
-              name: workspace.name,
-              role: workspace.role,
-            }))}
           />
         </div>
       ) : null}

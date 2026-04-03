@@ -35,6 +35,7 @@ import {
   canReadExtensionInstallations,
   canWriteExtensionInstallations,
 } from '../services/access-service';
+import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
   defaultCompatibilityPolicy,
   mapExtensionCompatibilityRuleToPolicy,
@@ -178,20 +179,23 @@ export class ExtensionControlService {
     private readonly usageRepository: UsageRepository,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
+    @Inject(WorkspaceRepository)
+    private readonly workspaceRepository: WorkspaceRepository,
   ) {}
 
   async bindInstallationForCurrentSession(
     session: CurrentSessionSnapshot,
     request?: Partial<ExtensionInstallationBindRequest>,
   ): Promise<ExtensionInstallationBindResult> {
-    const normalizedRequest = this.normalizeBindRequest(session, request);
+    const normalizedRequest = this.normalizeBindRequest(request);
+    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? undefined;
     const occurredAt = new Date();
     const existingInstallation = await this.extensionInstallationRepository.findByInstallationId(
       normalizedRequest.installationId,
     );
     const installation = await this.extensionInstallationRepository.upsertBoundInstallation({
       userId: session.user.id,
-      ...(normalizedRequest.workspaceId ? { workspaceId: normalizedRequest.workspaceId } : {}),
+      ...(workspaceId ? { workspaceId } : {}),
       installationId: normalizedRequest.installationId,
       browser: normalizedRequest.handshake.browser,
       extensionVersion: normalizedRequest.handshake.extensionVersion,
@@ -567,17 +571,15 @@ export class ExtensionControlService {
 
   async listInstallationsForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<ExtensionInstallationInventorySnapshot> {
-    const requestedWorkspace = this.resolveRequestedWorkspace(session, workspaceId);
-    const accessDecision = canReadExtensionInstallations(session.principal, requestedWorkspace.id);
+    const accessDecision = canReadExtensionInstallations(session.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
     const [installations, compatibilityRule] = await Promise.all([
-      this.extensionInstallationRepository.listByWorkspaceId(requestedWorkspace.id),
+      this.extensionInstallationRepository.listByUserId(session.user.id),
       this.extensionCompatibilityRepository.findLatest(),
     ]);
     const activeSessions = await this.extensionInstallationSessionRepository.listActiveByInstallationIds(
@@ -614,9 +616,8 @@ export class ExtensionControlService {
     }
 
     return {
-      workspace: requestedWorkspace,
       accessDecision,
-      disconnectDecision: canWriteExtensionInstallations(session.principal, requestedWorkspace.id),
+      disconnectDecision: canWriteExtensionInstallations(session.principal),
       items: installations.map((installation) => this.mapInstallationInventoryItem(installation, compatibilityPolicy, sessionStats)),
       permissions: session.permissions,
     };
@@ -627,8 +628,7 @@ export class ExtensionControlService {
     request?: Partial<ExtensionInstallationDisconnectRequest>,
   ): Promise<ExtensionInstallationDisconnectResult> {
     const installationId = readRequiredString(request?.installationId, 'installationId');
-    const requestedWorkspace = this.resolveRequestedWorkspace(session, request?.workspaceId);
-    const accessDecision = canWriteExtensionInstallations(session.principal, requestedWorkspace.id);
+    const accessDecision = canWriteExtensionInstallations(session.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -638,8 +638,8 @@ export class ExtensionControlService {
 
     const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
 
-    if (!installation || installation.workspaceId !== requestedWorkspace.id) {
-      throw new NotFoundException('Extension installation not found for workspace.');
+    if (!installation || installation.userId !== session.user.id) {
+      throw new NotFoundException('Extension installation not found.');
     }
 
     const disconnectedAt = new Date();
@@ -690,8 +690,7 @@ export class ExtensionControlService {
     request?: Partial<ExtensionInstallationRotateSessionRequest>,
   ): Promise<ExtensionInstallationRotateSessionResult> {
     const installationId = readRequiredString(request?.installationId, 'installationId');
-    const requestedWorkspace = this.resolveRequestedWorkspace(session, request?.workspaceId);
-    const accessDecision = canWriteExtensionInstallations(session.principal, requestedWorkspace.id);
+    const accessDecision = canWriteExtensionInstallations(session.principal);
 
     if (!accessDecision.allowed) {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
@@ -701,8 +700,8 @@ export class ExtensionControlService {
 
     const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
 
-    if (!installation || installation.workspaceId !== requestedWorkspace.id) {
-      throw new NotFoundException('Extension installation not found for workspace.');
+    if (!installation || installation.userId !== session.user.id) {
+      throw new NotFoundException('Extension installation not found.');
     }
 
     const rotatedAt = new Date();
@@ -811,20 +810,6 @@ export class ExtensionControlService {
     });
   }
 
-  private resolveRequestedWorkspace(session: CurrentSessionSnapshot, workspaceId?: string) {
-    const normalizedWorkspaceId = workspaceId?.trim();
-    const requestedWorkspace =
-      (normalizedWorkspaceId
-        ? session.workspaces.find((workspace) => workspace.id === normalizedWorkspaceId)
-        : session.workspaces[0]) ?? null;
-
-    if (!requestedWorkspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    return requestedWorkspace;
-  }
-
   private mapInstallationInventoryItem(
     installation: ExtensionInstallationRecord,
     compatibilityPolicy: ReturnType<typeof mapExtensionCompatibilityRuleToPolicy> | typeof defaultCompatibilityPolicy,
@@ -870,23 +855,14 @@ export class ExtensionControlService {
   }
 
   private normalizeBindRequest(
-    session: CurrentSessionSnapshot,
     request?: Partial<ExtensionInstallationBindRequest>,
-  ): ExtensionInstallationBindRequest {
+  ): Omit<ExtensionInstallationBindRequest, 'workspaceId'> {
     const installationId = readRequiredString(request?.installationId, 'installationId');
     const environment = readRequiredEnvironment(request?.environment ?? 'production', 'environment');
     const handshake = this.normalizeHandshake(request?.handshake);
-    const workspaceId = request?.workspaceId?.trim() || session.workspaces[0]?.id;
-
-    if (!workspaceId) {
-      throw new BadRequestException(
-        'workspaceId is required for extension bind. Assign this user to a workspace before connecting the extension.',
-      );
-    }
 
     return {
       installationId,
-      workspaceId,
       environment,
       handshake,
     };

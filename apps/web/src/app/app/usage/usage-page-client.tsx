@@ -7,7 +7,6 @@ import { usePreferences } from '../../../lib/preferences';
 
 interface UsagePageClientProps {
   session: SessionSnapshot | null;
-  workspaceId: string | undefined;
   usage: UsageSummarySnapshot | null;
 }
 
@@ -33,7 +32,7 @@ function eventDotClass(source: string): string {
   return 'event-dot event-dot--info';
 }
 
-export function UsagePageClient({ session, workspaceId, usage }: UsagePageClientProps) {
+export function UsagePageClient({ session, usage }: UsagePageClientProps) {
   const { t } = usePreferences();
   const tu = t.usagePage;
 
@@ -44,20 +43,22 @@ export function UsagePageClient({ session, workspaceId, usage }: UsagePageClient
 
   const highlightedQuota = usage?.quotas[0] ?? null;
 
-  if (session && workspaceId && usage) {
+  if (session && usage) {
     return (
       <>
         {/* ── Metrics ── */}
         <section className="metrics-grid">
           <article className="stat-card">
-            <span className="micro-label">{tu.workspace}</span>
-            <p className="stat-value">{usage.workspace.name}</p>
+            <span className="micro-label">{tu.account}</span>
+            <p className="stat-value stat-value--sm">
+              {session.user.displayName ?? session.user.email?.split('@')[0] ?? '\u2014'}
+            </p>
             <p className="metric-copy">{tu.usagePeriodActive}</p>
           </article>
           <article className="stat-card">
             <span className="micro-label">{tu.installations}</span>
             <p className="stat-value">{usage.installations.length}</p>
-            <p className="metric-copy">{usage.workspace.name}</p>
+            <p className="metric-copy">{tu.extensionFleet}</p>
           </article>
           <article className="stat-card">
             <span className="micro-label">{tu.primaryQuota}</span>
@@ -184,22 +185,12 @@ export function UsagePageClient({ session, workspaceId, usage }: UsagePageClient
     );
   }
 
-  if (session && workspaceId) {
+  if (session) {
     return (
       <section className="empty-state">
         <span className="micro-label">{tu.noData}</span>
         <h2>{tu.noDataHeading}</h2>
         <p>{tu.noDataDesc}</p>
-      </section>
-    );
-  }
-
-  if (session) {
-    return (
-      <section className="empty-state">
-        <span className="micro-label">{tu.noWorkspace}</span>
-        <h2>{tu.noWorkspaceHeading}</h2>
-        <p>{tu.noWorkspaceDesc}</p>
       </section>
     );
   }

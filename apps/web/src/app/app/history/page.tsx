@@ -52,18 +52,6 @@ function normalizeFilterText(value: string | undefined): string | undefined {
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function buildHistoryHref(query: { workspaceId?: string }): string {
-  const params = new URLSearchParams();
-
-  if (query.workspaceId) {
-    params.set('workspaceId', query.workspaceId);
-  }
-
-  const serialized = params.toString();
-
-  return serialized ? `/app/history?${serialized}` : '/app/history';
-}
-
 function escapeCsv(value: string) {
   const normalized = value.replaceAll('"', '""');
 
@@ -100,7 +88,6 @@ function buildHistoryCsv(items: Array<{
 }
 
 function buildQueryParams(input: {
-  workspaceId?: string;
   source: UsageHistorySourceFilter;
   eventType?: string;
   installationId?: string;
@@ -109,10 +96,6 @@ function buildQueryParams(input: {
   page: number;
 }) {
   const params = new URLSearchParams();
-
-  if (input.workspaceId) {
-    params.set('workspaceId', input.workspaceId);
-  }
 
   params.set('source', input.source);
   params.set('limit', String(input.limit));
@@ -139,11 +122,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const requestedWorkspaceId = readSearchParam(resolvedSearchParams?.workspaceId);
-  const workspaceId =
-    requestedWorkspaceId && session?.workspaces.some((workspace) => workspace.id === requestedWorkspaceId)
-      ? requestedWorkspaceId
-      : session?.workspaces[0]?.id;
   const source = normalizeHistorySource(readSearchParam(resolvedSearchParams?.source));
   const pageSize = normalizePositiveInt(readSearchParam(resolvedSearchParams?.limit), 25);
   const requestedPage = normalizePositiveInt(readSearchParam(resolvedSearchParams?.page), 1);
@@ -154,12 +132,11 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const historyRequest: Partial<UsageHistoryRequest> = {
     source,
     limit: fetchLimit,
-    ...(workspaceId ? { workspaceId } : {}),
     ...(eventType ? { eventType } : {}),
     ...(source !== 'activity' && installationId ? { installationId } : {}),
     ...(source !== 'telemetry' && actorId ? { actorId } : {}),
   };
-  const history = workspaceId ? await getUsageHistory(persona, historyRequest, accessToken) : null;
+  const history = await getUsageHistory(persona, historyRequest, accessToken);
   const isAdmin = session ? isAdminSession(session) : false;
   const effectivePage = history
     ? Math.min(requestedPage, Math.max(1, Math.ceil(history.items.length / pageSize)))
@@ -176,7 +153,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     ? history.items.length > sliceEnd || (history.items.length === fetchLimit && fetchLimit < maxHistoryFetchLimit)
     : false;
   const queryParams = buildQueryParams({
-    workspaceId,
     source,
     eventType,
     ...(source !== 'activity' && installationId ? { installationId } : {}),
@@ -204,9 +180,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   );
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
   const canExportCsv = Boolean(history?.exportDecision.allowed && visibleItems.length > 0);
-  const clearHref = buildHistoryHref({
-    ...(workspaceId ? { workspaceId } : {}),
-  });
+  const clearHref = '/app/history';
 
   return (
     <SiteShell
@@ -221,10 +195,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
       title="Usage history"
     >
       <HistoryPageClient
-        sessionWorkspaces={session?.workspaces.map((w) => ({ id: w.id, name: w.name })) ?? []}
-        workspaceName={history?.workspace.name}
-        workspaceRole={history?.workspace.role}
-        workspaceId={workspaceId}
         visibleItems={visibleItems}
         totalLoaded={history?.items.length ?? 0}
         fetchLimit={fetchLimit}
@@ -245,10 +215,9 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         actorId={actorId}
         canExportCsv={canExportCsv}
         csvHref={csvHref}
-        csvFilename={`usage-history-${history?.workspace.slug ?? 'workspace'}-page-${effectivePage}.csv`}
+        csvFilename={`usage-history-page-${effectivePage}.csv`}
         clearHref={clearHref}
         hasSession={Boolean(session)}
-        hasWorkspace={Boolean(workspaceId)}
         hasHistory={Boolean(history)}
       />
     </SiteShell>

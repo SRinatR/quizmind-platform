@@ -11,12 +11,7 @@ export function mapUserRecordToDirectoryEntry(user: AuthUserRecord): AdminUserDi
     suspendedAt: user.suspendedAt?.toISOString() ?? null,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     systemRoles: user.systemRoleAssignments.map((assignment) => assignment.role),
-    workspaces: user.memberships.map((membership) => ({
-      workspaceId: membership.workspaceId,
-      workspaceSlug: membership.workspace.slug,
-      workspaceName: membership.workspace.name,
-      role: membership.role,
-    })),
+    workspaces: [],
   };
 }
 

@@ -25,6 +25,7 @@ import { addUtcDays, evaluateUsageDecision, startOfUtcDay } from '@quizmind/usag
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
+import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
   AiProxyRepository,
   type AiProxyCredentialRecord,
@@ -348,6 +349,8 @@ export class AiProxyService {
     private readonly aiProviderPolicyService: AiProviderPolicyService,
     @Inject(AiProxyRepository)
     private readonly aiProxyRepository: AiProxyRepository,
+    @Inject(WorkspaceRepository)
+    private readonly workspaceRepository: WorkspaceRepository,
   ) {}
 
   async proxyForCurrentSession(
@@ -434,12 +437,11 @@ export class AiProxyService {
 
   async listModelsForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<AiModelsCatalogPayload> {
     try {
-      const workspace = this.resolveWorkspace(session, workspaceId?.trim() || undefined);
-      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
-      const catalog = await this.resolveWorkspaceCatalog(workspace.id, policy);
+      const resolvedWorkspaceId = await this.resolveUserWorkspaceId(session.user.id);
+      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
+      const catalog = await this.resolveWorkspaceCatalog(resolvedWorkspaceId, policy);
 
       if (catalog.providers.length === 0 || catalog.models.length === 0) {
         console.warn(
@@ -447,7 +449,7 @@ export class AiProxyService {
             eventType: 'ai_proxy.models_catalog_empty',
             occurredAt: new Date().toISOString(),
             userId: session.user.id,
-            workspaceId: workspace.id,
+            workspaceId: resolvedWorkspaceId,
             policyMode: policy.mode,
             policyProviders: policy.providers,
             allowedModelTags: policy.allowedModelTags ?? [],
@@ -458,7 +460,7 @@ export class AiProxyService {
       }
 
       return {
-        workspaceId: workspace.id,
+        workspaceId: resolvedWorkspaceId,
         providers: catalog.providers,
         models: catalog.models,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
@@ -469,7 +471,6 @@ export class AiProxyService {
       this.logProxyPreflightFailure({
         surface: 'models',
         session,
-        request: workspaceId ? { workspaceId } : undefined,
         error,
       });
       throw error;
@@ -564,9 +565,9 @@ export class AiProxyService {
     request?: Partial<AiProxyRequest>,
   ): Promise<PreparedProxyInvocation> {
     const normalizedRequest = this.normalizeRequest(request);
-    const workspace = this.resolveWorkspace(session, normalizedRequest.workspaceId);
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace.id);
-    const catalog = await this.resolveWorkspaceCatalog(workspace.id, policy);
+    const resolvedWorkspaceId = await this.resolveUserWorkspaceId(session.user.id);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
+    const catalog = await this.resolveWorkspaceCatalog(resolvedWorkspaceId, policy);
     const provider = (normalizedRequest.provider ?? catalog.defaultProvider ?? policy.providers[0] ?? 'openrouter') as AiProvider;
 
     if (!policy.providers.includes(provider)) {
@@ -599,7 +600,7 @@ export class AiProxyService {
     const periodEnd = addUtcDays(periodStart, 1);
     const quotaCounterFallback: AiProxyQuotaCounterRecord = {
       id: 'ai-proxy-fallback',
-      workspaceId: workspace.id,
+      workspaceId: resolvedWorkspaceId,
       key: aiRequestsQuotaKey,
       consumed: 0,
       periodStart,
@@ -607,7 +608,7 @@ export class AiProxyService {
       createdAt: occurredAt,
       updatedAt: occurredAt,
     };
-    const activeCounter = await this.aiProxyRepository.findActiveQuotaCounter(workspace.id, aiRequestsQuotaKey, occurredAt);
+    const activeCounter = await this.aiProxyRepository.findActiveQuotaCounter(resolvedWorkspaceId, aiRequestsQuotaKey, occurredAt);
     const quotaCounter = activeCounter ?? quotaCounterFallback;
     const quotaLimit: number | undefined = undefined;
 
@@ -636,7 +637,7 @@ export class AiProxyService {
     const keyMaterial = await this.resolveKeyMaterial({
       provider,
       session,
-      workspaceId: workspace.id,
+      workspaceId: resolvedWorkspaceId,
       policy,
       requestId,
       model: normalizedRequest.model,
@@ -666,7 +667,7 @@ export class AiProxyService {
     const invocation: PreparedProxyInvocation = {
       session,
       request: normalizedRequest,
-      workspaceId: workspace.id,
+      workspaceId: resolvedWorkspaceId,
       provider,
       keySource,
       apiKey,
@@ -965,17 +966,14 @@ export class AiProxyService {
     };
   }
 
-  private resolveWorkspace(session: CurrentSessionSnapshot, requestedWorkspaceId?: string) {
-    const workspace =
-      (requestedWorkspaceId
-        ? session.workspaces.find((entry) => entry.id === requestedWorkspaceId)
-        : session.workspaces[0]) ?? null;
+  private async resolveUserWorkspaceId(userId: string): Promise<string> {
+    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(userId);
 
-    if (!workspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
+    if (!workspaceId) {
+      throw new NotFoundException('No workspace found for this account.');
     }
 
-    return workspace;
+    return workspaceId;
   }
 
   private async resolvePlatformKey(input: {

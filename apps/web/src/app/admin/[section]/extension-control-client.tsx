@@ -17,10 +17,6 @@ interface ExtensionControlClientProps {
   initialResult: ExtensionBootstrapPayload | null;
   initialUsageEvent: UsageEventPayload;
   usageSummary: UsageSummarySnapshot | null;
-  workspaceOptions: Array<{
-    id: string;
-    name: string;
-  }>;
 }
 
 interface BootstrapRouteResponse {
@@ -83,7 +79,6 @@ export function ExtensionControlClient({
   initialResult,
   initialUsageEvent,
   usageSummary,
-  workspaceOptions,
 }: ExtensionControlClientProps) {
   const router = useRouter();
   const [isRefreshingSnapshot, startRefresh] = useTransition();
@@ -292,11 +287,6 @@ export function ExtensionControlClient({
                 value={formState.workspaceId}
               >
                 <option value="">No workspace binding</option>
-                {workspaceOptions.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))}
               </select>
             </label>
             <label className="admin-ticket-field">
@@ -468,11 +458,6 @@ export function ExtensionControlClient({
                 value={usageFormState.workspaceId}
               >
                 <option value="">No workspace binding</option>
-                {workspaceOptions.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name}
-                  </option>
-                ))}
               </select>
             </label>
             <label className="admin-ticket-field">
@@ -551,17 +536,10 @@ export function ExtensionControlClient({
         </article>
 
         <article className="panel">
-          <span className="micro-label">Workspace snapshot</span>
+          <span className="micro-label">Usage snapshot</span>
           <h2>Current usage state</h2>
           {usageSummary ? (
             <div className="list-stack">
-              <div className="list-item">
-                <strong>Workspace</strong>
-                <p>{usageSummary.workspace.name}</p>
-                <span className="list-muted">
-                  {usageSummary.workspace.name}
-                </span>
-              </div>
               <div className="list-item">
                 <strong>Current window</strong>
                 <p>{formatWindow(usageSummary.currentPeriodStart, usageSummary.currentPeriodEnd)}</p>

@@ -35,7 +35,6 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Partial<ProviderCredentialCreateRequest> | null;
   const secret = body?.secret?.trim();
-  const workspaceId = body?.workspaceId?.trim();
 
   if (!body?.provider || !body?.ownerType || !secret) {
     return badRequest('provider, ownerType, and secret are required.');
@@ -51,7 +50,6 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       provider: body.provider,
       ownerType: body.ownerType,
-      ...(workspaceId ? { workspaceId } : {}),
       secret,
       ...(body.scopes ? { scopes: body.scopes } : {}),
     }),

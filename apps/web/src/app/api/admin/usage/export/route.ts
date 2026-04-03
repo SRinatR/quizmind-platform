@@ -39,13 +39,8 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => null)) as Partial<UsageExportRequest> | null;
-  const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
   const format = body?.format && validFormats.has(body.format) ? body.format : undefined;
   const scope = body?.scope && validScopes.has(body.scope) ? body.scope : undefined;
-
-  if (!workspaceId) {
-    return badRequest('workspaceId is required.');
-  }
 
   if (!format) {
     return badRequest('format must be json or csv.');
@@ -63,7 +58,6 @@ export async function POST(request: Request) {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      workspaceId,
       format,
       scope,
     }),

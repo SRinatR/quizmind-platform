@@ -19,7 +19,6 @@ export function DashboardContentClient({
 }: DashboardContentClientProps) {
   const { t } = usePreferences();
   const td = t.dash;
-  const primaryWorkspace = session.workspaces[0] ?? null;
 
   return (
     <>
@@ -34,16 +33,6 @@ export function DashboardContentClient({
         </article>
 
         <article className="stat-card">
-          <span className="micro-label">{td.workspace}</span>
-          <p className="stat-value stat-value--sm">
-            {primaryWorkspace?.name ?? '\u2014'}
-          </p>
-          <p className="metric-copy">
-            {primaryWorkspace ? primaryWorkspace.role : td.noWorkspaceLinked}
-          </p>
-        </article>
-
-        <article className="stat-card">
           <span className="micro-label">{td.features}</span>
           <p className="stat-value">{visibleSections.length}</p>
           <p className="metric-copy">{td.accessibleSections}</p>
@@ -55,6 +44,14 @@ export function DashboardContentClient({
           <p className="metric-copy">
             {session.personaKey === 'connected-user' ? td.connected : session.personaKey}
           </p>
+        </article>
+
+        <article className="stat-card">
+          <span className="micro-label">{td.billing}</span>
+          <p className="stat-value stat-value--sm">
+            <Link href="/app/billing" className="link-subtle">{td.viewBalance}</Link>
+          </p>
+          <p className="metric-copy">{td.walletDesc}</p>
         </article>
       </section>
 
@@ -126,72 +123,26 @@ export function DashboardContentClient({
         </section>
       ) : null}
 
-      {/* ── Workspace + extension ── */}
+      {/* ── Account + extension ── */}
       <section className="split-grid">
-        {primaryWorkspace ? (
-          <article className="panel">
-            <span className="micro-label">{td.workspace}</span>
-            <h2>{primaryWorkspace.name}</h2>
-            <div className="kv-list">
-              <div className="kv-row">
-                <span className="kv-row__key">{td.slug}</span>
-                <span className="kv-row__value">{primaryWorkspace.slug}</span>
-              </div>
-              <div className="kv-row">
-                <span className="kv-row__key">{td.yourRole}</span>
-                <span className="kv-row__value">{primaryWorkspace.role}</span>
-              </div>
-              {session.workspaces.length > 1 ? (
-                <div className="kv-row">
-                  <span className="kv-row__key">{td.totalWorkspaces}</span>
-                  <span className="kv-row__value">{session.workspaces.length}</span>
-                </div>
-              ) : null}
+        <article className="panel">
+          <span className="micro-label">{td.account}</span>
+          <h2>{session.user.displayName ?? session.user.email?.split('@')[0] ?? '\u2014'}</h2>
+          <div className="kv-list">
+            <div className="kv-row">
+              <span className="kv-row__key">Email</span>
+              <span className="kv-row__value">{session.user.email}</span>
             </div>
-            <div className="link-row">
-              <Link className="btn-ghost" href="/app/billing">{td.billing}</Link>
-              <Link className="btn-ghost" href="/app/settings">{td.settings}</Link>
+            <div className="kv-row">
+              <span className="kv-row__key">{td.session}</span>
+              <span className="kv-row__value kv-row__value--green">{td.active}</span>
             </div>
-          </article>
-        ) : (
-          <article className="panel dash-onboarding-card">
-            <div className="dash-onboarding-inner">
-              <div className="dash-onboarding-icon" aria-hidden="true">&#x1F3E2;</div>
-              <div className="dash-onboarding-copy">
-                <span className="micro-label">{td.noWorkspace}</span>
-                <h2>{td.noWorkspaceLinked}</h2>
-                <p>{td.noWorkspaceLinkedDesc}</p>
-              </div>
-              <div className="dash-onboarding-steps">
-                <div className="dash-onboard-step">
-                  <span className="dash-onboard-num">1</span>
-                  <div>
-                    <strong>Connect your workspace</strong>
-                    <p>Go to Settings to link or request access to a workspace.</p>
-                  </div>
-                </div>
-                <div className="dash-onboard-step">
-                  <span className="dash-onboard-num">2</span>
-                  <div>
-                    <strong>Install the extension</strong>
-                    <p>Add QuizMind to Chrome and connect it to your account.</p>
-                  </div>
-                </div>
-                <div className="dash-onboard-step">
-                  <span className="dash-onboard-num">3</span>
-                  <div>
-                    <strong>Start asking questions</strong>
-                    <p>Highlight text on any quiz or form and get instant AI answers.</p>
-                  </div>
-                </div>
-              </div>
-              <div className="link-row">
-                <Link className="btn-primary" href="/app/settings">{td.viewSettings}</Link>
-                <Link className="btn-ghost" href="/app/installations">Install extension</Link>
-              </div>
-            </div>
-          </article>
-        )}
+          </div>
+          <div className="link-row">
+            <Link className="btn-ghost" href="/app/billing">{td.billing}</Link>
+            <Link className="btn-ghost" href="/app/settings">{td.settings}</Link>
+          </div>
+        </article>
 
         <article className="panel dash-extension-card">
           <div className="dash-ext-header">

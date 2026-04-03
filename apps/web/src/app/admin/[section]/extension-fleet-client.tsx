@@ -13,15 +13,8 @@ import { useState, useTransition } from 'react';
 import { type AdminExtensionFleetStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
 
-interface WorkspaceOption {
-  id: string;
-  name: string;
-  role: string;
-}
-
 interface ExtensionFleetClientProps {
   snapshot: AdminExtensionFleetStateSnapshot;
-  workspaceOptions: WorkspaceOption[];
 }
 
 interface DisconnectRouteResponse {
@@ -45,16 +38,6 @@ function buildNextSearchParams(
   next: Partial<AdminExtensionFleetFilters>,
 ) {
   const params = new URLSearchParams(current.toString());
-
-  if ('workspaceId' in next) {
-    const workspaceId = next.workspaceId?.trim();
-
-    if (workspaceId) {
-      params.set('workspaceId', workspaceId);
-    } else {
-      params.delete('workspaceId');
-    }
-  }
 
   if ('compatibility' in next) {
     const compatibility = next.compatibility?.trim();
@@ -111,7 +94,6 @@ function buildNextSearchParams(
 
 export function ExtensionFleetClient({
   snapshot,
-  workspaceOptions,
 }: ExtensionFleetClientProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -165,7 +147,6 @@ export function ExtensionFleetClient({
         },
         body: JSON.stringify({
           installationId,
-          workspaceId: snapshot.workspace.id,
           reason: normalizedActionReason,
         }),
       });
@@ -208,7 +189,6 @@ export function ExtensionFleetClient({
         },
         body: JSON.stringify({
           installationId,
-          workspaceId: snapshot.workspace.id,
           reason: normalizedActionReason,
         }),
       });
@@ -240,19 +220,6 @@ export function ExtensionFleetClient({
           <span className="micro-label">Filters</span>
           <h2>Explore managed installations</h2>
           <div className="filter-grid">
-            <label className="filter-field">
-              <span className="filter-field__label">Workspace</span>
-              <select
-                onChange={(event) => pushFilters({ workspaceId: event.target.value, installationId: '' })}
-                value={snapshot.workspace.id}
-              >
-                {workspaceOptions.map((workspace) => (
-                  <option key={workspace.id} value={workspace.id}>
-                    {workspace.name} ({workspace.role})
-                  </option>
-                ))}
-              </select>
-            </label>
             <label className="filter-field">
               <span className="filter-field__label">Compatibility</span>
               <select
@@ -315,7 +282,7 @@ export function ExtensionFleetClient({
 
         <article className="panel">
           <span className="micro-label">Fleet health</span>
-          <h2>Workspace extension fleet</h2>
+          <h2>Extension fleet</h2>
           <div className="tag-row" style={{ marginBottom: '12px' }}>
             <span className="tag-soft tag-soft--green">connected {snapshot.counts.connected}</span>
             <span className={snapshot.counts.reconnectRequired > 0 ? 'tag-soft tag-soft--orange' : 'tag-soft tag-soft--gray'}>
@@ -332,10 +299,6 @@ export function ExtensionFleetClient({
             </span>
           </div>
           <div className="kv-list">
-            <div className="kv-row">
-              <span className="kv-row__key">Workspace</span>
-              <span className="kv-row__value">{snapshot.workspace.name}</span>
-            </div>
             <div className="kv-row">
               <span className="kv-row__key">Filter scope</span>
               <span className="kv-row__value">

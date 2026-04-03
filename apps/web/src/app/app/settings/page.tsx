@@ -27,16 +27,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const session = await getSession(persona, accessToken);
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const workspaceId = session?.workspaces[0]?.id;
   const userProfile = await getUserProfile(accessToken);
   const authSessions = await getAuthSessions(accessToken);
   const providerCatalog = await getProviderCatalog();
-  const providerCredentialInventory = await getProviderCredentialInventory(workspaceId, accessToken);
+  const providerCredentialInventory = await getProviderCredentialInventory(accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleDashboardSections(context, workspaceId) : [];
-  const accessMatrix = context ? buildAccessMatrixRows({ context, workspaceId }) : [];
+  const visibleSections = context ? getVisibleDashboardSections(context) : [];
+  const accessMatrix = context ? buildAccessMatrixRows({ context }) : [];
   const isAdmin = session ? isAdminSession(session) : false;
-  const workspaceName = session?.workspaces[0]?.name;
 
   return (
     <SiteShell
@@ -48,8 +46,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       isSignedIn={Boolean(session)}
       pathname="/app/settings"
       showPersonaSwitcher={false}
-      title="Account &amp; workspace"
-      workspaceName={workspaceName}
+      title="Account"
       userDisplayName={session?.user.displayName ?? undefined}
     >
       {/* Restore server-saved preferences on page load */}
@@ -71,7 +68,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <section className="empty-state">
           <span className="micro-label">Sign in required</span>
           <h2>Sign in to manage your settings</h2>
-          <p>Account, session, and workspace settings require an authenticated session.</p>
+          <p>Account, session, and AI settings require an authenticated session.</p>
         </section>
       )}
     </SiteShell>

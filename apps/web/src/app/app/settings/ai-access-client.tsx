@@ -2,7 +2,6 @@
 
 import {
   type AiProvider,
-  type CredentialOwnerType,
   type ProviderCredentialCreateRequest,
   type ProviderCredentialMutationResult,
   type ProviderCredentialRevokeResult,
@@ -14,18 +13,10 @@ import { useMemo, useState } from 'react';
 import { type ProviderCatalogSnapshot, type ProviderCredentialInventorySnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
 
-interface WorkspaceOption {
-  id: string;
-  name: string;
-  role: string;
-}
-
 interface AiAccessClientProps {
-  currentWorkspaceId?: string;
   isConnectedSession: boolean;
   providerCatalog: ProviderCatalogSnapshot | null;
   providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
-  workspaceOptions: WorkspaceOption[];
 }
 
 interface MutationRouteResponse<T> {
@@ -38,8 +29,6 @@ interface MutationRouteResponse<T> {
 
 interface AiCredentialFormState {
   provider: AiProvider;
-  ownerType: CredentialOwnerType;
-  workspaceId: string;
   scopes: string;
   secret: string;
 }
@@ -65,33 +54,29 @@ function describePolicyKeyBehavior(input?: {
   }
 
   if (!input.allowBringYourOwnKey || input.mode === 'platform_only') {
-    return 'platform-managed only. Stored user/workspace keys are not used for managed AI runtime requests.';
+    return 'Platform-managed only. User keys are not used for managed AI runtime requests.';
   }
 
   if (input.requireAdminApproval) {
-    return 'BYOK is enabled in principle, but blocked until admin approval is disabled for this workspace.';
+    return 'BYOK is enabled in principle, but blocked until admin approval is granted for your account.';
   }
 
   if (input.mode === 'user_key_required') {
-    return 'user key required. Managed requests must run with useOwnKey=true and an active user credential.';
+    return 'User key required. Managed requests must run with useOwnKey=true and an active user credential.';
   }
 
-  return 'BYOK is active. Stored user/workspace credentials can be used by runtime requests that opt into own-key mode.';
+  return 'BYOK is active. Your stored credentials can be used by runtime requests that opt into own-key mode.';
 }
 
 export function AiAccessClient({
-  currentWorkspaceId,
   isConnectedSession,
   providerCatalog,
   providerCredentialInventory,
-  workspaceOptions,
 }: AiAccessClientProps) {
   const router = useRouter();
   const [editingCredentialId, setEditingCredentialId] = useState<string | null>(null);
   const [formState, setFormState] = useState<AiCredentialFormState>({
     provider: providerCredentialInventory?.aiAccessPolicy.providers[0] ?? providerCatalog?.providers[0]?.provider ?? 'openrouter',
-    ownerType: 'user' as CredentialOwnerType,
-    workspaceId: currentWorkspaceId ?? workspaceOptions[0]?.id ?? '',
     scopes: '',
     secret: '',
   });
@@ -115,10 +100,6 @@ export function AiAccessClient({
       !providerCredentialInventory.policy.requireAdminApproval,
   );
   const canRotate = Boolean(providerCredentialInventory?.rotateDecision.allowed);
-  const selectedWorkspaceRole = workspaceOptions.find((workspace) => workspace.id === formState.workspaceId)?.role ?? null;
-  const canShareWorkspaceCredential =
-    (selectedWorkspaceRole === 'workspace_owner' || selectedWorkspaceRole === 'workspace_admin') &&
-    Boolean(providerCredentialInventory?.policy.allowWorkspaceSharedCredentials);
   const availableProviders = useMemo(() => {
     const allowedProviders = new Set(providerCredentialInventory?.aiAccessPolicy.providers ?? []);
 
@@ -136,8 +117,8 @@ export function AiAccessClient({
       setStatusMessage(null);
       setErrorMessage(
         providerCredentialInventory?.policy.requireAdminApproval
-          ? 'Bring-your-own-key is currently gated behind admin approval for this workspace.'
-          : `This workspace policy does not allow effective BYOK writes right now (${providerCredentialInventory?.aiAccessPolicy.mode ?? 'unknown_mode'}).`,
+          ? 'Bring-your-own-key is currently gated behind admin approval for your account.'
+          : `Account policy does not allow effective BYOK writes right now (${providerCredentialInventory?.aiAccessPolicy.mode ?? 'unknown_mode'}).`,
       );
       return;
     }
@@ -145,18 +126,6 @@ export function AiAccessClient({
     if (!formState.secret.trim()) {
       setStatusMessage(null);
       setErrorMessage('Secret is required.');
-      return;
-    }
-
-    if (!formState.workspaceId.trim()) {
-      setStatusMessage(null);
-      setErrorMessage('Select a workspace scope before saving the credential.');
-      return;
-    }
-
-    if (formState.ownerType === 'workspace' && !canShareWorkspaceCredential) {
-      setStatusMessage(null);
-      setErrorMessage('Workspace-shared keys require workspace owner or admin access.');
       return;
     }
 
@@ -173,8 +142,7 @@ export function AiAccessClient({
           }
         : {
             provider: formState.provider,
-            ownerType: formState.ownerType,
-            workspaceId: formState.workspaceId,
+            ownerType: 'user',
             secret: formState.secret.trim(),
             scopes: normalizeScopes(formState.scopes),
           };
@@ -201,7 +169,6 @@ export function AiAccessClient({
 
       setFormState((current) => ({
         ...current,
-        ownerType: 'user',
         scopes: mutationResult.credential.scopes.join(', '),
         secret: '',
       }));
@@ -223,7 +190,7 @@ export function AiAccessClient({
   async function handleRevoke(credentialId: string) {
     if (!canRotate) {
       setStatusMessage(null);
-      setErrorMessage('This workspace context cannot revoke provider credentials.');
+      setErrorMessage('Your account cannot revoke provider credentials right now.');
       return;
     }
 
@@ -267,16 +234,12 @@ export function AiAccessClient({
   function startRotation(
     credentialId: string,
     provider: AiProvider,
-    ownerType: CredentialOwnerType,
-    workspaceId?: string | null,
     scopes?: string[],
   ) {
     setEditingCredentialId(credentialId);
     setFormState((current) => ({
       ...current,
       provider,
-      ownerType,
-      workspaceId: workspaceId ?? current.workspaceId,
       scopes: (scopes ?? []).join(', '),
       secret: '',
     }));
@@ -288,7 +251,6 @@ export function AiAccessClient({
     setEditingCredentialId(null);
     setFormState((current) => ({
       ...current,
-      ownerType: 'user',
       secret: '',
       scopes: '',
     }));
@@ -320,21 +282,9 @@ export function AiAccessClient({
                 <span className="ai-policy-val">{providerCredentialInventory.aiAccessPolicy.defaultProvider ?? 'platform-selected'}</span>
               </div>
               <div className="ai-policy-row">
-                <span className="ai-policy-key">Policy scope</span>
-                <span className="ai-policy-val ai-policy-val--code">
-                  {providerCredentialInventory.policy.scopeType}
-                </span>
-              </div>
-              <div className="ai-policy-row">
                 <span className="ai-policy-key">Admin approval</span>
                 <span className={`ai-policy-val ${providerCredentialInventory.policy.requireAdminApproval ? 'ai-policy-val--warn' : 'ai-policy-val--ok'}`}>
                   {String(providerCredentialInventory.policy.requireAdminApproval ?? false)}
-                </span>
-              </div>
-              <div className="ai-policy-row">
-                <span className="ai-policy-key">Shared keys</span>
-                <span className="ai-policy-val">
-                  {String(providerCredentialInventory.policy.allowWorkspaceSharedCredentials ?? false)}
                 </span>
               </div>
               <div className="ai-policy-row">
@@ -356,7 +306,7 @@ export function AiAccessClient({
             <div className="empty-state">
               <span className="micro-label">Preview</span>
               <h2>Provider governance is available after sign-in.</h2>
-              <p>Connected sessions can attach encrypted provider keys to user or workspace ownership.</p>
+              <p>Connected sessions can attach encrypted provider keys to your account.</p>
             </div>
           )}
           {(availableProviders.length > 0 ? availableProviders : providerCatalog?.providers ?? []).length > 0 ? (
@@ -400,43 +350,6 @@ export function AiAccessClient({
                     {availableProviders.map((provider) => (
                       <option key={provider.provider} value={provider.provider}>
                         {provider.displayName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="admin-ticket-field">
-                  <span className="micro-label">Ownership</span>
-                  <select
-                    disabled={!canWrite || Boolean(editingCredentialId)}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        ownerType: event.target.value as CredentialOwnerType,
-                      }))
-                    }
-                    value={formState.ownerType}
-                  >
-                    <option value="user">User key</option>
-                    <option disabled={!canShareWorkspaceCredential} value="workspace">
-                      Workspace shared key
-                    </option>
-                  </select>
-                </label>
-                <label className="admin-ticket-field">
-                  <span className="micro-label">Workspace</span>
-                  <select
-                    disabled={!canWrite || Boolean(editingCredentialId)}
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        workspaceId: event.target.value,
-                      }))
-                    }
-                    value={formState.workspaceId}
-                  >
-                    {workspaceOptions.map((workspace) => (
-                      <option key={workspace.id} value={workspace.id}>
-                        {workspace.name} ({workspace.role})
                       </option>
                     ))}
                   </select>
@@ -486,7 +399,7 @@ export function AiAccessClient({
             <div className="empty-state">
               <span className="micro-label">Connected mode</span>
               <h2>Sign in to manage encrypted provider credentials.</h2>
-              <p>Stored keys stay platform-governed, redacted in the UI, and follow the resolved workspace AI policy.</p>
+              <p>Stored keys stay platform-governed, redacted in the UI, and follow the resolved AI policy for your account.</p>
             </div>
           )}
         </article>
@@ -529,8 +442,6 @@ export function AiAccessClient({
                         startRotation(
                           credential.id,
                           credential.provider,
-                          credential.ownerType,
-                          credential.workspaceId,
                           credential.scopes,
                         )
                       }

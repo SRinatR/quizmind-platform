@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { type WalletTopUpCreateRequest, type WalletTopUpCreateResult } from '@quizmind/contracts';
+import { type WalletTopUpCreateResult } from '@quizmind/contracts';
 
-import { API_URL, type ApiEnvelope } from '../../../../../lib/api';
+import { API_URL, getSession, type ApiEnvelope } from '../../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../../lib/auth-session';
 
 interface RouteErrorPayload {
@@ -20,13 +20,8 @@ export async function POST(request: Request) {
     return badRequest('Sign in to top up your balance.', 401);
   }
 
-  const body = (await request.json().catch(() => null)) as Partial<WalletTopUpCreateRequest> | null;
-  const workspaceId = body?.workspaceId?.trim();
+  const body = (await request.json().catch(() => null)) as { amountKopecks?: number } | null;
   const amountKopecks = body?.amountKopecks;
-
-  if (!workspaceId) {
-    return badRequest('workspaceId is required.');
-  }
 
   if (!Number.isInteger(amountKopecks) || amountKopecks === undefined || amountKopecks <= 0) {
     return badRequest('amountKopecks must be a positive integer.');
@@ -39,7 +34,7 @@ export async function POST(request: Request) {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ workspaceId, amountKopecks }),
+    body: JSON.stringify({ amountKopecks }),
   });
 
   const payload = (await response.json().catch(() => null)) as

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
 import {
   type AiAccessPolicyMode,
   type AiProvider,
@@ -132,8 +132,7 @@ export class AiProviderPolicyService {
   ): Promise<AiProviderPolicyHistoryEntry[]> {
     this.assertCanManageAiProviders(session);
 
-    const workspace = workspaceId ? this.resolveWorkspaceForSession(session, workspaceId) : null;
-    const scopeKeys = workspace ? [`workspace:${workspace.id}`, 'global'] : ['global'];
+    const scopeKeys = workspaceId ? [`workspace:${workspaceId}`, 'global'] : ['global'];
     const { records, actors } = await this.aiProviderPolicyRepository.listHistory(scopeKeys);
 
     return records.map((record) => this.mapHistoryRecordToEntry(record, actors));
@@ -146,10 +145,6 @@ export class AiProviderPolicyService {
     this.assertCanManageAiProviders(session);
 
     const workspaceId = request?.workspaceId?.trim() || undefined;
-
-    if (workspaceId) {
-      this.resolveWorkspaceForSession(session, workspaceId);
-    }
 
     const basePolicy = await this.resolvePolicyForWorkspace(workspaceId);
     const mode = normalizeMode(request?.mode, basePolicy.mode);
@@ -272,8 +267,7 @@ export class AiProviderPolicyService {
       throw new BadRequestException('workspaceId is required to reset a workspace AI provider policy.');
     }
 
-    const workspace = this.resolveWorkspaceForSession(session, workspaceId);
-    const existing = await this.aiProviderPolicyRepository.findByWorkspaceId(workspace.id);
+    const existing = await this.aiProviderPolicyRepository.findByWorkspaceId(workspaceId);
     const occurredAt = new Date();
 
     if (existing) {
@@ -281,7 +275,7 @@ export class AiProviderPolicyService {
       const metadata = {
         scopeKey: currentPolicy.scopeKey,
         scopeType: currentPolicy.scopeType,
-        workspaceId: workspace.id,
+        workspaceId: workspaceId,
         previousMode: currentPolicy.mode,
         previousProviders: currentPolicy.providers,
         previousDefaultProvider: currentPolicy.defaultProvider ?? null,
@@ -295,7 +289,7 @@ export class AiProviderPolicyService {
         eventType: 'ai_provider_policy.reset',
         actorId: session.user.id,
         actorType: 'user',
-        workspaceId: workspace.id,
+        workspaceId: workspaceId,
         targetType: 'ai_provider_policy',
         targetId: currentPolicy.scopeKey,
         occurredAt: occurredAt.toISOString(),
@@ -309,7 +303,7 @@ export class AiProviderPolicyService {
         eventType: 'ai_provider_policy.override_removed',
         actorId: session.user.id,
         actorType: 'user',
-        workspaceId: workspace.id,
+        workspaceId: workspaceId,
         targetType: 'ai_provider_policy',
         targetId: currentPolicy.scopeKey,
         occurredAt: occurredAt.toISOString(),
@@ -320,7 +314,7 @@ export class AiProviderPolicyService {
 
       await this.aiProviderPolicyRepository.deleteWorkspaceOverrideWithLogs({
         scopeKey: currentPolicy.scopeKey,
-        workspaceId: workspace.id,
+        workspaceId: workspaceId,
         occurredAt,
         auditLog,
         securityLog,
@@ -330,10 +324,10 @@ export class AiProviderPolicyService {
     }
 
     return {
-      workspaceId: workspace.id,
-      scopeKey: `workspace:${workspace.id}`,
+      workspaceId: workspaceId,
+      scopeKey: `workspace:${workspaceId}`,
       resetApplied: Boolean(existing),
-      policy: await this.resolvePolicyForWorkspace(workspace.id),
+      policy: await this.resolvePolicyForWorkspace(workspaceId),
       resetAt: occurredAt.toISOString(),
     };
   }
@@ -372,15 +366,6 @@ export class AiProviderPolicyService {
     }
   }
 
-  private resolveWorkspaceForSession(session: CurrentSessionSnapshot, workspaceId: string) {
-    const workspace = session.workspaces.find((entry) => entry.id === workspaceId) ?? null;
-
-    if (!workspace) {
-      throw new NotFoundException('Workspace not found or not accessible.');
-    }
-
-    return workspace;
-  }
 
   private mapHistoryRecordToEntry(
     record: AiProviderPolicyHistoryRecord,

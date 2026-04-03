@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { type WalletBalanceSnapshot } from '@quizmind/contracts';
 
-import { API_URL, type ApiEnvelope } from '../../../../lib/api';
+import { API_URL, getSession, type ApiEnvelope } from '../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
 
 interface RouteErrorPayload {
@@ -13,21 +13,14 @@ function badRequest(message: string, status = 400) {
   return NextResponse.json<RouteErrorPayload>({ ok: false, error: { message } }, { status });
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   const accessToken = await getAccessTokenFromCookies();
 
   if (!accessToken) {
     return badRequest('Sign in to view your wallet balance.', 401);
   }
 
-  const { searchParams } = new URL(request.url);
-  const workspaceId = searchParams.get('workspaceId')?.trim();
-
-  if (!workspaceId) {
-    return badRequest('workspaceId is required.');
-  }
-
-  const response = await fetch(`${API_URL}/wallet/balance?workspaceId=${encodeURIComponent(workspaceId)}`, {
+  const response = await fetch(`${API_URL}/wallet/balance`, {
     method: 'GET',
     cache: 'no-store',
     headers: {

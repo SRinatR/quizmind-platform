@@ -3,7 +3,6 @@ import {
   type AdminUserCreateRequest,
   type AdminUserMutationResult,
   systemRoles,
-  workspaceRoles,
 } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../../lib/api';
@@ -17,7 +16,6 @@ interface RouteErrorPayload {
 }
 
 const validSystemRoles = new Set(systemRoles);
-const validWorkspaceRoles = new Set(workspaceRoles);
 
 function badRequest(message: string, status = 400) {
   return NextResponse.json<RouteErrorPayload>(
@@ -43,44 +41,6 @@ function normalizeSystemRoles(value: unknown): AdminUserCreateRequest['systemRol
   return Array.from(new Set(normalized));
 }
 
-function normalizeWorkspaceMemberships(value: unknown): AdminUserCreateRequest['workspaceMemberships'] | null {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-
-  const memberships = value
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-        return null;
-      }
-
-      const candidate = entry as { workspaceId?: unknown; role?: unknown };
-      const workspaceId = typeof candidate.workspaceId === 'string' ? candidate.workspaceId.trim() : '';
-      const role = typeof candidate.role === 'string' ? candidate.role.trim() : '';
-
-      if (!workspaceId || !validWorkspaceRoles.has(role as (typeof workspaceRoles)[number])) {
-        return null;
-      }
-
-      return {
-        workspaceId,
-        role: role as (typeof workspaceRoles)[number],
-      };
-    })
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-
-  const byWorkspace = new Map<string, (typeof workspaceRoles)[number]>();
-
-  for (const membership of memberships) {
-    byWorkspace.set(membership.workspaceId, membership.role);
-  }
-
-  return Array.from(byWorkspace.entries()).map(([workspaceId, role]) => ({
-    workspaceId,
-    role,
-  }));
-}
-
 export async function POST(request: Request) {
   const accessToken = await getAccessTokenFromCookies();
 
@@ -93,8 +53,6 @@ export async function POST(request: Request) {
   const password = typeof body?.password === 'string' ? body.password.trim() : '';
   const displayName = typeof body?.displayName === 'string' ? body.displayName.trim() : '';
   const systemRolesInput = body && 'systemRoles' in body ? normalizeSystemRoles(body.systemRoles) : undefined;
-  const workspaceMembershipsInput =
-    body && 'workspaceMemberships' in body ? normalizeWorkspaceMemberships(body.workspaceMemberships) : undefined;
 
   if (!email) {
     return badRequest('email is required.');
@@ -108,19 +66,12 @@ export async function POST(request: Request) {
     return badRequest('systemRoles must be an array of role ids.');
   }
 
-  if (body && 'workspaceMemberships' in body && workspaceMembershipsInput === null) {
-    return badRequest('workspaceMemberships must be an array of { workspaceId, role } objects.');
-  }
-
   const systemRoles = systemRolesInput === null ? undefined : systemRolesInput;
-  const workspaceMemberships =
-    workspaceMembershipsInput === null ? undefined : workspaceMembershipsInput;
   const upstreamBody: AdminUserCreateRequest = {
     email,
     password,
     ...(displayName ? { displayName } : {}),
     ...(systemRoles !== undefined ? { systemRoles } : {}),
-    ...(workspaceMemberships !== undefined ? { workspaceMemberships } : {}),
     ...(typeof body?.emailVerified === 'boolean' ? { emailVerified: body.emailVerified } : {}),
   };
 

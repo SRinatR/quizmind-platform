@@ -8,23 +8,13 @@ interface UsagePageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-function readSearchParam(value: string | string[] | undefined): string | undefined {
-  if (Array.isArray(value)) return value[0];
-  return value;
-}
-
 export default async function UsagePage({ searchParams }: UsagePageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const requestedWorkspaceId = readSearchParam(resolvedSearchParams?.workspaceId);
-  const workspaceId =
-    requestedWorkspaceId && session?.workspaces.some((w) => w.id === requestedWorkspaceId)
-      ? requestedWorkspaceId
-      : session?.workspaces[0]?.id;
-  const usage = workspaceId ? await getUsageSummary(persona, workspaceId, accessToken) : null;
+  const usage = await getUsageSummary(persona, accessToken);
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -37,9 +27,10 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
       isSignedIn={Boolean(session)}
       pathname="/app/usage"
       showPersonaSwitcher={false}
-      title="Workspace usage"
+      title="Account usage"
+      userDisplayName={session?.user.displayName ?? undefined}
     >
-      <UsagePageClient session={session} workspaceId={workspaceId} usage={usage} />
+      <UsagePageClient session={session} usage={usage} />
     </SiteShell>
   );
 }

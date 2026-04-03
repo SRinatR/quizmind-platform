@@ -1,12 +1,10 @@
 import {
   systemRoles,
-  workspaceRoles,
   type AccessContext,
   type AccessDecision,
   type AccessRequirement,
   type ResourceAction,
   type SystemRole,
-  type WorkspaceRole,
 } from '@quizmind/contracts';
 
 export const permissionRegistry = [
@@ -17,8 +15,6 @@ export const permissionRegistry = [
   'workspaces:update',
   'installations:read',
   'installations:write',
-  'workspace_members:invite',
-  'workspace_members:remove',
   'subscriptions:read',
   'subscriptions:update',
   'payments:read',
@@ -93,71 +89,37 @@ const systemRolePermissions: Record<SystemRole, Permission[]> = {
   content_admin: ['feature_flags:read'],
 };
 
-const workspaceRolePermissions: Record<WorkspaceRole, Permission[]> = {
-  workspace_owner: [
-    'workspaces:read',
-    'workspaces:update',
-    'installations:read',
-    'installations:write',
-    'workspace_members:invite',
-    'workspace_members:remove',
-    'subscriptions:read',
-    'subscriptions:update',
-    'payments:read',
-    'entitlements:read',
-    'remote_config:read',
-    'usage:read',
-    'credentials:read',
-    'credentials:write',
-    'credentials:rotate',
-  ],
-  workspace_admin: [
-    'workspaces:read',
-    'workspaces:update',
-    'installations:read',
-    'installations:write',
-    'workspace_members:invite',
-    'workspace_members:remove',
-    'subscriptions:read',
-    'payments:read',
-    'entitlements:read',
-    'remote_config:read',
-    'usage:read',
-    'credentials:read',
-    'credentials:write',
-    'credentials:rotate',
-  ],
-  workspace_billing_manager: [
-    'subscriptions:read',
-    'subscriptions:update',
-    'payments:read',
-    'entitlements:read',
-    'usage:read',
-  ],
-  workspace_security_manager: ['audit_logs:read', 'audit_logs:export', 'installations:read'],
-  workspace_manager: ['workspaces:read', 'installations:read', 'remote_config:read', 'entitlements:read', 'usage:read'],
-  workspace_analyst: ['audit_logs:read', 'installations:read', 'payments:read', 'subscriptions:read', 'usage:read', 'usage:export'],
-  workspace_member: ['workspaces:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
-  workspace_viewer: ['workspaces:read', 'installations:read', 'credentials:read', 'credentials:write', 'credentials:rotate'],
-};
-
 export const allSystemRoles = [...systemRoles];
-export const allWorkspaceRoles = [...workspaceRoles];
+
+/**
+ * Base permissions granted to all authenticated users regardless of workspace membership.
+ * These cover the personal account scope (dashboard, billing, settings, installations, credentials).
+ */
+export const authenticatedUserPermissions: Permission[] = [
+  'installations:read',
+  'installations:write',
+  'credentials:read',
+  'credentials:write',
+  'credentials:rotate',
+  'usage:read',
+  'usage:export',
+];
 
 export function resolvePermissions(input: {
   systemRoles?: SystemRole[];
-  workspaceRoles?: WorkspaceRole[];
+  /** When true, includes the base authenticated-user permission set */
+  authenticatedUser?: boolean;
 }): Permission[] {
   const granted = new Set<Permission>();
 
-  for (const role of input.systemRoles ?? []) {
-    for (const permission of systemRolePermissions[role]) {
+  if (input.authenticatedUser) {
+    for (const permission of authenticatedUserPermissions) {
       granted.add(permission);
     }
   }
 
-  for (const role of input.workspaceRoles ?? []) {
-    for (const permission of workspaceRolePermissions[role]) {
+  for (const role of input.systemRoles ?? []) {
+    for (const permission of systemRolePermissions[role]) {
       granted.add(permission);
     }
   }
@@ -171,14 +133,9 @@ export function hasPermission(permissions: Permission[], permission: Permission)
 
 export function evaluateAccess(context: AccessContext, requirement: AccessRequirement): AccessDecision {
   const reasons: string[] = [];
-  const workspaceRoles = requirement.workspaceId
-    ? context.workspaceMemberships
-        .filter((membership) => membership.workspaceId === requirement.workspaceId)
-        .map((membership) => membership.role)
-    : [];
   const permissions = resolvePermissions({
     systemRoles: context.systemRoles,
-    workspaceRoles,
+    authenticatedUser: true,
   });
 
   if (!hasPermission(permissions, requirement.permission as Permission)) {
@@ -187,10 +144,6 @@ export function evaluateAccess(context: AccessContext, requirement: AccessRequir
 
   if (requirement.requireSystemRole && !context.systemRoles.includes(requirement.requireSystemRole)) {
     reasons.push(`Missing system role: ${requirement.requireSystemRole}`);
-  }
-
-  if (requirement.requireWorkspaceRole && !workspaceRoles.includes(requirement.requireWorkspaceRole)) {
-    reasons.push(`Missing workspace role: ${requirement.requireWorkspaceRole}`);
   }
 
   for (const entitlement of requirement.requiredEntitlements ?? []) {
@@ -202,13 +155,6 @@ export function evaluateAccess(context: AccessContext, requirement: AccessRequir
   for (const flag of requirement.requiredFlags ?? []) {
     if (!context.featureFlags.includes(flag)) {
       reasons.push(`Missing feature flag: ${flag}`);
-    }
-  }
-
-  if (requirement.requireOwnership && requirement.workspaceId) {
-    const ownsWorkspace = context.attributes?.workspaceOwnerId === context.userId;
-    if (!ownsWorkspace) {
-      reasons.push('Ownership check failed.');
     }
   }
 

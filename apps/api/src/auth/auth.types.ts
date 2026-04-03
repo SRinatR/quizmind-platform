@@ -1,5 +1,4 @@
 import { type SessionPrincipal, type VerifiedAccessToken } from '@quizmind/auth';
-import { type WorkspaceSummary } from '@quizmind/contracts';
 
 export interface RequestSessionMetadata {
   ipAddress?: string;
@@ -23,7 +22,6 @@ export interface CurrentSessionSnapshot {
     emailVerifiedAt?: string | null;
   };
   principal: SessionPrincipal;
-  workspaces: WorkspaceSummary[];
   permissions: string[];
 }
 

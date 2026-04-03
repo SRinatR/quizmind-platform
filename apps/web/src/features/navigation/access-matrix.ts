@@ -18,7 +18,6 @@ export interface NavigationAccessMatrixRow {
 
 function resolveAccessDecision(input: {
   context: AccessContext;
-  workspaceId?: string;
   requirement?: AccessRequirement;
 }) {
   if (!input.requirement) {
@@ -28,10 +27,7 @@ function resolveAccessDecision(input: {
     };
   }
 
-  return evaluateAccess(input.context, {
-    ...input.requirement,
-    workspaceId: input.requirement.workspaceId ?? input.workspaceId,
-  });
+  return evaluateAccess(input.context, input.requirement);
 }
 
 export function describeAccessRequirement(requirement?: AccessRequirement): string {
@@ -45,10 +41,6 @@ export function describeAccessRequirement(requirement?: AccessRequirement): stri
     parts.push(`system role ${requirement.requireSystemRole}`);
   }
 
-  if (requirement.requireWorkspaceRole) {
-    parts.push(`workspace role ${requirement.requireWorkspaceRole}`);
-  }
-
   if (requirement.requiredEntitlements && requirement.requiredEntitlements.length > 0) {
     parts.push(`entitlements ${requirement.requiredEntitlements.join(', ')}`);
   }
@@ -57,24 +49,18 @@ export function describeAccessRequirement(requirement?: AccessRequirement): stri
     parts.push(`feature flags ${requirement.requiredFlags.join(', ')}`);
   }
 
-  if (requirement.requireOwnership) {
-    parts.push('workspace ownership');
-  }
-
   return parts.join(' | ');
 }
 
 function createRowsForScope(input: {
   scope: NavigationScope;
   context: AccessContext;
-  workspaceId?: string;
 }): NavigationAccessMatrixRow[] {
   const sections = input.scope === 'admin' ? adminSections : dashboardSections;
 
   return sections.map((section) => {
     const decision = resolveAccessDecision({
       context: input.context,
-      workspaceId: input.workspaceId,
       requirement: section.requirement,
     });
 
@@ -92,7 +78,6 @@ function createRowsForScope(input: {
 
 export function buildAccessMatrixRows(input: {
   context: AccessContext;
-  workspaceId?: string;
   scopes?: NavigationScope[];
 }): NavigationAccessMatrixRow[] {
   const scopes = input.scopes ?? ['dashboard', 'admin'];
@@ -103,7 +88,6 @@ export function buildAccessMatrixRows(input: {
       ...createRowsForScope({
         scope: 'dashboard',
         context: input.context,
-        workspaceId: input.workspaceId,
       }),
     );
   }
@@ -113,7 +97,6 @@ export function buildAccessMatrixRows(input: {
       ...createRowsForScope({
         scope: 'admin',
         context: input.context,
-        workspaceId: input.workspaceId,
       }),
     );
   }

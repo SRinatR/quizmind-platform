@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { type SystemRole, type WorkspaceRole } from '@quizmind/contracts';
+import { type SystemRole } from '@quizmind/contracts';
 import { Prisma } from '@quizmind/database';
 
 import { PrismaService } from '../../database/prisma.service';
@@ -7,11 +7,6 @@ import { BaseRepository } from './base.repository';
 
 export const authUserInclude = {
   systemRoleAssignments: true,
-  memberships: {
-    include: {
-      workspace: true,
-    },
-  },
 } satisfies Prisma.UserInclude;
 
 export type AuthUserRecord = Prisma.UserGetPayload<{
@@ -74,19 +69,5 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
 
   getSystemRoles(user: AuthUserRecord): SystemRole[] {
     return user.systemRoleAssignments.map((assignment) => assignment.role);
-  }
-
-  getWorkspaceMemberships(user: AuthUserRecord): Array<{
-    workspaceId: string;
-    workspaceName: string;
-    workspaceSlug: string;
-    role: WorkspaceRole;
-  }> {
-    return user.memberships.map((membership) => ({
-      workspaceId: membership.workspaceId,
-      workspaceName: membership.workspace.name,
-      workspaceSlug: membership.workspace.slug,
-      role: membership.role,
-    }));
   }
 }
