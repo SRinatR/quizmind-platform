@@ -17,8 +17,7 @@ export const publicNavigation: NavigationItem[] = [
 ];
 
 export const dashboardNavigation: NavigationItem[] = [
-  { label: 'Overview', href: '/app', requiresAuth: true },
-  { label: 'Billing', href: '/app/billing', requiresAuth: true },
+  { label: 'Your Profile', href: '/app', requiresAuth: true },
   { label: 'Usage', href: '/app/usage', requiresAuth: true },
   { label: 'History', href: '/app/history', requiresAuth: true },
   { label: 'Installations', href: '/app/installations', requiresAuth: true },
