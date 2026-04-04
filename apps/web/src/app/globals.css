@@ -4551,3 +4551,138 @@ code {
   background: rgba(200, 150, 90, 0.2);
 }
 
+
+/* ── Sidebar account dock ── */
+.sidebar-account-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px 6px;
+}
+
+.sidebar-account-dock__identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px;
+  min-width: 0;
+}
+
+.sidebar-account-dock__avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #8a3c19);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  box-shadow: 0 1px 4px rgba(184, 92, 56, 0.2);
+}
+
+.sidebar-account-dock__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+
+.sidebar-account-dock__signin {
+  display: block;
+  width: calc(100% - 8px);
+  margin: 0 4px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(200, 150, 90, 0.08);
+  border: 1.5px solid rgba(200, 150, 90, 0.25);
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.sidebar-account-dock__signin:hover {
+  background: rgba(200, 150, 90, 0.15);
+  border-color: rgba(200, 150, 90, 0.4);
+}
+
+/* Override logout button style to match dock aesthetic */
+.sidebar-account-dock .app-sidebar__logout-btn {
+  display: block;
+  width: calc(100% - 8px);
+  margin: 0 4px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: color 110ms ease, background 110ms ease, border-color 110ms ease;
+  opacity: 0.9;
+}
+
+.sidebar-account-dock .app-sidebar__logout-btn:hover:not(:disabled) {
+  color: var(--ink);
+  background: rgba(31, 41, 51, 0.05);
+  border-color: var(--muted);
+  opacity: 1;
+}
+
+/* ── Avatar upload button ── */
+.profile-avatar-upload-btn-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(200, 150, 90, 0.08);
+  border: 1.5px solid rgba(200, 150, 90, 0.25);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  white-space: nowrap;
+}
+
+.avatar-upload-btn:hover {
+  background: rgba(200, 150, 90, 0.15);
+  border-color: rgba(200, 150, 90, 0.4);
+}
+
+[data-theme="dark"] .sidebar-account-dock .app-sidebar__logout-btn {
+  border-color: rgba(237, 232, 224, 0.12);
+}
+
+[data-theme="dark"] .sidebar-account-dock .app-sidebar__logout-btn:hover:not(:disabled) {
+  background: rgba(237, 232, 224, 0.06);
+}
+
+[data-theme="dark"] .avatar-upload-btn {
+  background: rgba(200, 150, 90, 0.1);
+  border-color: rgba(200, 150, 90, 0.22);
+}
+
+[data-theme="dark"] .avatar-upload-btn:hover {
+  background: rgba(200, 150, 90, 0.18);
+}

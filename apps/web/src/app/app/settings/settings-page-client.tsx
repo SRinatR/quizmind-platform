@@ -6,24 +6,19 @@ import { useState, useTransition } from 'react';
 
 import {
   type AuthSessionsSnapshot,
-  type ProviderCatalogSnapshot,
-  type ProviderCredentialInventorySnapshot,
   type SessionSnapshot,
 } from '../../../lib/api';
 import { type NavigationAccessMatrixRow } from '../../../features/navigation/access-matrix';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { usePreferences } from '../../../lib/preferences';
-import { AiAccessClient } from './ai-access-client';
 import { AppearanceSettingsClient } from './appearance-settings-client';
 
-type SettingsTab = 'security' | 'aiAccess' | 'appearance' | 'accessMatrix';
+type SettingsTab = 'security' | 'appearance' | 'accessMatrix';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
   isAdmin: boolean;
   isConnectedSession: boolean;
-  providerCatalog: ProviderCatalogSnapshot | null;
-  providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
   session: SessionSnapshot;
   accessMatrix: NavigationAccessMatrixRow[];
 }
@@ -38,8 +33,6 @@ export function SettingsPageClient({
   authSessions,
   isAdmin,
   isConnectedSession,
-  providerCatalog,
-  providerCredentialInventory,
   session,
   accessMatrix,
 }: SettingsPageClientProps) {
@@ -90,7 +83,6 @@ export function SettingsPageClient({
 
   const tabs: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
     { key: 'security',     label: s.tabs.security },
-    { key: 'aiAccess',     label: s.tabs.aiAccess, adminOnly: true },
     { key: 'appearance',   label: s.tabs.appearance },
     { key: 'accessMatrix', label: s.tabs.accessMatrix, adminOnly: true },
   ];
@@ -232,24 +224,6 @@ export function SettingsPageClient({
               )}
             </article>
           </section>
-        </div>
-      ) : null}
-
-      {/* ══════════════════════════════════════════
-          TAB: AI Access (admin only)
-      ══════════════════════════════════════════ */}
-      {activeTab === 'aiAccess' && isAdmin ? (
-        <div className="settings-section">
-          <div className="settings-section__header">
-            <h3 className="settings-section__title">{s.aiAccess.title}</h3>
-            <p className="settings-section__desc">{s.aiAccess.desc}</p>
-          </div>
-
-          <AiAccessClient
-            isConnectedSession={isConnectedSession}
-            providerCatalog={providerCatalog}
-            providerCredentialInventory={providerCredentialInventory}
-          />
         </div>
       ) : null}
 

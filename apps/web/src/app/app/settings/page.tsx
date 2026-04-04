@@ -5,8 +5,6 @@ import { buildAccessMatrixRows } from '../../../features/navigation/access-matri
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAuthSessions,
-  getProviderCatalog,
-  getProviderCredentialInventory,
   getSession,
   getUserProfile,
   resolvePersona,
@@ -28,8 +26,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const sessionLabel = session?.user.displayName || session?.user.email;
   const userProfile = await getUserProfile(accessToken);
   const authSessions = await getAuthSessions(accessToken);
-  const providerCatalog = await getProviderCatalog();
-  const providerCredentialInventory = await getProviderCredentialInventory(accessToken);
   const context = session ? buildAccessContext(session.principal) : null;
   const accessMatrix = context ? buildAccessMatrixRows({ context }) : [];
   const isAdmin = session ? isAdminSession(session) : false;
@@ -44,7 +40,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       isSignedIn={Boolean(session)}
       pathname="/app/settings"
       showPersonaSwitcher={false}
-      title="Account"
+      title="Settings"
       userDisplayName={session?.user.displayName ?? undefined}
     >
       {/* Restore server-saved preferences on page load */}
@@ -55,8 +51,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           authSessions={authSessions}
           isAdmin={isAdmin}
           isConnectedSession={isConnectedSession}
-          providerCatalog={providerCatalog}
-          providerCredentialInventory={providerCredentialInventory}
           session={session}
           accessMatrix={accessMatrix}
         />
@@ -64,7 +58,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <section className="empty-state">
           <span className="micro-label">Sign in required</span>
           <h2>Sign in to manage your settings</h2>
-          <p>Account, session, and AI settings require an authenticated session.</p>
+          <p>Session and appearance settings require an authenticated session.</p>
         </section>
       )}
     </SiteShell>

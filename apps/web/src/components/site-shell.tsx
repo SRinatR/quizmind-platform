@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { adminNavigation, dashboardNavigation, publicNavigation } from '@quizmind/ui';
+import { adminNavigation, dashboardNavigation } from '@quizmind/ui';
 import { LogoutButton } from './logout-button';
 import { usePreferences } from '../lib/preferences';
 
@@ -59,7 +59,7 @@ interface SiteShellProps {
   pathname: string;
   showPersonaSwitcher?: boolean;
   title: string;
-  /** User display name used for avatar initials in topbar */
+  /** User display name used for avatar initials in sidebar footer */
   userDisplayName?: string;
 }
 
@@ -95,6 +95,9 @@ export function SiteShell({
   const { t } = usePreferences();
   const isConnected = apiState.startsWith('Connected');
   const initials = userDisplayName ? getInitials(userDisplayName) : null;
+  const displayLabel = isConnected
+    ? (userDisplayName ?? apiState.replace('Connected \u2014 ', ''))
+    : t.shell.notSignedIn;
 
   return (
     <div className="app-shell">
@@ -174,31 +177,22 @@ export function SiteShell({
           ) : null}
         </nav>
 
-        {/* Sidebar footer */}
+        {/* ── Sidebar account dock ── */}
         <div className="app-sidebar__footer">
-          <div className="app-sidebar__footer-user">
-            {initials ? (
-              <span className="app-sidebar__avatar" aria-hidden="true">
-                {initials}
+          <div className="sidebar-account-dock">
+            <div className="sidebar-account-dock__identity">
+              <div className="sidebar-account-dock__avatar" aria-hidden="true">
+                {initials ?? '?'}
+              </div>
+              <span className="sidebar-account-dock__name" title={displayLabel}>
+                {displayLabel}
               </span>
-            ) : null}
-            <p className="app-session-status" title={apiState}>
-              {isConnected
-                ? (userDisplayName ?? apiState.replace('Connected \u2014 ', ''))
-                : t.shell.notSignedIn}
-            </p>
-          </div>
-          {isSignedIn ? <LogoutButton /> : null}
-          <div className="app-sidebar__public-links">
-            {publicNavigation.slice(0, 5).map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="app-sidebar__public-link"
-              >
-                {item.label}
+            </div>
+            {isSignedIn ? <LogoutButton /> : (
+              <Link href="/auth/login" className="sidebar-account-dock__signin">
+                {t.shell.signIn}
               </Link>
-            ))}
+            )}
           </div>
         </div>
       </aside>
@@ -228,22 +222,14 @@ export function SiteShell({
             </div>
           </div>
 
-          {/* Topbar right cluster */}
-          <div className="app-topbar__right">
-            {isConnected ? (
-              <div
-                className="app-topbar__avatar-btn"
-                title={userDisplayName ?? 'Account'}
-                aria-label="Account"
-              >
-                {initials ?? '?'}
-              </div>
-            ) : (
+          {/* Topbar right — sign in link only when not connected */}
+          {!isConnected ? (
+            <div className="app-topbar__right">
               <Link href="/auth/login" className="btn-ghost" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
                 {t.shell.signIn}
               </Link>
-            )}
-          </div>
+            </div>
+          ) : null}
         </header>
 
         {/* Page content */}

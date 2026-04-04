@@ -1,9 +1,9 @@
 'use client';
 
-import { usePreferences } from '../../../lib/preferences';
+import { usePreferences, type BalanceCurrency } from '../../../lib/preferences';
 
 export function AppearanceSettingsClient({ isSignedIn }: { isSignedIn: boolean }) {
-  const { prefs, t, setTheme, setLanguage, setReducedMotion, setSidebarCollapsed, isSaving } =
+  const { prefs, t, setTheme, setLanguage, setReducedMotion, setSidebarCollapsed, setBalanceCurrency, isSaving } =
     usePreferences();
   const s = t.settings.appearance;
 
@@ -98,6 +98,34 @@ export function AppearanceSettingsClient({ isSignedIn }: { isSignedIn: boolean }
             <span className="pref-option__flag" aria-hidden="true">🇷🇺</span>
             <span className="pref-option__label">{s.langRu}</span>
           </label>
+        </div>
+      </div>
+
+      {/* ── Balance currency ── */}
+      <div className="pref-group">
+        <div className="pref-group__header">
+          <span className="pref-group__title">{s.currencySection}</span>
+          <span className="pref-group__desc">{s.currencyDesc}</span>
+        </div>
+        <div className="pref-option-row">
+          {(['RUB', 'USD', 'EUR'] as BalanceCurrency[]).map((cur) => {
+            const label = cur === 'RUB' ? s.currencyRub : cur === 'USD' ? s.currencyUsd : s.currencyEur;
+            return (
+              <label
+                key={cur}
+                className={`pref-option${(prefs.balanceCurrency ?? 'RUB') === cur ? ' pref-option--active' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="balanceCurrency"
+                  value={cur}
+                  checked={(prefs.balanceCurrency ?? 'RUB') === cur}
+                  onChange={() => setBalanceCurrency(cur)}
+                />
+                <span className="pref-option__label">{label}</span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
