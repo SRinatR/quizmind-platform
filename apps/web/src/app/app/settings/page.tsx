@@ -58,7 +58,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           providerCatalog={providerCatalog}
           providerCredentialInventory={providerCredentialInventory}
           session={session}
-          userProfile={userProfile}
           accessMatrix={accessMatrix}
         />
       ) : (

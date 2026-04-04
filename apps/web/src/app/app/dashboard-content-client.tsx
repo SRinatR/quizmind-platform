@@ -30,6 +30,21 @@ interface BillingRouteResponse<T> {
 
 const PRESET_AMOUNTS_KOPECKS = [10_000, 30_000, 50_000, 100_000, 300_000] as const;
 
+const PRESET_AVATARS = [
+  '🎯', '🦊', '🐻', '🐼', '🦁', '🐸',
+  '🦋', '⚡', '🚀', '🎨', '🧠', '🌈',
+  '🏆', '🎭', '🌟', '🦄',
+];
+
+function makeEmojiAvatarUrl(emoji: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><text y="62" x="8" font-size="64">${emoji}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function isEmojiAvatarUrl(url: string): boolean {
+  return url.startsWith('data:image/svg+xml');
+}
+
 function formatRub(kopecks: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -83,6 +98,8 @@ export function ProfilePageClient({
   const [displayNameDraft, setDisplayNameDraft] = useState(
     userProfile?.displayName ?? session.user.displayName ?? '',
   );
+  const [avatarDraft, setAvatarDraft] = useState(userProfile?.avatarUrl ?? '');
+  const [avatarUrlInput, setAvatarUrlInput] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
@@ -184,7 +201,10 @@ export function ProfilePageClient({
       const res = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ displayName: normalizeInput(displayNameDraft) }),
+        body: JSON.stringify({
+          displayName: normalizeInput(displayNameDraft),
+          avatarUrl: normalizeInput(avatarDraft),
+        }),
       });
       const payload = (await res.json().catch(() => null)) as UserProfileRouteResponse | null;
 
@@ -197,6 +217,8 @@ export function ProfilePageClient({
 
       setProfileState(payload.data);
       setDisplayNameDraft(payload.data.displayName ?? '');
+      setAvatarDraft(payload.data.avatarUrl ?? '');
+      setAvatarUrlInput('');
       setProfileStatus(s.account.savedMessage);
       setIsEditingProfile(false);
       setIsSavingProfile(false);
@@ -205,6 +227,15 @@ export function ProfilePageClient({
       setProfileError(s.errors.unableToSave);
       setIsSavingProfile(false);
     }
+  }
+
+  function handleCancelEdit() {
+    setIsEditingProfile(false);
+    setDisplayNameDraft(profileState?.displayName ?? session.user.displayName ?? '');
+    setAvatarDraft(profileState?.avatarUrl ?? '');
+    setAvatarUrlInput('');
+    setProfileError(null);
+    setProfileStatus(null);
   }
 
   async function handleCreateTopUp() {
@@ -265,6 +296,9 @@ export function ProfilePageClient({
     void refreshBalance();
   }
 
+  // Preview avatar: use draft when editing, otherwise use saved
+  const previewAvatarUrl = isEditingProfile ? avatarDraft : avatarUrl;
+
   return (
     <>
       <Script
@@ -278,36 +312,95 @@ export function ProfilePageClient({
         <article className="panel">
           <span className="micro-label">{tp.profileSection}</span>
 
-          {/* Identity display */}
-          <div className="profile-identity">
-            <div className="profile-avatar" aria-hidden="true">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="" className="profile-avatar__img" />
-              ) : (
-                <span className="profile-avatar__initials">{initials}</span>
-              )}
-            </div>
-            <div>
-              <h2 className="profile-name">{currentDisplayName}</h2>
-              <p className="profile-email">{currentEmail}</p>
-            </div>
-          </div>
-
           {profileStatus ? (
-            <div className="banner banner-info" style={{ marginTop: '12px' }}>{profileStatus}</div>
+            <div className="banner banner-info" style={{ marginTop: '8px' }}>{profileStatus}</div>
           ) : null}
           {profileError ? (
-            <div className="banner banner-error" style={{ marginTop: '12px' }}>{profileError}</div>
+            <div className="banner banner-error" style={{ marginTop: '8px' }}>{profileError}</div>
           ) : null}
 
           {isEditingProfile ? (
             <form
               className="settings-profile-form"
               onSubmit={(e) => void handleProfileSave(e)}
-              style={{ marginTop: '16px' }}
+              style={{ marginTop: '12px' }}
             >
-              <div className="form-grid">
+              {/* ── Avatar editor ── */}
+              <div className="profile-avatar-editor">
+                {/* Current avatar preview */}
+                <div className="profile-avatar-preview">
+                  <div className="profile-avatar-preview__circle" aria-hidden="true">
+                    {avatarDraft ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarDraft}
+                        alt=""
+                        className={isEmojiAvatarUrl(avatarDraft) ? 'profile-avatar-preview__emoji' : 'profile-avatar-preview__img'}
+                        onError={() => setAvatarDraft('')}
+                      />
+                    ) : (
+                      <span className="profile-avatar-preview__initials">{initials}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Emoji picker */}
+                <div className="profile-avatar-picker">
+                  <span className="micro-label" style={{ marginBottom: '8px', display: 'block' }}>
+                    {tp.avatarPickerLabel}
+                  </span>
+                  <div className="avatar-emoji-grid">
+                    {PRESET_AVATARS.map((emoji) => {
+                      const emojiUrl = makeEmojiAvatarUrl(emoji);
+                      return (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className={`avatar-emoji-btn${avatarDraft === emojiUrl ? ' avatar-emoji-btn--active' : ''}`}
+                          onClick={() => {
+                            setAvatarDraft(emojiUrl);
+                            setAvatarUrlInput('');
+                          }}
+                          aria-label={emoji}
+                        >
+                          {emoji}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom URL input */}
+                <label className="form-field" style={{ marginTop: '10px' }}>
+                  <span className="form-field__label">{tp.customAvatarUrl}</span>
+                  <input
+                    type="url"
+                    placeholder={tp.avatarUrlPlaceholder}
+                    value={avatarUrlInput}
+                    onChange={(e) => {
+                      setAvatarUrlInput(e.target.value);
+                      setAvatarDraft(e.target.value);
+                    }}
+                  />
+                </label>
+
+                {avatarDraft ? (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ marginTop: '6px', fontSize: '0.82rem', padding: '5px 12px' }}
+                    onClick={() => {
+                      setAvatarDraft('');
+                      setAvatarUrlInput('');
+                    }}
+                  >
+                    {tp.removeAvatar}
+                  </button>
+                ) : null}
+              </div>
+
+              {/* ── Display name ── */}
+              <div className="form-grid" style={{ marginTop: '16px' }}>
                 <label className="form-field">
                   <span className="form-field__label">{s.account.displayNameLabel}</span>
                   <input
@@ -319,7 +412,8 @@ export function ProfilePageClient({
                   />
                 </label>
               </div>
-              <div className="settings-inline-actions">
+
+              <div className="settings-inline-actions" style={{ marginTop: '12px' }}>
                 <button
                   className="btn-primary"
                   disabled={!isConnectedSession || isSavingProfile}
@@ -330,31 +424,50 @@ export function ProfilePageClient({
                 <button
                   className="btn-ghost"
                   type="button"
-                  onClick={() => {
-                    setIsEditingProfile(false);
-                    setDisplayNameDraft(profileState?.displayName ?? session.user.displayName ?? '');
-                    setProfileError(null);
-                    setProfileStatus(null);
-                  }}
+                  onClick={handleCancelEdit}
                 >
                   {t.common.cancel}
                 </button>
               </div>
             </form>
           ) : (
-            <div className="link-row" style={{ marginTop: '16px' }}>
-              <button
-                className="btn-ghost"
-                type="button"
-                onClick={() => {
-                  setIsEditingProfile(true);
-                  setProfileError(null);
-                  setProfileStatus(null);
-                }}
-              >
-                {tp.editProfile}
-              </button>
-            </div>
+            <>
+              {/* Identity display */}
+              <div className="profile-identity" style={{ marginTop: '12px' }}>
+                <div className="profile-avatar" aria-hidden="true">
+                  {previewAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={previewAvatarUrl}
+                      alt=""
+                      className={isEmojiAvatarUrl(previewAvatarUrl) ? 'profile-avatar__emoji' : 'profile-avatar__img'}
+                    />
+                  ) : (
+                    <span className="profile-avatar__initials">{initials}</span>
+                  )}
+                </div>
+                <div>
+                  <h2 className="profile-name">{currentDisplayName}</h2>
+                  <p className="profile-email">{currentEmail}</p>
+                </div>
+              </div>
+
+              <div className="link-row" style={{ marginTop: '16px' }}>
+                <button
+                  className="btn-ghost"
+                  type="button"
+                  onClick={() => {
+                    setIsEditingProfile(true);
+                    setAvatarDraft(profileState?.avatarUrl ?? '');
+                    setAvatarUrlInput('');
+                    setProfileError(null);
+                    setProfileStatus(null);
+                  }}
+                >
+                  {tp.editProfile}
+                </button>
+              </div>
+            </>
           )}
         </article>
 

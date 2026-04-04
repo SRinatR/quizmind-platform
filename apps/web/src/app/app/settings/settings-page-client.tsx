@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 
 import {
   type AuthSessionsSnapshot,
   type ProviderCatalogSnapshot,
   type ProviderCredentialInventorySnapshot,
   type SessionSnapshot,
-  type UserProfileSnapshot,
 } from '../../../lib/api';
 import { type NavigationAccessMatrixRow } from '../../../features/navigation/access-matrix';
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -17,7 +16,7 @@ import { usePreferences } from '../../../lib/preferences';
 import { AiAccessClient } from './ai-access-client';
 import { AppearanceSettingsClient } from './appearance-settings-client';
 
-type SettingsTab = 'account' | 'security' | 'aiAccess' | 'appearance' | 'accessMatrix';
+type SettingsTab = 'security' | 'aiAccess' | 'appearance' | 'accessMatrix';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
@@ -26,7 +25,6 @@ interface SettingsPageClientProps {
   providerCatalog: ProviderCatalogSnapshot | null;
   providerCredentialInventory: ProviderCredentialInventorySnapshot | null;
   session: SessionSnapshot;
-  userProfile: UserProfileSnapshot | null;
   accessMatrix: NavigationAccessMatrixRow[];
 }
 
@@ -36,17 +34,6 @@ interface LogoutAllRouteResponse {
   error?: { message?: string };
 }
 
-interface UserProfileRouteResponse {
-  ok: boolean;
-  data?: UserProfileSnapshot;
-  error?: { message?: string };
-}
-
-function normalizeProfileInput(value: string): string | null {
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : null;
-}
-
 export function SettingsPageClient({
   authSessions,
   isAdmin,
@@ -54,85 +41,24 @@ export function SettingsPageClient({
   providerCatalog,
   providerCredentialInventory,
   session,
-  userProfile,
   accessMatrix,
 }: SettingsPageClientProps) {
   const router = useRouter();
   const { t } = usePreferences();
   const s = t.settings;
-  const [activeTab, setActiveTab] = useState<SettingsTab>('account');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('security');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [profileState, setProfileState] = useState<UserProfileSnapshot | null>(userProfile);
-  const [profileDraft, setProfileDraft] = useState({
-    displayName: userProfile?.displayName ?? session.user.displayName ?? '',
-    avatarUrl: userProfile?.avatarUrl ?? '',
-    locale: userProfile?.locale ?? '',
-    timezone: userProfile?.timezone ?? '',
-  });
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [sessionItems, setSessionItems] = useState(authSessions?.items ?? []);
   const [isRevokingEverywhere, setIsRevokingEverywhere] = useState(false);
   const [showAccessMatrix, setShowAccessMatrix] = useState(false);
   const [, startNavigation] = useTransition();
 
-  const currentSessionCount = sessionItems.length;
   const currentSession = sessionItems.find((item) => item.current) ?? null;
-  const currentDisplayName = profileState?.displayName || session.user.displayName || 'Your account';
-  const currentEmail = profileState?.email ?? session.user.email;
 
   const blockedAccessRows = accessMatrix.filter((row) => !row.allowed);
   const allowedDashboardRows = accessMatrix.filter((row) => row.scope === 'dashboard' && row.allowed);
   const allowedAdminRows = accessMatrix.filter((row) => row.scope === 'admin' && row.allowed);
-  const activeKeyCount = (providerCredentialInventory?.items ?? []).filter((k) => !k.revokedAt).length;
-
-  async function handleProfileSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setErrorMessage(null);
-
-    if (!isConnectedSession) {
-      setErrorMessage(s.errors.notConnected);
-      return;
-    }
-
-    setStatusMessage(s.account.saving);
-    setIsSavingProfile(true);
-
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          displayName: normalizeProfileInput(profileDraft.displayName),
-          avatarUrl: normalizeProfileInput(profileDraft.avatarUrl),
-          locale: normalizeProfileInput(profileDraft.locale),
-          timezone: normalizeProfileInput(profileDraft.timezone),
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as UserProfileRouteResponse | null;
-
-      if (!response.ok || !payload?.ok || !payload.data) {
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? s.errors.unableToUpdate);
-        setIsSavingProfile(false);
-        return;
-      }
-
-      setProfileState(payload.data);
-      setProfileDraft({
-        displayName: payload.data.displayName ?? '',
-        avatarUrl: payload.data.avatarUrl ?? '',
-        locale: payload.data.locale ?? '',
-        timezone: payload.data.timezone ?? '',
-      });
-      setStatusMessage(s.account.savedMessage);
-      setIsSavingProfile(false);
-    } catch {
-      setStatusMessage(null);
-      setErrorMessage(s.errors.unableToSave);
-      setIsSavingProfile(false);
-    }
-  }
 
   async function handleLogoutAll() {
     setErrorMessage(null);
@@ -163,9 +89,8 @@ export function SettingsPageClient({
   }
 
   const tabs: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
-    { key: 'account',      label: s.tabs.account },
     { key: 'security',     label: s.tabs.security },
-    { key: 'aiAccess',     label: s.tabs.aiAccess },
+    { key: 'aiAccess',     label: s.tabs.aiAccess, adminOnly: true },
     { key: 'appearance',   label: s.tabs.appearance },
     { key: 'accessMatrix', label: s.tabs.accessMatrix, adminOnly: true },
   ];
@@ -179,58 +104,6 @@ export function SettingsPageClient({
       {errorMessage ? (
         <div className="banner banner-error">{errorMessage}</div>
       ) : null}
-
-      {/* ── Stats row ── */}
-      <section className="metrics-grid">
-        <article className="stat-card">
-          <span className="micro-label">{s.stats.email}</span>
-          <p className="stat-value stat-value--sm stat-value--green">{s.stats.active}</p>
-          <p className="metric-copy">{session.user.email}</p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">{s.stats.sessions}</span>
-          <p className="stat-value">{currentSessionCount}</p>
-          <p className="metric-copy">
-            {isConnectedSession ? s.stats.activeSessions : s.stats.signInToView}
-          </p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">{s.stats.aiKeys}</span>
-          {isConnectedSession ? (
-            activeKeyCount > 0 ? (
-              <>
-                <p className="stat-value">{activeKeyCount}</p>
-                <p className="metric-copy">
-                  {activeKeyCount === 1 ? s.stats.personalKeys : s.stats.personalKeysPlural}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="stat-value stat-value--sm">&mdash;</p>
-                <p className="metric-copy">{s.stats.platformManaged}</p>
-              </>
-            )
-          ) : (
-            <>
-              <p className="stat-value stat-value--sm">&mdash;</p>
-              <p className="metric-copy">{s.stats.signInToView}</p>
-            </>
-          )}
-        </article>
-        {isAdmin ? (
-          <article className="stat-card">
-            <span className="micro-label">{s.stats.permissions}</span>
-            <p className="stat-value">{session.permissions.length}</p>
-            <p className="metric-copy">{s.stats.resolvedCapabilities}</p>
-          </article>
-        ) : (
-          <article className="stat-card">
-            <span className="micro-label">{s.stats.account}</span>
-            <p className="stat-value stat-value--sm stat-value--green">{s.stats.active}</p>
-            <p className="metric-copy">{currentDisplayName}</p>
-          </article>
-        )}
-      </section>
 
       {/* ── Tab bar ── */}
       <nav className="settings-tabs" aria-label="Settings sections">
@@ -253,95 +126,6 @@ export function SettingsPageClient({
       </nav>
 
       {/* ══════════════════════════════════════════
-          TAB: Account
-      ══════════════════════════════════════════ */}
-      {activeTab === 'account' ? (
-        <div className="settings-section">
-          <div className="settings-section__header">
-            <h3 className="settings-section__title">{s.account.title}</h3>
-            <p className="settings-section__desc">{s.account.desc}</p>
-          </div>
-
-          <article className="panel settings-card">
-            <div className="settings-card-copy">
-              <span className="micro-label">{s.account.profileLabel}</span>
-              <h2>{currentDisplayName}</h2>
-              <p>{currentEmail}</p>
-            </div>
-
-            {isAdmin ? (
-              <div className="tag-row">
-                {session.principal.systemRoles.map((role) => (
-                  <span className="tag-soft" key={role}>{role}</span>
-                ))}
-              </div>
-            ) : null}
-
-            <form className="settings-profile-form" onSubmit={(event) => void handleProfileSave(event)}>
-              {/* Primary fields */}
-              <div className="form-grid">
-                <label className="form-field">
-                  <span className="form-field__label">{s.account.displayNameLabel}</span>
-                  <input
-                    name="displayName"
-                    onChange={(e) => setProfileDraft((c) => ({ ...c, displayName: e.target.value }))}
-                    placeholder={s.account.displayNamePlaceholder}
-                    type="text"
-                    value={profileDraft.displayName}
-                  />
-                </label>
-                <label className="form-field">
-                  <span className="form-field__label">{s.account.timezoneLabel}</span>
-                  <input
-                    name="timezone"
-                    onChange={(e) => setProfileDraft((c) => ({ ...c, timezone: e.target.value }))}
-                    placeholder={s.account.timezonePlaceholder}
-                    type="text"
-                    value={profileDraft.timezone}
-                  />
-                </label>
-              </div>
-
-              {/* Advanced / optional fields */}
-              <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(31,41,51,0.07)', marginTop: '4px' }}>
-                <span className="micro-label" style={{ opacity: 0.55, display: 'block', marginBottom: '10px' }}>
-                  {s.account.advancedLabel}
-                </span>
-                <div className="form-grid">
-                  <label className="form-field">
-                    <span className="form-field__label">{s.account.avatarUrlLabel}</span>
-                    <input
-                      name="avatarUrl"
-                      onChange={(e) => setProfileDraft((c) => ({ ...c, avatarUrl: e.target.value }))}
-                      placeholder="https://cdn.example.com/avatar.png"
-                      type="url"
-                      value={profileDraft.avatarUrl}
-                    />
-                    <span className="form-field__hint">{s.account.avatarUrlHint}</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="settings-inline-actions">
-                <button
-                  className="btn-primary"
-                  disabled={!isConnectedSession || isSavingProfile}
-                  type="submit"
-                >
-                  {isSavingProfile ? s.account.saving : s.account.saveButton}
-                </button>
-                {!isConnectedSession ? (
-                  <span className="list-muted">{s.account.notSignedInHint}</span>
-                ) : (
-                  <span className="list-muted">{s.account.optionalFieldsHint}</span>
-                )}
-              </div>
-            </form>
-          </article>
-        </div>
-      ) : null}
-
-      {/* ══════════════════════════════════════════
           TAB: Security
       ══════════════════════════════════════════ */}
       {activeTab === 'security' ? (
@@ -352,7 +136,7 @@ export function SettingsPageClient({
           </div>
 
           <section className="settings-layout">
-            {/* Left column: session controls + current session info */}
+            {/* Left column: session controls + change password */}
             <div style={{ display: 'grid', gap: '16px' }}>
               <article className="panel settings-card">
                 <div className="settings-card-copy">
@@ -452,9 +236,9 @@ export function SettingsPageClient({
       ) : null}
 
       {/* ══════════════════════════════════════════
-          TAB: AI Access
+          TAB: AI Access (admin only)
       ══════════════════════════════════════════ */}
-      {activeTab === 'aiAccess' ? (
+      {activeTab === 'aiAccess' && isAdmin ? (
         <div className="settings-section">
           <div className="settings-section__header">
             <h3 className="settings-section__title">{s.aiAccess.title}</h3>

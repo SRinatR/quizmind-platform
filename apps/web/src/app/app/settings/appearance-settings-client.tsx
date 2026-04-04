@@ -3,7 +3,7 @@
 import { usePreferences } from '../../../lib/preferences';
 
 export function AppearanceSettingsClient({ isSignedIn }: { isSignedIn: boolean }) {
-  const { prefs, t, setTheme, setLanguage, setDensity, setReducedMotion, setSidebarCollapsed, isSaving } =
+  const { prefs, t, setTheme, setLanguage, setReducedMotion, setSidebarCollapsed, isSaving } =
     usePreferences();
   const s = t.settings.appearance;
 
@@ -97,52 +97,6 @@ export function AppearanceSettingsClient({ isSignedIn }: { isSignedIn: boolean }
             />
             <span className="pref-option__flag" aria-hidden="true">🇷🇺</span>
             <span className="pref-option__label">{s.langRu}</span>
-          </label>
-        </div>
-      </div>
-
-      {/* ── Density ── */}
-      <div className="pref-group">
-        <div className="pref-group__header">
-          <span className="pref-group__title">{s.densitySection}</span>
-          <span className="pref-group__desc">{s.densityDesc}</span>
-        </div>
-        <div className="pref-option-row">
-          <label className={`pref-option${prefs.density === 'comfortable' ? ' pref-option--active' : ''}`}>
-            <input
-              type="radio"
-              name="density"
-              value="comfortable"
-              checked={prefs.density === 'comfortable'}
-              onChange={() => setDensity('comfortable')}
-            />
-            <span className="pref-option__icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="3" width="12" height="2.5" rx="1" fill="currentColor" opacity=".8"/>
-                <rect x="2" y="6.75" width="12" height="2.5" rx="1" fill="currentColor" opacity=".5"/>
-                <rect x="2" y="10.5" width="12" height="2.5" rx="1" fill="currentColor" opacity=".3"/>
-              </svg>
-            </span>
-            <span className="pref-option__label">{s.densityComfortable}</span>
-          </label>
-
-          <label className={`pref-option${prefs.density === 'compact' ? ' pref-option--active' : ''}`}>
-            <input
-              type="radio"
-              name="density"
-              value="compact"
-              checked={prefs.density === 'compact'}
-              onChange={() => setDensity('compact')}
-            />
-            <span className="pref-option__icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="2" y="2.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".8"/>
-                <rect x="2" y="5.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".6"/>
-                <rect x="2" y="8.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".4"/>
-                <rect x="2" y="11.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".2"/>
-              </svg>
-            </span>
-            <span className="pref-option__label">{s.densityCompact}</span>
           </label>
         </div>
       </div>
