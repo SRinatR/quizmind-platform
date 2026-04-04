@@ -1,11 +1,9 @@
-import { buildAccessContext } from '@quizmind/auth';
-
 import { SiteShell } from '../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../lib/auth-session';
-import { getSession, getUsageSummary, resolvePersona } from '../../lib/api';
+import { getSession, getUserProfile, getWalletBalance, resolvePersona } from '../../lib/api';
 import { isAdminSession } from '../../lib/admin-guard';
-import { getVisibleDashboardSections } from '../../features/navigation/visibility';
-import { DashboardContentClient, DashboardSignInPrompt } from './dashboard-content-client';
+import { ServerPrefsSync } from '../../lib/preferences';
+import { ProfilePageClient, ProfileSignInPrompt } from './dashboard-content-client';
 
 interface AppPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -16,11 +14,16 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
+  const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const usage = await getUsageSummary(persona, accessToken);
-  const context = session ? buildAccessContext(session.principal) : null;
-  const visibleSections = context ? getVisibleDashboardSections(context) : [];
   const isAdmin = session ? isAdminSession(session) : false;
+
+  const [userProfile, walletBalance] = await Promise.all([
+    getUserProfile(accessToken),
+    accessToken ? getWalletBalance(accessToken) : Promise.resolve(null),
+  ]);
+
+  const canManageBilling = Boolean(isConnectedSession && session);
 
   return (
     <SiteShell
@@ -32,17 +35,22 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
       isSignedIn={Boolean(session)}
       pathname="/app"
       showPersonaSwitcher={false}
-      title="Overview"
+      title="Your Profile"
       userDisplayName={session?.user.displayName ?? undefined}
     >
+      {/* Restore server-saved preferences on page load */}
+      <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
+
       {session ? (
-        <DashboardContentClient
+        <ProfilePageClient
+          canManageBilling={canManageBilling}
+          initialBalance={walletBalance}
+          isConnectedSession={isConnectedSession}
           session={session}
-          usage={usage}
-          visibleSections={visibleSections}
+          userProfile={userProfile}
         />
       ) : (
-        <DashboardSignInPrompt />
+        <ProfileSignInPrompt />
       )}
     </SiteShell>
   );

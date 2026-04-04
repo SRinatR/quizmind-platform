@@ -10,17 +10,8 @@ import { usePreferences } from '../lib/preferences';
 const NAV_ICONS: Record<string, ReactNode> = {
   '/app': (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity=".9"/>
-      <rect x="8" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity=".5"/>
-      <rect x="1" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity=".5"/>
-      <rect x="8" y="8" width="5" height="5" rx="1.5" fill="currentColor" opacity=".9"/>
-    </svg>
-  ),
-  '/app/billing': (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <rect x="1" y="3.5" width="12" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.4"/>
-      <path d="M1 6.5h12" stroke="currentColor" strokeWidth="1.4"/>
-      <rect x="3" y="8.5" width="2.5" height="1.2" rx=".6" fill="currentColor" opacity=".65"/>
+      <circle cx="7" cy="5" r="3" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M2 13c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   ),
   '/app/usage': (
@@ -49,9 +40,8 @@ const NAV_ICONS: Record<string, ReactNode> = {
 };
 
 // Maps nav item hrefs to translation keys
-const NAV_LABEL_KEYS: Record<string, 'overview' | 'billing' | 'usage' | 'history' | 'installations' | 'settings'> = {
-  '/app':               'overview',
-  '/app/billing':       'billing',
+const NAV_LABEL_KEYS: Record<string, 'profile' | 'usage' | 'history' | 'installations' | 'settings'> = {
+  '/app':               'profile',
   '/app/usage':         'usage',
   '/app/history':       'history',
   '/app/installations': 'installations',
