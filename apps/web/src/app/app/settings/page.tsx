@@ -1,7 +1,4 @@
-import { buildAccessContext } from '@quizmind/auth';
-
 import { SiteShell } from '../../../components/site-shell';
-import { buildAccessMatrixRows } from '../../../features/navigation/access-matrix';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAuthSessions,
@@ -26,8 +23,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const sessionLabel = session?.user.displayName || session?.user.email;
   const userProfile = await getUserProfile(accessToken);
   const authSessions = await getAuthSessions(accessToken);
-  const context = session ? buildAccessContext(session.principal) : null;
-  const accessMatrix = context ? buildAccessMatrixRows({ context }) : [];
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -42,6 +37,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       showPersonaSwitcher={false}
       title="Settings"
       userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       {/* Restore server-saved preferences on page load */}
       <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
@@ -49,10 +45,8 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       {session ? (
         <SettingsPageClient
           authSessions={authSessions}
-          isAdmin={isAdmin}
           isConnectedSession={isConnectedSession}
           session={session}
-          accessMatrix={accessMatrix}
         />
       ) : (
         <section className="empty-state">

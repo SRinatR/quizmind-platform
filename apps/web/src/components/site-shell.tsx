@@ -61,6 +61,8 @@ interface SiteShellProps {
   title: string;
   /** User display name used for avatar initials in sidebar footer */
   userDisplayName?: string;
+  /** User avatar URL — shown in sidebar dock; falls back to initials */
+  userAvatarUrl?: string;
 }
 
 function isActiveRoute(itemHref: string, pathname: string): boolean {
@@ -91,6 +93,7 @@ export function SiteShell({
   showPersonaSwitcher: _showPersonaSwitcher = true,
   title,
   userDisplayName,
+  userAvatarUrl,
 }: SiteShellProps) {
   const { t } = usePreferences();
   const isConnected = apiState.startsWith('Connected');
@@ -182,7 +185,10 @@ export function SiteShell({
           <div className="sidebar-account-dock">
             <div className="sidebar-account-dock__identity">
               <div className="sidebar-account-dock__avatar" aria-hidden="true">
-                {initials ?? '?'}
+                {userAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={userAvatarUrl} alt="" className="sidebar-account-dock__avatar-img" />
+                ) : (initials ?? '?')}
               </div>
               <span className="sidebar-account-dock__name" title={displayLabel}>
                 {displayLabel}

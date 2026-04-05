@@ -8,19 +8,16 @@ import {
   type AuthSessionsSnapshot,
   type SessionSnapshot,
 } from '../../../lib/api';
-import { type NavigationAccessMatrixRow } from '../../../features/navigation/access-matrix';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { usePreferences } from '../../../lib/preferences';
 import { AppearanceSettingsClient } from './appearance-settings-client';
 
-type SettingsTab = 'security' | 'appearance' | 'accessMatrix';
+type SettingsTab = 'security' | 'appearance';
 
 interface SettingsPageClientProps {
   authSessions: AuthSessionsSnapshot | null;
-  isAdmin: boolean;
   isConnectedSession: boolean;
   session: SessionSnapshot;
-  accessMatrix: NavigationAccessMatrixRow[];
 }
 
 interface LogoutAllRouteResponse {
@@ -31,10 +28,8 @@ interface LogoutAllRouteResponse {
 
 export function SettingsPageClient({
   authSessions,
-  isAdmin,
   isConnectedSession,
   session,
-  accessMatrix,
 }: SettingsPageClientProps) {
   const router = useRouter();
   const { t } = usePreferences();
@@ -44,14 +39,9 @@ export function SettingsPageClient({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [sessionItems, setSessionItems] = useState(authSessions?.items ?? []);
   const [isRevokingEverywhere, setIsRevokingEverywhere] = useState(false);
-  const [showAccessMatrix, setShowAccessMatrix] = useState(false);
   const [, startNavigation] = useTransition();
 
   const currentSession = sessionItems.find((item) => item.current) ?? null;
-
-  const blockedAccessRows = accessMatrix.filter((row) => !row.allowed);
-  const allowedDashboardRows = accessMatrix.filter((row) => row.scope === 'dashboard' && row.allowed);
-  const allowedAdminRows = accessMatrix.filter((row) => row.scope === 'admin' && row.allowed);
 
   async function handleLogoutAll() {
     setErrorMessage(null);
@@ -81,10 +71,9 @@ export function SettingsPageClient({
     }
   }
 
-  const tabs: { key: SettingsTab; label: string; adminOnly?: boolean }[] = [
-    { key: 'security',     label: s.tabs.security },
-    { key: 'appearance',   label: s.tabs.appearance },
-    { key: 'accessMatrix', label: s.tabs.accessMatrix, adminOnly: true },
+  const tabs: { key: SettingsTab; label: string }[] = [
+    { key: 'security',   label: s.tabs.security },
+    { key: 'appearance', label: s.tabs.appearance },
   ];
 
   return (
@@ -99,22 +88,20 @@ export function SettingsPageClient({
 
       {/* ── Tab bar ── */}
       <nav className="settings-tabs" aria-label="Settings sections">
-        {tabs
-          .filter((tab) => !tab.adminOnly || isAdmin)
-          .map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              className={`settings-tab${activeTab === tab.key ? ' settings-tab--active' : ''}`}
-              onClick={() => {
-                setActiveTab(tab.key);
-                setErrorMessage(null);
-                setStatusMessage(null);
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={`settings-tab${activeTab === tab.key ? ' settings-tab--active' : ''}`}
+            onClick={() => {
+              setActiveTab(tab.key);
+              setErrorMessage(null);
+              setStatusMessage(null);
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
       </nav>
 
       {/* ══════════════════════════════════════════
@@ -243,60 +230,6 @@ export function SettingsPageClient({
         </div>
       ) : null}
 
-      {/* ══════════════════════════════════════════
-          TAB: Access Matrix (admin only)
-      ══════════════════════════════════════════ */}
-      {activeTab === 'accessMatrix' && isAdmin ? (
-        <div className="settings-section">
-          <div className="settings-section__header">
-            <h3 className="settings-section__title">{s.accessMatrix.title}</h3>
-            <p className="settings-section__desc">{s.accessMatrix.desc}</p>
-          </div>
-
-          <section className="panel settings-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-              <span className="micro-label">{s.accessMatrix.sectionPermissions}</span>
-              <div className="tag-row">
-                <span className="tag-soft tag-soft--green">
-                  {allowedDashboardRows.length + allowedAdminRows.length} {s.accessMatrix.allowed}
-                </span>
-                {blockedAccessRows.length > 0 ? (
-                  <span className="tag-soft tag-soft--orange">
-                    {blockedAccessRows.length} {s.accessMatrix.blocked}
-                  </span>
-                ) : null}
-                <button
-                  className="btn-ghost"
-                  onClick={() => setShowAccessMatrix((v) => !v)}
-                  style={{ padding: '5px 14px', fontSize: '0.82rem' }}
-                  type="button"
-                >
-                  {showAccessMatrix ? s.accessMatrix.hide : s.accessMatrix.showAll}
-                </button>
-              </div>
-            </div>
-
-            {showAccessMatrix ? (
-              <div className="access-matrix">
-                {accessMatrix.map((row) => (
-                  <div className="access-row" key={`settings-matrix:${row.scope}:${row.id}`}>
-                    <span className={row.allowed ? 'access-row__dot access-row__dot--allowed' : 'access-row__dot access-row__dot--blocked'} />
-                    <span className="access-row__title">{row.title}</span>
-                    <span className="access-row__scope">{row.scope}</span>
-                    {!row.allowed && row.reason ? (
-                      <span className="access-row__reason">{row.reason}</span>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="list-muted" style={{ fontSize: '0.88rem' }}>
-                {s.accessMatrix.inspectHint}
-              </p>
-            )}
-          </section>
-        </div>
-      ) : null}
     </>
   );
 }

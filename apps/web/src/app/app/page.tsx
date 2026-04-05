@@ -30,13 +30,14 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
       apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
       description=""
-      eyebrow="Dashboard"
+      eyebrow="Profile"
       isAdmin={isAdmin}
       isSignedIn={Boolean(session)}
       pathname="/app"
       showPersonaSwitcher={false}
       title="Your Profile"
       userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       {/* Restore server-saved preferences on page load */}
       <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
