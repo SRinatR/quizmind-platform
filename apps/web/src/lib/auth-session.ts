@@ -2,10 +2,15 @@ import 'server-only';
 
 import { REFRESH_TOKEN_LIFETIME_DAYS } from '@quizmind/auth';
 import { type AuthSessionPayload } from '@quizmind/contracts';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 const accessTokenCookieName = 'quizmind_access_token';
 const refreshTokenCookieName = 'quizmind_refresh_token';
+
+// Header set by middleware when it silently refreshes an expired access token.
+// Allows Server Components to use the new token in the same request cycle,
+// before the browser's refreshed cookie arrives on the next request.
+const refreshedTokenHeaderName = 'x-refreshed-access-token';
 
 const baseCookieOptions = {
   httpOnly: true,
@@ -15,6 +20,15 @@ const baseCookieOptions = {
 };
 
 export async function getAccessTokenFromCookies() {
+  // Prefer the token forwarded by middleware during a silent refresh so the
+  // current Server Component render uses the freshly-issued access token
+  // rather than the already-expired (missing) cookie.
+  const headerStore = await headers();
+  const refreshedToken = headerStore.get(refreshedTokenHeaderName);
+  if (refreshedToken) {
+    return refreshedToken;
+  }
+
   const cookieStore = await cookies();
 
   return cookieStore.get(accessTokenCookieName)?.value ?? null;
