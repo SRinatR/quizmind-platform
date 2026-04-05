@@ -15,6 +15,7 @@ import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import {
   type AiProvider,
+  type AiProxyContentBlock,
   type AiProxyRequest,
   type ApiSuccess,
   type ExtensionBootstrapRequestV2,
@@ -92,6 +93,13 @@ function normalizeIncomingUsageEvent(rawEvent: unknown): Partial<UsageEventPaylo
     occurredAt: normalizeOccurredAt(rawEvent.occurredAt ?? rawEvent.ts ?? rawEvent.timestamp),
     ...(Object.keys(payload).length > 0 ? { payload } : {}),
   };
+}
+
+type ExtensionMessageContent = string | AiProxyContentBlock[];
+
+interface ExtensionAiRuntimeMessage {
+  role?: string;
+  content?: ExtensionMessageContent;
 }
 
 interface ExtensionAiRuntimeRequest {
@@ -182,32 +190,62 @@ function buildInstallationRuntimeSession(
   };
 }
 
+function normalizeExtensionMessage(entry: unknown, index: number): AiProxyRequest['messages'][number] {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    throw new BadRequestException(`messages[${index}] must be an object.`);
+  }
+
+  const msg = entry as ExtensionAiRuntimeMessage;
+  const role = typeof msg.role === 'string' ? msg.role.trim() : 'user';
+  const supportedRoles = new Set(['system', 'user', 'assistant', 'tool']);
+
+  if (!supportedRoles.has(role)) {
+    throw new BadRequestException(
+      `messages[${index}].role must be one of "system", "user", "assistant", or "tool".`,
+    );
+  }
+
+  const content = msg.content;
+
+  if (typeof content === 'string') {
+    const trimmed = content.trim();
+    if (!trimmed) throw new BadRequestException(`messages[${index}].content is required.`);
+    return { role: role as AiProxyRequest['messages'][number]['role'], content: trimmed };
+  }
+
+  if (Array.isArray(content)) {
+    if (content.length === 0) throw new BadRequestException(`messages[${index}].content array must not be empty.`);
+    return {
+      role: role as AiProxyRequest['messages'][number]['role'],
+      content: content as AiProxyContentBlock[],
+    };
+  }
+
+  throw new BadRequestException(`messages[${index}].content must be a string or array of content blocks.`);
+}
+
 function normalizeExtensionAiRequest(
   request: ExtensionAiRuntimeRequest | undefined,
   workspaceId: string,
 ): Partial<AiProxyRequest> {
-  const model = readString(request?.model);
-
-  if (!model) {
-    throw new BadRequestException('model is required.');
-  }
-
   if (!Array.isArray(request?.messages) || request?.messages.length === 0) {
     throw new BadRequestException('messages must contain at least one item.');
   }
 
+  const model = readString(request?.model) ?? undefined;
   const provider = readString(request?.provider) as AiProvider | null;
   const useOwnKey = readOptionalBoolean(request?.useOwnKey) ?? readOptionalBoolean(request?.options?.useOwnKey);
   const temperature = readFiniteNumber(request?.options?.temperature ?? request?.temperature);
   const maxTokens = readPositiveInteger(
     request?.options?.max_tokens ?? request?.options?.maxTokens ?? request?.maxTokens,
   );
+  const messages = request.messages.map((entry, index) => normalizeExtensionMessage(entry, index));
 
   return {
     workspaceId,
     ...(provider ? { provider } : {}),
-    model,
-    messages: request.messages as AiProxyRequest['messages'],
+    ...(model ? { model } : {}),
+    messages,
     ...(typeof useOwnKey === 'boolean' ? { useOwnKey } : {}),
     ...(typeof temperature === 'number' ? { temperature } : {}),
     ...(typeof maxTokens === 'number' ? { maxTokens } : {}),

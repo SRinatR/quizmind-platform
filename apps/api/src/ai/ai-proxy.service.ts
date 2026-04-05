@@ -45,11 +45,18 @@ type AiProxyUsage = {
   totalTokens?: number;
 };
 
+type NormalizedMessageContent =
+  | string
+  | Array<
+      | { type: 'text'; text: string }
+      | { type: 'image_url'; image_url: { url: string; detail?: string } }
+    >;
+
 interface NormalizedProxyRequest {
   workspaceId?: string;
   provider?: AiProvider;
-  model: string;
-  messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+  model?: string;
+  messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
   useOwnKey?: boolean;
   temperature?: number;
   maxTokens?: number;
@@ -59,6 +66,7 @@ interface NormalizedProxyRequest {
 interface PreparedProxyInvocation {
   session: CurrentSessionSnapshot;
   request: NormalizedProxyRequest;
+  resolvedModel: string;
   workspaceId: string;
   provider: AiProvider;
   keySource: 'platform' | 'user';
@@ -127,7 +135,65 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
   return normalized;
 }
 
-function normalizeMessages(value: unknown): Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }> {
+function normalizeContentBlock(
+  block: unknown,
+  msgIndex: number,
+  blockIndex: number,
+): { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string; detail?: string } } {
+  if (!block || typeof block !== 'object' || Array.isArray(block)) {
+    throw new BadRequestException(`messages[${msgIndex}].content[${blockIndex}] must be an object.`);
+  }
+
+  const b = block as Record<string, unknown>;
+
+  if (b.type === 'text') {
+    const text = typeof b.text === 'string' ? b.text : '';
+    if (!text.trim()) {
+      throw new BadRequestException(`messages[${msgIndex}].content[${blockIndex}].text is required.`);
+    }
+    return { type: 'text', text: text.trim() };
+  }
+
+  if (b.type === 'image_url') {
+    const imageUrlObj = b.image_url && typeof b.image_url === 'object' && !Array.isArray(b.image_url)
+      ? (b.image_url as Record<string, unknown>)
+      : null;
+    const url = imageUrlObj && typeof imageUrlObj.url === 'string' ? imageUrlObj.url.trim() : '';
+    if (!url) {
+      throw new BadRequestException(`messages[${msgIndex}].content[${blockIndex}].image_url.url is required.`);
+    }
+    const detail = typeof imageUrlObj?.detail === 'string' &&
+      (imageUrlObj.detail === 'auto' || imageUrlObj.detail === 'low' || imageUrlObj.detail === 'high')
+      ? imageUrlObj.detail
+      : undefined;
+    return { type: 'image_url', image_url: { url, ...(detail ? { detail } : {}) } };
+  }
+
+  throw new BadRequestException(
+    `messages[${msgIndex}].content[${blockIndex}].type must be "text" or "image_url".`,
+  );
+}
+
+function normalizeMessageContent(content: unknown, index: number): NormalizedMessageContent {
+  if (typeof content === 'string') {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      throw new BadRequestException(`messages[${index}].content is required.`);
+    }
+    return trimmed;
+  }
+
+  if (Array.isArray(content)) {
+    if (content.length === 0) {
+      throw new BadRequestException(`messages[${index}].content array must not be empty.`);
+    }
+    return content.map((block, blockIndex) => normalizeContentBlock(block, index, blockIndex));
+  }
+
+  throw new BadRequestException(`messages[${index}].content must be a string or an array of content blocks.`);
+}
+
+function normalizeMessages(value: unknown): Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }> {
   if (!Array.isArray(value) || value.length === 0) {
     throw new BadRequestException('messages must contain at least one item.');
   }
@@ -145,12 +211,7 @@ function normalizeMessages(value: unknown): Array<{ role: 'system' | 'user' | 'a
       );
     }
 
-    const content = typeof entry.content === 'string' ? entry.content.trim() : '';
-
-    if (!content) {
-      throw new BadRequestException(`messages[${index}].content is required.`);
-    }
-
+    const content = normalizeMessageContent(entry.content, index);
     const name = typeof entry.name === 'string' && entry.name.trim().length > 0 ? entry.name.trim() : undefined;
 
     return {
@@ -380,7 +441,7 @@ export class AiProxyService {
         invocation.provider === 'openrouter'
           ? await this.invokeOpenRouter({
               apiKey: invocation.apiKey,
-              model: invocation.request.model,
+              model: invocation.resolvedModel,
               messages: invocation.request.messages,
               temperature: invocation.request.temperature,
               maxTokens: invocation.request.maxTokens,
@@ -388,7 +449,7 @@ export class AiProxyService {
           : invocation.provider === 'openai'
             ? await this.invokeOpenAi({
                 apiKey: invocation.apiKey,
-                model: invocation.request.model,
+                model: invocation.resolvedModel,
                 messages: invocation.request.messages,
                 temperature: invocation.request.temperature,
                 maxTokens: invocation.request.maxTokens,
@@ -396,7 +457,7 @@ export class AiProxyService {
             : invocation.provider === 'polza'
               ? await this.invokePolza({
                   apiKey: invocation.apiKey,
-                  model: invocation.request.model,
+                  model: invocation.resolvedModel,
                   messages: invocation.request.messages,
                   temperature: invocation.request.temperature,
                   maxTokens: invocation.request.maxTokens,
@@ -417,7 +478,7 @@ export class AiProxyService {
         requestId: invocation.requestId,
         workspaceId: invocation.workspaceId,
         provider: invocation.provider,
-        model: typeof upstreamResponse.model === 'string' ? upstreamResponse.model : invocation.request.model,
+        model: typeof upstreamResponse.model === 'string' ? upstreamResponse.model : invocation.resolvedModel,
         keySource: invocation.keySource,
         ...(usage ? { usage } : {}),
         quota: quotaSnapshot,
@@ -504,7 +565,7 @@ export class AiProxyService {
         invocation.provider === 'openrouter'
           ? await this.invokeOpenRouterStream({
               apiKey: invocation.apiKey,
-              model: invocation.request.model,
+              model: invocation.resolvedModel,
               messages: invocation.request.messages,
               temperature: invocation.request.temperature,
               maxTokens: invocation.request.maxTokens,
@@ -512,7 +573,7 @@ export class AiProxyService {
           : invocation.provider === 'openai'
             ? await this.invokeOpenAiStream({
                 apiKey: invocation.apiKey,
-                model: invocation.request.model,
+                model: invocation.resolvedModel,
                 messages: invocation.request.messages,
                 temperature: invocation.request.temperature,
                 maxTokens: invocation.request.maxTokens,
@@ -520,7 +581,7 @@ export class AiProxyService {
             : invocation.provider === 'polza'
               ? await this.invokePolzaStream({
                   apiKey: invocation.apiKey,
-                  model: invocation.request.model,
+                  model: invocation.resolvedModel,
                   messages: invocation.request.messages,
                   temperature: invocation.request.temperature,
                   maxTokens: invocation.request.maxTokens,
@@ -534,14 +595,14 @@ export class AiProxyService {
       const completion = this.consumeOpenRouterStream({
         invocation,
         stream: inspectionStream,
-        fallbackModel: invocation.request.model,
+        fallbackModel: invocation.resolvedModel,
       });
 
       return {
         requestId: invocation.requestId,
         workspaceId: invocation.workspaceId,
         provider: invocation.provider,
-        model: invocation.request.model,
+        model: invocation.resolvedModel,
         keySource: invocation.keySource,
         contentType: upstream.contentType,
         stream: clientStream,
@@ -574,17 +635,25 @@ export class AiProxyService {
       throw new ForbiddenException(`Provider "${provider}" is not enabled by the current AI policy.`);
     }
 
-    const selectedModel = catalog.models.find((model) => model.modelId === normalizedRequest.model);
+    const resolvedModel = normalizedRequest.model ?? catalog.defaultModel;
+
+    if (!resolvedModel) {
+      throw new ForbiddenException(
+        'No model specified and no default model is configured in the AI provider policy.',
+      );
+    }
+
+    const selectedModel = catalog.models.find((model) => model.modelId === resolvedModel);
 
     if (!selectedModel) {
       throw new ForbiddenException(
-        `Model "${normalizedRequest.model}" is not available for the current plan and AI provider policy.`,
+        `Model "${resolvedModel}" is not available for the current plan and AI provider policy.`,
       );
     }
 
     if (selectedModel.provider !== provider) {
       throw new ForbiddenException(
-        `Model "${normalizedRequest.model}" is not available for provider "${provider}" under the current AI policy.`,
+        `Model "${resolvedModel}" is not available for provider "${provider}" under the current AI policy.`,
       );
     }
 
@@ -640,7 +709,7 @@ export class AiProxyService {
       workspaceId: resolvedWorkspaceId,
       policy,
       requestId,
-      model: normalizedRequest.model,
+      model: resolvedModel,
       requestedUseOwnKey: normalizedRequest.useOwnKey,
     });
     const keySource = keyMaterial.keySource;
@@ -667,6 +736,7 @@ export class AiProxyService {
     const invocation: PreparedProxyInvocation = {
       session,
       request: normalizedRequest,
+      resolvedModel,
       workspaceId: resolvedWorkspaceId,
       provider,
       keySource,
@@ -945,7 +1015,10 @@ export class AiProxyService {
       typeof providerValue === 'string' && providerValue.trim().length > 0
         ? (providerValue.trim() as AiProvider)
         : undefined;
-    const model = readRequiredString(typeof request.model === 'string' ? request.model : undefined, 'model');
+    const model =
+      typeof request.model === 'string' && request.model.trim().length > 0
+        ? request.model.trim()
+        : undefined;
     const messages = normalizeMessages(request.messages);
     const temperature = readNumber(request.temperature, 'temperature');
     const maxTokens = readInteger(request.maxTokens, 'maxTokens');
@@ -1055,7 +1128,7 @@ export class AiProxyService {
   private async invokeOpenRouter(input: {
     apiKey: string;
     model: string;
-    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
     temperature?: number;
     maxTokens?: number;
   }): Promise<OpenRouterResponsePayload> {
@@ -1101,7 +1174,7 @@ export class AiProxyService {
   private async invokeOpenAi(input: {
     apiKey: string;
     model: string;
-    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
     temperature?: number;
     maxTokens?: number;
   }): Promise<OpenRouterResponsePayload> {
@@ -1145,7 +1218,7 @@ export class AiProxyService {
   private async invokePolza(input: {
     apiKey: string;
     model: string;
-    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
     temperature?: number;
     maxTokens?: number;
   }): Promise<OpenRouterResponsePayload> {
@@ -1189,7 +1262,7 @@ export class AiProxyService {
   private async invokeOpenRouterStream(input: {
     apiKey: string;
     model: string;
-    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
     temperature?: number;
     maxTokens?: number;
   }): Promise<OpenRouterStreamInvocationResult> {
@@ -1248,7 +1321,7 @@ export class AiProxyService {
   private async invokeOpenAiStream(input: {
     apiKey: string;
     model: string;
-    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
     temperature?: number;
     maxTokens?: number;
   }): Promise<OpenRouterStreamInvocationResult> {
@@ -1305,7 +1378,7 @@ export class AiProxyService {
   private async invokePolzaStream(input: {
     apiKey: string;
     model: string;
-    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string }>;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
     temperature?: number;
     maxTokens?: number;
   }): Promise<OpenRouterStreamInvocationResult> {
@@ -1491,7 +1564,7 @@ export class AiProxyService {
       userId: input.invocation.session.user.id,
       requestId: input.invocation.requestId,
       provider: input.invocation.provider,
-      model: input.invocation.request.model,
+      model: input.invocation.resolvedModel,
       keySource: input.invocation.keySource,
       messageCount: input.invocation.request.messages.length,
       usage: input.usage,
@@ -1522,7 +1595,7 @@ export class AiProxyService {
         userId: input.invocation.session.user.id,
         requestId: input.invocation.requestId,
         provider: input.invocation.provider,
-        model: input.invocation.request.model,
+        model: input.invocation.resolvedModel,
         keySource: input.invocation.keySource,
         messageCount: input.invocation.request.messages.length,
         status: input.status,

@@ -1279,21 +1279,52 @@ export interface UserApiKeyTestResult {
 
 export type AiProxyMessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
+export interface AiProxyTextContentBlock {
+  type: 'text';
+  text: string;
+}
+
+export interface AiProxyImageContentBlock {
+  type: 'image_url';
+  image_url: {
+    url: string;
+    detail?: 'auto' | 'low' | 'high';
+  };
+}
+
+export type AiProxyContentBlock = AiProxyTextContentBlock | AiProxyImageContentBlock;
+
 export interface AiProxyMessage {
   role: AiProxyMessageRole;
-  content: string;
+  content: string | AiProxyContentBlock[];
   name?: string;
 }
 
 export interface AiProxyRequest {
   workspaceId?: string;
   provider?: AiProvider;
-  model: string;
+  model?: string;
   messages: AiProxyMessage[];
   useOwnKey?: boolean;
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+}
+
+export interface ExtensionFileUploadAnswerResult {
+  id: string;
+  model: string;
+  provider: AiProvider;
+  keySource: 'platform' | 'user';
+  choices: unknown[];
+  usage?: unknown;
+  quota?: unknown;
+  fileInfo: {
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    contentType: 'text' | 'image';
+  };
 }
 
 export interface AiModelsCatalogPayload {

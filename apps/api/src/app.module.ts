@@ -19,6 +19,7 @@ import { PrismaService } from './database/prisma.service';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import { ExtensionControlController } from './extension/extension-control.controller';
 import { ExtensionControlService } from './extension/extension-control.service';
+import { ExtensionFileUploadController } from './extension/extension-file-upload.controller';
 import { ExtensionEventRepository } from './extension/extension-event.repository';
 import { ExtensionInstallationRepository } from './extension/extension-installation.repository';
 import { ExtensionInstallationSessionRepository } from './extension/extension-installation-session.repository';
@@ -50,6 +51,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     WalletController,
     PlatformController,
     ExtensionControlController,
+    ExtensionFileUploadController,
     ProviderCredentialController,
     AiProxyController,
   ],
