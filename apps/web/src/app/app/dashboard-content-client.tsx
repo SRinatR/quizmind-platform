@@ -254,12 +254,43 @@ export function ProfilePageClient({
     setIsSavingProfile(true);
 
     try {
+      // Resolve the final avatar URL.
+      // - empty string / regular URL → use directly
+      // - SVG data URL (emoji) → use directly (tiny, < 2048 chars)
+      // - JPEG/PNG data URL (device upload) → upload to /api/user/avatar first, get short URL
+      let resolvedAvatarUrl: string | null = normalizeInput(avatarDraft);
+      if (
+        resolvedAvatarUrl !== null &&
+        resolvedAvatarUrl.startsWith('data:image/') &&
+        !resolvedAvatarUrl.startsWith('data:image/svg+xml')
+      ) {
+        const uploadRes = await fetch('/api/user/avatar', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ dataUrl: resolvedAvatarUrl }),
+        });
+        const uploadPayload = (await uploadRes.json().catch(() => null)) as
+          | { ok: true; url: string }
+          | { ok: false; error: { message?: string } }
+          | null;
+        if (!uploadRes.ok || !uploadPayload?.ok) {
+          setProfileStatus(null);
+          setProfileError(
+            (uploadPayload as { ok: false; error: { message?: string } } | null)?.error?.message ??
+            s.errors.unableToSave,
+          );
+          setIsSavingProfile(false);
+          return;
+        }
+        resolvedAvatarUrl = (uploadPayload as { ok: true; url: string }).url;
+      }
+
       const res = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           displayName: normalizeInput(displayNameDraft),
-          avatarUrl: normalizeInput(avatarDraft),
+          avatarUrl: resolvedAvatarUrl,
         }),
       });
       const payload = (await res.json().catch(() => null)) as UserProfileRouteResponse | null;
