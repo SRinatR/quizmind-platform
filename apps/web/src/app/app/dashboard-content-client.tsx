@@ -2,11 +2,13 @@
 
 import Script from 'next/script';
 import Link from 'next/link';
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { type WalletBalanceSnapshot, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
 import type { SessionSnapshot, UserProfileSnapshot } from '../../lib/api';
+import type { ExchangeRateSnapshot } from '../../lib/exchange-rates';
 import { usePreferences } from '../../lib/preferences';
+import { useShellProfile } from '../../lib/shell-profile-context';
 
 interface ProfilePageClientProps {
   canManageBilling: boolean;
@@ -14,6 +16,7 @@ interface ProfilePageClientProps {
   isConnectedSession: boolean;
   session: SessionSnapshot;
   userProfile: UserProfileSnapshot | null;
+  exchangeRates: ExchangeRateSnapshot | null;
 }
 
 interface UserProfileRouteResponse {
@@ -30,12 +33,56 @@ interface BillingRouteResponse<T> {
 
 const PRESET_AMOUNTS_KOPECKS = [10_000, 30_000, 50_000, 100_000, 300_000] as const;
 
-function formatRub(kopecks: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'RUB',
-    maximumFractionDigits: 0,
-  }).format(kopecks / 100);
+const PRESET_AVATARS = [
+  '🎯', '🦊', '🐻', '🐼', '🦁', '🐸',
+  '🦋', '⚡', '🚀', '🎨', '🧠', '🌈',
+  '🏆', '🎭', '🌟', '🦄',
+];
+
+const AVATAR_SIZE = 256;
+
+function makeEmojiAvatarUrl(emoji: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><text y="62" x="8" font-size="64">${emoji}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function isEmojiAvatarUrl(url: string): boolean {
+  return url.startsWith('data:image/svg+xml');
+}
+
+function formatBalance(
+  kopecks: number,
+  currency: 'RUB' | 'USD' | 'EUR' = 'RUB',
+  rates: ExchangeRateSnapshot | null = null,
+): string {
+  const rub = kopecks / 100;
+  if (currency === 'RUB' || !rates) {
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(rub);
+  }
+  const converted = rub / rates[currency];
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(converted);
+}
+
+function resizeAvatarFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = Math.floor((img.naturalWidth - side) / 2);
+      const sy = Math.floor((img.naturalHeight - side) / 2);
+      const canvas = document.createElement('canvas');
+      canvas.width = AVATAR_SIZE;
+      canvas.height = AVATAR_SIZE;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas unavailable')); return; }
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+    img.src = url;
+  });
 }
 
 function normalizeInput(value: string): string | null {
@@ -71,8 +118,10 @@ export function ProfilePageClient({
   isConnectedSession,
   session,
   userProfile,
+  exchangeRates,
 }: ProfilePageClientProps) {
-  const { t } = usePreferences();
+  const { t, prefs } = usePreferences();
+  const { updateShellProfile } = useShellProfile();
   const s = t.settings;
   const tb = t.billing;
   const tp = t.profile;
@@ -83,9 +132,11 @@ export function ProfilePageClient({
   const [displayNameDraft, setDisplayNameDraft] = useState(
     userProfile?.displayName ?? session.user.displayName ?? '',
   );
+  const [avatarDraft, setAvatarDraft] = useState(userProfile?.avatarUrl ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Balance state ──
   const [balance, setBalance] = useState<WalletBalanceSnapshot | null>(initialBalance);
@@ -168,6 +219,30 @@ export function ProfilePageClient({
     }
   }, []);
 
+  // ── Avatar file upload (canvas resize → JPEG 256×256, ~20–50 KB) ──
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please select an image file (JPEG, PNG, WebP, etc.).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setProfileError('Image is too large. Please choose a file under 10 MB.');
+      return;
+    }
+
+    try {
+      const dataUrl = await resizeAvatarFile(file);
+      setAvatarDraft(dataUrl);
+      setProfileError(null);
+    } catch {
+      setProfileError('Could not process the image. Please try a different file.');
+    }
+  }
+
   async function handleProfileSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setProfileError(null);
@@ -181,10 +256,44 @@ export function ProfilePageClient({
     setIsSavingProfile(true);
 
     try {
+      // Resolve the final avatar URL.
+      // - empty string / regular URL → use directly
+      // - SVG data URL (emoji) → use directly (tiny, < 2048 chars)
+      // - JPEG/PNG data URL (device upload) → upload to /api/user/avatar first, get short URL
+      let resolvedAvatarUrl: string | null = normalizeInput(avatarDraft);
+      if (
+        resolvedAvatarUrl !== null &&
+        resolvedAvatarUrl.startsWith('data:image/') &&
+        !resolvedAvatarUrl.startsWith('data:image/svg+xml')
+      ) {
+        const uploadRes = await fetch('/api/user/avatar', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ dataUrl: resolvedAvatarUrl }),
+        });
+        const uploadPayload = (await uploadRes.json().catch(() => null)) as
+          | { ok: true; url: string }
+          | { ok: false; error: { message?: string } }
+          | null;
+        if (!uploadRes.ok || !uploadPayload?.ok) {
+          setProfileStatus(null);
+          setProfileError(
+            (uploadPayload as { ok: false; error: { message?: string } } | null)?.error?.message ??
+            s.errors.unableToSave,
+          );
+          setIsSavingProfile(false);
+          return;
+        }
+        resolvedAvatarUrl = (uploadPayload as { ok: true; url: string }).url;
+      }
+
       const res = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ displayName: normalizeInput(displayNameDraft) }),
+        body: JSON.stringify({
+          displayName: normalizeInput(displayNameDraft),
+          avatarUrl: resolvedAvatarUrl,
+        }),
       });
       const payload = (await res.json().catch(() => null)) as UserProfileRouteResponse | null;
 
@@ -197,6 +306,8 @@ export function ProfilePageClient({
 
       setProfileState(payload.data);
       setDisplayNameDraft(payload.data.displayName ?? '');
+      setAvatarDraft(payload.data.avatarUrl ?? '');
+      updateShellProfile(payload.data.displayName, payload.data.avatarUrl);
       setProfileStatus(s.account.savedMessage);
       setIsEditingProfile(false);
       setIsSavingProfile(false);
@@ -205,6 +316,14 @@ export function ProfilePageClient({
       setProfileError(s.errors.unableToSave);
       setIsSavingProfile(false);
     }
+  }
+
+  function handleCancelEdit() {
+    setIsEditingProfile(false);
+    setDisplayNameDraft(profileState?.displayName ?? session.user.displayName ?? '');
+    setAvatarDraft(profileState?.avatarUrl ?? '');
+    setProfileError(null);
+    setProfileStatus(null);
   }
 
   async function handleCreateTopUp() {
@@ -265,6 +384,8 @@ export function ProfilePageClient({
     void refreshBalance();
   }
 
+  const previewAvatarUrl = isEditingProfile ? avatarDraft : avatarUrl;
+
   return (
     <>
       <Script
@@ -273,41 +394,103 @@ export function ProfilePageClient({
         onLoad={() => setScriptLoaded(true)}
       />
 
+      {/* Hidden file input for avatar upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => void handleFileChange(e)}
+        aria-hidden="true"
+      />
+
       <section className="split-grid">
         {/* ── Block 1: Profile ── */}
         <article className="panel">
           <span className="micro-label">{tp.profileSection}</span>
 
-          {/* Identity display */}
-          <div className="profile-identity">
-            <div className="profile-avatar" aria-hidden="true">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="" className="profile-avatar__img" />
-              ) : (
-                <span className="profile-avatar__initials">{initials}</span>
-              )}
-            </div>
-            <div>
-              <h2 className="profile-name">{currentDisplayName}</h2>
-              <p className="profile-email">{currentEmail}</p>
-            </div>
-          </div>
-
           {profileStatus ? (
-            <div className="banner banner-info" style={{ marginTop: '12px' }}>{profileStatus}</div>
+            <div className="banner banner-info" style={{ marginTop: '8px' }}>{profileStatus}</div>
           ) : null}
           {profileError ? (
-            <div className="banner banner-error" style={{ marginTop: '12px' }}>{profileError}</div>
+            <div className="banner banner-error" style={{ marginTop: '8px' }}>{profileError}</div>
           ) : null}
 
           {isEditingProfile ? (
             <form
               className="settings-profile-form"
               onSubmit={(e) => void handleProfileSave(e)}
-              style={{ marginTop: '16px' }}
+              style={{ marginTop: '12px' }}
             >
-              <div className="form-grid">
+              {/* ── Avatar editor ── */}
+              <div className="profile-avatar-editor">
+                {/* Preview */}
+                <div className="profile-avatar-preview">
+                  <div className="profile-avatar-preview__circle" aria-hidden="true">
+                    {avatarDraft ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarDraft}
+                        alt=""
+                        className={isEmojiAvatarUrl(avatarDraft) ? 'profile-avatar-preview__emoji' : 'profile-avatar-preview__img'}
+                        onError={() => setAvatarDraft('')}
+                      />
+                    ) : (
+                      <span className="profile-avatar-preview__initials">{initials}</span>
+                    )}
+                  </div>
+                  <div className="profile-avatar-upload-btn-wrap">
+                    <button
+                      type="button"
+                      className="avatar-upload-btn"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <path d="M7 1v8M4 4l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                      {tp.uploadAvatar}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Emoji picker */}
+                <div className="profile-avatar-picker">
+                  <span className="micro-label" style={{ marginBottom: '8px', display: 'block' }}>
+                    {tp.avatarPickerLabel}
+                  </span>
+                  <div className="avatar-emoji-grid">
+                    {PRESET_AVATARS.map((emoji) => {
+                      const emojiUrl = makeEmojiAvatarUrl(emoji);
+                      return (
+                        <button
+                          key={emoji}
+                          type="button"
+                          className={`avatar-emoji-btn${avatarDraft === emojiUrl ? ' avatar-emoji-btn--active' : ''}`}
+                          onClick={() => setAvatarDraft(emojiUrl)}
+                          aria-label={emoji}
+                        >
+                          {emoji}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {avatarDraft ? (
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    style={{ marginTop: '2px', fontSize: '0.82rem', padding: '5px 12px' }}
+                    onClick={() => setAvatarDraft('')}
+                  >
+                    {tp.removeAvatar}
+                  </button>
+                ) : null}
+              </div>
+
+              {/* ── Display name ── */}
+              <div className="form-grid" style={{ marginTop: '16px' }}>
                 <label className="form-field">
                   <span className="form-field__label">{s.account.displayNameLabel}</span>
                   <input
@@ -319,7 +502,8 @@ export function ProfilePageClient({
                   />
                 </label>
               </div>
-              <div className="settings-inline-actions">
+
+              <div className="settings-inline-actions" style={{ marginTop: '12px' }}>
                 <button
                   className="btn-primary"
                   disabled={!isConnectedSession || isSavingProfile}
@@ -330,31 +514,49 @@ export function ProfilePageClient({
                 <button
                   className="btn-ghost"
                   type="button"
-                  onClick={() => {
-                    setIsEditingProfile(false);
-                    setDisplayNameDraft(profileState?.displayName ?? session.user.displayName ?? '');
-                    setProfileError(null);
-                    setProfileStatus(null);
-                  }}
+                  onClick={handleCancelEdit}
                 >
                   {t.common.cancel}
                 </button>
               </div>
             </form>
           ) : (
-            <div className="link-row" style={{ marginTop: '16px' }}>
-              <button
-                className="btn-ghost"
-                type="button"
-                onClick={() => {
-                  setIsEditingProfile(true);
-                  setProfileError(null);
-                  setProfileStatus(null);
-                }}
-              >
-                {tp.editProfile}
-              </button>
-            </div>
+            <>
+              {/* Identity display */}
+              <div className="profile-identity" style={{ marginTop: '12px' }}>
+                <div className="profile-avatar" aria-hidden="true">
+                  {previewAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={previewAvatarUrl}
+                      alt=""
+                      className={isEmojiAvatarUrl(previewAvatarUrl) ? 'profile-avatar__emoji' : 'profile-avatar__img'}
+                    />
+                  ) : (
+                    <span className="profile-avatar__initials">{initials}</span>
+                  )}
+                </div>
+                <div>
+                  <h2 className="profile-name">{currentDisplayName}</h2>
+                  <p className="profile-email">{currentEmail}</p>
+                </div>
+              </div>
+
+              <div className="link-row" style={{ marginTop: '16px' }}>
+                <button
+                  className="btn-ghost"
+                  type="button"
+                  onClick={() => {
+                    setIsEditingProfile(true);
+                    setAvatarDraft(profileState?.avatarUrl ?? '');
+                    setProfileError(null);
+                    setProfileStatus(null);
+                  }}
+                >
+                  {tp.editProfile}
+                </button>
+              </div>
+            </>
           )}
         </article>
 
@@ -366,7 +568,7 @@ export function ProfilePageClient({
           </div>
 
           <div className="wallet-balance-amount">
-            {balance ? formatRub(balance.balanceKopecks) : '\u2014'}
+            {formatBalance(balance?.balanceKopecks ?? 0, prefs.balanceDisplayCurrency, exchangeRates)}
           </div>
           <p className="wallet-balance-currency">{tp.balanceHint}</p>
 
@@ -376,7 +578,7 @@ export function ProfilePageClient({
               onClick={handleOpenModal}
               type="button"
             >
-              {tb.addFunds}
+              {tb.addFundsBtn}
             </button>
           ) : (
             <p className="list-muted">
@@ -439,7 +641,7 @@ export function ProfilePageClient({
                           setSelectedKopecks(amount);
                         }}
                       >
-                        {formatRub(amount)}
+                        {formatBalance(amount)}
                       </button>
                     ))}
                     <button
@@ -479,7 +681,7 @@ export function ProfilePageClient({
 
                 <div className="wallet-pay-summary">
                   <span>{tb.total}</span>
-                  <strong>{customAmountValid ? formatRub(effectiveKopecks) : '\u2014'}</strong>
+                  <strong>{customAmountValid ? formatBalance(effectiveKopecks) : '\u2014'}</strong>
                 </div>
 
                 <button

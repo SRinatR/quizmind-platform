@@ -3,6 +3,7 @@ import { getAccessTokenFromCookies } from '../../lib/auth-session';
 import { getSession, getUserProfile, getWalletBalance, resolvePersona } from '../../lib/api';
 import { isAdminSession } from '../../lib/admin-guard';
 import { ServerPrefsSync } from '../../lib/preferences';
+import { getExchangeRates } from '../../lib/exchange-rates';
 import { ProfilePageClient, ProfileSignInPrompt } from './dashboard-content-client';
 
 interface AppPageProps {
@@ -18,9 +19,10 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
   const sessionLabel = session?.user.displayName || session?.user.email;
   const isAdmin = session ? isAdminSession(session) : false;
 
-  const [userProfile, walletBalance] = await Promise.all([
+  const [userProfile, walletBalance, exchangeRates] = await Promise.all([
     getUserProfile(accessToken),
     accessToken ? getWalletBalance(accessToken) : Promise.resolve(null),
+    getExchangeRates(),
   ]);
 
   const canManageBilling = Boolean(isConnectedSession && session);
@@ -30,13 +32,14 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
       apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
       description=""
-      eyebrow="Dashboard"
+      eyebrow="Profile"
       isAdmin={isAdmin}
       isSignedIn={Boolean(session)}
       pathname="/app"
       showPersonaSwitcher={false}
       title="Your Profile"
       userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       {/* Restore server-saved preferences on page load */}
       <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
@@ -48,6 +51,7 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
           isConnectedSession={isConnectedSession}
           session={session}
           userProfile={userProfile}
+          exchangeRates={exchangeRates}
         />
       ) : (
         <ProfileSignInPrompt />

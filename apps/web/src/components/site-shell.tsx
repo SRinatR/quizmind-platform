@@ -1,10 +1,11 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { adminNavigation, dashboardNavigation, publicNavigation } from '@quizmind/ui';
+import { adminNavigation, dashboardNavigation } from '@quizmind/ui';
 import { LogoutButton } from './logout-button';
 import { usePreferences } from '../lib/preferences';
+import { ShellProfileContext } from '../lib/shell-profile-context';
 
 // Inline SVG icons for nav items — zero runtime dependency
 const NAV_ICONS: Record<string, ReactNode> = {
@@ -59,8 +60,10 @@ interface SiteShellProps {
   pathname: string;
   showPersonaSwitcher?: boolean;
   title: string;
-  /** User display name used for avatar initials in topbar */
+  /** User display name used for avatar initials in sidebar footer */
   userDisplayName?: string;
+  /** User avatar URL — shown in sidebar dock; falls back to initials */
+  userAvatarUrl?: string;
 }
 
 function isActiveRoute(itemHref: string, pathname: string): boolean {
@@ -91,10 +94,28 @@ export function SiteShell({
   showPersonaSwitcher: _showPersonaSwitcher = true,
   title,
   userDisplayName,
+  userAvatarUrl,
 }: SiteShellProps) {
   const { t } = usePreferences();
   const isConnected = apiState.startsWith('Connected');
-  const initials = userDisplayName ? getInitials(userDisplayName) : null;
+
+  // Dock identity — initialized from server props, updated reactively after profile save
+  const [dockName, setDockName] = useState<string | undefined>(userDisplayName);
+  const [dockAvatar, setDockAvatar] = useState<string | undefined>(userAvatarUrl);
+
+  const updateShellProfile = useCallback(
+    (name: string | null | undefined, avatar: string | null | undefined) => {
+      if (name !== undefined) setDockName(name ?? undefined);
+      if (avatar !== undefined) setDockAvatar(avatar ?? undefined);
+    },
+    [],
+  );
+  const shellProfileCtx = useMemo(() => ({ updateShellProfile }), [updateShellProfile]);
+
+  const initials = dockName ? getInitials(dockName) : null;
+  const displayLabel = isConnected
+    ? (dockName ?? apiState.replace('Connected \u2014 ', ''))
+    : t.shell.notSignedIn;
 
   return (
     <div className="app-shell">
@@ -174,31 +195,25 @@ export function SiteShell({
           ) : null}
         </nav>
 
-        {/* Sidebar footer */}
+        {/* ── Sidebar account dock ── */}
         <div className="app-sidebar__footer">
-          <div className="app-sidebar__footer-user">
-            {initials ? (
-              <span className="app-sidebar__avatar" aria-hidden="true">
-                {initials}
+          <div className="sidebar-account-dock">
+            <div className="sidebar-account-dock__identity">
+              <div className="sidebar-account-dock__avatar" aria-hidden="true">
+                {dockAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={dockAvatar} alt="" className="sidebar-account-dock__avatar-img" />
+                ) : (initials ?? '?')}
+              </div>
+              <span className="sidebar-account-dock__name" title={displayLabel}>
+                {displayLabel}
               </span>
-            ) : null}
-            <p className="app-session-status" title={apiState}>
-              {isConnected
-                ? (userDisplayName ?? apiState.replace('Connected \u2014 ', ''))
-                : t.shell.notSignedIn}
-            </p>
-          </div>
-          {isSignedIn ? <LogoutButton /> : null}
-          <div className="app-sidebar__public-links">
-            {publicNavigation.slice(0, 5).map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="app-sidebar__public-link"
-              >
-                {item.label}
+            </div>
+            {isSignedIn ? <LogoutButton /> : (
+              <Link href="/auth/login" className="sidebar-account-dock__signin">
+                {t.shell.signIn}
               </Link>
-            ))}
+            )}
           </div>
         </div>
       </aside>
@@ -228,22 +243,14 @@ export function SiteShell({
             </div>
           </div>
 
-          {/* Topbar right cluster */}
-          <div className="app-topbar__right">
-            {isConnected ? (
-              <div
-                className="app-topbar__avatar-btn"
-                title={userDisplayName ?? 'Account'}
-                aria-label="Account"
-              >
-                {initials ?? '?'}
-              </div>
-            ) : (
+          {/* Topbar right — sign in link only when not connected */}
+          {!isConnected ? (
+            <div className="app-topbar__right">
               <Link href="/auth/login" className="btn-ghost" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
                 {t.shell.signIn}
               </Link>
-            )}
-          </div>
+            </div>
+          ) : null}
         </header>
 
         {/* Page content */}
@@ -251,7 +258,11 @@ export function SiteShell({
           {description ? (
             <p className="app-page-description">{description}</p>
           ) : null}
-          <div className="content-grid">{children}</div>
+          <div className="content-grid">
+            <ShellProfileContext.Provider value={shellProfileCtx}>
+              {children}
+            </ShellProfileContext.Provider>
+          </div>
         </main>
       </div>
     </div>
