@@ -2,6 +2,7 @@
 
 import Script from 'next/script';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { type WalletBalanceSnapshot, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
@@ -120,6 +121,7 @@ export function ProfilePageClient({
   userProfile,
   exchangeRates,
 }: ProfilePageClientProps) {
+  const router = useRouter();
   const { t, prefs } = usePreferences();
   const { updateShellProfile } = useShellProfile();
   const s = t.settings;
@@ -128,6 +130,7 @@ export function ProfilePageClient({
 
   // ── Profile state ──
   const [profileState, setProfileState] = useState<UserProfileSnapshot | null>(userProfile);
+  const [profileAvatarError, setProfileAvatarError] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [displayNameDraft, setDisplayNameDraft] = useState(
     userProfile?.displayName ?? session.user.displayName ?? '',
@@ -311,6 +314,8 @@ export function ProfilePageClient({
       setProfileStatus(s.account.savedMessage);
       setIsEditingProfile(false);
       setIsSavingProfile(false);
+      // Refresh server-component data so sidebar dock stays in sync after navigation
+      router.refresh();
     } catch {
       setProfileStatus(null);
       setProfileError(s.errors.unableToSave);
@@ -385,6 +390,8 @@ export function ProfilePageClient({
   }
 
   const previewAvatarUrl = isEditingProfile ? avatarDraft : avatarUrl;
+  // Reset on every new committed avatar URL so we retry on change
+  useEffect(() => { setProfileAvatarError(false); }, [avatarUrl]);
 
   return (
     <>
@@ -525,12 +532,13 @@ export function ProfilePageClient({
               {/* Identity display */}
               <div className="profile-identity" style={{ marginTop: '12px' }}>
                 <div className="profile-avatar" aria-hidden="true">
-                  {previewAvatarUrl ? (
+                  {previewAvatarUrl && !profileAvatarError ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={previewAvatarUrl}
                       alt=""
                       className={isEmojiAvatarUrl(previewAvatarUrl) ? 'profile-avatar__emoji' : 'profile-avatar__img'}
+                      onError={() => setProfileAvatarError(true)}
                     />
                   ) : (
                     <span className="profile-avatar__initials">{initials}</span>

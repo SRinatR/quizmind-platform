@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useState, useCallback, useMemo } from 'react';
+import { type ReactNode, useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { adminNavigation, dashboardNavigation } from '@quizmind/ui';
 import { LogoutButton } from './logout-button';
@@ -102,6 +102,10 @@ export function SiteShell({
   // Dock identity — initialized from server props, updated reactively after profile save
   const [dockName, setDockName] = useState<string | undefined>(userDisplayName);
   const [dockAvatar, setDockAvatar] = useState<string | undefined>(userAvatarUrl);
+  const [dockAvatarError, setDockAvatarError] = useState(false);
+
+  // Reset image-load error whenever the avatar URL changes
+  useEffect(() => { setDockAvatarError(false); }, [dockAvatar]);
 
   const updateShellProfile = useCallback(
     (name: string | null | undefined, avatar: string | null | undefined) => {
@@ -200,9 +204,14 @@ export function SiteShell({
           <div className="sidebar-account-dock">
             <div className="sidebar-account-dock__identity">
               <div className="sidebar-account-dock__avatar" aria-hidden="true">
-                {dockAvatar ? (
+                {dockAvatar && !dockAvatarError ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={dockAvatar} alt="" className="sidebar-account-dock__avatar-img" />
+                  <img
+                    src={dockAvatar}
+                    alt=""
+                    className="sidebar-account-dock__avatar-img"
+                    onError={() => setDockAvatarError(true)}
+                  />
                 ) : (initials ?? '?')}
               </div>
               <span className="sidebar-account-dock__name" title={displayLabel}>

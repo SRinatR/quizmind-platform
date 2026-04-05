@@ -1,11 +1,26 @@
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
 
 import { getAccessTokenFromCookies } from '../../../../lib/auth-session';
 
-const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'avatars');
+/**
+ * Resolve the Next.js web-app root regardless of the process working directory.
+ * When `pnpm dev` is run from the monorepo root, `process.cwd()` may be the
+ * monorepo root rather than `apps/web`.  We detect this by looking for
+ * `next.config.js` and adjust accordingly.
+ */
+function resolveWebRoot(): string {
+  const cwd = process.cwd();
+  if (existsSync(join(cwd, 'next.config.js'))) return cwd;
+  const nested = join(cwd, 'apps', 'web');
+  if (existsSync(join(nested, 'next.config.js'))) return nested;
+  return cwd;
+}
+
+const UPLOAD_DIR = join(resolveWebRoot(), 'public', 'uploads', 'avatars');
 // Canvas-resized output is ~20–50 KB; allow up to 500 KB base64 (~375 KB binary)
 const MAX_BASE64_LEN = 500_000;
 
