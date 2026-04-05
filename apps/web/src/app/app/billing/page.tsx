@@ -4,7 +4,6 @@ import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getSession,
-  getWalletBalance,
   getWalletTopUps,
   resolvePersona,
 } from '../../../lib/api';
@@ -20,15 +19,10 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
-  const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
 
-  const [walletBalance, walletTopUps] = await Promise.all([
-    accessToken ? getWalletBalance(accessToken) : Promise.resolve(null),
-    accessToken ? getWalletTopUps(accessToken) : Promise.resolve(null),
-  ]);
+  const walletTopUps = accessToken ? await getWalletTopUps(accessToken) : null;
 
-  const canManageBilling = Boolean(isConnectedSession && session);
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -46,10 +40,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
     >
       {session ? (
         <BillingPageClient
-          canManageBilling={canManageBilling}
-          initialBalance={walletBalance}
           initialTopUps={walletTopUps?.items ?? []}
-          isConnectedSession={isConnectedSession}
         />
       ) : (
         <section className="empty-state">

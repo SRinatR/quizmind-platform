@@ -147,7 +147,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const telemetryCount = history?.items.filter((item) => item.source === 'telemetry').length ?? 0;
   const activityCount = history?.items.filter((item) => item.source === 'activity').length ?? 0;
   const aiCount = history?.items.filter((item) => item.source === 'ai').length ?? 0;
-  const lastEventAt = history?.items[0]?.occurredAt;
   const hasPreviousPage = effectivePage > 1;
   const hasNextPage = history
     ? history.items.length > sliceEnd || (history.items.length === fetchLimit && fetchLimit < maxHistoryFetchLimit)
@@ -208,7 +207,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         telemetryCount={telemetryCount}
         activityCount={activityCount}
         aiCount={aiCount}
-        lastEventAt={lastEventAt}
         source={source}
         eventType={eventType}
         installationId={installationId}
