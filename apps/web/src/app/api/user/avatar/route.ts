@@ -55,12 +55,10 @@ export async function POST(request: Request) {
   await mkdir(UPLOAD_DIR, { recursive: true });
   await writeFile(join(UPLOAD_DIR, filename), buffer);
 
-  // Build an absolute URL — backend validates avatarUrl as an absolute URL.
-  // Derive origin from the incoming request so it works in any environment
-  // (dev, staging, prod) without extra config. Fall back to NEXT_PUBLIC_APP_URL.
-  const reqOrigin = new URL(request.url).origin;
-  const origin = reqOrigin !== 'null' ? reqOrigin : (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000');
-  const url = `${origin}/uploads/avatars/${filename}`;
+  // Use the configured public app URL — never derive from request.url because
+  // the server may bind on 0.0.0.0 which is not a browser-reachable origin.
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const url = `${appUrl}/uploads/avatars/${filename}`;
 
   return NextResponse.json({ ok: true, url });
 }
