@@ -41,8 +41,6 @@ export function UsagePageClient({ session, usage }: UsagePageClientProps) {
     return `${formatDateTime(start, tu.unavailable)} \u2013 ${formatDateTime(end, tu.unavailable)}`;
   }
 
-  const highlightedQuota = usage?.quotas[0] ?? null;
-
   if (session && usage) {
     return (
       <>

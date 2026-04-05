@@ -30,7 +30,6 @@ export interface HistoryPageClientProps {
   telemetryCount: number;
   activityCount: number;
   aiCount: number;
-  lastEventAt: string | undefined;
   source: string;
   eventType: string | undefined;
   installationId: string | undefined;
@@ -51,7 +50,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
     hasSession, hasHistory,
     visibleItems, totalLoaded, fetchLimit, maxFetchLimit,
     effectivePage, pageSize, hasPrev, hasNext, previousHref, nextHref,
-    telemetryCount, activityCount, aiCount, lastEventAt,
+    telemetryCount, activityCount, aiCount,
     source, eventType, installationId, actorId,
     canExportCsv, csvHref, csvFilename, clearHref,
   } = props;
