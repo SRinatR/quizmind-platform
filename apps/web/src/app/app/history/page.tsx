@@ -2,7 +2,7 @@ import { type UsageHistoryRequest, type UsageHistorySourceFilter } from '@quizmi
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
-import { getSession, getUsageHistory, resolvePersona } from '../../../lib/api';
+import { getSession, getUsageHistory, getUserProfile, resolvePersona } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
 import { HistoryPageClient } from './history-page-client';
 
@@ -122,6 +122,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const accessToken = await getAccessTokenFromCookies();
   const session = await getSession(persona, accessToken);
   const sessionLabel = session?.user.displayName || session?.user.email;
+  const userProfile = await getUserProfile(accessToken);
   const source = normalizeHistorySource(readSearchParam(resolvedSearchParams?.source));
   const pageSize = normalizePositiveInt(readSearchParam(resolvedSearchParams?.limit), 25);
   const requestedPage = normalizePositiveInt(readSearchParam(resolvedSearchParams?.page), 1);
@@ -193,6 +194,8 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
       pathname="/app/history"
       showPersonaSwitcher={false}
       title="Usage history"
+      userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       <HistoryPageClient
         visibleItems={visibleItems}
