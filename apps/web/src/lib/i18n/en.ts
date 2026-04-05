@@ -424,7 +424,7 @@ export const en = {
       ctaDesc: 'Join thousands of students and professionals using QuizMind every day. Install the extension and get your first answer in under 30 seconds.',
       ctaNote: 'No account required to install. Sign up in-app when ready.',
       seeAllFeatures: 'See all features',
-      footerCopy: '\u00A9 2025 QuizMind',
+      footerCopy: '\u00A9 2026 QuizMind',
       dashboard: 'Dashboard',
       changelog: 'Changelog',
       roadmap: 'Roadmap',
