@@ -4,6 +4,7 @@ import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getSession,
+  getUserProfile,
   getWalletTopUps,
   resolvePersona,
 } from '../../../lib/api';
@@ -18,12 +19,15 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
-  const session = await getSession(persona, accessToken);
+  const [session, userProfile, walletTopUps] = await Promise.all([
+    getSession(persona, accessToken),
+    getUserProfile(accessToken),
+    accessToken ? getWalletTopUps(accessToken) : Promise.resolve(null),
+  ]);
   const sessionLabel = session?.user.displayName || session?.user.email;
 
-  const walletTopUps = accessToken ? await getWalletTopUps(accessToken) : null;
-
   const isAdmin = session ? isAdminSession(session) : false;
+  const walletTopUpItems = walletTopUps?.items ?? [];
 
   return (
     <SiteShell
@@ -37,10 +41,11 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       showPersonaSwitcher={false}
       title="Balance &amp; top-up"
       userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       {session ? (
         <BillingPageClient
-          initialTopUps={walletTopUps?.items ?? []}
+          initialTopUps={walletTopUpItems}
         />
       ) : (
         <section className="empty-state">

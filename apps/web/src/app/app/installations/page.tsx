@@ -5,6 +5,7 @@ import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getExtensionInstallationInventory,
   getSession,
+  getUserProfile,
   resolvePersona,
 } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
@@ -18,9 +19,12 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
-  const session = await getSession(persona, accessToken);
+  const [session, userProfile, inventory] = await Promise.all([
+    getSession(persona, accessToken),
+    getUserProfile(accessToken),
+    accessToken ? getExtensionInstallationInventory(accessToken) : Promise.resolve(null),
+  ]);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const inventory = accessToken ? await getExtensionInstallationInventory(accessToken) : null;
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -35,6 +39,7 @@ export default async function InstallationsPage({ searchParams }: InstallationsP
       showPersonaSwitcher={false}
       title="Extension installations"
       userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       {session && inventory ? (
         <InstallationsPageClient snapshot={inventory} />

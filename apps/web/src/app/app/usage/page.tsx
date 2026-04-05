@@ -1,6 +1,6 @@
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
-import { getSession, getUsageSummary, resolvePersona } from '../../../lib/api';
+import { getSession, getUsageSummary, getUserProfile, resolvePersona } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
 import { UsagePageClient } from './usage-page-client';
 
@@ -12,7 +12,10 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
-  const session = await getSession(persona, accessToken);
+  const [session, userProfile] = await Promise.all([
+    getSession(persona, accessToken),
+    getUserProfile(accessToken),
+  ]);
   const sessionLabel = session?.user.displayName || session?.user.email;
   const usage = await getUsageSummary(persona, accessToken);
   const isAdmin = session ? isAdminSession(session) : false;
@@ -29,6 +32,7 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
       showPersonaSwitcher={false}
       title="Account usage"
       userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       <UsagePageClient session={session} usage={usage} />
     </SiteShell>
