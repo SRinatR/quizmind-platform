@@ -36,7 +36,6 @@ import type { Translations } from './i18n/en';
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'en' | 'ru';
 export type Density = 'comfortable' | 'compact';
-export type BalanceCurrency = 'RUB' | 'USD' | 'EUR';
 
 export type ResolvedPrefs = Required<UiPreferences>;
 
@@ -48,7 +47,6 @@ const DEFAULTS: ResolvedPrefs = {
   density: 'comfortable',
   reducedMotion: false,
   sidebarCollapsed: false,
-  balanceCurrency: 'RUB',
 };
 
 const STORAGE_KEY = 'qm_prefs';
@@ -104,7 +102,6 @@ export interface PrefsContextValue {
   setDensity: (v: Density) => void;
   setReducedMotion: (v: boolean) => void;
   setSidebarCollapsed: (v: boolean) => void;
-  setBalanceCurrency: (v: BalanceCurrency) => void;
   /** True while a save-to-server request is in flight */
   isSaving: boolean;
   /** True once client-side hydration is complete (avoids SSR mismatch) */
@@ -120,7 +117,6 @@ const PrefsContext = createContext<PrefsContextValue>({
   setDensity: () => undefined,
   setReducedMotion: () => undefined,
   setSidebarCollapsed: () => undefined,
-  setBalanceCurrency: () => undefined,
   isSaving: false,
   isHydrated: false,
 });
@@ -211,10 +207,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     (v: boolean) => applyAndSave({ sidebarCollapsed: v }),
     [applyAndSave],
   );
-  const setBalanceCurrency = useCallback(
-    (v: BalanceCurrency) => applyAndSave({ balanceCurrency: v }),
-    [applyAndSave],
-  );
 
   const t: Translations = useMemo(
     () => (prefs.language === 'ru' ? ru : en),
@@ -231,7 +223,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setDensity,
       setReducedMotion,
       setSidebarCollapsed,
-      setBalanceCurrency,
       isSaving,
       isHydrated,
     }),
@@ -244,7 +235,6 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       setDensity,
       setReducedMotion,
       setSidebarCollapsed,
-      setBalanceCurrency,
       isSaving,
       isHydrated,
     ],

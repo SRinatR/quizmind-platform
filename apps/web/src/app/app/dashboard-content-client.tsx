@@ -6,7 +6,7 @@ import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useSt
 import { type WalletBalanceSnapshot, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
 import type { SessionSnapshot, UserProfileSnapshot } from '../../lib/api';
-import { usePreferences, type BalanceCurrency } from '../../lib/preferences';
+import { usePreferences } from '../../lib/preferences';
 
 interface ProfilePageClientProps {
   canManageBilling: boolean;
@@ -36,6 +36,8 @@ const PRESET_AVATARS = [
   '🏆', '🎭', '🌟', '🦄',
 ];
 
+const AVATAR_SIZE = 256;
+
 function makeEmojiAvatarUrl(emoji: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><text y="62" x="8" font-size="64">${emoji}</text></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -45,13 +47,34 @@ function isEmojiAvatarUrl(url: string): boolean {
   return url.startsWith('data:image/svg+xml');
 }
 
-function formatBalance(kopecks: number, currency: BalanceCurrency): string {
-  const amount = kopecks / 100;
-  return new Intl.NumberFormat('en-US', {
+function formatBalance(kopecks: number): string {
+  return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
-    currency,
+    currency: 'RUB',
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(kopecks / 100);
+}
+
+function resizeAvatarFile(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      const sx = Math.floor((img.naturalWidth - side) / 2);
+      const sy = Math.floor((img.naturalHeight - side) / 2);
+      const canvas = document.createElement('canvas');
+      canvas.width = AVATAR_SIZE;
+      canvas.height = AVATAR_SIZE;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas unavailable')); return; }
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read image')); };
+    img.src = url;
+  });
 }
 
 function normalizeInput(value: string): string | null {
@@ -88,12 +111,10 @@ export function ProfilePageClient({
   session,
   userProfile,
 }: ProfilePageClientProps) {
-  const { t, prefs } = usePreferences();
+  const { t } = usePreferences();
   const s = t.settings;
   const tb = t.billing;
   const tp = t.profile;
-
-  const currency: BalanceCurrency = prefs.balanceCurrency ?? 'RUB';
 
   // ── Profile state ──
   const [profileState, setProfileState] = useState<UserProfileSnapshot | null>(userProfile);
@@ -188,23 +209,28 @@ export function ProfilePageClient({
     }
   }, []);
 
-  // ── Avatar file upload ──
-  function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+  // ── Avatar file upload (canvas resize → JPEG 256×256, ~20–50 KB) ──
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result;
-      if (typeof dataUrl === 'string') {
-        setAvatarDraft(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
-
-    // Reset so same file can be re-selected
     e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setProfileError('Please select an image file (JPEG, PNG, WebP, etc.).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setProfileError('Image is too large. Please choose a file under 10 MB.');
+      return;
+    }
+
+    try {
+      const dataUrl = await resizeAvatarFile(file);
+      setAvatarDraft(dataUrl);
+      setProfileError(null);
+    } catch {
+      setProfileError('Could not process the image. Please try a different file.');
+    }
   }
 
   async function handleProfileSave(e: FormEvent<HTMLFormElement>) {
@@ -332,7 +358,7 @@ export function ProfilePageClient({
         type="file"
         accept="image/*"
         style={{ display: 'none' }}
-        onChange={handleFileChange}
+        onChange={(e) => void handleFileChange(e)}
         aria-hidden="true"
       />
 
@@ -500,7 +526,7 @@ export function ProfilePageClient({
           </div>
 
           <div className="wallet-balance-amount">
-            {formatBalance(balance?.balanceKopecks ?? 0, currency)}
+            {formatBalance(balance?.balanceKopecks ?? 0)}
           </div>
           <p className="wallet-balance-currency">{tp.balanceHint}</p>
 
@@ -573,7 +599,7 @@ export function ProfilePageClient({
                           setSelectedKopecks(amount);
                         }}
                       >
-                        {formatBalance(amount, 'RUB')}
+                        {formatBalance(amount)}
                       </button>
                     ))}
                     <button
@@ -613,7 +639,7 @@ export function ProfilePageClient({
 
                 <div className="wallet-pay-summary">
                   <span>{tb.total}</span>
-                  <strong>{customAmountValid ? formatBalance(effectiveKopecks, 'RUB') : '\u2014'}</strong>
+                  <strong>{customAmountValid ? formatBalance(effectiveKopecks) : '\u2014'}</strong>
                 </div>
 
                 <button
