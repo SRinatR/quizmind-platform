@@ -6,6 +6,7 @@ import { type ChangeEvent, type FormEvent, useCallback, useEffect, useRef, useSt
 import { type WalletBalanceSnapshot, type WalletTopUpCreateResult } from '@quizmind/contracts';
 
 import type { SessionSnapshot, UserProfileSnapshot } from '../../lib/api';
+import type { ExchangeRateSnapshot } from '../../lib/exchange-rates';
 import { usePreferences } from '../../lib/preferences';
 
 interface ProfilePageClientProps {
@@ -14,6 +15,7 @@ interface ProfilePageClientProps {
   isConnectedSession: boolean;
   session: SessionSnapshot;
   userProfile: UserProfileSnapshot | null;
+  exchangeRates: ExchangeRateSnapshot | null;
 }
 
 interface UserProfileRouteResponse {
@@ -47,12 +49,17 @@ function isEmojiAvatarUrl(url: string): boolean {
   return url.startsWith('data:image/svg+xml');
 }
 
-function formatBalance(kopecks: number): string {
-  return new Intl.NumberFormat('ru-RU', {
-    style: 'currency',
-    currency: 'RUB',
-    maximumFractionDigits: 0,
-  }).format(kopecks / 100);
+function formatBalance(
+  kopecks: number,
+  currency: 'RUB' | 'USD' | 'EUR' = 'RUB',
+  rates: ExchangeRateSnapshot | null = null,
+): string {
+  const rub = kopecks / 100;
+  if (currency === 'RUB' || !rates) {
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(rub);
+  }
+  const converted = rub / rates[currency];
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(converted);
 }
 
 function resizeAvatarFile(file: File): Promise<string> {
@@ -110,8 +117,9 @@ export function ProfilePageClient({
   isConnectedSession,
   session,
   userProfile,
+  exchangeRates,
 }: ProfilePageClientProps) {
-  const { t } = usePreferences();
+  const { t, prefs } = usePreferences();
   const s = t.settings;
   const tb = t.billing;
   const tp = t.profile;
@@ -526,7 +534,7 @@ export function ProfilePageClient({
           </div>
 
           <div className="wallet-balance-amount">
-            {formatBalance(balance?.balanceKopecks ?? 0)}
+            {formatBalance(balance?.balanceKopecks ?? 0, prefs.balanceDisplayCurrency, exchangeRates)}
           </div>
           <p className="wallet-balance-currency">{tp.balanceHint}</p>
 
@@ -536,7 +544,7 @@ export function ProfilePageClient({
               onClick={handleOpenModal}
               type="button"
             >
-              {tb.addFunds}
+              {tb.addFundsBtn}
             </button>
           ) : (
             <p className="list-muted">

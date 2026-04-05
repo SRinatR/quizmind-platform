@@ -3,7 +3,7 @@
 import { usePreferences } from '../../../lib/preferences';
 
 export function AppearanceSettingsClient({ isSignedIn }: { isSignedIn: boolean }) {
-  const { prefs, t, setTheme, setLanguage, setReducedMotion, setSidebarCollapsed, isSaving } =
+  const { prefs, t, setTheme, setLanguage, setBalanceDisplayCurrency, isSaving } =
     usePreferences();
   const s = t.settings.appearance;
 
@@ -101,65 +101,30 @@ export function AppearanceSettingsClient({ isSignedIn }: { isSignedIn: boolean }
         </div>
       </div>
 
-      {/* ── Motion ── */}
+      {/* ── Balance currency ── */}
       <div className="pref-group">
         <div className="pref-group__header">
-          <span className="pref-group__title">{s.motionSection}</span>
-          <span className="pref-group__desc">{s.motionDesc}</span>
-        </div>
-        <label className="pref-toggle">
-          <input
-            type="checkbox"
-            checked={prefs.reducedMotion}
-            onChange={(e) => setReducedMotion(e.target.checked)}
-          />
-          <span className="pref-toggle__track" aria-hidden="true">
-            <span className="pref-toggle__thumb" />
-          </span>
-          <span className="pref-toggle__label">{s.motionLabel}</span>
-        </label>
-      </div>
-
-      {/* ── Sidebar default ── */}
-      <div className="pref-group">
-        <div className="pref-group__header">
-          <span className="pref-group__title">{s.sidebarSection}</span>
-          <span className="pref-group__desc">{s.sidebarDesc}</span>
+          <span className="pref-group__title">{s.currencySection}</span>
+          <span className="pref-group__desc">{s.currencyDesc}</span>
         </div>
         <div className="pref-option-row">
-          <label className={`pref-option${!prefs.sidebarCollapsed ? ' pref-option--active' : ''}`}>
-            <input
-              type="radio"
-              name="sidebar"
-              value="expanded"
-              checked={!prefs.sidebarCollapsed}
-              onChange={() => setSidebarCollapsed(false)}
-            />
-            <span className="pref-option__icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="2" width="4.5" height="12" rx="1.2" fill="currentColor" opacity=".7"/>
-                <rect x="7" y="2" width="8" height="12" rx="1.2" fill="currentColor" opacity=".2"/>
-              </svg>
-            </span>
-            <span className="pref-option__label">{s.sidebarExpanded}</span>
-          </label>
-
-          <label className={`pref-option${prefs.sidebarCollapsed ? ' pref-option--active' : ''}`}>
-            <input
-              type="radio"
-              name="sidebar"
-              value="collapsed"
-              checked={prefs.sidebarCollapsed}
-              onChange={() => setSidebarCollapsed(true)}
-            />
-            <span className="pref-option__icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="1" y="2" width="2.2" height="12" rx="1.1" fill="currentColor" opacity=".7"/>
-                <rect x="5" y="2" width="10" height="12" rx="1.2" fill="currentColor" opacity=".2"/>
-              </svg>
-            </span>
-            <span className="pref-option__label">{s.sidebarCollapsed}</span>
-          </label>
+          {(['RUB', 'USD', 'EUR'] as const).map((code) => (
+            <label
+              key={code}
+              className={`pref-option${prefs.balanceDisplayCurrency === code ? ' pref-option--active' : ''}`}
+            >
+              <input
+                type="radio"
+                name="balanceCurrency"
+                value={code}
+                checked={prefs.balanceDisplayCurrency === code}
+                onChange={() => setBalanceDisplayCurrency(code)}
+              />
+              <span className="pref-option__label">
+                {code === 'RUB' ? s.currencyRub : code === 'USD' ? s.currencyUsd : s.currencyEur}
+              </span>
+            </label>
+          ))}
         </div>
       </div>
 

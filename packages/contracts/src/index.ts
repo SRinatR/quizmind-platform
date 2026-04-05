@@ -383,6 +383,7 @@ export interface UiPreferences {
   density?: 'comfortable' | 'compact';
   reducedMotion?: boolean;
   sidebarCollapsed?: boolean;
+  balanceDisplayCurrency?: 'RUB' | 'USD' | 'EUR';
 }
 
 export interface UserProfilePayload {
