@@ -8,6 +8,7 @@ import { type WalletBalanceSnapshot, type WalletTopUpCreateResult } from '@quizm
 import type { SessionSnapshot, UserProfileSnapshot } from '../../lib/api';
 import type { ExchangeRateSnapshot } from '../../lib/exchange-rates';
 import { usePreferences } from '../../lib/preferences';
+import { useShellProfile } from '../../lib/shell-profile-context';
 
 interface ProfilePageClientProps {
   canManageBilling: boolean;
@@ -120,6 +121,7 @@ export function ProfilePageClient({
   exchangeRates,
 }: ProfilePageClientProps) {
   const { t, prefs } = usePreferences();
+  const { updateShellProfile } = useShellProfile();
   const s = t.settings;
   const tb = t.billing;
   const tp = t.profile;
@@ -305,6 +307,7 @@ export function ProfilePageClient({
       setProfileState(payload.data);
       setDisplayNameDraft(payload.data.displayName ?? '');
       setAvatarDraft(payload.data.avatarUrl ?? '');
+      updateShellProfile(payload.data.displayName, payload.data.avatarUrl);
       setProfileStatus(s.account.savedMessage);
       setIsEditingProfile(false);
       setIsSavingProfile(false);

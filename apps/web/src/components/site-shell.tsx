@@ -1,10 +1,11 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { adminNavigation, dashboardNavigation } from '@quizmind/ui';
 import { LogoutButton } from './logout-button';
 import { usePreferences } from '../lib/preferences';
+import { ShellProfileContext } from '../lib/shell-profile-context';
 
 // Inline SVG icons for nav items — zero runtime dependency
 const NAV_ICONS: Record<string, ReactNode> = {
@@ -97,9 +98,23 @@ export function SiteShell({
 }: SiteShellProps) {
   const { t } = usePreferences();
   const isConnected = apiState.startsWith('Connected');
-  const initials = userDisplayName ? getInitials(userDisplayName) : null;
+
+  // Dock identity — initialized from server props, updated reactively after profile save
+  const [dockName, setDockName] = useState<string | undefined>(userDisplayName);
+  const [dockAvatar, setDockAvatar] = useState<string | undefined>(userAvatarUrl);
+
+  const updateShellProfile = useCallback(
+    (name: string | null | undefined, avatar: string | null | undefined) => {
+      if (name !== undefined) setDockName(name ?? undefined);
+      if (avatar !== undefined) setDockAvatar(avatar ?? undefined);
+    },
+    [],
+  );
+  const shellProfileCtx = useMemo(() => ({ updateShellProfile }), [updateShellProfile]);
+
+  const initials = dockName ? getInitials(dockName) : null;
   const displayLabel = isConnected
-    ? (userDisplayName ?? apiState.replace('Connected \u2014 ', ''))
+    ? (dockName ?? apiState.replace('Connected \u2014 ', ''))
     : t.shell.notSignedIn;
 
   return (
@@ -185,9 +200,9 @@ export function SiteShell({
           <div className="sidebar-account-dock">
             <div className="sidebar-account-dock__identity">
               <div className="sidebar-account-dock__avatar" aria-hidden="true">
-                {userAvatarUrl ? (
+                {dockAvatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={userAvatarUrl} alt="" className="sidebar-account-dock__avatar-img" />
+                  <img src={dockAvatar} alt="" className="sidebar-account-dock__avatar-img" />
                 ) : (initials ?? '?')}
               </div>
               <span className="sidebar-account-dock__name" title={displayLabel}>
@@ -243,7 +258,11 @@ export function SiteShell({
           {description ? (
             <p className="app-page-description">{description}</p>
           ) : null}
-          <div className="content-grid">{children}</div>
+          <div className="content-grid">
+            <ShellProfileContext.Provider value={shellProfileCtx}>
+              {children}
+            </ShellProfileContext.Provider>
+          </div>
         </main>
       </div>
     </div>
