@@ -1,12 +1,41 @@
 'use client';
 
+import { useEffect, useRef, type RefObject } from 'react';
 import Link from 'next/link';
 
 import { usePreferences } from '../lib/preferences';
 
+function useReveal<T extends Element = HTMLElement>(): RefObject<T> {
+  const ref = useRef<T>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          (el as HTMLElement).classList.add('lp-revealed');
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.12 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return ref;
+}
+
 export default function HomePage() {
   const { t } = usePreferences();
   const th = t.publicPages.home;
+
+  const heroRef = useReveal<HTMLElement>();
+  const compatRef = useReveal<HTMLDivElement>();
+  const featuresRef = useReveal<HTMLElement>();
+  const usecasesRef = useReveal<HTMLElement>();
+  const howRef = useReveal<HTMLElement>();
+  const showcaseRef = useReveal<HTMLElement>();
+  const ctaRef = useReveal<HTMLElement>();
 
   return (
     <div className="lp-root">
@@ -22,13 +51,12 @@ export default function HomePage() {
           </div>
           <div className="lp-nav-actions">
             <Link href="/auth/login" className="btn-ghost">{th.signIn}</Link>
-            <Link href="/auth/login" className="btn-primary">{th.getStarted}</Link>
           </div>
         </div>
       </nav>
 
       {/* ── Hero ── */}
-      <section className="lp-hero">
+      <section className="lp-hero lp-reveal" ref={heroRef}>
         <div className="lp-hero-content">
           <span className="lp-badge">{th.badge}</span>
           <h1 className="lp-hero-title">
@@ -94,7 +122,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Platform compatibility strip ── */}
-      <div className="lp-compat-strip">
+      <div className="lp-compat-strip lp-reveal" ref={compatRef}>
         <div className="lp-compat-strip-inner">
           <span className="lp-compat-label">Works on any quiz, form, or learning platform</span>
           <div className="lp-compat-chips">
@@ -108,7 +136,7 @@ export default function HomePage() {
       </div>
 
       {/* ── Features ── */}
-      <section className="lp-section lp-features">
+      <section className="lp-section lp-features lp-reveal" ref={featuresRef}>
         <div className="lp-section-inner">
           <span className="lp-section-label">{th.featuresSection}</span>
           <h2 className="lp-section-title">{th.featuresTitle}</h2>
@@ -130,7 +158,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Use cases / Who it's for ── */}
-      <section className="lp-section lp-usecases">
+      <section className="lp-section lp-usecases lp-reveal" ref={usecasesRef}>
         <div className="lp-section-inner">
           <span className="lp-section-label">Who it&rsquo;s for</span>
           <h2 className="lp-section-title">Built for how you learn</h2>
@@ -152,7 +180,7 @@ export default function HomePage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="lp-section lp-how">
+      <section className="lp-section lp-how lp-reveal" ref={howRef}>
         <div className="lp-section-inner">
           <span className="lp-section-label">{th.howItWorks}</span>
           <h2 className="lp-section-title">{th.threeSteps}</h2>
@@ -171,7 +199,7 @@ export default function HomePage() {
       </section>
 
       {/* ── Product showcase / Control center ── */}
-      <section className="lp-section lp-showcase">
+      <section className="lp-section lp-showcase lp-reveal" ref={showcaseRef}>
         <div className="lp-section-inner lp-showcase-inner">
           <div className="lp-showcase-copy">
             <span className="lp-section-label">Dashboard</span>
@@ -259,7 +287,7 @@ export default function HomePage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="lp-cta">
+      <section className="lp-cta lp-reveal" ref={ctaRef}>
         <div className="lp-cta-card">
           <div className="lp-section-inner lp-cta-inner">
             <span className="lp-section-label">{th.ctaSection}</span>
@@ -285,18 +313,7 @@ export default function HomePage() {
 
       {/* ── Footer ── */}
       <footer className="lp-footer">
-        <div className="lp-footer-inner">
-          <span className="lp-brand">QuizMind</span>
-          <div className="lp-footer-links">
-            <Link href="/features">{th.navFeatures}</Link>
-            <Link href="/docs">{th.navDocs}</Link>
-            <Link href="/blog">{th.navBlog}</Link>
-            <Link href="/changelog">{th.changelog}</Link>
-            <Link href="/roadmap">{th.roadmap}</Link>
-            <Link href="/faq">{th.navFaq}</Link>
-            <Link href="/auth/login">{th.signIn}</Link>
-            <Link href="/app">{th.dashboard}</Link>
-          </div>
+        <div className="lp-footer-inner lp-footer-inner--minimal">
           <span className="lp-footer-copy">{th.footerCopy}</span>
         </div>
       </footer>

@@ -20,6 +20,112 @@
  */
 
 /* ════════════════════════════════════════════════
+   0. Animations
+   ════════════════════════════════════════════════ */
+
+@keyframes lp-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lp-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Hero animates immediately on load */
+.lp-hero-content {
+  animation: lp-fade-up 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lp-hero-visual {
+  animation: lp-fade-up 0.72s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+}
+
+/* Stagger hero content children */
+.lp-badge            { animation: lp-fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.lp-hero-title       { animation: lp-fade-up 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both; }
+.lp-hero-sub         { animation: lp-fade-up 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.20s both; }
+.lp-hero-actions     { animation: lp-fade-up 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both; }
+.lp-hero-trust       { animation: lp-fade-up 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.36s both; }
+
+/* Scroll-reveal: sections start hidden, get .lp-revealed when in viewport */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.68s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-reveal.lp-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger cards inside revealed sections */
+.lp-revealed .lp-feature-card,
+.lp-revealed .lp-usecase-card,
+.lp-revealed .lp-step {
+  animation: lp-fade-up 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.lp-revealed .lp-feature-card:nth-child(1),
+.lp-revealed .lp-usecase-card:nth-child(1),
+.lp-revealed .lp-step:nth-child(1) { animation-delay: 0.06s; }
+
+.lp-revealed .lp-feature-card:nth-child(2),
+.lp-revealed .lp-usecase-card:nth-child(2),
+.lp-revealed .lp-step:nth-child(2) { animation-delay: 0.14s; }
+
+.lp-revealed .lp-feature-card:nth-child(3),
+.lp-revealed .lp-usecase-card:nth-child(3),
+.lp-revealed .lp-step:nth-child(3) { animation-delay: 0.22s; }
+
+.lp-revealed .lp-feature-card:nth-child(4),
+.lp-revealed .lp-usecase-card:nth-child(4) { animation-delay: 0.30s; }
+
+.lp-revealed .lp-feature-card:nth-child(5) { animation-delay: 0.38s; }
+.lp-revealed .lp-feature-card:nth-child(6) { animation-delay: 0.46s; }
+
+/* Nav entrance */
+.lp-nav {
+  animation: lp-fade-in 0.4s ease both;
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .lp-badge,
+  .lp-hero-title,
+  .lp-hero-sub,
+  .lp-hero-actions,
+  .lp-hero-trust,
+  .lp-hero-content,
+  .lp-hero-visual,
+  .lp-nav {
+    animation: none;
+  }
+
+  .lp-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .lp-revealed .lp-feature-card,
+  .lp-revealed .lp-usecase-card,
+  .lp-revealed .lp-step {
+    animation: none;
+  }
+}
+
+/* ════════════════════════════════════════════════
    1. Root
    ════════════════════════════════════════════════ */
 .lp-root {
@@ -642,6 +748,10 @@
   align-items: center;
   gap: 24px;
   flex-wrap: wrap;
+}
+
+.lp-footer-inner--minimal {
+  justify-content: center;
 }
 
 .lp-footer-links {

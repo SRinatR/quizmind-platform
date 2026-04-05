@@ -426,7 +426,7 @@ export const ru: Translations = {
       ctaDesc: 'Тысячи студентов и специалистов используют QuizMind каждый день. Установите расширение и получите первый ответ за 30 секунд.',
       ctaNote: 'Для установки аккаунт не нужен. Зарегистрируйтесь прямо в приложении.',
       seeAllFeatures: 'Все функции',
-      footerCopy: '\u00A9 2025 QuizMind',
+      footerCopy: '\u00A9 2026 QuizMind',
       dashboard: 'Панель',
       changelog: 'Изменения',
       roadmap: 'Дорожная карта',
