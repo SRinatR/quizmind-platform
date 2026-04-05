@@ -78,33 +78,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
 
   return (
     <>
-      <section className="metrics-grid">
-        <article className="stat-card">
-          <span className="micro-label">{th.account}</span>
-          <p className="stat-value">{totalLoaded}</p>
-          <p className="metric-copy">{th.rowsLoaded}</p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">{th.events}</span>
-          <p className="stat-value">{visibleItems.length}</p>
-          <p className="metric-copy">
-            {th.page} {effectivePage} | {pageSize} {th.rowsPerPage.toLowerCase()}
-          </p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">{th.sources}</span>
-          <p className="stat-value">
-            {telemetryCount}/{activityCount}/{aiCount}
-          </p>
-          <p className="metric-copy">telemetry/activity/ai</p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">{th.lastEvent}</span>
-          <p className="stat-value">{lastEventAt ? th.recent : th.none}</p>
-          <p className="metric-copy">{lastEventAt ? formatUtcDateTime(lastEventAt) : th.noEventsYet}</p>
-        </article>
-      </section>
-
       <section className="filter-panel">
         <div className="filter-panel__header">
           <span className="micro-label">{th.filtersLabel}</span>

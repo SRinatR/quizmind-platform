@@ -46,36 +46,6 @@ export function UsagePageClient({ session, usage }: UsagePageClientProps) {
   if (session && usage) {
     return (
       <>
-        {/* ── Metrics ── */}
-        <section className="metrics-grid">
-          <article className="stat-card">
-            <span className="micro-label">{tu.account}</span>
-            <p className="stat-value stat-value--sm">
-              {session.user.displayName ?? session.user.email?.split('@')[0] ?? '\u2014'}
-            </p>
-            <p className="metric-copy">{tu.usagePeriodActive}</p>
-          </article>
-          <article className="stat-card">
-            <span className="micro-label">{tu.installations}</span>
-            <p className="stat-value">{usage.installations.length}</p>
-            <p className="metric-copy">{tu.extensionFleet}</p>
-          </article>
-          <article className="stat-card">
-            <span className="micro-label">{tu.primaryQuota}</span>
-            <p className="stat-value">
-              {highlightedQuota
-                ? `${highlightedQuota.consumed}${highlightedQuota.limit ? `/${highlightedQuota.limit}` : ''}`
-                : '\u2014'}
-            </p>
-            <p className="metric-copy">{highlightedQuota?.label ?? tu.noQuotaTracked}</p>
-          </article>
-          <article className="stat-card">
-            <span className="micro-label">{tu.recentEvents}</span>
-            <p className="stat-value">{usage.recentEvents.length}</p>
-            <p className="metric-copy">{formatWindow(usage.currentPeriodStart, usage.currentPeriodEnd)}</p>
-          </article>
-        </section>
-
         {/* ── Quotas + Fleet ── */}
         <section className="split-grid">
           <article className="panel">

@@ -249,48 +249,6 @@ export function BillingPageClient({
         onLoad={() => setScriptLoaded(true)}
       />
 
-      {/* Balance section */}
-      <section className="wallet-hero">
-        <article className="wallet-balance-card panel">
-          <div className="wallet-balance-header">
-            <span className="micro-label">{tb.currentBalance}</span>
-            <span className="wallet-balance-provider-badge">YooKassa</span>
-          </div>
-          <div className="wallet-balance-amount">
-            {balance ? formatRub(balance.balanceKopecks) : '\u2014'}
-          </div>
-          <p className="wallet-balance-currency">{tb.currency}</p>
-          {canManageBilling && isConnectedSession ? (
-            <button className="btn-primary wallet-topup-btn" onClick={handleOpenModal} type="button">
-              {tb.addFunds}
-            </button>
-          ) : (
-            <p className="list-muted">
-              {isConnectedSession ? tb.insufficientPermissions : tb.signInToManage}
-            </p>
-          )}
-        </article>
-
-        <article className="wallet-info-card panel">
-          <span className="micro-label">How it works</span>
-          <h2>Pre-paid wallet</h2>
-          <div className="wallet-info-list">
-            <div className="wallet-info-row">
-              <span className="wallet-info-dot" aria-hidden="true" />
-              <p>Top up your balance with any amount and use it for AI requests.</p>
-            </div>
-            <div className="wallet-info-row">
-              <span className="wallet-info-dot" aria-hidden="true" />
-              <p>Balance belongs to your account. Usage is tracked per request.</p>
-            </div>
-            <div className="wallet-info-row">
-              <span className="wallet-info-dot" aria-hidden="true" />
-              <p>Payments are processed securely via YooKassa. Minimum top-up is &#x20BD;10.</p>
-            </div>
-          </div>
-        </article>
-      </section>
-
       {/* Top-up modal */}
       {showModal ? (
         <div className="wallet-modal-backdrop" role="dialog" aria-modal="true" aria-label={tb.addFunds}>
