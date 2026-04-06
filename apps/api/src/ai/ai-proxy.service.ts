@@ -477,11 +477,12 @@ export class AiProxyService {
         responseId: typeof upstreamResponse.id === 'string' ? upstreamResponse.id : undefined,
       });
 
-      // Persist prompt/response content for history (fire-and-forget; never blocks response).
+      // Persist prompt/response content for history (fire-and-forget).
       this.persistHistoryContentSafely({
         invocation,
         messages: invocation.request.messages,
         upstreamResponse,
+        usage,
       });
 
       return {
@@ -1617,15 +1618,21 @@ export class AiProxyService {
     } catch (error) {
       console.error('[ai-proxy] Failed to persist proxy failure event.', error);
     }
+
+    // Also persist prompt content for failed requests (history must cover errors).
+    this.persistHistoryContentSafely({
+      invocation: input.invocation,
+      messages: input.invocation.request.messages,
+    });
   }
 
   private persistHistoryContentSafely(input: {
     invocation: PreparedProxyInvocation;
     messages: NormalizedProxyRequest['messages'];
-    upstreamResponse: Record<string, unknown>;
+    upstreamResponse?: Record<string, unknown>;
+    usage?: AiProxyUsage;
   }): void {
-    const { invocation, messages, upstreamResponse } = input;
-    // Determine request type from message content.
+    const { invocation, messages, upstreamResponse, usage } = input;
     const hasImage = messages.some(
       (m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image_url'),
     );
@@ -1633,15 +1640,16 @@ export class AiProxyService {
 
     this.aiHistoryService
       .persistContent({
+        requestId: invocation.requestId,
         userId: invocation.session.user.id,
         workspaceId: invocation.workspaceId,
-        requestId: invocation.requestId,
         provider: invocation.provider,
         model: invocation.resolvedModel,
-        keySource: invocation.keySource,
         requestType,
-        promptContentJson: messages,
-        responseContentJson: upstreamResponse,
+        promptContent: messages,
+        responseContent: upstreamResponse,
+        promptTokens: usage?.promptTokens,
+        completionTokens: usage?.completionTokens,
       })
       .catch((err) => {
         console.error('[ai-proxy] Failed to persist history content.', err);

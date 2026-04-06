@@ -6,6 +6,7 @@ import { AiProxyService } from './ai/ai-proxy.service';
 import { AiHistoryController } from './history/ai-history.controller';
 import { AiHistoryRepository } from './history/ai-history.repository';
 import { AiHistoryService } from './history/ai-history.service';
+import { HistoryBlobService } from './history/history-blob.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { BillingController } from './billing/billing.controller';
@@ -64,6 +65,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     AiProxyService,
     AiHistoryRepository,
     AiHistoryService,
+    HistoryBlobService,
     AuthService,
     BillingService,
     BillingWebhookRepository,

@@ -1,47 +1,60 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
 import { Prisma, type PrismaClient } from '@quizmind/database';
 import { type HistoryCleanupJobPayload } from '@quizmind/contracts';
 import { createLogEvent, type StructuredLogEvent } from '@quizmind/logger';
 
 export interface HistoryCleanupResult {
   logEvent: StructuredLogEvent;
-  deletedCount: number;
+  deletedRows: number;
+}
+
+function resolveBlobDir(): string {
+  return process.env['HISTORY_BLOB_DIR'] ?? path.join(process.cwd(), 'data', 'history');
+}
+
+async function tryUnlink(p: string): Promise<void> {
+  try { await fs.unlink(p); } catch { /* already gone */ }
+}
+
+async function deleteBlobs(blobDir: string, requestId: string): Promise<void> {
+  await Promise.all([
+    tryUnlink(path.join(blobDir, `${requestId}.prompt.json`)),
+    tryUnlink(path.join(blobDir, `${requestId}.response.json`)),
+    tryUnlink(path.join(blobDir, `${requestId}.file.bin`)),
+  ]);
 }
 
 export async function processHistoryCleanupJob(
   payload: HistoryCleanupJobPayload,
   prisma: PrismaClient,
 ): Promise<HistoryCleanupResult> {
-  const now = new Date();
-  const batchSize = 500;
-  let totalDeleted = 0;
+  const blobDir = resolveBlobDir();
+  const BATCH = 200;
+  let deletedRows = 0;
 
-  // Null out content on expired records in batches.
   while (true) {
-    const expiredIds = await prisma.aiRequest.findMany({
-      where: {
-        contentExpiresAt: { lt: now },
-        promptContentJson: { not: Prisma.JsonNull },
-      },
+    // Find a batch of expired history rows.
+    const expired = await prisma.aiRequest.findMany({
+      where: { expiresAt: { lt: new Date() } },
       select: { id: true },
-      take: batchSize,
+      take: BATCH,
+      orderBy: { expiresAt: 'asc' },
     });
 
-    if (expiredIds.length === 0) break;
+    if (expired.length === 0) break;
 
-    const ids = expiredIds.map((r) => r.id);
-    await prisma.aiRequest.updateMany({
-      where: { id: { in: ids } },
-      data: {
-        promptContentJson: Prisma.JsonNull,
-        responseContentJson: Prisma.JsonNull,
-        fileMetadataJson: Prisma.JsonNull,
-        contentExpiresAt: null,
-      },
-    });
+    const ids = expired.map((r) => r.id);
 
-    totalDeleted += ids.length;
+    // Delete blob files first (idempotent – missing files are fine).
+    await Promise.all(ids.map((id) => deleteBlobs(blobDir, id)));
 
-    if (ids.length < batchSize) break;
+    // Hard-delete the DB rows.
+    const result = await prisma.aiRequest.deleteMany({ where: { id: { in: ids } } });
+    deletedRows += result.count;
+
+    if (ids.length < BATCH) break;
   }
 
   const logEvent = createLogEvent({
@@ -55,8 +68,8 @@ export async function processHistoryCleanupJob(
     category: 'system',
     severity: 'info',
     status: 'success',
-    metadata: { totalDeleted, triggeredAt: payload.triggeredAt },
+    metadata: { deletedRows, triggeredAt: payload.triggeredAt },
   });
 
-  return { logEvent, deletedCount: totalDeleted };
+  return { logEvent, deletedRows };
 }

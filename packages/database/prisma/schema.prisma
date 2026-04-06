@@ -338,10 +338,9 @@ model AiRequest {
   durationMs         Int?
   requestMetadata    Json?
   requestType        String?
-  promptContentJson  Json?
-  responseContentJson Json?
   fileMetadataJson   Json?
-  contentExpiresAt   DateTime?
+  estimatedCostUsd   Float?
+  expiresAt          DateTime?
   occurredAt         DateTime   @default(now())
   createdAt          DateTime   @default(now())
   user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -350,7 +349,7 @@ model AiRequest {
   @@index([userId, occurredAt])
   @@index([workspaceId, occurredAt])
   @@index([occurredAt])
-  @@index([contentExpiresAt])
+  @@index([expiresAt])
   @@map("ai_requests")
 }
 

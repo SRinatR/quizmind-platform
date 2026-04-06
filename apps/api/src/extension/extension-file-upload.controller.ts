@@ -361,25 +361,27 @@ export class ExtensionFileUploadController {
       model: proxyResult.model,
     });
 
-    // Persist history content (fire-and-forget).
+    // Persist history content including original file bytes (fire-and-forget).
+    const proxyUsage = proxyResult.usage;
     this.aiHistoryService
       .persistContent({
+        requestId: proxyResult.requestId,
         userId: installationSession.installation.userId,
         workspaceId,
-        installationId: installationSession.installation.installationId,
-        requestId: proxyResult.requestId,
         provider: proxyResult.provider,
         model: proxyResult.model,
-        keySource: proxyResult.keySource,
         requestType: 'file',
-        promptContentJson: messageContent,
-        responseContentJson: upstreamResponse,
-        fileMetadataJson: {
+        promptContent: messageContent,
+        responseContent: upstreamResponse,
+        fileBuffer: file.buffer,
+        fileMetadata: {
           originalName: file.originalname,
           mimeType: mime,
           sizeBytes: file.size,
           contentType,
         },
+        promptTokens: proxyUsage?.promptTokens,
+        completionTokens: proxyUsage?.completionTokens,
       })
       .catch((err) => {
         console.error('[file-upload] Failed to persist history content.', err);

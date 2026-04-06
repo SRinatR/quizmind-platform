@@ -1700,18 +1700,20 @@ export interface AiHistoryListItem {
   completionTokens: number;
   totalTokens: number;
   durationMs?: number | null;
-  /** Short excerpt of the prompt text (first 200 chars). */
+  estimatedCostUsd: number;
+  /** Short excerpt of the prompt text (first ~300 chars). */
   promptExcerpt?: string | null;
-  /** Short excerpt of the response text (first 200 chars). */
+  /** Short excerpt of the response text (first ~300 chars). */
   responseExcerpt?: string | null;
   fileMetadata?: AiHistoryFileMetadata | null;
   occurredAt: string;
+  expiresAt?: string | null;
 }
 
 export interface AiHistoryDetail extends AiHistoryListItem {
-  /** Full serialized prompt messages (JSON). */
+  /** Full serialized prompt messages (from blob storage). */
   promptContentJson?: unknown;
-  /** Full serialized response (JSON). */
+  /** Full serialized provider response (from blob storage). */
   responseContentJson?: unknown;
 }
 
@@ -1753,7 +1755,7 @@ export interface AiAnalyticsSnapshot {
   totalPromptTokens: number;
   totalCompletionTokens: number;
   totalTokens: number;
-  /** Rough estimate based on ~$2/M tokens blended rate. */
+  /** Model/provider-aware cost estimate in USD. */
   estimatedCostUsd: number;
   avgDurationMs: number | null;
   byModel: AiAnalyticsModelBreakdown[];

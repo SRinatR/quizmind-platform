@@ -117,6 +117,22 @@ export function UsagePageClient({ session, usage, analytics, fromDate, toDate }:
             ) : null}
 
             <div className="filter-actions" style={{ marginTop: '12px' }}>
+              {/* Quick period shortcuts */}
+              <div className="tag-row" style={{ gap: '6px', marginBottom: '8px' }}>
+                {[
+                  { label: 'Today',    days: 0 },
+                  { label: '7 days',   days: 7 },
+                  { label: '30 days',  days: 30 },
+                ].map(({ label, days }) => {
+                  const to = new Date();
+                  const from = new Date(to);
+                  from.setDate(from.getDate() - days);
+                  const href = `/app/usage?from=${from.toISOString().slice(0, 10)}&to=${to.toISOString().slice(0, 10)}`;
+                  return (
+                    <Link key={label} className="tag-soft tag-soft--gray" href={href}>{label}</Link>
+                  );
+                })}
+              </div>
               <form method="get" style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <label className="filter-field" style={{ margin: 0 }}>
                   <span className="filter-field__label">From</span>
