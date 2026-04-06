@@ -58,7 +58,7 @@ const TEXT_MIME_TYPES = new Set([
 
 const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
-const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const EXTENSION_MIME_MAP: Record<string, string> = {
   txt: 'text/plain',
@@ -239,7 +239,7 @@ export class ExtensionFileUploadController {
         } else {
           cb(
             new BadRequestException(
-              `Unsupported file type "${file.originalname}". Allowed types: txt, md, json, csv, pdf, docx, png, jpg, jpeg, webp.`,
+              `Unsupported file type "${file.originalname}". Allowed types: txt, md, json, csv, pdf, docx, png, jpg, jpeg, webp. Maximum size: 10 MB.`,
             ),
             false,
           );

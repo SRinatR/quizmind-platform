@@ -41,6 +41,7 @@ function createPolicyState(governance: AdminProviderGovernanceStateSnapshot) {
     mode: governance.policy.mode as AiAccessPolicyMode,
     allowPlatformManaged: governance.policy.allowPlatformManaged,
     allowBringYourOwnKey: governance.policy.allowBringYourOwnKey,
+    allowDirectProviderMode: governance.policy.allowDirectProviderMode,
     allowWorkspaceSharedCredentials: governance.policy.allowWorkspaceSharedCredentials ?? false,
     requireAdminApproval: governance.policy.requireAdminApproval ?? false,
     allowVisionOnUserKeys: governance.policy.allowVisionOnUserKeys ?? false,
@@ -89,6 +90,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     provider: governance.providers[0]?.provider ?? 'openrouter',
     ownerType: 'platform' as CredentialOwnerType,
     workspaceId: '',
+    label: '',
     scopes: '',
     secret: '',
   });
@@ -129,6 +131,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         mode: policyState.mode,
         allowPlatformManaged: policyState.allowPlatformManaged,
         allowBringYourOwnKey: policyState.allowBringYourOwnKey,
+        allowDirectProviderMode: policyState.allowDirectProviderMode,
         allowWorkspaceSharedCredentials: policyState.allowWorkspaceSharedCredentials,
         requireAdminApproval: policyState.requireAdminApproval,
         allowVisionOnUserKeys: policyState.allowVisionOnUserKeys,
@@ -224,6 +227,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
             provider: credentialState.provider,
             ownerType: credentialState.ownerType,
             ...(credentialState.ownerType === 'workspace' ? { workspaceId: credentialState.workspaceId } : {}),
+            ...(credentialState.label.trim() ? { label: credentialState.label.trim() } : {}),
             secret: credentialState.secret.trim(),
             scopes: normalizeCsv(credentialState.scopes),
           };
@@ -241,7 +245,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         return;
       }
 
-      setCredentialState((current) => ({ ...current, ownerType: 'platform', scopes: payload.data!.credential.scopes.join(', '), secret: '' }));
+      setCredentialState((current) => ({ ...current, ownerType: 'platform', label: '', scopes: payload.data!.credential.scopes.join(', '), secret: '' }));
       setEditingCredentialId(null);
       setIsSubmittingCredential(false);
       setStatusMessage(`Saved provider credential at ${formatUtcDateTime(payload.data.credential.updatedAt)}.`);
@@ -287,10 +291,40 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     }
   }
 
+  function applyOpenRouterOnlyDefaults() {
+    const openrouterModels = governance.models.filter((m) => m.provider === 'openrouter');
+    const defaultTextModel = openrouterModels.find((m) => m.capabilityTags.includes('text'))?.modelId ?? openrouterModels[0]?.modelId ?? '';
+    setPolicyState((c) => ({
+      ...c,
+      mode: 'platform_only',
+      providersText: 'openrouter',
+      defaultProvider: 'openrouter',
+      allowPlatformManaged: true,
+      allowBringYourOwnKey: false,
+      allowDirectProviderMode: false,
+      allowWorkspaceSharedCredentials: false,
+      requireAdminApproval: false,
+      defaultModel: defaultTextModel,
+      reason: 'Platform-managed OpenRouter routing. BYOK and direct provider mode disabled.',
+    }));
+    setCredentialState((c) => ({ ...c, provider: 'openrouter', ownerType: 'platform' }));
+    setStatusMessage('Quick setup applied — review and click Save policy to persist.');
+    setErrorMessage(null);
+  }
+
   return (
     <div className="admin-feature-flags-shell">
       {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
       {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
+
+      <section className="panel">
+        <span className="micro-label">Quick setup</span>
+        <h2>OpenRouter platform-only mode</h2>
+        <p>Sets policy to <code>platform_only</code>, restricts providers to <code>openrouter</code>, disables BYOK and direct provider mode. Pre-fills the credential form for the platform OpenRouter key. Review and save when ready.</p>
+        <div className="admin-user-actions">
+          <button className="btn-primary" disabled={!canManagePlatform || !isConnectedSession} onClick={applyOpenRouterOnlyDefaults} type="button">Apply OpenRouter defaults</button>
+        </div>
+      </section>
 
       <section className="split-grid">
         <article className="panel">
@@ -335,6 +369,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                 <label className="admin-ticket-field"><span className="micro-label">Reason</span><textarea rows={4} onChange={(event) => setPolicyState((c) => ({ ...c, reason: event.target.value }))} value={policyState.reason} /></label>
                 <label className="admin-ticket-field"><span className="micro-label">Platform managed</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowPlatformManaged: event.target.value === 'true' }))} value={String(policyState.allowPlatformManaged)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">BYOK</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowBringYourOwnKey: event.target.value === 'true' }))} value={String(policyState.allowBringYourOwnKey)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
+                <label className="admin-ticket-field"><span className="micro-label">Direct provider mode</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowDirectProviderMode: event.target.value === 'true' }))} value={String(policyState.allowDirectProviderMode)}><option value="false">disabled (recommended)</option><option value="true">enabled</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Shared keys</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowWorkspaceSharedCredentials: event.target.value === 'true' }))} value={String(policyState.allowWorkspaceSharedCredentials)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Admin approval</span><select onChange={(event) => setPolicyState((c) => ({ ...c, requireAdminApproval: event.target.value === 'true' }))} value={String(policyState.requireAdminApproval)}><option value="true">required</option><option value="false">not required</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Vision on user keys</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowVisionOnUserKeys: event.target.value === 'true' }))} value={String(policyState.allowVisionOnUserKeys)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
@@ -360,6 +395,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           <div className="admin-ticket-editor">
             <label className="admin-ticket-field"><span className="micro-label">Provider</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, provider: event.target.value as AiProvider }))} value={credentialState.provider}>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
             <label className="admin-ticket-field"><span className="micro-label">Ownership</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, ownerType: event.target.value as CredentialOwnerType }))} value={credentialState.ownerType}><option value="platform">platform</option><option disabled={!governance.policy.allowBringYourOwnKey || governance.policy.requireAdminApproval || !governance.policy.allowWorkspaceSharedCredentials} value="workspace">workspace</option>{editingCredentialId && credentialState.ownerType === 'user' ? <option value="user">user</option> : null}</select></label>
+            {!editingCredentialId ? <label className="admin-ticket-field"><span className="micro-label">Label (optional)</span><input disabled={Boolean(credentialPolicyBlockReason)} placeholder="e.g. Production OpenRouter Key" onChange={(event) => setCredentialState((c) => ({ ...c, label: event.target.value }))} value={credentialState.label} /></label> : null}
             <label className="admin-ticket-field"><span className="micro-label">Scopes</span><input disabled={Boolean(credentialPolicyBlockReason)} onChange={(event) => setCredentialState((c) => ({ ...c, scopes: event.target.value }))} value={credentialState.scopes} /></label>
             <label className="admin-ticket-field"><span className="micro-label">Secret</span><input disabled={Boolean(credentialPolicyBlockReason)} type="password" onChange={(event) => setCredentialState((c) => ({ ...c, secret: event.target.value }))} value={credentialState.secret} /></label>
           </div>
