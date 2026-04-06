@@ -37,6 +37,10 @@ import {
   type UserProfileUpdateRequest,
   type WalletBalanceSnapshot,
   type WalletTopUpsPayload,
+  type AiHistoryListResponse,
+  type AiHistoryDetail,
+  type AiAnalyticsSnapshot,
+  type AiHistoryListFilters,
 } from '@quizmind/contracts';
 import { WEB_ENV } from './web-env';
 
@@ -539,6 +543,41 @@ export async function getWalletBalance(accessToken: string): Promise<WalletBalan
 
 export async function getWalletTopUps(accessToken: string): Promise<WalletTopUpsPayload | null> {
   return readApiData<WalletTopUpsPayload>('/wallet/topups', withAccessToken(undefined, accessToken));
+}
+
+export async function getAiHistory(
+  filters: Partial<AiHistoryListFilters>,
+  accessToken?: string | null,
+): Promise<AiHistoryListResponse | null> {
+  const path = withQuery('/history', {
+    limit: filters.limit,
+    offset: filters.offset,
+    requestType: filters.requestType,
+    status: filters.status,
+    model: filters.model,
+    provider: filters.provider,
+    from: filters.from,
+    to: filters.to,
+  });
+  return readApiData<AiHistoryListResponse>(path, withAccessToken(undefined, accessToken));
+}
+
+export async function getAiHistoryDetail(
+  id: string,
+  accessToken?: string | null,
+): Promise<AiHistoryDetail | null> {
+  return readApiData<AiHistoryDetail>(`/history/${encodeURIComponent(id)}`, withAccessToken(undefined, accessToken));
+}
+
+export async function getAiAnalytics(
+  filters: { from?: string; to?: string },
+  accessToken?: string | null,
+): Promise<AiAnalyticsSnapshot | null> {
+  const path = withQuery('/analytics/ai', {
+    from: filters.from,
+    to: filters.to,
+  });
+  return readApiData<AiAnalyticsSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export function personaHref(pathname: string, _persona: string) {

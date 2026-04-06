@@ -5,6 +5,7 @@ import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
 import {
   type AuditExportJobPayload,
   type EmailQueueJobPayload,
+  type HistoryCleanupJobPayload,
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
 } from '@quizmind/contracts';
@@ -26,6 +27,7 @@ import { processQuotaResetJob } from './jobs/process-quota-reset';
 import { processUsageEvent, processUsageEventJob } from './jobs/process-usage-event';
 import { buildQueueJobFailedDomainEvent, buildQueueLogDomainEvent, type QueueJobContext } from './jobs/queue-log-domain-event';
 import { propagateRemoteConfigPublish } from './jobs/publish-remote-config';
+import { processHistoryCleanupJob } from './jobs/process-history-cleanup';
 import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
 import { type CreateWorkerDomainEventInput, WorkerDomainEventRepository } from './repositories/domain-event.repository';
 import { WorkerUsageProcessingRepository } from './repositories/usage-processing.repository';
@@ -313,6 +315,19 @@ async function bootstrap() {
               domainEventRepository,
               async () => processAuditExportJob(payload),
               payload.workspaceId ?? null,
+            );
+          },
+          {
+            connection: redisConnectionOptions,
+          },
+        ),
+        new Worker(
+          'history-cleanup',
+          async (job) => {
+            const payload = job.data as HistoryCleanupJobPayload;
+
+            return processQueueJobWithDomainLogging(job, domainEventRepository, async () =>
+              processHistoryCleanupJob(payload, prisma!),
             );
           },
           {

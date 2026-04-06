@@ -24,6 +24,7 @@ import { decryptSecret, type EncryptedSecretEnvelope } from '@quizmind/secrets';
 import { addUtcDays, evaluateUsageDecision, startOfUtcDay } from '@quizmind/usage';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
+import { AiHistoryService } from '../history/ai-history.service';
 import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
 import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
@@ -412,6 +413,8 @@ export class AiProxyService {
     private readonly aiProxyRepository: AiProxyRepository,
     @Inject(WorkspaceRepository)
     private readonly workspaceRepository: WorkspaceRepository,
+    @Inject(AiHistoryService)
+    private readonly aiHistoryService: AiHistoryService,
   ) {}
 
   async proxyForCurrentSession(
@@ -472,6 +475,13 @@ export class AiProxyService {
         invocation,
         usage,
         responseId: typeof upstreamResponse.id === 'string' ? upstreamResponse.id : undefined,
+      });
+
+      // Persist prompt/response content for history (fire-and-forget; never blocks response).
+      this.persistHistoryContentSafely({
+        invocation,
+        messages: invocation.request.messages,
+        upstreamResponse,
       });
 
       return {
@@ -1607,6 +1617,35 @@ export class AiProxyService {
     } catch (error) {
       console.error('[ai-proxy] Failed to persist proxy failure event.', error);
     }
+  }
+
+  private persistHistoryContentSafely(input: {
+    invocation: PreparedProxyInvocation;
+    messages: NormalizedProxyRequest['messages'];
+    upstreamResponse: Record<string, unknown>;
+  }): void {
+    const { invocation, messages, upstreamResponse } = input;
+    // Determine request type from message content.
+    const hasImage = messages.some(
+      (m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image_url'),
+    );
+    const requestType: 'text' | 'image' = hasImage ? 'image' : 'text';
+
+    this.aiHistoryService
+      .persistContent({
+        userId: invocation.session.user.id,
+        workspaceId: invocation.workspaceId,
+        requestId: invocation.requestId,
+        provider: invocation.provider,
+        model: invocation.resolvedModel,
+        keySource: invocation.keySource,
+        requestType,
+        promptContentJson: messages,
+        responseContentJson: upstreamResponse,
+      })
+      .catch((err) => {
+        console.error('[ai-proxy] Failed to persist history content.', err);
+      });
   }
 
   private resolveProxyFailureCode(error: unknown): string {

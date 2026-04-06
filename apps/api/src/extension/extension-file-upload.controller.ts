@@ -19,6 +19,7 @@ import { type AiProvider, type AiProxyContentBlock, type ApiSuccess } from '@qui
 
 import { AiProxyService } from '../ai/ai-proxy.service';
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
+import { AiHistoryService } from '../history/ai-history.service';
 import { ExtensionControlService } from './extension-control.service';
 
 /** Minimal multer file type (avoids @types/multer dependency). */
@@ -215,6 +216,8 @@ export class ExtensionFileUploadController {
     private readonly extensionControlService: ExtensionControlService,
     @Inject(AiProxyService)
     private readonly aiProxyService: AiProxyService,
+    @Inject(AiHistoryService)
+    private readonly aiHistoryService: AiHistoryService,
   ) {}
 
   /**
@@ -357,6 +360,30 @@ export class ExtensionFileUploadController {
       contentType,
       model: proxyResult.model,
     });
+
+    // Persist history content (fire-and-forget).
+    this.aiHistoryService
+      .persistContent({
+        userId: installationSession.installation.userId,
+        workspaceId,
+        installationId: installationSession.installation.installationId,
+        requestId: proxyResult.requestId,
+        provider: proxyResult.provider,
+        model: proxyResult.model,
+        keySource: proxyResult.keySource,
+        requestType: 'file',
+        promptContentJson: messageContent,
+        responseContentJson: upstreamResponse,
+        fileMetadataJson: {
+          originalName: file.originalname,
+          mimeType: mime,
+          sizeBytes: file.size,
+          contentType,
+        },
+      })
+      .catch((err) => {
+        console.error('[file-upload] Failed to persist history content.', err);
+      });
 
     return ok({
       id:

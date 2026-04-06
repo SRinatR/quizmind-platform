@@ -52,6 +52,7 @@ export const platformQueues = [
   'quota-resets',
   'config-publish',
   'audit-exports',
+  'history-cleanup',
 ] as const;
 export const billingProviders = ['mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
 export const aiProviders = ['openai', 'anthropic', 'openrouter', 'polza', 'internal'] as const;
@@ -1673,4 +1674,91 @@ export interface WalletTopUpCreateResult {
   currency: string;
   providerPaymentId: string;
   status: WalletTopUpStatus;
+}
+
+// ─── AI History + Analytics ──────────────────────────────────────────────────
+
+export type AiRequestType = 'text' | 'image' | 'file';
+export type AiRequestStatus = 'success' | 'error' | 'quota_exceeded';
+
+export interface AiHistoryFileMetadata {
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  contentType: 'text' | 'image';
+}
+
+export interface AiHistoryListItem {
+  id: string;
+  requestType: AiRequestType;
+  provider: string;
+  model: string;
+  keySource: string;
+  status: AiRequestStatus;
+  errorCode?: string | null;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  durationMs?: number | null;
+  /** Short excerpt of the prompt text (first 200 chars). */
+  promptExcerpt?: string | null;
+  /** Short excerpt of the response text (first 200 chars). */
+  responseExcerpt?: string | null;
+  fileMetadata?: AiHistoryFileMetadata | null;
+  occurredAt: string;
+}
+
+export interface AiHistoryDetail extends AiHistoryListItem {
+  /** Full serialized prompt messages (JSON). */
+  promptContentJson?: unknown;
+  /** Full serialized response (JSON). */
+  responseContentJson?: unknown;
+}
+
+export interface AiHistoryListFilters {
+  requestType?: AiRequestType;
+  status?: AiRequestStatus;
+  model?: string;
+  provider?: string;
+  /** ISO date string – lower bound for occurredAt. */
+  from?: string;
+  /** ISO date string – upper bound for occurredAt. */
+  to?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface AiHistoryListResponse {
+  items: AiHistoryListItem[];
+  total: number;
+  filters: AiHistoryListFilters;
+}
+
+export interface AiAnalyticsModelBreakdown {
+  model: string;
+  provider: string;
+  requestCount: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+
+export interface AiAnalyticsSnapshot {
+  /** ISO date string of the period start. */
+  from: string;
+  /** ISO date string of the period end. */
+  to: string;
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  /** Rough estimate based on ~$2/M tokens blended rate. */
+  estimatedCostUsd: number;
+  avgDurationMs: number | null;
+  byModel: AiAnalyticsModelBreakdown[];
+}
+
+export interface HistoryCleanupJobPayload {
+  triggeredAt: string;
 }
