@@ -226,7 +226,7 @@ function normalizeExtensionMessage(entry: unknown, index: number): AiProxyReques
 
 function normalizeExtensionAiRequest(
   request: ExtensionAiRuntimeRequest | undefined,
-  workspaceId: string,
+  workspaceId: string | undefined,
 ): Partial<AiProxyRequest> {
   if (!Array.isArray(request?.messages) || request?.messages.length === 0) {
     throw new BadRequestException('messages must contain at least one item.');
@@ -398,12 +398,6 @@ export class ExtensionControlController {
     const workspaceId = installationSession.installation.workspaceId;
 
     try {
-      if (!workspaceId) {
-        throw new UnauthorizedException(
-          'Installation is not bound to a workspace yet. Reconnect from extension settings.',
-        );
-      }
-
       const session = buildInstallationRuntimeSession(installationSession);
       const catalog = await this.aiProxyService.listModelsForCurrentSession(session);
       const typeFilter = (type ?? '').trim().toLowerCase();
@@ -465,14 +459,8 @@ export class ExtensionControlController {
     const workspaceId = installationSession.installation.workspaceId;
 
     try {
-      if (!workspaceId) {
-        throw new UnauthorizedException(
-          'Installation is not bound to a workspace yet. Reconnect from extension settings.',
-        );
-      }
-
       const session = buildInstallationRuntimeSession(installationSession);
-      const normalizedRequest = normalizeExtensionAiRequest(request, workspaceId);
+      const normalizedRequest = normalizeExtensionAiRequest(request, workspaceId ?? undefined);
       const proxyResult = await this.aiProxyService.proxyForCurrentSession(session, normalizedRequest);
       const upstreamResponse =
         proxyResult.response && typeof proxyResult.response === 'object'

@@ -68,7 +68,7 @@ interface PreparedProxyInvocation {
   session: CurrentSessionSnapshot;
   request: NormalizedProxyRequest;
   resolvedModel: string;
-  workspaceId: string;
+  workspaceId: string | undefined;
   provider: AiProvider;
   keySource: 'platform' | 'user';
   apiKey: string;
@@ -105,7 +105,7 @@ interface KeyMaterialResolution {
 
 export interface AiProxyStreamCompletion {
   requestId: string;
-  workspaceId: string;
+  workspaceId: string | undefined;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -116,7 +116,7 @@ export interface AiProxyStreamCompletion {
 
 export interface AiProxyStreamResult {
   requestId: string;
-  workspaceId: string;
+  workspaceId: string | undefined;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -678,9 +678,9 @@ export class AiProxyService {
     const occurredAt = new Date();
     const periodStart = startOfUtcDay(occurredAt);
     const periodEnd = addUtcDays(periodStart, 1);
-    const quotaCounterFallback: AiProxyQuotaCounterRecord = {
+    const quotaCounterFallback = {
       id: 'ai-proxy-fallback',
-      workspaceId: resolvedWorkspaceId,
+      workspaceId: resolvedWorkspaceId ?? (null as unknown as string),
       key: aiRequestsQuotaKey,
       consumed: 0,
       periodStart,
@@ -688,7 +688,10 @@ export class AiProxyService {
       createdAt: occurredAt,
       updatedAt: occurredAt,
     };
-    const activeCounter = await this.aiProxyRepository.findActiveQuotaCounter(resolvedWorkspaceId, aiRequestsQuotaKey, occurredAt);
+    // Only query quota counter when the user belongs to a workspace.
+    const activeCounter = resolvedWorkspaceId
+      ? await this.aiProxyRepository.findActiveQuotaCounter(resolvedWorkspaceId, aiRequestsQuotaKey, occurredAt)
+      : null;
     const quotaCounter = activeCounter ?? quotaCounterFallback;
     const quotaLimit: number | undefined = undefined;
 
@@ -783,7 +786,7 @@ export class AiProxyService {
   private async resolveKeyMaterial(input: {
     provider: AiProvider;
     session: CurrentSessionSnapshot;
-    workspaceId: string;
+    workspaceId: string | undefined;
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
     requestId: string;
     model: string;
@@ -917,7 +920,7 @@ export class AiProxyService {
   private logKeySourceResolution(input: {
     requestId: string;
     userId: string;
-    workspaceId: string;
+    workspaceId: string | undefined;
     provider: AiProvider;
     model: string;
     requestedUseOwnKey?: boolean;
@@ -944,7 +947,7 @@ export class AiProxyService {
   private logKeySourceFallback(input: {
     requestId: string;
     userId: string;
-    workspaceId: string;
+    workspaceId: string | undefined;
     provider: AiProvider;
     model: string;
     requestedUseOwnKey?: boolean;
@@ -979,7 +982,7 @@ export class AiProxyService {
   }
 
   private async resolveWorkspaceCatalog(
-    workspaceId: string,
+    workspaceId: string | undefined,
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>,
   ): Promise<WorkspaceAiCatalog> {
     const allowedModelTags = Array.from(
@@ -1050,14 +1053,11 @@ export class AiProxyService {
     };
   }
 
-  private async resolveUserWorkspaceId(userId: string): Promise<string> {
+  /** Returns the user's workspace id, or undefined when the user has no workspace.
+   *  Never throws — callers must handle the no-workspace case explicitly. */
+  private async resolveUserWorkspaceId(userId: string): Promise<string | undefined> {
     const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(userId);
-
-    if (!workspaceId) {
-      throw new NotFoundException('No workspace found for this account.');
-    }
-
-    return workspaceId;
+    return workspaceId ?? undefined;
   }
 
   private async resolvePlatformKey(input: {
@@ -1096,7 +1096,7 @@ export class AiProxyService {
   private async resolveUserKey(input: {
     provider: AiProvider;
     session: CurrentSessionSnapshot;
-    workspaceId: string;
+    workspaceId: string | undefined;
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
   }): Promise<string> {
     if (!input.policy.allowBringYourOwnKey) {
@@ -1571,7 +1571,7 @@ export class AiProxyService {
     responseId?: string;
   }): Promise<AiProxyQuotaSnapshot> {
     const nextCounter = await this.aiProxyRepository.recordProxyEvent({
-      workspaceId: input.invocation.workspaceId,
+      workspaceId: input.invocation.workspaceId ?? null,
       userId: input.invocation.session.user.id,
       requestId: input.invocation.requestId,
       provider: input.invocation.provider,
@@ -1602,7 +1602,7 @@ export class AiProxyService {
   }) {
     try {
       await this.aiProxyRepository.recordProxyFailure({
-        workspaceId: input.invocation.workspaceId,
+        workspaceId: input.invocation.workspaceId ?? null,
         userId: input.invocation.session.user.id,
         requestId: input.invocation.requestId,
         provider: input.invocation.provider,

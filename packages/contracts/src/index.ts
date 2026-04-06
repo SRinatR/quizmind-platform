@@ -1329,7 +1329,7 @@ export interface ExtensionFileUploadAnswerResult {
 }
 
 export interface AiModelsCatalogPayload {
-  workspaceId: string;
+  workspaceId: string | undefined;
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
   defaultProvider?: AiProvider;
@@ -1355,7 +1355,7 @@ export interface AiProxyQuotaSnapshot {
 
 export interface AiProxyResult {
   requestId: string;
-  workspaceId: string;
+  workspaceId: string | undefined;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
