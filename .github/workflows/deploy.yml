@@ -1,0 +1,52 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ods.uz
+          port: 22
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            bash /opt/quizmind-platform/scripts/deploy-server.sh
+
+      - name: Healthcheck — API
+        run: |
+          echo "Waiting for API to be ready..."
+          for i in $(seq 1 12); do
+            status=$(curl -sf -o /dev/null -w "%{http_code}" https://ods.uz/api/health || true)
+            if [ "$status" = "200" ]; then
+              echo "API healthcheck passed (HTTP $status)"
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $status — retrying in 10s"
+            sleep 10
+          done
+          echo "ERROR: API healthcheck failed after 2 minutes"
+          exit 1
+
+      - name: Healthcheck — Site
+        run: |
+          status=$(curl -sf -o /dev/null -w "%{http_code}" https://ods.uz || true)
+          if [ "$status" = "200" ]; then
+            echo "Site check passed (HTTP $status)"
+          else
+            echo "WARNING: Site returned HTTP $status (non-blocking)"
+          fi
