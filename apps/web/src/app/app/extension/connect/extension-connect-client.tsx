@@ -191,7 +191,7 @@ export function ExtensionConnectClient({
         bindHeaders['x-quizmind-target-origin'] = resolvedTargetOrigin;
       }
 
-      const response = await fetch('/api/extension/bind', {
+      const response = await fetch('/bff/extension/bind', {
         method: 'POST',
         headers: bindHeaders,
         body: JSON.stringify(initialRequest satisfies ExtensionInstallationBindRequest),

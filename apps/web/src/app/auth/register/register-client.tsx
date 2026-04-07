@@ -57,7 +57,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/bff/auth/register', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +95,7 @@ export function RegisterClient({ initialSession, nextPath }: RegisterClientProps
     setIsSigningOut(true);
 
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await fetch('/bff/auth/logout', { method: 'POST' });
 
       if (!response.ok) {
         setIsSigningOut(false);

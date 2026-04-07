@@ -53,7 +53,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/bff/auth/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -87,7 +87,7 @@ export function LoginClient({ initialSession, nextPath }: LoginClientProps) {
     setIsSigningOut(true);
 
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
+      const response = await fetch('/bff/auth/logout', { method: 'POST' });
 
       if (!response.ok) {
         setIsSigningOut(false);

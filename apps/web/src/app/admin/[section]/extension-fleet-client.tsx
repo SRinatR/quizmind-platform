@@ -140,7 +140,7 @@ export function ExtensionFleetClient({
     setPendingDisconnectInstallationId(installationId);
 
     try {
-      const response = await fetch('/api/extension/installations/disconnect', {
+      const response = await fetch('/bff/extension/installations/disconnect', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -182,7 +182,7 @@ export function ExtensionFleetClient({
     setPendingRotateInstallationId(installationId);
 
     try {
-      const response = await fetch('/api/extension/installations/rotate-session', {
+      const response = await fetch('/bff/extension/installations/rotate-session', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

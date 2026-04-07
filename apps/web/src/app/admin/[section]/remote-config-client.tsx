@@ -284,7 +284,7 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
     setStatusMessage(`Activating remote config version ${version.versionLabel}...`);
 
     try {
-      const response = await fetch('/api/admin/remote-config/activate', {
+      const response = await fetch('/bff/admin/remote-config/activate', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -338,7 +338,7 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
     setStatusMessage(`Publishing remote config version ${versionLabel.trim()}...`);
 
     try {
-      const response = await fetch('/api/admin/remote-config/publish', {
+      const response = await fetch('/bff/admin/remote-config/publish', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

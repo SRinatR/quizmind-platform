@@ -57,7 +57,7 @@ export function SupportSessionsClient({
     );
 
     try {
-      const response = await fetch('/api/support/impersonation/end', {
+      const response = await fetch('/bff/support/impersonation/end', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

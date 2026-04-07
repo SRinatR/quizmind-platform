@@ -151,12 +151,16 @@ function resolveApiUrl(): string {
   const internalApiUrl = process.env.API_INTERNAL_URL?.trim();
 
   if (!internalApiUrl) {
+    // In production the public API_URL may include a path prefix (e.g. https://ods.uz/api).
+    // Server-side fetch calls append their own paths, so we keep the full URL as-is.
     return WEB_ENV.apiUrl;
   }
 
   try {
-    const parsedUrl = new URL(internalApiUrl);
-    return parsedUrl.origin;
+    // Validate it is a well-formed URL. Use the full URL (including any path) so
+    // that a value like "http://api:4000" works unchanged as the internal base URL.
+    new URL(internalApiUrl);
+    return internalApiUrl;
   } catch {
     throw new Error('Invalid web environment: API_INTERNAL_URL must be a valid absolute URL.');
   }

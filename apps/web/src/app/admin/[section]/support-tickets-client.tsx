@@ -190,7 +190,7 @@ export function SupportTicketsClient({
     );
 
     try {
-      const response = await fetch('/api/support/tickets/preset-favorite', {
+      const response = await fetch('/bff/support/tickets/preset-favorite', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -296,7 +296,7 @@ export function SupportTicketsClient({
     setStatusMessage(pendingMessage);
 
     try {
-      const response = await fetch('/api/support/tickets/update', {
+      const response = await fetch('/bff/support/tickets/update', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -353,7 +353,7 @@ export function SupportTicketsClient({
     setStatusMessage(`Starting a ticket-linked support session for ${ticket.requester.displayName || ticket.requester.email}...`);
 
     try {
-      const response = await fetch('/api/support/impersonation', {
+      const response = await fetch('/bff/support/impersonation', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

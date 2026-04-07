@@ -75,7 +75,7 @@ export function CompatibilityClient({ initialState, isConnectedSession }: Compat
     };
 
     try {
-      const response = await fetch('/api/admin/compatibility/publish', {
+      const response = await fetch('/bff/admin/compatibility/publish', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

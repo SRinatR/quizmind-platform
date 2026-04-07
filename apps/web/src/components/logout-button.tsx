@@ -10,7 +10,7 @@ export function LogoutButton() {
 
   async function handleLogout() {
     setIsPending(true);
-    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    await fetch('/bff/auth/logout', { method: 'POST' }).catch(() => null);
     startNavigation(() => {
       router.push('/auth/login');
       router.refresh();

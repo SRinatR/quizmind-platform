@@ -141,7 +141,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         defaultModel: policyState.defaultModel || null,
         reason: policyState.reason || null,
       };
-      const response = await fetch('/api/admin/providers/policy', {
+      const response = await fetch('/bff/admin/providers/policy', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -179,7 +179,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     setStatusMessage('Resetting workspace AI provider policy...');
 
     try {
-      const response = await fetch('/api/admin/providers/policy/reset', {
+      const response = await fetch('/bff/admin/providers/policy/reset', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -231,7 +231,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
             secret: credentialState.secret.trim(),
             scopes: normalizeCsv(credentialState.scopes),
           };
-      const response = await fetch(editingCredentialId ? '/api/providers/credentials/rotate' : '/api/providers/credentials', {
+      const response = await fetch(editingCredentialId ? '/bff/providers/credentials/rotate' : '/bff/providers/credentials', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(requestBody),
@@ -267,7 +267,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     setStatusMessage('Revoking provider credential...');
 
     try {
-      const response = await fetch('/api/providers/credentials/revoke', {
+      const response = await fetch('/bff/providers/credentials/revoke', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ credentialId }),

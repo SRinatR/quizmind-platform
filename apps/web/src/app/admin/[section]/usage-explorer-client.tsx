@@ -97,7 +97,7 @@ export function UsageExplorerClient({
     setStatusMessage('Preparing usage export...');
 
     try {
-      const response = await fetch('/api/admin/usage/export', {
+      const response = await fetch('/bff/admin/usage/export', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

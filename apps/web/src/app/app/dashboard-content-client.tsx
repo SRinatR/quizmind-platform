@@ -214,7 +214,7 @@ export function ProfilePageClient({
 
   const refreshBalance = useCallback(async () => {
     try {
-      const res = await fetch('/api/wallet/balance', { cache: 'no-store' });
+      const res = await fetch('/bff/wallet/balance', { cache: 'no-store' });
       const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
       if (res.ok && payload?.ok && payload.data) setBalance(payload.data);
     } catch {
@@ -269,7 +269,7 @@ export function ProfilePageClient({
         resolvedAvatarUrl.startsWith('data:image/') &&
         !resolvedAvatarUrl.startsWith('data:image/svg+xml')
       ) {
-        const uploadRes = await fetch('/api/user/avatar', {
+        const uploadRes = await fetch('/bff/user/avatar', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ dataUrl: resolvedAvatarUrl }),
@@ -290,7 +290,7 @@ export function ProfilePageClient({
         resolvedAvatarUrl = (uploadPayload as { ok: true; url: string }).url;
       }
 
-      const res = await fetch('/api/user/profile', {
+      const res = await fetch('/bff/user/profile', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -343,7 +343,7 @@ export function ProfilePageClient({
     setBillingStatus(tb.creatingPayment);
 
     try {
-      const response = await fetch('/api/wallet/topups/create', {
+      const response = await fetch('/bff/wallet/topups/create', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ amountKopecks: effectiveKopecks }),
