@@ -1,0 +1,47 @@
+services:
+  postgres:
+    pull_policy: never
+
+  redis:
+    pull_policy: never
+
+  api:
+    pull_policy: never
+    command:
+      [
+        "sh",
+        "-lc",
+        "corepack pnpm --filter @quizmind/database db:migrate:deploy && corepack pnpm --filter @quizmind/api start"
+      ]
+    environment:
+      NODE_ENV: production
+      API_URL: "https://ods.uz/api"
+      APP_URL: "https://ods.uz"
+      TRUST_PROXY_HOPS: 1
+      CORS_ALLOWED_ORIGINS: "https://ods.uz,https://www.ods.uz"
+      EMAIL_PROVIDER: "resend"
+      RESEND_API_KEY: "re_dummy_key"
+      BILLING_PROVIDER: "manual"
+      EMAIL_FROM: "noreply@ods.uz"
+
+  web:
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "https://ods.uz/api"
+      NEXT_PUBLIC_APP_URL: "https://ods.uz"
+    command:
+      [
+        "sh",
+        "-lc",
+        "corepack pnpm --filter @quizmind/web build && corepack pnpm --filter @quizmind/web start --hostname 0.0.0.0 --port 3000"
+      ]
+
+  worker:
+    pull_policy: never
+    environment:
+      NODE_ENV: production
+      API_URL: "http://api:4000"
+      EMAIL_PROVIDER: "resend"
+      RESEND_API_KEY: "re_dummy_key"
+      EMAIL_FROM: "noreply@ods.uz"

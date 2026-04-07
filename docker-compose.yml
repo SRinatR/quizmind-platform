@@ -1,7 +1,7 @@
 services:
   postgres:
     image: public.ecr.aws/docker/library/postgres:16-alpine
-    pull_policy: missing
+    pull_policy: always
     container_name: quizmind-postgres
     restart: unless-stopped
     environment:
@@ -20,7 +20,7 @@ services:
 
   redis:
     image: public.ecr.aws/docker/library/redis:7-alpine
-    pull_policy: missing
+    pull_policy: always
     container_name: quizmind-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]

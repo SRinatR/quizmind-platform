@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 import { usePreferences } from '../lib/preferences';
 
-function useReveal<T extends Element = HTMLElement>(): RefObject<T> {
+function useReveal<T extends Element = HTMLElement>() {
   const ref = useRef<T>(null);
   useEffect(() => {
     const el = ref.current;
@@ -13,7 +13,7 @@ function useReveal<T extends Element = HTMLElement>(): RefObject<T> {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          (el as HTMLElement).classList.add('lp-revealed');
+          (el as unknown as HTMLElement).classList.add('lp-revealed');
           observer.disconnect();
         }
       },
