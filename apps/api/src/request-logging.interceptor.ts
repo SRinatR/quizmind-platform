@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { createLogEvent } from '@quizmind/logger';
 import { tap } from 'rxjs';
+import { http5xxTotal, httpRequestDurationSeconds, httpRequestsTotal, normalizeRoute, statusClass } from './metrics';
 
 @Injectable()
 export class RequestLoggingInterceptor implements NestInterceptor {
@@ -65,6 +66,17 @@ export class RequestLoggingInterceptor implements NestInterceptor {
     outcome: 'success' | 'failure';
     meta?: Record<string, unknown>;
   }) {
+    // Record Prometheus metrics (skip the /metrics endpoint itself)
+    if (input.url !== '/metrics') {
+      const route = normalizeRoute(input.url);
+      const sc = statusClass(input.statusCode);
+      httpRequestsTotal.inc({ method: input.method, route, status_class: sc });
+      httpRequestDurationSeconds.observe({ method: input.method, route }, input.durationMs / 1000);
+      if (input.statusCode >= 500) {
+        http5xxTotal.inc({ method: input.method, route });
+      }
+    }
+
     const event = createLogEvent({
       eventId: `http:${input.method}:${input.url}:${Date.now()}`,
       eventType: 'http.request',

@@ -1,0 +1,53 @@
+// Grafana Alloy config — collects Docker container logs and forwards to Loki.
+// Runs with /var/run/docker.sock mounted read-only.
+
+// Discover all running Docker containers
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  refresh_interval = "15s"
+}
+
+// Relabel Docker metadata into clean Loki labels
+discovery.relabel "container_labels" {
+  targets = discovery.docker.containers.targets
+
+  // Use the container name (strip leading /) as the label
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Forward the Docker Compose service label if present
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // Expose image name
+  rule {
+    source_labels = ["__meta_docker_container_image_name"]
+    regex         = "([^:]+).*"
+    target_label  = "image"
+  }
+}
+
+// Collect logs from all discovered containers
+loki.source.docker "container_logs" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.container_labels.output
+  forward_to       = [loki.write.loki_push.receiver]
+  refresh_interval = "15s"
+  relabel_rules    = discovery.relabel.container_labels.rules
+}
+
+// Push logs to Loki
+loki.write "loki_push" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+  external_labels = {
+    environment = "production",
+    site        = "ods.uz",
+  }
+}

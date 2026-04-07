@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import http from 'node:http';
+import { Counter, Registry, collectDefaultMetrics } from 'prom-client';
 
 import { createPrismaClientOptions, PrismaClient } from '@quizmind/database';
 import { loadWorkerEnv, validateWorkerEnv } from '@quizmind/config';
@@ -31,6 +33,54 @@ import { processHistoryCleanupJob } from './jobs/process-history-cleanup';
 import { WorkerBillingProcessingRepository } from './repositories/billing-processing.repository';
 import { type CreateWorkerDomainEventInput, WorkerDomainEventRepository } from './repositories/domain-event.repository';
 import { WorkerUsageProcessingRepository } from './repositories/usage-processing.repository';
+
+// ---------------------------------------------------------------------------
+// Prometheus metrics
+// ---------------------------------------------------------------------------
+const metricsRegistry = new Registry();
+collectDefaultMetrics({ register: metricsRegistry, prefix: 'quizmind_worker_' });
+
+const jobsProcessedTotal = new Counter({
+  name: 'quizmind_worker_jobs_processed_total',
+  help: 'Total number of successfully processed jobs',
+  labelNames: ['queue'] as const,
+  registers: [metricsRegistry],
+});
+
+const jobsFailedTotal = new Counter({
+  name: 'quizmind_worker_jobs_failed_total',
+  help: 'Total number of failed jobs',
+  labelNames: ['queue'] as const,
+  registers: [metricsRegistry],
+});
+
+const historyCleanupRunsTotal = new Counter({
+  name: 'quizmind_worker_history_cleanup_runs_total',
+  help: 'Total number of history cleanup runs',
+  registers: [metricsRegistry],
+});
+
+const historyCleanupDeletedTotal = new Counter({
+  name: 'quizmind_worker_history_cleanup_deleted_total',
+  help: 'Total number of history records deleted by cleanup',
+  registers: [metricsRegistry],
+});
+
+function startMetricsServer(port: number) {
+  const server = http.createServer(async (_req, res) => {
+    try {
+      res.writeHead(200, { 'Content-Type': metricsRegistry.contentType });
+      res.end(await metricsRegistry.metrics());
+    } catch {
+      res.writeHead(500);
+      res.end();
+    }
+  });
+  server.listen(port, '0.0.0.0');
+  return server;
+}
+
+// ---------------------------------------------------------------------------
 
 function resolveQueueJobContext(job: Job<unknown>): QueueJobContext {
   return {
@@ -115,6 +165,7 @@ async function processQueueJobWithDomainLogging<T extends QueueJobProcessingResu
 
     await persistDomainEvent(domainEventRepository, processedEvent, queueContext);
     console.log(JSON.stringify(result.logEvent));
+    jobsProcessedTotal.inc({ queue: queueContext.queueName });
 
     return result;
   } catch (error) {
@@ -125,6 +176,7 @@ async function processQueueJobWithDomainLogging<T extends QueueJobProcessingResu
     );
 
     await persistDomainEvent(domainEventRepository, failedEvent, queueContext);
+    jobsFailedTotal.inc({ queue: queueContext.queueName });
     throw error;
   }
 }
@@ -137,6 +189,9 @@ async function bootstrap() {
     throw new Error(`Invalid worker environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
   }
   const startedAt = new Date().toISOString();
+  const metricsPort = Number(process.env.WORKER_METRICS_PORT ?? 9091);
+  startMetricsServer(metricsPort);
+
   const redisConnectionOptions = resolveRedisConnectionOptions(env.redisUrl);
 
   console.log(
@@ -326,9 +381,15 @@ async function bootstrap() {
           async (job) => {
             const payload = job.data as HistoryCleanupJobPayload;
 
-            return processQueueJobWithDomainLogging(job, domainEventRepository, async () =>
-              processHistoryCleanupJob(payload, prisma!),
-            );
+            return processQueueJobWithDomainLogging(job, domainEventRepository, async () => {
+              const result = await processHistoryCleanupJob(payload, prisma!);
+              historyCleanupRunsTotal.inc();
+              const deleted = (result.logEvent.metadata as Record<string, unknown> | undefined)?.deletedCount;
+              if (typeof deleted === 'number' && deleted > 0) {
+                historyCleanupDeletedTotal.inc(deleted);
+              }
+              return result;
+            });
           },
           {
             connection: redisConnectionOptions,

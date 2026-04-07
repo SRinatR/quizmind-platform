@@ -1,0 +1,141 @@
+groups:
+  - name: external_probes
+    interval: 60s
+    rules:
+      - alert: SiteDown
+        expr: probe_success{instance="https://ods.uz"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ods.uz homepage is unreachable"
+          description: "Blackbox probe for https://ods.uz has been failing for 2m."
+
+      - alert: WWWSiteDown
+        expr: probe_success{instance="https://www.ods.uz"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "www.ods.uz is unreachable"
+          description: "Blackbox probe for https://www.ods.uz has been failing for 2m."
+
+      - alert: ApiHealthDown
+        expr: probe_success{instance="https://ods.uz/api/health"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API health check failing"
+          description: "Blackbox probe for https://ods.uz/api/health has been failing for 2m."
+
+      - alert: SlowProbe
+        expr: probe_duration_seconds{instance=~"https://ods.uz.*"} > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow response from {{ $labels.instance }}"
+          description: "Probe for {{ $labels.instance }} took {{ $value }}s (threshold 5s)."
+
+  - name: api_errors
+    rules:
+      - alert: ApiHighErrorRate
+        expr: |
+          rate(quizmind_api_http_5xx_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API 5xx error rate elevated"
+          description: "API is returning more than 0.1 5xx/s over 5m window (current: {{ $value | printf \"%.2f\" }}/s)."
+
+      - alert: ApiDown
+        expr: up{job="quizmind_api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API metrics endpoint unreachable"
+          description: "Prometheus cannot scrape quizmind_api (job=quizmind_api is down)."
+
+      - alert: WorkerDown
+        expr: up{job="quizmind_worker"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker metrics endpoint unreachable"
+          description: "Prometheus cannot scrape quizmind_worker (job=quizmind_worker is down)."
+
+      - alert: WorkerHighFailureRate
+        expr: |
+          rate(quizmind_worker_jobs_failed_total[10m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker job failure rate elevated"
+          description: "Queue {{ $labels.queue }} is failing at {{ $value | printf \"%.2f\" }}/s over 10m."
+
+  - name: host_resources
+    rules:
+      - alert: HighCpuUsage
+        expr: |
+          100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on host"
+          description: "CPU usage is {{ $value | printf \"%.0f\" }}% for 10m."
+
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 88
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on host"
+          description: "Memory usage is {{ $value | printf \"%.0f\" }}% ({{ $value | printf \"%.0f\" }}% used)."
+
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on /"
+          description: "Only {{ $value | printf \"%.0f\" }}% disk space remaining on /."
+
+      - alert: DiskSpaceCritical
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space on /"
+          description: "Only {{ $value | printf \"%.0f\" }}% disk space remaining on /. Immediate action required."
+
+  - name: database
+    rules:
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Postgres is unreachable"
+          description: "postgres_exporter cannot connect to Postgres."
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is unreachable"
+          description: "redis_exporter cannot connect to Redis."
