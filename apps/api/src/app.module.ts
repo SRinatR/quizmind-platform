@@ -3,6 +3,10 @@ import { Module } from '@nestjs/common';
 import { AiProxyController } from './ai/ai-proxy.controller';
 import { AiProxyRepository } from './ai/ai-proxy.repository';
 import { AiProxyService } from './ai/ai-proxy.service';
+import { AiHistoryController } from './history/ai-history.controller';
+import { AiHistoryRepository } from './history/ai-history.repository';
+import { AiHistoryService } from './history/ai-history.service';
+import { HistoryBlobService } from './history/history-blob.service';
 import { AuthController } from './auth/auth.controller';
 import { AuthService } from './auth/auth.service';
 import { BillingController } from './billing/billing.controller';
@@ -19,6 +23,7 @@ import { PrismaService } from './database/prisma.service';
 import { ExtensionCompatibilityRepository } from './extension/extension-compatibility.repository';
 import { ExtensionControlController } from './extension/extension-control.controller';
 import { ExtensionControlService } from './extension/extension-control.service';
+import { ExtensionFileUploadController } from './extension/extension-file-upload.controller';
 import { ExtensionEventRepository } from './extension/extension-event.repository';
 import { ExtensionInstallationRepository } from './extension/extension-installation.repository';
 import { ExtensionInstallationSessionRepository } from './extension/extension-installation-session.repository';
@@ -50,12 +55,17 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     WalletController,
     PlatformController,
     ExtensionControlController,
+    ExtensionFileUploadController,
     ProviderCredentialController,
     AiProxyController,
+    AiHistoryController,
   ],
   providers: [
     AiProxyRepository,
     AiProxyService,
+    AiHistoryRepository,
+    AiHistoryService,
+    HistoryBlobService,
     AuthService,
     BillingService,
     BillingWebhookRepository,

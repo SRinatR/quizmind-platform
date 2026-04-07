@@ -40,6 +40,8 @@ export async function POST(request: Request) {
     return badRequest('provider, ownerType, and secret are required.');
   }
 
+  const label = typeof body.label === 'string' && body.label.trim() ? body.label.trim() : undefined;
+
   const response = await fetch(`${API_URL}/providers/credentials`, {
     method: 'POST',
     cache: 'no-store',
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
       provider: body.provider,
       ownerType: body.ownerType,
       secret,
+      ...(label ? { label } : {}),
       ...(body.scopes ? { scopes: body.scopes } : {}),
     }),
   });

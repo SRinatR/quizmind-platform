@@ -323,28 +323,33 @@ model QuotaCounter {
 }
 
 model AiRequest {
-  id               String     @id @default(cuid())
-  userId           String
-  workspaceId      String?
-  installationId   String?
-  provider         String
-  model            String
-  promptTokens     Int        @default(0)
-  completionTokens Int        @default(0)
-  totalTokens      Int        @default(0)
-  keySource        String     @default("platform")
-  status           String     @default("success")
-  errorCode        String?
-  durationMs       Int?
-  requestMetadata  Json?
-  occurredAt       DateTime   @default(now())
-  createdAt        DateTime   @default(now())
-  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  id                 String     @id @default(cuid())
+  userId             String
+  workspaceId        String?
+  installationId     String?
+  provider           String
+  model              String
+  promptTokens       Int        @default(0)
+  completionTokens   Int        @default(0)
+  totalTokens        Int        @default(0)
+  keySource          String     @default("platform")
+  status             String     @default("success")
+  errorCode          String?
+  durationMs         Int?
+  requestMetadata    Json?
+  requestType        String?
+  fileMetadataJson   Json?
+  estimatedCostUsd   Float?
+  expiresAt          DateTime?
+  occurredAt         DateTime   @default(now())
+  createdAt          DateTime   @default(now())
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace          Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([userId, occurredAt])
   @@index([workspaceId, occurredAt])
   @@index([occurredAt])
+  @@index([expiresAt])
   @@map("ai_requests")
 }
 

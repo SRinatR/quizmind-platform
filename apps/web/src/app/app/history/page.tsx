@@ -2,7 +2,14 @@ import { type UsageHistoryRequest, type UsageHistorySourceFilter } from '@quizmi
 
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
-import { getSession, getUsageHistory, getUserProfile, resolvePersona } from '../../../lib/api';
+import {
+  getAiHistory,
+  getAiAnalytics,
+  getSession,
+  getUsageHistory,
+  getUserProfile,
+  resolvePersona,
+} from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
 import { HistoryPageClient } from './history-page-client';
 
@@ -20,12 +27,12 @@ function readSearchParam(value: string | string[] | undefined): string | undefin
   return value;
 }
 
-function normalizeHistorySource(value: string | undefined): UsageHistorySourceFilter {
-  if (value === 'activity' || value === 'telemetry' || value === 'ai' || value === 'all') {
+function normalizeHistorySource(value: string | undefined): UsageHistorySourceFilter | 'ai_requests' {
+  if (value === 'activity' || value === 'telemetry' || value === 'ai' || value === 'all' || value === 'ai_requests') {
     return value;
   }
 
-  return 'all';
+  return 'ai_requests';
 }
 
 function normalizePositiveInt(value: string | undefined, fallback: number): number {
@@ -52,70 +59,6 @@ function normalizeFilterText(value: string | undefined): string | undefined {
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function escapeCsv(value: string) {
-  const normalized = value.replaceAll('"', '""');
-
-  return /[",\n]/.test(normalized) ? `"${normalized}"` : normalized;
-}
-
-function buildHistoryCsv(items: Array<{
-  id: string;
-  source: string;
-  eventType: string;
-  severity?: string;
-  occurredAt: string;
-  installationId?: string;
-  actorId?: string;
-  summary: string;
-}>) {
-  const header = ['id', 'source', 'event_type', 'severity', 'occurred_at', 'installation_id', 'actor_id', 'summary'];
-  const rows = items.map((item) =>
-    [
-      item.id,
-      item.source,
-      item.eventType,
-      item.severity ?? '',
-      item.occurredAt,
-      item.installationId ?? '',
-      item.actorId ?? '',
-      item.summary,
-    ]
-      .map((cell) => escapeCsv(cell))
-      .join(','),
-  );
-
-  return ['\uFEFF' + header.join(','), ...rows].join('\n');
-}
-
-function buildQueryParams(input: {
-  source: UsageHistorySourceFilter;
-  eventType?: string;
-  installationId?: string;
-  actorId?: string;
-  limit: number;
-  page: number;
-}) {
-  const params = new URLSearchParams();
-
-  params.set('source', input.source);
-  params.set('limit', String(input.limit));
-  params.set('page', String(input.page));
-
-  if (input.eventType) {
-    params.set('eventType', input.eventType);
-  }
-
-  if (input.installationId) {
-    params.set('installationId', input.installationId);
-  }
-
-  if (input.actorId) {
-    params.set('actorId', input.actorId);
-  }
-
-  return params;
-}
-
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
@@ -132,57 +75,44 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const eventType = normalizeFilterText(readSearchParam(resolvedSearchParams?.eventType));
   const installationId = normalizeFilterText(readSearchParam(resolvedSearchParams?.installationId));
   const actorId = normalizeFilterText(readSearchParam(resolvedSearchParams?.actorId));
-  const historyRequest: Partial<UsageHistoryRequest> = {
-    source,
-    limit: fetchLimit,
-    ...(eventType ? { eventType } : {}),
-    ...(source !== 'activity' && installationId ? { installationId } : {}),
-    ...(source !== 'telemetry' && actorId ? { actorId } : {}),
-  };
-  const history = await getUsageHistory(persona, historyRequest, accessToken);
+  const requestType = normalizeFilterText(readSearchParam(resolvedSearchParams?.requestType));
+  const requestStatus = normalizeFilterText(readSearchParam(resolvedSearchParams?.status));
+  const modelFilter = normalizeFilterText(readSearchParam(resolvedSearchParams?.model));
+  const providerFilter = normalizeFilterText(readSearchParam(resolvedSearchParams?.provider));
+  const fromFilter = normalizeFilterText(readSearchParam(resolvedSearchParams?.from));
+  const toFilter = normalizeFilterText(readSearchParam(resolvedSearchParams?.to));
   const isAdmin = session ? isAdminSession(session) : false;
-  const effectivePage = history
-    ? Math.min(requestedPage, Math.max(1, Math.ceil(history.items.length / pageSize)))
-    : requestedPage;
-  const sliceStart = (effectivePage - 1) * pageSize;
-  const sliceEnd = sliceStart + pageSize;
-  const visibleItems = history ? history.items.slice(sliceStart, sliceEnd) : [];
-  const telemetryCount = history?.items.filter((item) => item.source === 'telemetry').length ?? 0;
-  const activityCount = history?.items.filter((item) => item.source === 'activity').length ?? 0;
-  const aiCount = history?.items.filter((item) => item.source === 'ai').length ?? 0;
-  const hasPreviousPage = effectivePage > 1;
-  const hasNextPage = history
-    ? history.items.length > sliceEnd || (history.items.length === fetchLimit && fetchLimit < maxHistoryFetchLimit)
-    : false;
-  const queryParams = buildQueryParams({
-    source,
-    eventType,
-    ...(source !== 'activity' && installationId ? { installationId } : {}),
-    ...(source !== 'telemetry' && actorId ? { actorId } : {}),
-    limit: pageSize,
-    page: effectivePage,
-  });
-  const previousParams = new URLSearchParams(queryParams);
-  const nextParams = new URLSearchParams(queryParams);
-  previousParams.set('page', String(Math.max(1, effectivePage - 1)));
-  nextParams.set('page', String(effectivePage + 1));
-  const previousHref = `/app/history?${previousParams.toString()}`;
-  const nextHref = `/app/history?${nextParams.toString()}`;
-  const csvContent = buildHistoryCsv(
-    visibleItems.map((item) => ({
-      id: item.id,
-      source: item.source,
-      eventType: item.eventType,
-      severity: item.severity,
-      occurredAt: item.occurredAt,
-      installationId: item.installationId,
-      actorId: item.actorId,
-      summary: item.summary,
-    })),
-  );
-  const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvContent)}`;
-  const canExportCsv = Boolean(history?.exportDecision.allowed && visibleItems.length > 0);
-  const clearHref = '/app/history';
+
+  // For 'ai_requests' source, use the dedicated AI history endpoint.
+  let aiHistory = null;
+  let legacyHistory = null;
+
+  if (source === 'ai_requests') {
+    aiHistory = await getAiHistory(
+      {
+        limit: pageSize,
+        offset: (requestedPage - 1) * pageSize,
+        requestType: requestType as never,
+        status: requestStatus as never,
+        model: modelFilter,
+        provider: providerFilter,
+        from: fromFilter,
+        to: toFilter,
+      },
+      accessToken,
+    );
+  } else {
+    const historyRequest: Partial<UsageHistoryRequest> = {
+      source: source as UsageHistorySourceFilter,
+      limit: fetchLimit,
+      ...(eventType ? { eventType } : {}),
+      ...(source !== 'activity' && installationId ? { installationId } : {}),
+      ...(source !== 'telemetry' && actorId ? { actorId } : {}),
+    };
+    legacyHistory = await getUsageHistory(persona, historyRequest, accessToken);
+  }
+
+  const effectivePage = requestedPage;
 
   return (
     <SiteShell
@@ -194,34 +124,27 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
       isSignedIn={Boolean(session)}
       pathname="/app/history"
       showPersonaSwitcher={false}
-      title="Usage history"
+      title="AI History"
       userDisplayName={session?.user.displayName ?? undefined}
       userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       <HistoryPageClient
-        visibleItems={visibleItems}
-        totalLoaded={history?.items.length ?? 0}
-        fetchLimit={fetchLimit}
-        maxFetchLimit={maxHistoryFetchLimit}
+        source={source}
+        aiHistory={aiHistory}
+        legacyHistory={legacyHistory}
         effectivePage={effectivePage}
         pageSize={pageSize}
-        hasPrev={hasPreviousPage}
-        hasNext={hasNextPage}
-        previousHref={previousHref}
-        nextHref={nextHref}
-        telemetryCount={telemetryCount}
-        activityCount={activityCount}
-        aiCount={aiCount}
-        source={source}
+        requestType={requestType}
+        requestStatus={requestStatus}
+        modelFilter={modelFilter}
+        providerFilter={providerFilter}
+        fromFilter={fromFilter}
+        toFilter={toFilter}
         eventType={eventType}
         installationId={installationId}
         actorId={actorId}
-        canExportCsv={canExportCsv}
-        csvHref={csvHref}
-        csvFilename={`usage-history-page-${effectivePage}.csv`}
-        clearHref={clearHref}
         hasSession={Boolean(session)}
-        hasHistory={Boolean(history)}
+        clearHref="/app/history"
       />
     </SiteShell>
   );

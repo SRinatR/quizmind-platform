@@ -313,6 +313,10 @@ export const AiRequestScalarFieldEnum = {
   errorCode: 'errorCode',
   durationMs: 'durationMs',
   requestMetadata: 'requestMetadata',
+  requestType: 'requestType',
+  fileMetadataJson: 'fileMetadataJson',
+  estimatedCostUsd: 'estimatedCostUsd',
+  expiresAt: 'expiresAt',
   occurredAt: 'occurredAt',
   createdAt: 'createdAt'
 } as const

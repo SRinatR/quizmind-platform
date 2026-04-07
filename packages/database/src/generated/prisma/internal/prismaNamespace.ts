@@ -3054,6 +3054,10 @@ export const AiRequestScalarFieldEnum = {
   errorCode: 'errorCode',
   durationMs: 'durationMs',
   requestMetadata: 'requestMetadata',
+  requestType: 'requestType',
+  fileMetadataJson: 'fileMetadataJson',
+  estimatedCostUsd: 'estimatedCostUsd',
+  expiresAt: 'expiresAt',
   occurredAt: 'occurredAt',
   createdAt: 'createdAt'
 } as const
@@ -3475,6 +3479,20 @@ export type ListEnumSystemRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+/**
  * Reference to a field of type 'FeatureFlagStatus'
  */
 export type EnumFeatureFlagStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeatureFlagStatus'>
@@ -3604,20 +3622,6 @@ export type EnumTicketStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'TicketStatus[]'
  */
 export type ListEnumTicketStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TicketStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-/**
- * Reference to a field of type 'Float[]'
- */
-export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 /**

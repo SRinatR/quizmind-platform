@@ -52,6 +52,7 @@ export const platformQueues = [
   'quota-resets',
   'config-publish',
   'audit-exports',
+  'history-cleanup',
 ] as const;
 export const billingProviders = ['mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
 export const aiProviders = ['openai', 'anthropic', 'openrouter', 'polza', 'internal'] as const;
@@ -1279,16 +1280,31 @@ export interface UserApiKeyTestResult {
 
 export type AiProxyMessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
+export interface AiProxyTextContentBlock {
+  type: 'text';
+  text: string;
+}
+
+export interface AiProxyImageContentBlock {
+  type: 'image_url';
+  image_url: {
+    url: string;
+    detail?: 'auto' | 'low' | 'high';
+  };
+}
+
+export type AiProxyContentBlock = AiProxyTextContentBlock | AiProxyImageContentBlock;
+
 export interface AiProxyMessage {
   role: AiProxyMessageRole;
-  content: string;
+  content: string | AiProxyContentBlock[];
   name?: string;
 }
 
 export interface AiProxyRequest {
   workspaceId?: string;
   provider?: AiProvider;
-  model: string;
+  model?: string;
   messages: AiProxyMessage[];
   useOwnKey?: boolean;
   temperature?: number;
@@ -1296,8 +1312,24 @@ export interface AiProxyRequest {
   stream?: boolean;
 }
 
+export interface ExtensionFileUploadAnswerResult {
+  id: string;
+  model: string;
+  provider: AiProvider;
+  keySource: 'platform' | 'user';
+  choices: unknown[];
+  usage?: unknown;
+  quota?: unknown;
+  fileInfo: {
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    contentType: 'text' | 'image';
+  };
+}
+
 export interface AiModelsCatalogPayload {
-  workspaceId: string;
+  workspaceId: string | undefined;
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
   defaultProvider?: AiProvider;
@@ -1323,7 +1355,7 @@ export interface AiProxyQuotaSnapshot {
 
 export interface AiProxyResult {
   requestId: string;
-  workspaceId: string;
+  workspaceId: string | undefined;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -1642,4 +1674,93 @@ export interface WalletTopUpCreateResult {
   currency: string;
   providerPaymentId: string;
   status: WalletTopUpStatus;
+}
+
+// ─── AI History + Analytics ──────────────────────────────────────────────────
+
+export type AiRequestType = 'text' | 'image' | 'file';
+export type AiRequestStatus = 'success' | 'error' | 'quota_exceeded';
+
+export interface AiHistoryFileMetadata {
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  contentType: 'text' | 'image';
+}
+
+export interface AiHistoryListItem {
+  id: string;
+  requestType: AiRequestType;
+  provider: string;
+  model: string;
+  keySource: string;
+  status: AiRequestStatus;
+  errorCode?: string | null;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  durationMs?: number | null;
+  estimatedCostUsd: number;
+  /** Short excerpt of the prompt text (first ~300 chars). */
+  promptExcerpt?: string | null;
+  /** Short excerpt of the response text (first ~300 chars). */
+  responseExcerpt?: string | null;
+  fileMetadata?: AiHistoryFileMetadata | null;
+  occurredAt: string;
+  expiresAt?: string | null;
+}
+
+export interface AiHistoryDetail extends AiHistoryListItem {
+  /** Full serialized prompt messages (from blob storage). */
+  promptContentJson?: unknown;
+  /** Full serialized provider response (from blob storage). */
+  responseContentJson?: unknown;
+}
+
+export interface AiHistoryListFilters {
+  requestType?: AiRequestType;
+  status?: AiRequestStatus;
+  model?: string;
+  provider?: string;
+  /** ISO date string – lower bound for occurredAt. */
+  from?: string;
+  /** ISO date string – upper bound for occurredAt. */
+  to?: string;
+  limit: number;
+  offset: number;
+}
+
+export interface AiHistoryListResponse {
+  items: AiHistoryListItem[];
+  total: number;
+  filters: AiHistoryListFilters;
+}
+
+export interface AiAnalyticsModelBreakdown {
+  model: string;
+  provider: string;
+  requestCount: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+}
+
+export interface AiAnalyticsSnapshot {
+  /** ISO date string of the period start. */
+  from: string;
+  /** ISO date string of the period end. */
+  to: string;
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  /** Model/provider-aware cost estimate in USD. */
+  estimatedCostUsd: number;
+  avgDurationMs: number | null;
+  byModel: AiAnalyticsModelBreakdown[];
+}
+
+export interface HistoryCleanupJobPayload {
+  triggeredAt: string;
 }

@@ -37,7 +37,7 @@ export type AiProxyCredentialRecord = Prisma.ProviderCredentialGetPayload<{
 interface FindUserCredentialInput {
   provider: string;
   userId: string;
-  workspaceId: string;
+  workspaceId: string | undefined;
   allowWorkspaceShared: boolean;
 }
 
@@ -46,7 +46,7 @@ interface FindPlatformCredentialInput {
 }
 
 interface RecordProxyEventInput {
-  workspaceId: string;
+  workspaceId: string | null;
   userId: string;
   requestId: string;
   provider: string;
@@ -68,7 +68,7 @@ interface RecordProxyEventInput {
 }
 
 interface RecordProxyFailureInput {
-  workspaceId: string;
+  workspaceId: string | null;
   userId: string;
   requestId: string;
   provider: string;
@@ -92,8 +92,8 @@ function toNullableJsonInput(
   return value === null ? Prisma.JsonNull : value;
 }
 
-function selectCredentialRank(record: AiProxyCredentialRecord, workspaceId: string): number {
-  if (record.ownerType === 'user' && record.workspaceId === workspaceId) {
+function selectCredentialRank(record: AiProxyCredentialRecord, workspaceId: string | undefined): number {
+  if (record.ownerType === 'user' && workspaceId && record.workspaceId === workspaceId) {
     return 0;
   }
 
@@ -150,22 +150,16 @@ export class AiProxyRepository {
   }
 
   async findBestUserCredential(input: FindUserCredentialInput): Promise<AiProxyCredentialRecord | null> {
-    const predicates: Prisma.ProviderCredentialWhereInput[] = [
-      {
-        ownerType: 'user',
-        userId: input.userId,
-        OR: [
-          {
-            workspaceId: input.workspaceId,
-          },
-          {
-            workspaceId: null,
-          },
-        ],
-      },
-    ];
+    const userPredicate: Prisma.ProviderCredentialWhereInput = input.workspaceId
+      ? {
+          ownerType: 'user',
+          userId: input.userId,
+          OR: [{ workspaceId: input.workspaceId }, { workspaceId: null }],
+        }
+      : { ownerType: 'user', userId: input.userId, workspaceId: null };
+    const predicates: Prisma.ProviderCredentialWhereInput[] = [userPredicate];
 
-    if (input.allowWorkspaceShared) {
+    if (input.allowWorkspaceShared && input.workspaceId) {
       predicates.push({
         ownerType: 'workspace',
         workspaceId: input.workspaceId,
@@ -213,7 +207,7 @@ export class AiProxyRepository {
 
   async recordProxyEvent(input: RecordProxyEventInput): Promise<AiProxyQuotaCounterRecord | null> {
     return this.prisma.$transaction(async (transaction) => {
-      const nextCounter = input.consumeQuota
+      const nextCounter = input.consumeQuota && input.workspaceId
         ? await transaction.quotaCounter.upsert({
             where: {
               workspaceId_key_periodStart_periodEnd: {

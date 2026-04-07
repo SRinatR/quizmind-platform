@@ -3,6 +3,7 @@ import {
   platformQueues,
   type BillingWebhookJobPayload,
   type EmailQueueJobPayload,
+  type HistoryCleanupJobPayload,
   type PlatformQueue,
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
@@ -18,6 +19,7 @@ export interface PlatformQueuePayloadMap {
   'quota-resets': QuotaResetJobPayload;
   'config-publish': RemoteConfigPublishResult;
   'audit-exports': AuditExportJobPayload;
+  'history-cleanup': HistoryCleanupJobPayload;
 }
 
 export type QueuePayloadFor<TQueue extends PlatformQueue> = PlatformQueuePayloadMap[TQueue];
@@ -109,6 +111,13 @@ export const queueDefinitions: Record<PlatformQueue, QueueDefinition> = {
     attempts: 2,
     removeOnComplete: 50,
     removeOnFail: 250,
+  },
+  'history-cleanup': {
+    name: 'history-cleanup',
+    description: 'Purges expired AI request content (prompt/response text) after the 7-day retention window.',
+    attempts: 3,
+    removeOnComplete: 10,
+    removeOnFail: 50,
   },
 };
 
