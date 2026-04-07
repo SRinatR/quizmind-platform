@@ -57,7 +57,7 @@ export function ResetPasswordClient({ nextPath, token }: ResetPasswordClientProp
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch('/bff/auth/reset-password', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ token, password }),

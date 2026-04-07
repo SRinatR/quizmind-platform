@@ -108,7 +108,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
     setStatusMessage('Requeueing webhook delivery...');
 
     try {
-      const response = await fetch('/api/admin/webhooks/retry', {
+      const response = await fetch('/bff/admin/webhooks/retry', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

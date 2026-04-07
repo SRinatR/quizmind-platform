@@ -119,6 +119,6 @@ export const config = {
   matcher: [
     // Run on all routes except Next.js internals, static assets, and auth API routes
     // (auth API routes handle their own cookie logic).
-    '/((?!_next/static|_next/image|favicon\\.ico|api/auth/).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|bff/auth/).*)',
   ],
 };

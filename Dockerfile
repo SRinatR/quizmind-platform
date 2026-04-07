@@ -1,4 +1,5 @@
-FROM node:22-bookworm-slim
+# Use public ECR mirror to avoid Docker Hub pull-rate limits on VPS deployments.
+FROM public.ecr.aws/docker/library/node:22-bookworm-slim AS base
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
@@ -11,6 +12,7 @@ RUN apt-get update \
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# ── Dependency layer (cached unless lockfile changes) ─────────────────────────
 COPY package.json pnpm-workspace.yaml .npmrc ./
 
 COPY apps/api/package.json        ./apps/api/
@@ -45,4 +47,28 @@ COPY . .
 
 RUN corepack pnpm --filter @quizmind/database db:generate
 
+# ── Production web build stage ────────────────────────────────────────────────
+# Run as a separate stage so the web app is compiled at image build time.
+# Build args allow injecting public env vars without embedding secrets.
+FROM base AS web-builder
+
+ARG NEXT_PUBLIC_APP_URL=https://ods.uz
+ARG NEXT_PUBLIC_API_URL=https://ods.uz/api
+
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Suppress env validation errors during build — runtime env is injected at startup.
+ENV NEXT_PHASE=phase-production-build
+
+WORKDIR /app/apps/web
+
+RUN corepack pnpm --filter @quizmind/web build
+
+# ── Default dev entrypoint (dev compose uses this) ────────────────────────────
+FROM base AS dev
+
+CMD ["corepack", "pnpm", "dev"]
+
+# ── Default image is the full base (suitable for api/worker runtime) ──────────
+FROM base
 CMD ["corepack", "pnpm", "dev"]

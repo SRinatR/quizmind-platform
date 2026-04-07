@@ -482,17 +482,13 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
       }
     }
 
-    if (env.emailProvider !== 'resend') {
-      issues.push({
-        key: 'EMAIL_PROVIDER',
-        message: 'EMAIL_PROVIDER must be set to "resend" in production so auth emails are not dropped.',
-      });
+    // EMAIL_PROVIDER=noop is allowed in production for deployments where email is
+    // intentionally disabled or handled externally. When resend is chosen, the key is required.
+    if (env.emailProvider === 'resend' && isBlank(env.resendApiKey)) {
+      issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required when EMAIL_PROVIDER=resend.' });
     }
 
-    if (isBlank(env.resendApiKey)) {
-      issues.push({ key: 'RESEND_API_KEY', message: 'RESEND_API_KEY is required in production.' });
-    }
-
+    // BILLING_PROVIDER=mock is not allowed in production; manual/stripe/yookassa/paddle are fine.
     if (!['stripe', 'manual', 'yookassa', 'paddle'].includes(env.billingProvider)) {
       issues.push({
         key: 'BILLING_PROVIDER',
@@ -538,8 +534,9 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
       }
     }
 
-    if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
-      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production.' });
+    // Only enforce a real EMAIL_FROM when email sending is active.
+    if (env.emailProvider !== 'noop' && (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local')) {
+      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production when email is enabled.' });
     }
   }
 
@@ -597,15 +594,8 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
       issues.push({ key: 'API_URL', message: 'API_URL must not target localhost in production.' });
     }
 
-    if (env.emailProvider !== 'resend') {
-      issues.push({
-        key: 'EMAIL_PROVIDER',
-        message: 'EMAIL_PROVIDER must be set to "resend" in production so email queue jobs are delivered.',
-      });
-    }
-
-    if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
-      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production.' });
+    if (env.emailProvider !== 'noop' && (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local')) {
+      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production when email is enabled.' });
     }
   }
 

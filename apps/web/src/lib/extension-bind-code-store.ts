@@ -60,7 +60,7 @@ const MAX_ACTIVE_CODES = 2_000;
 const REDIS_KEY_PREFIX = 'quizmind:extension:bind_fallback:';
 const REDIS_CONNECT_TIMEOUT_MS = 900;
 const REDIS_FAILURE_COOLDOWN_MS = 30_000;
-export const extensionBindFallbackRedeemPath = '/api/extension/bind/redeem';
+export const extensionBindFallbackRedeemPath = '/bff/extension/bind/redeem';
 
 export class BindCodeStoreUnavailableError extends Error {
   constructor(message = 'Shared bind code store is unavailable.') {

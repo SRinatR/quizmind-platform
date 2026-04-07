@@ -146,7 +146,7 @@ export function AiAccessClient({
             scopes: normalizeScopes(formState.scopes),
           };
       const response = await fetch(
-        editingCredentialId ? '/api/providers/credentials/rotate' : '/api/providers/credentials',
+        editingCredentialId ? '/bff/providers/credentials/rotate' : '/bff/providers/credentials',
         {
           method: 'POST',
           headers: {
@@ -202,7 +202,7 @@ export function AiAccessClient({
     setStatusMessage('Removing key\u2026');
 
     try {
-      const response = await fetch('/api/providers/credentials/revoke', {
+      const response = await fetch('/bff/providers/credentials/revoke', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

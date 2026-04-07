@@ -49,7 +49,7 @@ export function SettingsPageClient({
     setIsRevokingEverywhere(true);
 
     try {
-      const response = await fetch('/api/auth/logout-all', { method: 'POST' });
+      const response = await fetch('/bff/auth/logout-all', { method: 'POST' });
       const payload = (await response.json().catch(() => null)) as LogoutAllRouteResponse | null;
 
       if (!response.ok || !payload?.ok || !payload.data?.revoked) {

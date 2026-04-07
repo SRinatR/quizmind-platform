@@ -248,7 +248,7 @@ export function FeatureFlagsClient({
     setSavingKey(key);
 
     try {
-      const response = await fetch('/api/admin/feature-flags/update', {
+      const response = await fetch('/bff/admin/feature-flags/update', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

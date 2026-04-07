@@ -68,7 +68,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     setErrorMessage(null);
 
     try {
-      const response = await fetch('/api/extension/installations/disconnect', {
+      const response = await fetch('/bff/extension/installations/disconnect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -109,7 +109,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     setCopiedRotatedToken(false);
 
     try {
-      const response = await fetch('/api/extension/installations/rotate-session', {
+      const response = await fetch('/bff/extension/installations/rotate-session', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({

@@ -180,7 +180,7 @@ export function UsersDirectoryClient({
     setStatusMessage(`Starting a support session for ${user.displayName || user.email}...`);
 
     try {
-      const response = await fetch('/api/support/impersonation', {
+      const response = await fetch('/bff/support/impersonation', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -238,7 +238,7 @@ export function UsersDirectoryClient({
     setStatusMessage(`Creating user ${email}...`);
 
     try {
-      const response = await fetch('/api/admin/users/create', {
+      const response = await fetch('/bff/admin/users/create', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -298,7 +298,7 @@ export function UsersDirectoryClient({
     setStatusMessage(`Saving access profile for ${user.displayName || user.email}...`);
 
     try {
-      const response = await fetch('/api/admin/users/update-access', {
+      const response = await fetch('/bff/admin/users/update-access', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

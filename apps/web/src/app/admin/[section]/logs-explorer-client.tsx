@@ -156,7 +156,7 @@ export function LogsExplorerClient({
     setStatusMessage('Preparing audit log export...');
 
     try {
-      const response = await fetch('/api/admin/logs/export', {
+      const response = await fetch('/bff/admin/logs/export', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

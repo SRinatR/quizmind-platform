@@ -134,7 +134,7 @@ export function ExtensionControlClient({
     setStatusMessage(`Simulating bootstrap for ${formState.installationId.trim()}...`);
 
     try {
-      const response = await fetch('/api/admin/extension/bootstrap', {
+      const response = await fetch('/bff/admin/extension/bootstrap', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -202,7 +202,7 @@ export function ExtensionControlClient({
     setUsageStatusMessage(`Queueing ${usageFormState.eventType.trim()} for ${usageFormState.installationId.trim()}...`);
 
     try {
-      const response = await fetch('/api/admin/extension/usage-events', {
+      const response = await fetch('/bff/admin/extension/usage-events', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

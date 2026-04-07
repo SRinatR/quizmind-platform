@@ -11,7 +11,7 @@
  * 1. Provider mounts → reads localStorage for instant non-flashing apply
  * 2. Once user profile loads (settings or dashboard page) → loadFromServer()
  *    is called with the server-stored UiPreferences; server value wins
- * 3. Every change → written to localStorage AND saved to /api/user/profile
+ * 3. Every change → written to localStorage AND saved to /bff/user/profile
  * 4. Different users get different localStorage keys via user-scoped writes
  */
 
@@ -171,7 +171,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const saveToServer = useCallback(async (fullPrefs: ResolvedPrefs) => {
     setIsSaving(true);
     try {
-      await fetch('/api/user/profile', {
+      await fetch('/bff/user/profile', {
         method: 'PATCH',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ uiPreferences: fullPrefs }),
