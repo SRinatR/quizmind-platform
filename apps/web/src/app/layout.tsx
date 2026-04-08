@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: 'QuizMind',
   description:
     'Ace every quiz with AI. QuizMind reads the question, finds the answer, and explains it — right inside your browser.',
+  verification: {
+    google: 'eQw7iwJDTcv_NpdRqopoUQsKd5jue4A7_VwRTzNvefQ',
+  },
 };
 
 /**
