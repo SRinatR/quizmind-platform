@@ -6,7 +6,6 @@ server:
   log_level: warn
 
 common:
-  instance_addr: 127.0.0.1
   path_prefix: /loki
   storage:
     filesystem:
@@ -14,8 +13,10 @@ common:
       rules_directory: /loki/rules
   replication_factor: 1
   ring:
+    instance_addr: 127.0.0.1
     kvstore:
       store: inmemory
+    zone_awareness_enabled: false
 
 query_range:
   results_cache:
@@ -42,6 +43,7 @@ limits_config:
 compactor:
   working_directory: /loki/compactor
   retention_enabled: true
+  delete_request_store: filesystem
   retention_delete_delay: 2h
 
 ruler:
