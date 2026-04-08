@@ -41,8 +41,8 @@ if ! git rev-parse --verify "origin/${DEPLOY_REF}" > /dev/null 2>&1; then
   exit 1
 fi
 
-echo "==> Resetting to origin/${DEPLOY_REF}"
-git reset --hard "origin/${DEPLOY_REF}"
+echo "==> Checking out origin/${DEPLOY_REF} (detached HEAD)"
+git checkout --detach "origin/${DEPLOY_REF}"
 
 CURRENT_SHA="$(git rev-parse HEAD)"
 echo "==> Commit: ${CURRENT_SHA}"
