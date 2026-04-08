@@ -5,12 +5,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      ref:
-        description: 'Branch or ref to deploy (e.g. main, feature/my-branch)'
-        required: false
-        default: 'main'
-        type: string
 
 concurrency:
   group: production-deploy
@@ -22,17 +16,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Resolve deploy ref
-        id: resolve
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            DEPLOY_REF="${{ github.event.inputs.ref }}"
-          else
-            DEPLOY_REF="${{ github.ref_name }}"
-          fi
-          echo "ref=${DEPLOY_REF}" >> "$GITHUB_OUTPUT"
-          echo "Deploying ref: ${DEPLOY_REF}"
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -44,7 +27,7 @@ jobs:
           script: |
             bash ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}/scripts/deploy-server.sh \
               --sha "${{ github.sha }}" \
-              --ref "${{ steps.resolve.outputs.ref }}"
+              --ref "main"
 
       - name: Smoke check — API health
         run: |
@@ -112,13 +95,13 @@ jobs:
           script: |
             cd ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}
             echo "==> Container status"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
+            docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker ps
             echo "==> Recent web logs"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs --tail=50 web
+            docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker logs --tail=50 web
 
-      - name: Record deployed ref
+      - name: Record deployed SHA
         if: success()
         run: |
-          echo "Deployed ref: ${{ steps.resolve.outputs.ref }}"
-          echo "CI SHA (workflow trigger): ${{ github.sha }}"
+          echo "Deployed SHA: ${{ github.sha }}"
+          echo "Ref: ${{ github.ref_name }}"
           echo "Run: ${{ github.run_id }}"
