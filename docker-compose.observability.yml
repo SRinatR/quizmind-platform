@@ -1,0 +1,161 @@
+# Observability overlay for quizmind-platform
+#
+# Adds Grafana, Prometheus, Loki, Alertmanager, and exporters without touching
+# the app stack. Start once and leave running; it survives app re-deploys.
+#
+# Prerequisites:
+#   1. App stack is already running via deploy-server.sh (creates quizmind-platform_default network)
+#   2. Copy infra/alertmanager/alertmanager.yml.example -> alertmanager.yml and fill in secrets
+#
+# Start:
+#   docker compose -f docker-compose.observability.yml --env-file .env.docker up -d
+#
+# Stop:
+#   docker compose -f docker-compose.observability.yml --env-file .env.docker down
+#
+# Required env vars (add to .env.docker):
+#   GRAFANA_ADMIN_PASSWORD   - Grafana admin password
+#   POSTGRES_EXPORTER_DSN    - postgres DSN for postgres_exporter
+#   GRAFANA_HOST_PORT        - host port to expose Grafana (default 3001)
+
+networks:
+  # Joins the existing app stack network so Prometheus can reach api/worker/postgres/redis
+  app_net:
+    name: "${COMPOSE_PROJECT_NAME:-quizmind-platform}_default"
+    external: true
+  # Internal network for observability services only
+  obs_net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+  alertmanager_data:
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: quizmind-prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    networks: [app_net, obs_net]
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: quizmind-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-changeme}"
+      GF_SECURITY_ADMIN_USER: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "${GRAFANA_ROOT_URL:-http://localhost:3001}"
+      GF_LOG_LEVEL: warn
+    ports:
+      - "${GRAFANA_HOST_PORT:-3001}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [prometheus, loki]
+    networks: [obs_net]
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: quizmind-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./infra/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    networks: [obs_net]
+
+  alloy:
+    image: grafana/alloy:v1.4.3
+    container_name: quizmind-alloy
+    restart: unless-stopped
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./infra/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [obs_net]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: quizmind-alertmanager
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+    volumes:
+      - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks: [obs_net]
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: quizmind-node-exporter
+    restart: unless-stopped
+    pid: host
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks: [obs_net]
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: quizmind-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /cgroup:/cgroup:ro
+    networks: [obs_net]
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: quizmind-postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN:-postgresql://postgres:postgres@postgres:5432/quizmind?sslmode=disable}"
+    networks: [app_net, obs_net]
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.63.0
+    container_name: quizmind-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "${REDIS_URL:-redis://redis:6379}"
+    networks: [app_net, obs_net]
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: quizmind-blackbox-exporter
+    restart: unless-stopped
+    volumes:
+      - ./infra/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks: [obs_net]

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { MetricsController } from './metrics.controller';
 import { AiProxyController } from './ai/ai-proxy.controller';
 import { AiProxyRepository } from './ai/ai-proxy.repository';
 import { AiProxyService } from './ai/ai-proxy.service';
@@ -50,6 +51,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
 
 @Module({
   controllers: [
+    MetricsController,
     AuthController,
     BillingController,
     WalletController,
