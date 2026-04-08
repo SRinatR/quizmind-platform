@@ -1,4 +1,4 @@
-import { type AccessContext, type PlanDefinition } from '@quizmind/contracts';
+import { type AccessContext } from '@quizmind/contracts';
 
 export function createAccessContext(overrides: Partial<AccessContext> = {}): AccessContext {
   return {
@@ -7,20 +7,6 @@ export function createAccessContext(overrides: Partial<AccessContext> = {}): Acc
     entitlements: [],
     featureFlags: [],
     attributes: {},
-    ...overrides,
-  };
-}
-
-export function createPlan(overrides: Partial<PlanDefinition> = {}): PlanDefinition {
-  return {
-    id: 'plan_pro',
-    code: 'pro',
-    name: 'Pro',
-    description: 'Default plan for tests.',
-    entitlements: [
-      { key: 'feature.text_answering', enabled: true },
-      { key: 'limit.requests_per_day', enabled: true, limit: 100 },
-    ],
     ...overrides,
   };
 }
