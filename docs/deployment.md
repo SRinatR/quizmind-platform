@@ -36,27 +36,41 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 ## How the Deploy Script Works
 
 `scripts/deploy-server.sh`:
+- Accepts `--ref <branch>` (defaults to `main` when omitted)
+- Validates and sanitizes the ref before use; exits with an error if the ref is unsafe or not found on the remote
 - `cd /opt/quizmind-platform`
-- `git fetch origin && git reset --hard origin/main` — deterministic update
+- `git fetch origin && git reset --hard origin/<ref>` — deploys the exact requested ref
 - `docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build`
 - Prints current commit SHA and container status
 - Prunes dangling images with `docker image prune -f`
+- Writes `.deployed-sha` with `sha`, `ref`, `ci_sha`, and `deployed_at` fields
 
 ---
 
 ## Manual Deployment on the VPS
 
+Deploy `main` (default):
 ```bash
 ssh root@ods.uz
 bash /opt/quizmind-platform/scripts/deploy-server.sh
 ```
 
-Or run the compose command directly:
+Deploy a specific branch:
+```bash
+ssh root@ods.uz
+bash /opt/quizmind-platform/scripts/deploy-server.sh --ref feature/my-branch
+```
 
+Or run the compose command directly for a given ref:
 ```bash
 cd /opt/quizmind-platform
 git fetch origin && git reset --hard origin/main
 docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build
+```
+
+To verify which ref is currently deployed:
+```bash
+cat /opt/quizmind-platform/.deployed-sha
 ```
 
 ---
@@ -79,9 +93,16 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .
 
 ---
 
-## Rerunning a Deploy from GitHub Actions
+## Triggering a Deploy from GitHub Actions
 
-Go to **Actions → Deploy to Production → Run workflow** and click **Run workflow**.
+**Push to `main`** — deploys `main` automatically.
+
+**Manual deploy of any branch:**
+1. Go to **Actions → Deploy to Production → Run workflow**
+2. Fill in the **"Branch or ref to deploy"** input (e.g. `feature/my-branch`). Defaults to `main`.
+3. Click **Run workflow**
+
+The workflow resolves the ref from the explicit input (for `workflow_dispatch`) or from `github.ref_name` (for push triggers), then passes it as `--ref` to the server-side script.
 
 ---
 

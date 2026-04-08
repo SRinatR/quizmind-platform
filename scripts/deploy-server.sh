@@ -15,12 +15,34 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-echo "==> Deploying QuizMind Platform"
+# Default to main when no ref provided (e.g. direct manual invocation)
+DEPLOY_REF="${DEPLOYED_REF:-main}"
+
+# Sanitize: reject refs with shell-unsafe or git-unsafe characters.
+# Allow: alphanumeric, hyphen, underscore, dot, forward-slash (for branch paths).
+# Deny: anything starting with '-', containing '..', '//', or other metacharacters.
+if [[ ! "$DEPLOY_REF" =~ ^[a-zA-Z0-9][a-zA-Z0-9._/-]*$ ]] || \
+   [[ "$DEPLOY_REF" == *".."* ]] || \
+   [[ "$DEPLOY_REF" == *"//"* ]]; then
+  echo "ERROR: Invalid or unsafe ref: '${DEPLOY_REF}'"
+  exit 1
+fi
+
+echo "==> Deploying QuizMind Platform (ref: ${DEPLOY_REF})"
 cd "$DEPLOY_DIR"
 
-echo "==> Updating code from origin/main"
+echo "==> Fetching remote refs"
 git fetch origin
-git reset --hard origin/main
+
+echo "==> Verifying ref exists on remote"
+if ! git rev-parse --verify "origin/${DEPLOY_REF}" > /dev/null 2>&1; then
+  echo "ERROR: Ref '${DEPLOY_REF}' not found on remote origin."
+  echo "       Ensure the branch exists and has been pushed before deploying."
+  exit 1
+fi
+
+echo "==> Checking out origin/${DEPLOY_REF} (detached HEAD)"
+git checkout --detach "origin/${DEPLOY_REF}"
 
 CURRENT_SHA="$(git rev-parse HEAD)"
 echo "==> Commit: ${CURRENT_SHA}"
@@ -37,7 +59,7 @@ docker image prune -f
 # Write deployed SHA metadata for auditability / rollback reference
 cat > "${DEPLOYED_SHA_FILE}" <<EOF
 sha=${CURRENT_SHA}
-ref=${DEPLOYED_REF:-main}
+ref=${DEPLOY_REF}
 ci_sha=${DEPLOYED_SHA:-${CURRENT_SHA}}
 deployed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 EOF
