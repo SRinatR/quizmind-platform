@@ -50,24 +50,54 @@ jobs:
       - name: Smoke check — Site homepage
         run: |
           URL="${{ vars.PRODUCTION_APP_URL || 'https://ods.uz' }}"
-          status=$(curl -sf -o /dev/null -w "%{http_code}" "${URL}" || true)
-          if [ "$status" = "200" ]; then
-            echo "Site check passed (HTTP $status)"
-          else
-            echo "ERROR: Site returned HTTP $status"
-            exit 1
-          fi
+          echo "Waiting for site to be ready..."
+          for i in $(seq 1 18); do
+            status=$(curl -sf -o /dev/null -w "%{http_code}" "${URL}" || true)
+            if [ "$status" = "200" ]; then
+              echo "Site check passed (HTTP $status)"
+              break
+            fi
+            echo "Attempt $i: HTTP $status — retrying in 10s"
+            sleep 10
+            if [ "$i" = "18" ]; then
+              echo "ERROR: Site check failed after 3 minutes"
+              exit 1
+            fi
+          done
 
       - name: Smoke check — www redirect / homepage
         run: |
           URL="https://www.${{ vars.PRODUCTION_DOMAIN || 'ods.uz' }}"
-          status=$(curl -sfL -o /dev/null -w "%{http_code}" "${URL}" || true)
-          if [ "$status" = "200" ] || [ "$status" = "301" ] || [ "$status" = "302" ]; then
-            echo "www check passed (HTTP $status)"
-          else
-            echo "WARNING: www returned HTTP $status"
-            exit 1
-          fi
+          echo "Waiting for www redirect to be ready..."
+          for i in $(seq 1 18); do
+            status=$(curl -sfL -o /dev/null -w "%{http_code}" "${URL}" || true)
+            if [ "$status" = "200" ] || [ "$status" = "301" ] || [ "$status" = "302" ]; then
+              echo "www check passed (HTTP $status)"
+              break
+            fi
+            echo "Attempt $i: HTTP $status — retrying in 10s"
+            sleep 10
+            if [ "$i" = "18" ]; then
+              echo "ERROR: www check failed after 3 minutes"
+              exit 1
+            fi
+          done
+
+      - name: Collect failure diagnostics
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ vars.VPS_HOST || 'ods.uz' }}
+          port: ${{ vars.VPS_SSH_PORT || 22 }}
+          username: ${{ vars.VPS_USER || 'root' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: false
+          script: |
+            cd ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}
+            echo "==> Container status"
+            docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker ps
+            echo "==> Recent web logs"
+            docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker logs --tail=50 web
 
       - name: Record deployed SHA
         if: success()

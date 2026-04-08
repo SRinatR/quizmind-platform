@@ -96,3 +96,90 @@ git log --oneline -10          # find the target SHA
 git reset --hard <target-sha>
 docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build
 ```
+
+---
+
+## Observability Stack — Docker Hub Mirror Support
+
+The observability stack (`docker-compose.observability.yml`) uses env-configurable image variables so the VPS can pull through a Docker Hub mirror instead of Docker Hub directly.
+
+### Which images can be mirrored
+
+All images except cAdvisor originate from Docker Hub and can be overridden:
+
+| Variable | Default (upstream) |
+|---|---|
+| `PROMETHEUS_IMAGE` | `prom/prometheus:v2.53.3` |
+| `GRAFANA_IMAGE` | `grafana/grafana:11.2.2` |
+| `LOKI_IMAGE` | `grafana/loki:3.1.1` |
+| `ALLOY_IMAGE` | `grafana/alloy:v1.4.3` |
+| `ALERTMANAGER_IMAGE` | `prom/alertmanager:v0.27.0` |
+| `NODE_EXPORTER_IMAGE` | `prom/node-exporter:v1.8.2` |
+| `POSTGRES_EXPORTER_IMAGE` | `prometheuscommunity/postgres-exporter:v0.15.0` |
+| `REDIS_EXPORTER_IMAGE` | `oliver006/redis_exporter:v1.63.0` |
+| `BLACKBOX_EXPORTER_IMAGE` | `prom/blackbox-exporter:v0.25.0` |
+
+**cAdvisor is kept separately** on `gcr.io/cadvisor/cadvisor:v0.49.1` (variable `CADVISOR_IMAGE`).
+Docker Hub mirrors only proxy Docker Hub — they cannot resolve `gcr.io` images.
+Do not set `CADVISOR_IMAGE` to a Docker Hub mirror path.
+
+### GitVerse mirror — `.env.docker` block
+
+```dotenv
+# Observability images via dh-mirror.gitverse.ru
+PROMETHEUS_IMAGE=dh-mirror.gitverse.ru/prom/prometheus:v2.53.3
+GRAFANA_IMAGE=dh-mirror.gitverse.ru/grafana/grafana:11.2.2
+LOKI_IMAGE=dh-mirror.gitverse.ru/grafana/loki:3.1.1
+ALLOY_IMAGE=dh-mirror.gitverse.ru/grafana/alloy:v1.4.3
+ALERTMANAGER_IMAGE=dh-mirror.gitverse.ru/prom/alertmanager:v0.27.0
+NODE_EXPORTER_IMAGE=dh-mirror.gitverse.ru/prom/node-exporter:v1.8.2
+POSTGRES_EXPORTER_IMAGE=dh-mirror.gitverse.ru/prometheuscommunity/postgres-exporter:v0.15.0
+REDIS_EXPORTER_IMAGE=dh-mirror.gitverse.ru/oliver006/redis_exporter:v1.63.0
+BLACKBOX_EXPORTER_IMAGE=dh-mirror.gitverse.ru/prom/blackbox-exporter:v0.25.0
+# cAdvisor stays on gcr.io — not routable through Docker Hub mirrors
+CADVISOR_IMAGE=gcr.io/cadvisor/cadvisor:v0.49.1
+```
+
+### Timeweb mirror — `.env.docker` block
+
+```dotenv
+# Observability images via dockerhub.timeweb.cloud
+PROMETHEUS_IMAGE=dockerhub.timeweb.cloud/prom/prometheus:v2.53.3
+GRAFANA_IMAGE=dockerhub.timeweb.cloud/grafana/grafana:11.2.2
+LOKI_IMAGE=dockerhub.timeweb.cloud/grafana/loki:3.1.1
+ALLOY_IMAGE=dockerhub.timeweb.cloud/grafana/alloy:v1.4.3
+ALERTMANAGER_IMAGE=dockerhub.timeweb.cloud/prom/alertmanager:v0.27.0
+NODE_EXPORTER_IMAGE=dockerhub.timeweb.cloud/prom/node-exporter:v1.8.2
+POSTGRES_EXPORTER_IMAGE=dockerhub.timeweb.cloud/prometheuscommunity/postgres-exporter:v0.15.0
+REDIS_EXPORTER_IMAGE=dockerhub.timeweb.cloud/oliver006/redis_exporter:v1.63.0
+BLACKBOX_EXPORTER_IMAGE=dockerhub.timeweb.cloud/prom/blackbox-exporter:v0.25.0
+# cAdvisor stays on gcr.io — not routable through Docker Hub mirrors
+CADVISOR_IMAGE=gcr.io/cadvisor/cadvisor:v0.49.1
+```
+
+### Launching the observability stack
+
+After setting the image variables in `.env.docker`, start the stack:
+
+```bash
+cd /opt/quizmind-platform
+docker compose -f docker-compose.observability.yml --env-file .env.docker up -d
+```
+
+No manual `docker pull` or `docker tag` steps are required. Compose resolves the image names at startup.
+
+### Optional: Docker daemon `registry-mirrors`
+
+You can also configure `/etc/docker/daemon.json` on the VPS to use a registry mirror globally:
+
+```json
+{
+  "registry-mirrors": ["https://dh-mirror.gitverse.ru"]
+}
+```
+
+Then restart Docker: `systemctl restart docker`
+
+**Important:** daemon-level `registry-mirrors` only redirect Docker Hub pulls (`docker.io`).
+They do **not** affect `gcr.io` images such as cAdvisor.
+Explicit image variables (above) are the recommended approach as they are more predictable and don't require daemon changes.
