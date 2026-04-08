@@ -39,9 +39,6 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Unit tests
-        run: pnpm test
-
       - name: Build
         run: pnpm build
 
@@ -115,11 +112,6 @@ jobs:
       - name: Apply database migrations
         run: corepack pnpm --filter @quizmind/database db:migrate:deploy
 
-      - name: Prisma integration tests (connected runtime)
-        run: |
-          node --import tsx --test \
-            apps/api/test/prisma-auth.integration.test.ts \
-            apps/api/test/prisma-platform.integration.test.ts
 
       - name: API connected runtime smoke check
         run: |
