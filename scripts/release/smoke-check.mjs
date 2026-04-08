@@ -257,8 +257,8 @@ async function waitForApiHealth(url, timeoutMs, checks) {
   );
 }
 
-async function assertWorkspaceEndpointRequiresAuth(apiUrl) {
-  const url = `${apiUrl}/workspaces`;
+async function assertProtectedAuthMeEndpointRequiresAuth(apiUrl) {
+  const url = `${apiUrl}/auth/me`;
   const response = await fetch(url, {
     method: 'GET',
     headers: {
@@ -268,7 +268,7 @@ async function assertWorkspaceEndpointRequiresAuth(apiUrl) {
   const body = await response.text();
 
   if (response.status === 401 || response.status === 403) {
-    console.log(`[OK] Workspace endpoint enforces auth: ${url} -> ${response.status}`);
+    console.log(`[OK] Protected auth endpoint enforces auth: ${url} -> ${response.status}`);
     return;
   }
 
@@ -448,7 +448,7 @@ async function main() {
     requireZeroValidationIssues,
   });
   await waitForHttpOk(`${apiUrl}/foundation`, timeoutMs, 'API foundation');
-  await assertWorkspaceEndpointRequiresAuth(apiUrl);
+  await assertProtectedAuthMeEndpointRequiresAuth(apiUrl);
   await assertAuthLoginHealth(apiUrl, {
     requireRateLimitHeaders,
   });
