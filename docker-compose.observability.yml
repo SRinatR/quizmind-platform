@@ -17,6 +17,13 @@
 #   GRAFANA_ADMIN_PASSWORD   - Grafana admin password
 #   POSTGRES_EXPORTER_DSN    - postgres DSN for postgres_exporter
 #   GRAFANA_HOST_PORT        - host port to expose Grafana (default 3001)
+#
+# Image mirror support (Docker Hub images only — see docs/deployment.md):
+#   PROMETHEUS_IMAGE, GRAFANA_IMAGE, LOKI_IMAGE, ALLOY_IMAGE, ALERTMANAGER_IMAGE,
+#   NODE_EXPORTER_IMAGE, POSTGRES_EXPORTER_IMAGE, REDIS_EXPORTER_IMAGE, BLACKBOX_EXPORTER_IMAGE
+#
+#   CADVISOR_IMAGE is kept separate — it lives on gcr.io, not Docker Hub,
+#   and cannot be routed through Docker Hub mirrors.
 
 networks:
   # Joins the existing app stack network so Prometheus can reach api/worker/postgres/redis
@@ -35,7 +42,7 @@ volumes:
 
 services:
   prometheus:
-    image: prom/prometheus:v2.53.3
+    image: "${PROMETHEUS_IMAGE:-prom/prometheus:v2.53.3}"
     container_name: quizmind-prometheus
     restart: unless-stopped
     command:
@@ -52,7 +59,7 @@ services:
     networks: [app_net, obs_net]
 
   grafana:
-    image: grafana/grafana:11.2.2
+    image: "${GRAFANA_IMAGE:-grafana/grafana:11.2.2}"
     container_name: quizmind-grafana
     restart: unless-stopped
     environment:
@@ -71,7 +78,7 @@ services:
     networks: [obs_net]
 
   loki:
-    image: grafana/loki:3.1.1
+    image: "${LOKI_IMAGE:-grafana/loki:3.1.1}"
     container_name: quizmind-loki
     restart: unless-stopped
     command: -config.file=/etc/loki/loki.yml
@@ -81,7 +88,7 @@ services:
     networks: [obs_net]
 
   alloy:
-    image: grafana/alloy:v1.4.3
+    image: "${ALLOY_IMAGE:-grafana/alloy:v1.4.3}"
     container_name: quizmind-alloy
     restart: unless-stopped
     command:
@@ -94,7 +101,7 @@ services:
     networks: [obs_net]
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: "${ALERTMANAGER_IMAGE:-prom/alertmanager:v0.27.0}"
     container_name: quizmind-alertmanager
     restart: unless-stopped
     command:
@@ -106,7 +113,7 @@ services:
     networks: [obs_net]
 
   node-exporter:
-    image: prom/node-exporter:v1.8.2
+    image: "${NODE_EXPORTER_IMAGE:-prom/node-exporter:v1.8.2}"
     container_name: quizmind-node-exporter
     restart: unless-stopped
     pid: host
@@ -122,7 +129,8 @@ services:
     networks: [obs_net]
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    # gcr.io image — not routable through Docker Hub mirrors; kept as a separate variable
+    image: "${CADVISOR_IMAGE:-gcr.io/cadvisor/cadvisor:v0.49.1}"
     container_name: quizmind-cadvisor
     restart: unless-stopped
     privileged: true
@@ -137,7 +145,7 @@ services:
     networks: [obs_net]
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.15.0
+    image: "${POSTGRES_EXPORTER_IMAGE:-prometheuscommunity/postgres-exporter:v0.15.0}"
     container_name: quizmind-postgres-exporter
     restart: unless-stopped
     environment:
@@ -145,7 +153,7 @@ services:
     networks: [app_net, obs_net]
 
   redis-exporter:
-    image: oliver006/redis_exporter:v1.63.0
+    image: "${REDIS_EXPORTER_IMAGE:-oliver006/redis_exporter:v1.63.0}"
     container_name: quizmind-redis-exporter
     restart: unless-stopped
     environment:
@@ -153,7 +161,7 @@ services:
     networks: [app_net, obs_net]
 
   blackbox-exporter:
-    image: prom/blackbox-exporter:v0.25.0
+    image: "${BLACKBOX_EXPORTER_IMAGE:-prom/blackbox-exporter:v0.25.0}"
     container_name: quizmind-blackbox-exporter
     restart: unless-stopped
     volumes:
