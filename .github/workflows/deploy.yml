@@ -27,7 +27,7 @@ jobs:
           script: |
             bash ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}/scripts/deploy-server.sh \
               --sha "${{ github.sha }}" \
-              --ref "${{ github.ref_name }}"
+              --ref "main"
 
       - name: Smoke check — API health
         run: |
