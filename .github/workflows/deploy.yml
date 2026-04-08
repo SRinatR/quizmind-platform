@@ -112,9 +112,9 @@ jobs:
           script: |
             cd ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}
             echo "==> Container status"
-            docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker ps
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
             echo "==> Recent web logs"
-            docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker logs --tail=50 web
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs --tail=50 web
 
       - name: Record deployed ref
         if: success()
