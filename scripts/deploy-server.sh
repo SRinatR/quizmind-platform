@@ -48,10 +48,10 @@ CURRENT_SHA="$(git rev-parse HEAD)"
 echo "==> Commit: ${CURRENT_SHA}"
 
 echo "==> Starting containers"
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build
 
 echo "==> Container status"
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker ps
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
 
 echo "==> Pruning dangling images"
 docker image prune -f

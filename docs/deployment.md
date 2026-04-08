@@ -40,7 +40,7 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 - Validates and sanitizes the ref before use; exits with an error if the ref is unsafe or not found on the remote
 - `cd /opt/quizmind-platform`
 - `git fetch origin && git reset --hard origin/<ref>` — deploys the exact requested ref
-- `docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build`
+- `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build`
 - Prints current commit SHA and container status
 - Prunes dangling images with `docker image prune -f`
 - Writes `.deployed-sha` with `sha`, `ref`, `ci_sha`, and `deployed_at` fields
@@ -65,7 +65,7 @@ Or run the compose command directly for a given ref:
 ```bash
 cd /opt/quizmind-platform
 git fetch origin && git reset --hard origin/main
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build
 ```
 
 To verify which ref is currently deployed:
@@ -79,16 +79,16 @@ cat /opt/quizmind-platform/.deployed-sha
 
 ```bash
 # Container status
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker ps
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
 
 # API logs
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker logs -f api
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs -f api
 
 # Web logs
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker logs -f web
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs -f web
 
 # Worker logs
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker logs -f worker
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs -f worker
 ```
 
 ---
@@ -115,7 +115,7 @@ ssh root@ods.uz
 cd /opt/quizmind-platform
 git log --oneline -10          # find the target SHA
 git reset --hard <target-sha>
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build
 ```
 
 ---
