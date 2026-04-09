@@ -181,8 +181,13 @@ function normalizeOrigin(value: string): string | null {
 function loadCorsAllowedOrigins(source: EnvSource, appUrl: string): string[] {
   const rawOrigins = parseListEnv(source.CORS_ALLOWED_ORIGINS);
   const resolvedOrigins = rawOrigins.length > 0 ? rawOrigins : [appUrl];
+  const webOrigins = resolvedOrigins.map((origin) => normalizeOrigin(origin) ?? origin);
 
-  return resolvedOrigins.map((origin) => normalizeOrigin(origin) ?? origin);
+  const extensionOrigins = parseListEnv(source.ALLOWED_EXTENSION_ORIGINS)
+    .map((o) => normalizeOrigin(o))
+    .filter((o): o is string => o !== null && isExtensionOrigin(o));
+
+  return [...webOrigins, ...extensionOrigins];
 }
 
 function resolveEmailProvider(source: EnvSource): ApiEnv['emailProvider'] {
