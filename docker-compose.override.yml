@@ -23,6 +23,7 @@ services:
       RESEND_API_KEY: "re_dummy_key"
       BILLING_PROVIDER: "manual"
       EMAIL_FROM: "noreply@ods.uz"
+      ALLOWED_EXTENSION_ORIGINS: "${ALLOWED_EXTENSION_ORIGINS:-}"
 
   web:
     pull_policy: never
