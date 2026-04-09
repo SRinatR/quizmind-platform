@@ -36,6 +36,42 @@ test('loadApiEnv keeps browser extension origins in CORS allowlist', () => {
   ]);
 });
 
+test('loadApiEnv merges ALLOWED_EXTENSION_ORIGINS into corsAllowedOrigins', () => {
+  const env = loadApiEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    APP_URL: 'https://app.quizmind.dev',
+    API_URL: 'https://api.quizmind.dev',
+    CORS_ALLOWED_ORIGINS: 'https://app.quizmind.dev',
+    ALLOWED_EXTENSION_ORIGINS: 'chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg',
+    JWT_SECRET: 'super-secret',
+    JWT_REFRESH_SECRET: 'refresh-secret',
+  });
+
+  assert.deepEqual(env.corsAllowedOrigins, [
+    'https://app.quizmind.dev',
+    'chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg',
+  ]);
+});
+
+test('loadApiEnv ignores non-extension URLs in ALLOWED_EXTENSION_ORIGINS', () => {
+  const env = loadApiEnv({
+    NODE_ENV: 'development',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    APP_URL: 'https://app.quizmind.dev',
+    API_URL: 'https://api.quizmind.dev',
+    CORS_ALLOWED_ORIGINS: 'https://app.quizmind.dev',
+    ALLOWED_EXTENSION_ORIGINS: 'https://evil.example.com, chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg',
+    JWT_SECRET: 'super-secret',
+    JWT_REFRESH_SECRET: 'refresh-secret',
+  });
+
+  assert.deepEqual(env.corsAllowedOrigins, [
+    'https://app.quizmind.dev',
+    'chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg',
+  ]);
+});
+
 test('validateApiEnv rejects wildcard CORS and prod placeholder providers', () => {
   const env = loadApiEnv({
     NODE_ENV: 'production',
