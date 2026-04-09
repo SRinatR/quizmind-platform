@@ -203,4 +203,93 @@ export class UsageRepository {
       select: aiRequestSelect,
     });
   }
+
+  listInstallationsByUserId(userId: string): Promise<WorkspaceUsageInstallationRecord[]> {
+    return this.prisma.extensionInstallation.findMany({
+      where: { userId },
+      orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
+      select: installationSelect,
+    });
+  }
+
+  listRecentTelemetryByUserId(userId: string, limit = 8): Promise<WorkspaceTelemetryRecord[]> {
+    return this.prisma.extensionTelemetry.findMany({
+      where: { installation: { userId } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: telemetrySelect,
+    });
+  }
+
+  listTelemetryHistoryByUserId(input: {
+    userId: string;
+    limit: number;
+    eventType?: string;
+    installationId?: string;
+  }): Promise<WorkspaceTelemetryRecord[]> {
+    return this.prisma.extensionTelemetry.findMany({
+      where: {
+        ...(input.eventType ? { eventType: input.eventType } : {}),
+        installation: {
+          userId: input.userId,
+          ...(input.installationId ? { installationId: input.installationId } : {}),
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: input.limit,
+      select: telemetrySelect,
+    });
+  }
+
+  listRecentActivityByUserId(userId: string, limit = 8): Promise<WorkspaceActivityRecord[]> {
+    return this.prisma.activityLog.findMany({
+      where: { actorId: userId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      select: activitySelect,
+    });
+  }
+
+  listActivityHistoryByUserId(input: {
+    userId: string;
+    limit: number;
+    eventType?: string;
+    actorId?: string;
+  }): Promise<WorkspaceActivityRecord[]> {
+    return this.prisma.activityLog.findMany({
+      where: {
+        actorId: input.actorId ?? input.userId,
+        ...(input.eventType ? { eventType: input.eventType } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: input.limit,
+      select: activitySelect,
+    });
+  }
+
+  listRecentAiRequestsByUserId(userId: string, limit = 8): Promise<WorkspaceAiRequestRecord[]> {
+    return this.prisma.aiRequest.findMany({
+      where: { userId },
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      select: aiRequestSelect,
+    });
+  }
+
+  listAiRequestHistoryByUserId(input: {
+    userId: string;
+    limit: number;
+    actorId?: string;
+    installationId?: string;
+  }): Promise<WorkspaceAiRequestRecord[]> {
+    return this.prisma.aiRequest.findMany({
+      where: {
+        userId: input.actorId ?? input.userId,
+        ...(input.installationId ? { installationId: input.installationId } : {}),
+      },
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      take: input.limit,
+      select: aiRequestSelect,
+    });
+  }
 }

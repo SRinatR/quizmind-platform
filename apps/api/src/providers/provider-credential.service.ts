@@ -40,7 +40,6 @@ import {
   canRotateProviderCredentials,
   canWriteProviderCredentials,
 } from '../services/access-service';
-import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import { AiProviderPolicyService } from './ai-provider-policy.service';
 import { ProviderCredentialRepository, type ProviderCredentialRecord } from './provider-credential.repository';
 
@@ -157,8 +156,6 @@ export class ProviderCredentialService {
     private readonly aiProviderPolicyService: AiProviderPolicyService,
     @Inject(ProviderCredentialRepository)
     private readonly providerCredentialRepository: ProviderCredentialRepository,
-    @Inject(WorkspaceRepository)
-    private readonly workspaceRepository: WorkspaceRepository,
   ) {}
 
   getCatalog(): ProviderCatalogPayload {
@@ -175,7 +172,7 @@ export class ProviderCredentialService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = workspaceId?.trim() || await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
+    const resolvedWorkspaceId = workspaceId?.trim() || undefined;
     const writeDecision = canWriteProviderCredentials(session.principal);
     const rotateDecision = canRotateProviderCredentials(session.principal);
     const items = await this.providerCredentialRepository.listForGovernance({
@@ -183,8 +180,8 @@ export class ProviderCredentialService {
       includePlatform: true,
     });
     const mappedItems = items.map((item) => this.mapRecordToSummary(item));
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId ?? undefined);
-    const policyHistory = await this.aiProviderPolicyService.listHistoryForCurrentSession(session, resolvedWorkspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
+    const policyHistory = await this.aiProviderPolicyService.listHistoryForCurrentSession(session, resolvedWorkspaceId);
 
     return {
       accessDecision,
@@ -211,16 +208,14 @@ export class ProviderCredentialService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
     const includePlatform = canManageAiProviders(session.principal).allowed;
     const writeDecision = canWriteProviderCredentials(session.principal);
     const rotateDecision = canRotateProviderCredentials(session.principal);
     const items = await this.providerCredentialRepository.listAccessible({
       userId: session.user.id,
-      workspaceId,
       includePlatform,
     });
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
 
     return {
       accessDecision,
@@ -240,8 +235,7 @@ export class ProviderCredentialService {
   ): Promise<ProviderCredentialMutationResult> {
     const provider = this.readProvider(request?.provider);
     const ownerType = this.readOwnerType(request?.ownerType);
-    const resolvedWorkspaceId = ownerType === 'platform' ? null : await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
-    const workspace = resolvedWorkspaceId ? { id: resolvedWorkspaceId } : null;
+    const workspace = null;
 
     this.assertCanCreateCredential(session, ownerType, workspace?.id);
 
@@ -560,13 +554,11 @@ export class ProviderCredentialService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
     this.assertByokEnabledForUserApiKeys(policy);
 
     const items = await this.providerCredentialRepository.listAccessible({
       userId: session.user.id,
-      workspaceId,
       includePlatform: false,
     });
 
@@ -581,8 +573,7 @@ export class ProviderCredentialService {
     session: CurrentSessionSnapshot,
     request?: Partial<UserApiKeyCreateRequest>,
   ): Promise<UserApiKeyCreateResult> {
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
     this.assertByokEnabledForUserApiKeys(policy);
 
     const provider = this.readProvider(request?.provider);
@@ -623,7 +614,7 @@ export class ProviderCredentialService {
 
     this.assertUserApiKeyOwnership(session, existing);
 
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(existing.workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
     this.assertByokEnabledForUserApiKeys(policy);
 
     const revoked = await this.revokeCredentialForCurrentSession(session, {

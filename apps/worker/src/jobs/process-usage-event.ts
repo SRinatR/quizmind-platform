@@ -1,11 +1,8 @@
 import { createLogEvent } from '@quizmind/logger';
 import { type UsageEventPayload } from '@quizmind/contracts';
 import {
-  addUtcDays,
   canConsumeUsage,
   incrementUsage,
-  resolveQuotaKey,
-  startOfUtcDay,
   type UsageSnapshot,
 } from '@quizmind/usage';
 
@@ -18,7 +15,6 @@ export interface UsageProcessingResult {
 export interface UsageInstallationSnapshot {
   id: string;
   installationId: string;
-  workspaceId?: string | null;
   browser: string;
   extensionVersion: string;
   schemaVersion: string;
@@ -26,39 +22,16 @@ export interface UsageInstallationSnapshot {
   lastSeenAt?: Date | null;
 }
 
-export interface UsageQuotaCounterSnapshot {
-  id: string;
-  workspaceId: string;
-  key: string;
-  consumed: number;
-  periodStart: Date;
-  periodEnd: Date;
-}
-
 export interface UsageProcessingRepository {
   findInstallationByInstallationId(installationId: string): Promise<UsageInstallationSnapshot | null>;
   touchInstallation(input: {
     installationId: string;
-    workspaceId?: string;
     browser?: string;
     extensionVersion?: string;
     schemaVersion?: string;
     capabilities?: string[];
     lastSeenAt: Date;
   }): Promise<void>;
-  findUsageLimit(workspaceId: string, key: string): Promise<number | undefined>;
-  findActiveQuotaCounter(
-    workspaceId: string,
-    key: string,
-    occurredAt: Date,
-  ): Promise<UsageQuotaCounterSnapshot | null>;
-  saveQuotaCounter(input: {
-    workspaceId: string;
-    key: string;
-    consumed: number;
-    periodStart: Date;
-    periodEnd: Date;
-  }): Promise<UsageQuotaCounterSnapshot>;
   createTelemetry(input: {
     extensionInstallationId: string;
     eventType: string;
@@ -66,19 +39,10 @@ export interface UsageProcessingRepository {
     payloadJson: Record<string, unknown>;
     createdAt: Date;
   }): Promise<{ id: string }>;
-  createActivityLog(input: {
-    workspaceId: string;
-    eventType: string;
-    metadataJson: Record<string, unknown>;
-    createdAt: Date;
-  }): Promise<{ id: string }>;
 }
 
 export interface UsageProcessingJobResult extends UsageProcessingResult {
-  workspaceId?: string;
-  quotaKey?: string;
   telemetryId?: string;
-  activityLogId?: string;
 }
 
 function readString(value: unknown): string | undefined {
@@ -110,7 +74,6 @@ export function processUsageEvent(
       eventType: event.eventType,
       actorId: event.installationId,
       actorType: 'system',
-      workspaceId: event.workspaceId,
       targetType: 'extension_usage_event',
       targetId: event.installationId,
       occurredAt: event.occurredAt,
@@ -128,26 +91,11 @@ export async function processUsageEventJob(
 ): Promise<UsageProcessingJobResult> {
   const occurredAt = new Date(event.occurredAt);
   const installation = await repository.findInstallationByInstallationId(event.installationId);
-  const workspaceId = event.workspaceId ?? installation?.workspaceId ?? undefined;
-  const quotaKey = workspaceId ? resolveQuotaKey(event.eventType) : undefined;
-  const limit = workspaceId && quotaKey ? await repository.findUsageLimit(workspaceId, quotaKey) : undefined;
-  const activeCounter =
-    workspaceId && quotaKey ? await repository.findActiveQuotaCounter(workspaceId, quotaKey, occurredAt) : null;
-  const result = processUsageEvent(
-    {
-      ...event,
-      ...(workspaceId ? { workspaceId } : {}),
-    },
-    {
-      consumed: activeCounter?.consumed ?? 0,
-      ...(typeof limit === 'number' ? { limit } : {}),
-    },
-  );
+  const result = processUsageEvent(event, { consumed: 0 });
 
   if (installation) {
     await repository.touchInstallation({
       installationId: installation.installationId,
-      ...(workspaceId ? { workspaceId } : {}),
       ...(readString(event.payload.browser) ? { browser: readString(event.payload.browser) } : {}),
       ...(readString(event.payload.extensionVersion)
         ? { extensionVersion: readString(event.payload.extensionVersion) }
@@ -168,40 +116,8 @@ export async function processUsageEventJob(
       })
     : null;
 
-  const activityRecord = workspaceId
-    ? await repository.createActivityLog({
-        workspaceId,
-        eventType: `usage.${event.eventType}`,
-        metadataJson: {
-          installationId: event.installationId,
-          accepted: result.accepted,
-          ...(quotaKey ? { quotaKey } : {}),
-          ...event.payload,
-        },
-        createdAt: occurredAt,
-      })
-    : null;
-
-  let nextCounter = activeCounter;
-
-  if (workspaceId && quotaKey && result.accepted) {
-    const periodStart = activeCounter?.periodStart ?? startOfUtcDay(occurredAt);
-    const periodEnd = activeCounter?.periodEnd ?? addUtcDays(periodStart, 1);
-
-    nextCounter = await repository.saveQuotaCounter({
-      workspaceId,
-      key: quotaKey,
-      consumed: result.nextUsage.consumed,
-      periodStart,
-      periodEnd,
-    });
-  }
-
   return {
     ...result,
-    ...(workspaceId ? { workspaceId } : {}),
-    ...(nextCounter?.key ? { quotaKey: nextCounter.key } : quotaKey ? { quotaKey } : {}),
     ...(telemetryRecord ? { telemetryId: telemetryRecord.id } : {}),
-    ...(activityRecord ? { activityLogId: activityRecord.id } : {}),
   };
 }

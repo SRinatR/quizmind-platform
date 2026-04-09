@@ -3,13 +3,11 @@ import { Prisma, PrismaClient } from '@quizmind/database';
 import {
   type UsageInstallationSnapshot,
   type UsageProcessingRepository,
-  type UsageQuotaCounterSnapshot,
 } from '../jobs/process-usage-event';
 
 const installationSelect = {
   id: true,
   installationId: true,
-  workspaceId: true,
   browser: true,
   extensionVersion: true,
   schemaVersion: true,
@@ -33,7 +31,6 @@ function mapInstallationRecord(record: InstallationRecord): UsageInstallationSna
   return {
     id: record.id,
     installationId: record.installationId,
-    workspaceId: record.workspaceId,
     browser: record.browser,
     extensionVersion: record.extensionVersion,
     schemaVersion: record.schemaVersion,
@@ -58,7 +55,6 @@ export class WorkerUsageProcessingRepository implements UsageProcessingRepositor
 
   async touchInstallation(input: {
     installationId: string;
-    workspaceId?: string;
     browser?: string;
     extensionVersion?: string;
     schemaVersion?: string;
@@ -70,65 +66,11 @@ export class WorkerUsageProcessingRepository implements UsageProcessingRepositor
         installationId: input.installationId,
       },
       data: {
-        ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
         ...(input.browser ? { browser: input.browser } : {}),
         ...(input.extensionVersion ? { extensionVersion: input.extensionVersion } : {}),
         ...(input.schemaVersion ? { schemaVersion: input.schemaVersion } : {}),
         ...(input.capabilities ? { capabilitiesJson: input.capabilities } : {}),
         lastSeenAt: input.lastSeenAt,
-      },
-    });
-  }
-
-  async findUsageLimit(_workspaceId: string, _key: string): Promise<number | undefined> {
-    return undefined;
-  }
-
-  findActiveQuotaCounter(
-    workspaceId: string,
-    key: string,
-    occurredAt: Date,
-  ): Promise<UsageQuotaCounterSnapshot | null> {
-    return this.prisma.quotaCounter.findFirst({
-      where: {
-        workspaceId,
-        key,
-        periodStart: {
-          lte: occurredAt,
-        },
-        periodEnd: {
-          gt: occurredAt,
-        },
-      },
-      orderBy: [{ periodEnd: 'desc' }, { updatedAt: 'desc' }],
-    });
-  }
-
-  saveQuotaCounter(input: {
-    workspaceId: string;
-    key: string;
-    consumed: number;
-    periodStart: Date;
-    periodEnd: Date;
-  }): Promise<UsageQuotaCounterSnapshot> {
-    return this.prisma.quotaCounter.upsert({
-      where: {
-        workspaceId_key_periodStart_periodEnd: {
-          workspaceId: input.workspaceId,
-          key: input.key,
-          periodStart: input.periodStart,
-          periodEnd: input.periodEnd,
-        },
-      },
-      update: {
-        consumed: input.consumed,
-      },
-      create: {
-        workspaceId: input.workspaceId,
-        key: input.key,
-        consumed: input.consumed,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
       },
     });
   }
@@ -146,25 +88,6 @@ export class WorkerUsageProcessingRepository implements UsageProcessingRepositor
         eventType: input.eventType,
         severity: input.severity,
         payloadJson: input.payloadJson as Prisma.InputJsonValue,
-        createdAt: input.createdAt,
-      },
-      select: {
-        id: true,
-      },
-    });
-  }
-
-  createActivityLog(input: {
-    workspaceId: string;
-    eventType: string;
-    metadataJson: Record<string, unknown>;
-    createdAt: Date;
-  }): Promise<{ id: string }> {
-    return this.prisma.activityLog.create({
-      data: {
-        workspaceId: input.workspaceId,
-        eventType: input.eventType,
-        metadataJson: input.metadataJson as Prisma.InputJsonValue,
         createdAt: input.createdAt,
       },
       select: {

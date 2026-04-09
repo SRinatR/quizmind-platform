@@ -50,7 +50,6 @@ import {
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
   type RemoteConfigSnapshot,
-  type QuotaResetJobPayload,
   supportTicketQueuePresets,
   type SupportImpersonationEndRequest,
   type SupportImpersonationEndResult,
@@ -914,32 +913,18 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
-
-    if (!workspaceId) {
-      return {
-        accessDecision,
-        exportDecision,
-        quotas: [],
-        installations: [],
-        recentEvents: [],
-      };
-    }
-
-    const [installations, counters, telemetry, activity, aiRequests] = await Promise.all([
-      this.usageRepository.listInstallationsByWorkspaceId(workspaceId),
-      this.usageRepository.listQuotaCountersByWorkspaceId(workspaceId),
-      this.usageRepository.listRecentTelemetryByWorkspaceId(workspaceId),
-      this.usageRepository.listRecentActivityByWorkspaceId(workspaceId),
-      this.usageRepository.listRecentAiRequestsByWorkspaceId(workspaceId),
+    const userId = session.user.id;
+    const [installations, telemetry, activity, aiRequests] = await Promise.all([
+      this.usageRepository.listInstallationsByUserId(userId),
+      this.usageRepository.listRecentTelemetryByUserId(userId),
+      this.usageRepository.listRecentActivityByUserId(userId),
+      this.usageRepository.listRecentAiRequestsByUserId(userId),
     ]);
-    const usageSnapshot: WorkspaceUsageSnapshot = {
+
+    return {
       accessDecision,
       exportDecision,
-      quotas: buildUsageQuotas({
-        counters,
-        seatCount: 1,
-      }),
+      quotas: [],
       installations: mapUsageInstallations(installations),
       recentEvents: buildRecentUsageEvents({
         telemetry,
@@ -947,9 +932,6 @@ export class PlatformService {
         aiRequests,
       }),
     };
-    await this.enqueueQuotaResetsForExpiredUsageQuotas(workspaceId, usageSnapshot);
-
-    return usageSnapshot;
   }
 
   listUsageHistory(
@@ -988,7 +970,7 @@ export class PlatformService {
     }
 
     const exportDecision = canExportUsage(session.principal as SessionPrincipal);
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
+    const userId = session.user.id;
 
     const filters = this.normalizeUsageHistoryFilters({
       source: request?.source,
@@ -999,28 +981,28 @@ export class PlatformService {
     });
     const fetchLimit = Math.min(filters.limit * 2, maxUsageHistoryLimit);
     const telemetryPromise =
-      !workspaceId || filters.source === 'activity' || filters.source === 'ai'
+      filters.source === 'activity' || filters.source === 'ai'
         ? Promise.resolve([])
-        : this.usageRepository.listTelemetryHistoryByWorkspaceId({
-            workspaceId,
+        : this.usageRepository.listTelemetryHistoryByUserId({
+            userId,
             limit: fetchLimit,
             ...(filters.eventType ? { eventType: filters.eventType } : {}),
             ...(filters.installationId ? { installationId: filters.installationId } : {}),
           });
     const activityPromise =
-      !workspaceId || filters.source === 'telemetry' || filters.source === 'ai'
+      filters.source === 'telemetry' || filters.source === 'ai'
         ? Promise.resolve([])
-        : this.usageRepository.listActivityHistoryByWorkspaceId({
-            workspaceId,
+        : this.usageRepository.listActivityHistoryByUserId({
+            userId,
             limit: fetchLimit,
             ...(filters.eventType ? { eventType: filters.eventType } : {}),
             ...(filters.actorId ? { actorId: filters.actorId } : {}),
           });
     const aiRequestsPromise =
-      !workspaceId || filters.source === 'telemetry' || filters.source === 'activity'
+      filters.source === 'telemetry' || filters.source === 'activity'
         ? Promise.resolve([])
-        : this.usageRepository.listAiRequestHistoryByWorkspaceId({
-            workspaceId,
+        : this.usageRepository.listAiRequestHistoryByUserId({
+            userId,
             limit: fetchLimit,
             ...(filters.actorId ? { actorId: filters.actorId } : {}),
             ...(filters.installationId ? { installationId: filters.installationId } : {}),
@@ -1084,56 +1066,6 @@ export class PlatformService {
       .slice(0, filters.limit);
   }
 
-  private async enqueueQuotaResetsForExpiredUsageQuotas(workspaceId: string, summary: WorkspaceUsageSnapshot): Promise<void> {
-    const requestedAt = new Date().toISOString();
-    const dispatches: Array<Promise<unknown>> = [];
-
-    for (const quota of summary.quotas) {
-      if (quota.key === 'limit.seats') {
-        continue;
-      }
-
-      const periodStart = new Date(quota.periodStart);
-      const periodEnd = new Date(quota.periodEnd);
-
-      if (!Number.isFinite(periodStart.getTime()) || !Number.isFinite(periodEnd.getTime())) {
-        continue;
-      }
-
-      if (periodEnd.getTime() > Date.now()) {
-        continue;
-      }
-
-      const currentWindowMs = periodEnd.getTime() - periodStart.getTime();
-      const windowDurationMs = currentWindowMs > 0 ? currentWindowMs : 24 * 60 * 60 * 1000;
-      const queuePayload: QuotaResetJobPayload = {
-        workspaceId,
-        key: quota.key,
-        consumed: quota.consumed,
-        periodStart: quota.periodStart,
-        periodEnd: quota.periodEnd,
-        nextPeriodStart: periodEnd.toISOString(),
-        nextPeriodEnd: new Date(periodEnd.getTime() + windowDurationMs).toISOString(),
-        requestedAt,
-      };
-
-      dispatches.push(
-        this.queueDispatchService.dispatch(
-          createQueueDispatchRequest({
-            queue: 'quota-resets',
-            payload: queuePayload,
-          }),
-        ),
-      );
-    }
-
-    if (dispatches.length === 0) {
-      return;
-    }
-
-    await Promise.all(dispatches);
-  }
-
   exportUsage(personaKey?: string, request?: Partial<UsageExportRequest>): UsageExportResult {
     const workspaceId = request?.workspaceId?.trim();
     const summary = this.getUsage(personaKey);
@@ -1151,15 +1083,12 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? '';
     const exportResult = this.buildUsageExportResult(
       await this.getUsageForCurrentSession(session),
       request,
-      resolvedWorkspaceId,
     );
     const queuePayload: AuditExportJobPayload = {
       exportType: 'usage',
-      workspaceId: exportResult.workspaceId,
       format: exportResult.format,
       scope: exportResult.scope,
       fileName: exportResult.fileName,
@@ -2103,7 +2032,6 @@ export class PlatformService {
   async ingestUsageEvent(event?: Partial<UsageEventPayload>): Promise<UsageEventIngestResult> {
     const usageEvent: UsageEventPayload = {
       installationId: event?.installationId ?? 'inst_local_browser',
-      workspaceId: event?.workspaceId ?? 'ws_alpha',
       eventType: event?.eventType ?? 'extension.quiz_answer_requested',
       occurredAt: event?.occurredAt ?? new Date().toISOString(),
       payload: event?.payload ?? {

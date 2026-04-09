@@ -1,7 +1,7 @@
 import { createLogEvent } from '@quizmind/logger';
 
 export interface QuotaCounterSnapshot {
-  workspaceId: string;
+  workspaceId?: string;
   key: string;
   consumed: number;
   periodStart: string;
@@ -28,11 +28,11 @@ export function resetQuotaCounter(
   return {
     nextCounter,
     logEvent: createLogEvent({
-      eventId: `quota-reset:${counter.workspaceId}:${counter.key}:${nextPeriodStart}`,
+      eventId: `quota-reset:${counter.workspaceId ?? 'global'}:${counter.key}:${nextPeriodStart}`,
       eventType: 'quota_counter.reset',
       actorId: counter.workspaceId,
       actorType: 'system',
-      workspaceId: counter.workspaceId,
+      ...(counter.workspaceId ? { workspaceId: counter.workspaceId } : {}),
       targetType: 'quota_counter',
       targetId: counter.key,
       occurredAt: nextPeriodStart,

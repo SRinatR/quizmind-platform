@@ -936,7 +936,7 @@ export interface UsageExportRequest {
 }
 
 export interface UsageExportResult {
-  workspaceId: string;
+  workspaceId?: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
   fileName: string;
@@ -958,7 +958,7 @@ export interface EmailQueueJobPayload {
 }
 
 export interface QuotaResetJobPayload {
-  workspaceId: string;
+  workspaceId?: string;
   key: string;
   consumed: number;
   periodStart: string;
@@ -970,7 +970,7 @@ export interface QuotaResetJobPayload {
 
 export interface UsageAuditExportJobPayload {
   exportType: 'usage';
-  workspaceId: string;
+  workspaceId?: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
   fileName: string;
@@ -1329,7 +1329,7 @@ export interface ExtensionFileUploadAnswerResult {
 }
 
 export interface AiModelsCatalogPayload {
-  workspaceId: string | undefined;
+  workspaceId?: string;
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
   defaultProvider?: AiProvider;
@@ -1355,7 +1355,7 @@ export interface AiProxyQuotaSnapshot {
 
 export interface AiProxyResult {
   requestId: string;
-  workspaceId: string | undefined;
+  workspaceId?: string;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';

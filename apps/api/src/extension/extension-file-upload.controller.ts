@@ -265,14 +265,6 @@ export class ExtensionFileUploadController {
     }
 
     const installationSession = await this.extensionControlService.resolveInstallationSession(accessToken);
-    const workspaceId = installationSession.installation.workspaceId;
-
-    if (!workspaceId) {
-      throw new UnauthorizedException(
-        'Installation is not bound to a workspace yet. Reconnect from extension settings.',
-      );
-    }
-
     const mime = resolveMimeFromFilename(file.originalname, file.mimetype);
 
     if (!ALLOWED_MIME_TYPES.has(mime)) {
@@ -334,7 +326,6 @@ export class ExtensionFileUploadController {
     }
 
     const proxyResult = await this.aiProxyService.proxyForCurrentSession(session, {
-      workspaceId,
       ...(provider ? { provider } : {}),
       ...(model ? { model } : {}),
       messages: [{ role: 'user', content: messageContent }],
@@ -353,7 +344,6 @@ export class ExtensionFileUploadController {
 
     this.logUploadRequest({
       installationId: installationSession.installation.installationId,
-      workspaceId,
       originalName: file.originalname,
       mimeType: mime,
       sizeBytes: file.size,
@@ -367,7 +357,6 @@ export class ExtensionFileUploadController {
       .persistContent({
         requestId: proxyResult.requestId,
         userId: installationSession.installation.userId,
-        workspaceId,
         provider: proxyResult.provider,
         model: proxyResult.model,
         requestType: 'file',
@@ -409,7 +398,6 @@ export class ExtensionFileUploadController {
 
   private logUploadRequest(input: {
     installationId: string;
-    workspaceId: string;
     originalName: string;
     mimeType: string;
     sizeBytes: number;
@@ -420,7 +408,6 @@ export class ExtensionFileUploadController {
       JSON.stringify({
         eventType: 'extension.file_upload_answered',
         installationId: input.installationId,
-        workspaceId: input.workspaceId,
         originalName: input.originalName,
         mimeType: input.mimeType,
         sizeBytes: input.sizeBytes,

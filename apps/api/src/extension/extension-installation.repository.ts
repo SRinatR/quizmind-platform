@@ -63,7 +63,6 @@ export class ExtensionInstallationRepository {
 
   upsertBoundInstallation(input: {
     userId: string;
-    workspaceId?: string;
     installationId: string;
     browser: string;
     extensionVersion: string;
@@ -77,7 +76,6 @@ export class ExtensionInstallationRepository {
       },
       create: {
         userId: input.userId,
-        ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
         installationId: input.installationId,
         browser: input.browser,
         extensionVersion: input.extensionVersion,
@@ -87,7 +85,7 @@ export class ExtensionInstallationRepository {
       },
       update: {
         userId: input.userId,
-        workspaceId: input.workspaceId ?? null,
+        workspaceId: null,
         browser: input.browser,
         extensionVersion: input.extensionVersion,
         schemaVersion: input.schemaVersion,

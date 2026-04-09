@@ -5,7 +5,6 @@ import { PrismaService } from '../database/prisma.service';
 
 const quotaCounterSelect = {
   id: true,
-  workspaceId: true,
   key: true,
   consumed: true,
   periodStart: true,

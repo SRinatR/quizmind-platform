@@ -26,7 +26,6 @@ import { addUtcDays, evaluateUsageDecision, startOfUtcDay } from '@quizmind/usag
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { AiHistoryService } from '../history/ai-history.service';
 import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
-import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
   AiProxyRepository,
   type AiProxyCredentialRecord,
@@ -54,7 +53,6 @@ type NormalizedMessageContent =
     >;
 
 interface NormalizedProxyRequest {
-  workspaceId?: string;
   provider?: AiProvider;
   model?: string;
   messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
@@ -105,7 +103,7 @@ interface KeyMaterialResolution {
 
 export interface AiProxyStreamCompletion {
   requestId: string;
-  workspaceId: string | undefined;
+  workspaceId?: string;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -116,7 +114,7 @@ export interface AiProxyStreamCompletion {
 
 export interface AiProxyStreamResult {
   requestId: string;
-  workspaceId: string | undefined;
+  workspaceId?: string;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -411,8 +409,6 @@ export class AiProxyService {
     private readonly aiProviderPolicyService: AiProviderPolicyService,
     @Inject(AiProxyRepository)
     private readonly aiProxyRepository: AiProxyRepository,
-    @Inject(WorkspaceRepository)
-    private readonly workspaceRepository: WorkspaceRepository,
     @Inject(AiHistoryService)
     private readonly aiHistoryService: AiHistoryService,
   ) {}
@@ -511,9 +507,8 @@ export class AiProxyService {
     session: CurrentSessionSnapshot,
   ): Promise<AiModelsCatalogPayload> {
     try {
-      const resolvedWorkspaceId = await this.resolveUserWorkspaceId(session.user.id);
-      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
-      const catalog = await this.resolveWorkspaceCatalog(resolvedWorkspaceId, policy);
+      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
+      const catalog = await this.resolveWorkspaceCatalog(policy);
 
       if (catalog.providers.length === 0 || catalog.models.length === 0) {
         console.warn(
@@ -521,7 +516,6 @@ export class AiProxyService {
             eventType: 'ai_proxy.models_catalog_empty',
             occurredAt: new Date().toISOString(),
             userId: session.user.id,
-            workspaceId: resolvedWorkspaceId,
             policyMode: policy.mode,
             policyProviders: policy.providers,
             allowedModelTags: policy.allowedModelTags ?? [],
@@ -532,7 +526,7 @@ export class AiProxyService {
       }
 
       return {
-        workspaceId: resolvedWorkspaceId,
+        workspaceId: undefined,
         providers: catalog.providers,
         models: catalog.models,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
@@ -637,9 +631,8 @@ export class AiProxyService {
     request?: Partial<AiProxyRequest>,
   ): Promise<PreparedProxyInvocation> {
     const normalizedRequest = this.normalizeRequest(request);
-    const resolvedWorkspaceId = await this.resolveUserWorkspaceId(session.user.id);
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
-    const catalog = await this.resolveWorkspaceCatalog(resolvedWorkspaceId, policy);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
+    const catalog = await this.resolveWorkspaceCatalog(policy);
     const provider = (normalizedRequest.provider ?? catalog.defaultProvider ?? policy.providers[0] ?? 'openrouter') as AiProvider;
 
     if (!policy.providers.includes(provider)) {
@@ -678,9 +671,8 @@ export class AiProxyService {
     const occurredAt = new Date();
     const periodStart = startOfUtcDay(occurredAt);
     const periodEnd = addUtcDays(periodStart, 1);
-    const quotaCounterFallback = {
+    const quotaCounter = {
       id: 'ai-proxy-fallback',
-      workspaceId: resolvedWorkspaceId ?? (null as unknown as string),
       key: aiRequestsQuotaKey,
       consumed: 0,
       periodStart,
@@ -688,11 +680,6 @@ export class AiProxyService {
       createdAt: occurredAt,
       updatedAt: occurredAt,
     };
-    // Only query quota counter when the user belongs to a workspace.
-    const activeCounter = resolvedWorkspaceId
-      ? await this.aiProxyRepository.findActiveQuotaCounter(resolvedWorkspaceId, aiRequestsQuotaKey, occurredAt)
-      : null;
-    const quotaCounter = activeCounter ?? quotaCounterFallback;
     const quotaLimit: number | undefined = undefined;
 
     if (provider !== 'openrouter' && !policy.allowDirectProviderMode) {
@@ -751,7 +738,7 @@ export class AiProxyService {
       session,
       request: normalizedRequest,
       resolvedModel,
-      workspaceId: resolvedWorkspaceId,
+      workspaceId: undefined,
       provider,
       keySource,
       apiKey,
@@ -982,7 +969,6 @@ export class AiProxyService {
   }
 
   private async resolveWorkspaceCatalog(
-    workspaceId: string | undefined,
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>,
   ): Promise<WorkspaceAiCatalog> {
     const allowedModelTags = Array.from(
@@ -1023,7 +1009,6 @@ export class AiProxyService {
       throw new BadRequestException('Request body is required.');
     }
 
-    const workspaceId = request.workspaceId?.trim() || undefined;
     const providerValue = request.provider;
     const provider =
       typeof providerValue === 'string' && providerValue.trim().length > 0
@@ -1042,7 +1027,6 @@ export class AiProxyService {
     }
 
     return {
-      workspaceId,
       provider,
       model,
       messages,
@@ -1051,13 +1035,6 @@ export class AiProxyService {
       ...(typeof maxTokens === 'number' ? { maxTokens } : {}),
       stream: request.stream === true,
     };
-  }
-
-  /** Returns the user's workspace id, or undefined when the user has no workspace.
-   *  Never throws — callers must handle the no-workspace case explicitly. */
-  private async resolveUserWorkspaceId(userId: string): Promise<string | undefined> {
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(userId);
-    return workspaceId ?? undefined;
   }
 
   private async resolvePlatformKey(input: {
@@ -1694,8 +1671,6 @@ export class AiProxyService {
     request?: Partial<AiProxyRequest>;
     error: unknown;
   }): void {
-    const requestedWorkspaceId =
-      typeof input.request?.workspaceId === 'string' ? input.request.workspaceId.trim() : undefined;
     const requestedProvider =
       typeof input.request?.provider === 'string' ? input.request.provider.trim() : undefined;
     const requestedModel =
@@ -1711,7 +1686,6 @@ export class AiProxyService {
         occurredAt: new Date().toISOString(),
         userId: input.session.user.id,
         sessionPersona: input.session.personaKey,
-        requestedWorkspaceId,
         requestedProvider,
         requestedModel,
         useOwnKeyRequested:
