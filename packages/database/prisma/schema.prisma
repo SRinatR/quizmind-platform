@@ -139,6 +139,7 @@ model User {
   supportTicketPresetFavorites SupportTicketPresetFavorite[]
   supportImpersonationSessionsStarted SupportImpersonationSession[] @relation("SupportImpersonationActor")
   supportImpersonationSessionsTargeted SupportImpersonationSession[] @relation("SupportImpersonationTarget")
+  wallet                               Wallet?
 }
 
 model Account {
@@ -207,18 +208,16 @@ model Workspace {
   providerCredentials    ProviderCredential[]
   aiRequests             AiRequest[]
   aiProviderPolicies     AiProviderPolicy[]
-  wallet                 Wallet?
-  walletTopUps           WalletTopUp[]
 }
 
 model Wallet {
   id             String              @id @default(cuid())
-  workspaceId    String              @unique
+  userId         String              @unique
   currency       String              @default("RUB")
   balanceKopecks Int                 @default(0)
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
-  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   topUps         WalletTopUp[]
   ledgerEntries  WalletLedgerEntry[]
 }
@@ -226,7 +225,6 @@ model Wallet {
 model WalletTopUp {
   id                String            @id @default(cuid())
   walletId          String
-  workspaceId       String
   createdByUserId   String
   amountKopecks     Int
   currency          String            @default("RUB")
@@ -240,7 +238,6 @@ model WalletTopUp {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   wallet            Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  workspace         Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   ledgerEntries     WalletLedgerEntry[]
 }
 

@@ -7,7 +7,6 @@ import { type WalletRepository } from '../src/wallet/wallet.repository';
 function buildMockTopUp(overrides: Partial<{
   id: string;
   walletId: string;
-  workspaceId: string;
   createdByUserId: string;
   amountKopecks: number;
   currency: string;
@@ -24,7 +23,6 @@ function buildMockTopUp(overrides: Partial<{
   return {
     id: 'topup-1',
     walletId: 'wallet-1',
-    workspaceId: 'ws-1',
     createdByUserId: 'user-1',
     amountKopecks: 50_000,
     currency: 'RUB',
@@ -43,7 +41,7 @@ function buildMockTopUp(overrides: Partial<{
 
 function buildMockWallet(overrides: Partial<{
   id: string;
-  workspaceId: string;
+  userId: string;
   currency: string;
   balanceKopecks: number;
   createdAt: Date;
@@ -51,7 +49,7 @@ function buildMockWallet(overrides: Partial<{
 }> = {}) {
   return {
     id: 'wallet-1',
-    workspaceId: 'ws-1',
+    userId: 'user-1',
     currency: 'RUB',
     balanceKopecks: 0,
     createdAt: new Date(),
@@ -62,11 +60,10 @@ function buildMockWallet(overrides: Partial<{
 
 function buildWalletService(repositoryOverrides: Partial<WalletRepository> = {}): WalletService {
   const mockRepository = {
-    findOrCreateWallet: async () => buildMockWallet(),
-    findWalletByWorkspaceId: async () => buildMockWallet(),
+    findOrCreateWalletForUser: async () => buildMockWallet(),
     createTopUp: async () => buildMockTopUp(),
     findTopUpByProviderPaymentId: async () => null,
-    findTopUpsByWorkspaceId: async () => [],
+    findTopUpsByUserId: async () => [],
     settleTopUp: async () => ({ alreadySettled: false, newBalanceKopecks: 50_000 }),
     cancelTopUp: async () => undefined,
     ...repositoryOverrides,
@@ -100,12 +97,13 @@ test('processYookassaPaymentEvent - no matching top-up returns not processed', a
 
 test('processYookassaPaymentEvent - payment.succeeded credits balance', async () => {
   let settleTopUpCalled = false;
+  let settleTopUpWalletId: string | undefined;
 
   const service = buildWalletService({
-    findTopUpByProviderPaymentId: async () => buildMockTopUp({ status: 'pending' }),
-    findOrCreateWallet: async () => buildMockWallet(),
-    settleTopUp: async () => {
+    findTopUpByProviderPaymentId: async () => buildMockTopUp({ status: 'pending', walletId: 'wallet-1' }),
+    settleTopUp: async (input) => {
       settleTopUpCalled = true;
+      settleTopUpWalletId = input.walletId;
       return { alreadySettled: false, newBalanceKopecks: 50_000 };
     },
   });
@@ -119,12 +117,13 @@ test('processYookassaPaymentEvent - payment.succeeded credits balance', async ()
   assert.equal(result.processed, true);
   assert.equal(result.reason, 'balance_credited');
   assert.equal(settleTopUpCalled, true);
+  // walletId comes directly from topUp.walletId — no workspace resolution needed
+  assert.equal(settleTopUpWalletId, 'wallet-1');
 });
 
 test('processYookassaPaymentEvent - repeated succeeded webhook does not double-credit', async () => {
   const service = buildWalletService({
     findTopUpByProviderPaymentId: async () => buildMockTopUp({ status: 'pending' }),
-    findOrCreateWallet: async () => buildMockWallet(),
     settleTopUp: async () => ({ alreadySettled: true, newBalanceKopecks: 50_000 }),
   });
 
@@ -144,7 +143,6 @@ test('processYookassaPaymentEvent - payment.canceled does not credit balance', a
 
   const service = buildWalletService({
     findTopUpByProviderPaymentId: async () => buildMockTopUp({ status: 'pending' }),
-    findOrCreateWallet: async () => buildMockWallet(),
     settleTopUp: async () => {
       settleTopUpCalled = true;
       return { alreadySettled: false, newBalanceKopecks: 0 };
@@ -168,7 +166,6 @@ test('processYookassaPaymentEvent - payment.canceled does not credit balance', a
 test('processYookassaPaymentEvent - unknown event type returns unhandled', async () => {
   const service = buildWalletService({
     findTopUpByProviderPaymentId: async () => buildMockTopUp({ status: 'pending' }),
-    findOrCreateWallet: async () => buildMockWallet(),
   });
 
   const result = await service.processYookassaPaymentEvent({
