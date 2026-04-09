@@ -4,7 +4,6 @@ import test from 'node:test';
 import { hashOpaqueToken } from '@quizmind/auth';
 
 import { AuthService } from '../src/auth/auth.service';
-import { type EmailVerificationRepository } from '../src/auth/repositories/email-verification.repository';
 import { type PasswordResetRepository } from '../src/auth/repositories/password-reset.repository';
 import { type SessionRepository } from '../src/auth/repositories/session.repository';
 import { type UserRepository } from '../src/auth/repositories/user.repository';
@@ -25,7 +24,6 @@ function createAuthService() {
   } as unknown as UserRepository;
 
   const sessionRepository = {} as SessionRepository;
-  const emailVerificationRepository = {} as EmailVerificationRepository;
   const passwordResetRepository = {} as PasswordResetRepository;
   const queueDispatchCalls: Array<Record<string, unknown>> = [];
   const queueDispatchService = {
@@ -41,7 +39,6 @@ function createAuthService() {
   const service = new AuthService(
     userRepository,
     sessionRepository,
-    emailVerificationRepository,
     passwordResetRepository,
     queueDispatchService,
   );
@@ -334,4 +331,43 @@ test('AuthService.resetPassword consumes the token, rotates sessions, and issues
   assert.equal(result.session.user.email, 'owner@quizmind.dev');
   assert.ok(result.session.accessToken.length > 20);
   assert.match(result.resetAt, /\d{4}-\d{2}-\d{2}T/);
+});
+
+test('AuthService.login throws BadRequestException when email is missing (empty body)', async () => {
+  const { service } = createAuthService();
+
+  await assert.rejects(
+    () => service.login({} as any),
+    (err: any) => {
+      assert.equal(err.constructor.name, 'BadRequestException');
+      assert.match(err.message, /email/i);
+      return true;
+    },
+  );
+});
+
+test('AuthService.login throws BadRequestException when email is null', async () => {
+  const { service } = createAuthService();
+
+  await assert.rejects(
+    () => service.login({ email: null, password: 'secret' } as any),
+    (err: any) => {
+      assert.equal(err.constructor.name, 'BadRequestException');
+      assert.match(err.message, /email/i);
+      return true;
+    },
+  );
+});
+
+test('AuthService.login throws BadRequestException when email is not a string', async () => {
+  const { service } = createAuthService();
+
+  await assert.rejects(
+    () => service.login({ email: 42, password: 'secret' } as any),
+    (err: any) => {
+      assert.equal(err.constructor.name, 'BadRequestException');
+      assert.match(err.message, /email/i);
+      return true;
+    },
+  );
 });

@@ -524,7 +524,11 @@ export class AuthService {
     };
   }
 
-  private normalizeEmail(email: string): string {
+  private normalizeEmail(email: unknown): string {
+    if (typeof email !== 'string') {
+      throw new BadRequestException('A valid email address is required.');
+    }
+
     return email.trim().toLowerCase();
   }
 
