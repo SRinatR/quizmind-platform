@@ -399,7 +399,7 @@ export class ExtensionControlController {
 
     try {
       const session = buildInstallationRuntimeSession(installationSession);
-      const catalog = await this.aiProxyService.listModelsForCurrentSession(session);
+      const catalog = await this.aiProxyService.listModelsForCurrentSession(session, workspaceId ?? undefined);
       const typeFilter = (type ?? '').trim().toLowerCase();
       const filtered = catalog.models.filter((entry) => {
         if (typeFilter === 'image') {

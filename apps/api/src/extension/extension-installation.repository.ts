@@ -87,7 +87,7 @@ export class ExtensionInstallationRepository {
       },
       update: {
         userId: input.userId,
-        workspaceId: input.workspaceId ?? null,
+        ...(input.workspaceId !== undefined ? { workspaceId: input.workspaceId } : {}),
         browser: input.browser,
         extensionVersion: input.extensionVersion,
         schemaVersion: input.schemaVersion,

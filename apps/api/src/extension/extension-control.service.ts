@@ -35,7 +35,6 @@ import {
   canReadExtensionInstallations,
   canWriteExtensionInstallations,
 } from '../services/access-service';
-import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
   defaultCompatibilityPolicy,
   mapExtensionCompatibilityRuleToPolicy,
@@ -179,8 +178,6 @@ export class ExtensionControlService {
     private readonly usageRepository: UsageRepository,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
-    @Inject(WorkspaceRepository)
-    private readonly workspaceRepository: WorkspaceRepository,
   ) {}
 
   async bindInstallationForCurrentSession(
@@ -188,14 +185,12 @@ export class ExtensionControlService {
     request?: Partial<ExtensionInstallationBindRequest>,
   ): Promise<ExtensionInstallationBindResult> {
     const normalizedRequest = this.normalizeBindRequest(request);
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? undefined;
     const occurredAt = new Date();
     const existingInstallation = await this.extensionInstallationRepository.findByInstallationId(
       normalizedRequest.installationId,
     );
     const installation = await this.extensionInstallationRepository.upsertBoundInstallation({
       userId: session.user.id,
-      ...(workspaceId ? { workspaceId } : {}),
       installationId: normalizedRequest.installationId,
       browser: normalizedRequest.handshake.browser,
       extensionVersion: normalizedRequest.handshake.extensionVersion,

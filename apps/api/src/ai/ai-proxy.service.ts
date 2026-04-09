@@ -26,7 +26,6 @@ import { addUtcDays, evaluateUsageDecision, startOfUtcDay } from '@quizmind/usag
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
 import { AiHistoryService } from '../history/ai-history.service';
 import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
-import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
   AiProxyRepository,
   type AiProxyCredentialRecord,
@@ -411,8 +410,6 @@ export class AiProxyService {
     private readonly aiProviderPolicyService: AiProviderPolicyService,
     @Inject(AiProxyRepository)
     private readonly aiProxyRepository: AiProxyRepository,
-    @Inject(WorkspaceRepository)
-    private readonly workspaceRepository: WorkspaceRepository,
     @Inject(AiHistoryService)
     private readonly aiHistoryService: AiHistoryService,
   ) {}
@@ -509,9 +506,10 @@ export class AiProxyService {
 
   async listModelsForCurrentSession(
     session: CurrentSessionSnapshot,
+    workspaceId?: string,
   ): Promise<AiModelsCatalogPayload> {
     try {
-      const resolvedWorkspaceId = await this.resolveUserWorkspaceId(session.user.id);
+      const resolvedWorkspaceId = workspaceId;
       const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
       const catalog = await this.resolveWorkspaceCatalog(resolvedWorkspaceId, policy);
 
@@ -637,7 +635,7 @@ export class AiProxyService {
     request?: Partial<AiProxyRequest>,
   ): Promise<PreparedProxyInvocation> {
     const normalizedRequest = this.normalizeRequest(request);
-    const resolvedWorkspaceId = await this.resolveUserWorkspaceId(session.user.id);
+    const resolvedWorkspaceId = normalizedRequest.workspaceId;
     const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
     const catalog = await this.resolveWorkspaceCatalog(resolvedWorkspaceId, policy);
     const provider = (normalizedRequest.provider ?? catalog.defaultProvider ?? policy.providers[0] ?? 'openrouter') as AiProvider;
@@ -1051,13 +1049,6 @@ export class AiProxyService {
       ...(typeof maxTokens === 'number' ? { maxTokens } : {}),
       stream: request.stream === true,
     };
-  }
-
-  /** Returns the user's workspace id, or undefined when the user has no workspace.
-   *  Never throws — callers must handle the no-workspace case explicitly. */
-  private async resolveUserWorkspaceId(userId: string): Promise<string | undefined> {
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(userId);
-    return workspaceId ?? undefined;
   }
 
   private async resolvePlatformKey(input: {
