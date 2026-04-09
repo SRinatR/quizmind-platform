@@ -5,7 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 
 export interface WalletRecord {
   id: string;
-  workspaceId: string;
+  userId: string;
   currency: string;
   balanceKopecks: number;
   createdAt: Date;
@@ -15,7 +15,6 @@ export interface WalletRecord {
 export interface WalletTopUpRecord {
   id: string;
   walletId: string;
-  workspaceId: string;
   createdByUserId: string;
   amountKopecks: number;
   currency: string;
@@ -34,9 +33,9 @@ export interface WalletTopUpRecord {
 export class WalletRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async findOrCreateWallet(workspaceId: string): Promise<WalletRecord> {
+  async findOrCreateWalletForUser(userId: string): Promise<WalletRecord> {
     const existing = await this.prisma.wallet.findUnique({
-      where: { workspaceId },
+      where: { userId },
     });
 
     if (existing) {
@@ -44,19 +43,12 @@ export class WalletRepository {
     }
 
     return this.prisma.wallet.create({
-      data: { workspaceId },
-    });
-  }
-
-  async findWalletByWorkspaceId(workspaceId: string): Promise<WalletRecord | null> {
-    return this.prisma.wallet.findUnique({
-      where: { workspaceId },
+      data: { userId },
     });
   }
 
   async createTopUp(input: {
     walletId: string;
-    workspaceId: string;
     createdByUserId: string;
     amountKopecks: number;
     currency: string;
@@ -68,7 +60,6 @@ export class WalletRepository {
     return this.prisma.walletTopUp.create({
       data: {
         walletId: input.walletId,
-        workspaceId: input.workspaceId,
         createdByUserId: input.createdByUserId,
         amountKopecks: input.amountKopecks,
         currency: input.currency,
@@ -88,38 +79,18 @@ export class WalletRepository {
     });
   }
 
-  async resolveUserWorkspaceId(userId: string): Promise<string | null> {
-    const membership = await this.prisma.workspaceMembership.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'asc' },
-      select: { workspaceId: true },
-    });
-    return membership?.workspaceId ?? null;
-  }
-
-  async findOrCreateWalletForUser(userId: string): Promise<WalletRecord & { workspaceId: string }> {
-    const workspaceId = await this.resolveUserWorkspaceId(userId);
-
-    if (!workspaceId) {
-      throw new Error(`No account scope found for user ${userId}.`);
-    }
-
-    return this.findOrCreateWallet(workspaceId);
-  }
-
   async findTopUpsByUserId(userId: string, limit = 50): Promise<WalletTopUpRecord[]> {
-    const workspaceId = await this.resolveUserWorkspaceId(userId);
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
 
-    if (!workspaceId) {
+    if (!wallet) {
       return [];
     }
 
-    return this.findTopUpsByWorkspaceId(workspaceId, limit);
-  }
-
-  async findTopUpsByWorkspaceId(workspaceId: string, limit = 50): Promise<WalletTopUpRecord[]> {
     return this.prisma.walletTopUp.findMany({
-      where: { workspaceId },
+      where: { walletId: wallet.id },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });

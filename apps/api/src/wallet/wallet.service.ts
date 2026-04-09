@@ -143,7 +143,6 @@ export class WalletService {
       returnUrl: this.resolveReturnUrl(),
       metadata: {
         walletId: wallet.id,
-        workspaceId: wallet.workspaceId,
         userId: session.user.id,
         amountKopecks: String(amountKopecks),
       },
@@ -152,7 +151,6 @@ export class WalletService {
 
     const topUp = await this.walletRepository.createTopUp({
       walletId: wallet.id,
-      workspaceId: wallet.workspaceId,
       createdByUserId: session.user.id,
       amountKopecks,
       currency: wallet.currency,
@@ -187,10 +185,9 @@ export class WalletService {
     }
 
     if (input.eventType === 'payment.succeeded') {
-      const wallet = await this.walletRepository.findOrCreateWallet(topUp.workspaceId);
       const result = await this.walletRepository.settleTopUp({
         topUpId: topUp.id,
-        walletId: wallet.id,
+        walletId: topUp.walletId,
         amountKopecks: topUp.amountKopecks,
         paidAt: input.paidAt ?? new Date(),
       });

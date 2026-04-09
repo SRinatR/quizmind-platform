@@ -2634,7 +2634,7 @@ export class PlatformService {
         receivedAt: '2026-03-24T12:00:00.000Z',
         providerCreatedAt: '2026-03-24T11:59:20.000Z',
         processedAt: null,
-        lastError: 'Workspace wallet context could not be resolved for the incoming payment.',
+        lastError: 'Wallet context could not be resolved for the incoming payment.',
       },
       {
         id: 'webhook_foundation_processed',
