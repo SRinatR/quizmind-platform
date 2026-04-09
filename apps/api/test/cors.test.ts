@@ -107,3 +107,51 @@ test('buildCorsOptions allows explicitly configured extension origins in product
   assert.equal(result.error, null);
   assert.equal(result.allow, true);
 });
+
+test('buildCorsOptions allows the deployed extension ID in production with real API URL', async () => {
+  // Regression test: chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg must be allowed
+  // when ALLOWED_EXTENSION_ORIGINS is set and the API is on a non-loopback production URL.
+  const extensionOrigin = 'chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg';
+  const result = await evaluateOrigin(
+    createApiEnv({
+      nodeEnv: 'production',
+      apiUrl: 'https://ods.uz/api',
+      corsAllowedOrigins: ['https://ods.uz', extensionOrigin],
+    }),
+    extensionOrigin,
+  );
+
+  assert.equal(result.error, null);
+  assert.equal(result.allow, true);
+});
+
+test('buildCorsOptions rejects an unlisted extension ID in production with real API URL', async () => {
+  const allowedExtension = 'chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg';
+  const otherExtension = 'chrome-extension://aaaabbbbccccddddeeeeffffgggghhhh';
+  const result = await evaluateOrigin(
+    createApiEnv({
+      nodeEnv: 'production',
+      apiUrl: 'https://ods.uz/api',
+      corsAllowedOrigins: ['https://ods.uz', allowedExtension],
+    }),
+    otherExtension,
+  );
+
+  assert.ok(result.error instanceof Error);
+  assert.equal(result.allow, false);
+  assert.match(result.error?.message || '', /CORS origin not allowed/i);
+});
+
+test('buildCorsOptions rejects moz-extension origin not in allowlist in production', async () => {
+  const result = await evaluateOrigin(
+    createApiEnv({
+      nodeEnv: 'production',
+      apiUrl: 'https://ods.uz/api',
+      corsAllowedOrigins: ['https://ods.uz'],
+    }),
+    'moz-extension://someunknownid',
+  );
+
+  assert.ok(result.error instanceof Error);
+  assert.equal(result.allow, false);
+});

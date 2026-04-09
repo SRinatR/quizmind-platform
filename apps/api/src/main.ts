@@ -17,6 +17,17 @@ async function bootstrap() {
   if (envIssues.length > 0) {
     throw new Error(`Invalid API environment: ${envIssues.map((issue) => `${issue.key}: ${issue.message}`).join('; ')}`);
   }
+  // Log effective CORS config so operators can verify runtime origin allowlist without secrets.
+  console.log(
+    JSON.stringify({
+      level: 'info',
+      message: 'Effective CORS configuration',
+      nodeEnv: env.nodeEnv,
+      apiUrl: env.apiUrl,
+      corsAllowedOrigins: env.corsAllowedOrigins,
+    }),
+  );
+
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
   });

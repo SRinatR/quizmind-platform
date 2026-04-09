@@ -51,6 +51,7 @@ services:
       JWT_AUDIENCE: "${JWT_AUDIENCE:-${APP_URL:-https://ods.uz}}"
       TRUST_PROXY_HOPS: "${TRUST_PROXY_HOPS:-1}"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-${APP_URL:-https://ods.uz}}"
+      ALLOWED_EXTENSION_ORIGINS: "${ALLOWED_EXTENSION_ORIGINS:-}"
       EMAIL_PROVIDER: "${EMAIL_PROVIDER:-noop}"
       EMAIL_FROM: "${EMAIL_FROM:-noreply@quizmind.local}"
       RESEND_API_KEY: "${RESEND_API_KEY:-}"
