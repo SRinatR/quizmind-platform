@@ -179,7 +179,7 @@ export default async function ExtensionConnectPage({ searchParams }: ExtensionCo
           {platformOriginValidation.securityIssue ? (
             <div className="auth-highlight">
               <span className="micro-label">Security notice</span>
-              <strong>This connection request could not be verified.</strong>
+              <strong>Bridge launch origin mismatch blocked.</strong>
               <p>{platformOriginValidation.securityIssue}</p>
             </div>
           ) : platformOriginValidation.warning ? (
