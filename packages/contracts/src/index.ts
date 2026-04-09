@@ -930,7 +930,6 @@ export interface UsageEventIngestResult {
 }
 
 export interface UsageExportRequest {
-  workspaceId: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
 }
@@ -1175,7 +1174,6 @@ export interface AdminProviderGovernanceSnapshot {
 }
 
 export interface AiProviderPolicyUpdateRequest {
-  workspaceId?: string;
   mode?: AiAccessPolicyMode;
   allowPlatformManaged?: boolean;
   allowBringYourOwnKey?: boolean;
@@ -1196,11 +1194,10 @@ export interface AiProviderPolicyUpdateResult {
 }
 
 export interface AiProviderPolicyResetRequest {
-  workspaceId: string;
+  workspaceId?: string;
 }
 
 export interface AiProviderPolicyResetResult {
-  workspaceId: string;
   scopeKey: string;
   resetApplied: boolean;
   policy: AiProviderPolicySnapshot;
@@ -1369,7 +1366,6 @@ export interface RemoteConfigPublishRequest {
   versionLabel: string;
   layers: RemoteConfigLayer[];
   actorId: string;
-  workspaceId?: string;
 }
 
 export interface RemoteConfigPublishResult {
@@ -1377,13 +1373,11 @@ export interface RemoteConfigPublishResult {
   appliedLayerCount: number;
   publishedAt: string;
   actorId: string;
-  workspaceId?: string;
 }
 
 export interface RemoteConfigVersionSummary {
   id: string;
   versionLabel: string;
-  workspaceId?: string;
   isActive: boolean;
   publishedAt: string;
   publishedBy?: {
@@ -1427,7 +1421,6 @@ export interface RemoteConfigActivateVersionResult {
 export interface SupportImpersonationRequest {
   supportActorId: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   supportTicketId?: string;
   operatorNote?: string;
@@ -1548,7 +1541,6 @@ export interface SupportImpersonationResult {
   impersonationSessionId: string;
   supportActorId: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   createdAt: string;
   supportTicket?: SupportTicketReference;
@@ -1563,7 +1555,6 @@ export interface SupportImpersonationEndRequest {
 export interface SupportImpersonationEndResult {
   impersonationSessionId: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   createdAt: string;
   endedAt: string;

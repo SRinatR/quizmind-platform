@@ -308,7 +308,7 @@ model WebhookEvent {
 
 model QuotaCounter {
   id          String   @id @default(cuid())
-  workspaceId String
+  workspaceId String?
   key         String
   consumed    Int      @default(0)
   periodStart DateTime

@@ -110,26 +110,6 @@ export class SupportTicketRepository {
                     },
                   },
                 },
-                {
-                  workspace: {
-                    is: {
-                      OR: [
-                        {
-                          name: {
-                            contains: normalizedSearch,
-                            mode: 'insensitive',
-                          },
-                        },
-                        {
-                          slug: {
-                            contains: normalizedSearch,
-                            mode: 'insensitive',
-                          },
-                        },
-                      ],
-                    },
-                  },
-                },
               ],
             }
           : {}),
@@ -198,7 +178,7 @@ export class SupportTicketRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: updatedTicket.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,

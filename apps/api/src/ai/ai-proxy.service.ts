@@ -66,7 +66,6 @@ interface PreparedProxyInvocation {
   session: CurrentSessionSnapshot;
   request: NormalizedProxyRequest;
   resolvedModel: string;
-  workspaceId: string | undefined;
   provider: AiProvider;
   keySource: 'platform' | 'user';
   apiKey: string;
@@ -103,7 +102,6 @@ interface KeyMaterialResolution {
 
 export interface AiProxyStreamCompletion {
   requestId: string;
-  workspaceId?: string;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -114,7 +112,6 @@ export interface AiProxyStreamCompletion {
 
 export interface AiProxyStreamResult {
   requestId: string;
-  workspaceId?: string;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -483,7 +480,6 @@ export class AiProxyService {
 
       return {
         requestId: invocation.requestId,
-        workspaceId: invocation.workspaceId,
         provider: invocation.provider,
         model: typeof upstreamResponse.model === 'string' ? upstreamResponse.model : invocation.resolvedModel,
         keySource: invocation.keySource,
@@ -526,7 +522,6 @@ export class AiProxyService {
       }
 
       return {
-        workspaceId: undefined,
         providers: catalog.providers,
         models: catalog.models,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
@@ -605,7 +600,6 @@ export class AiProxyService {
 
       return {
         requestId: invocation.requestId,
-        workspaceId: invocation.workspaceId,
         provider: invocation.provider,
         model: invocation.resolvedModel,
         keySource: invocation.keySource,
@@ -707,7 +701,6 @@ export class AiProxyService {
     const keyMaterial = await this.resolveKeyMaterial({
       provider,
       session,
-      workspaceId: resolvedWorkspaceId,
       policy,
       requestId,
       model: resolvedModel,
@@ -738,7 +731,6 @@ export class AiProxyService {
       session,
       request: normalizedRequest,
       resolvedModel,
-      workspaceId: undefined,
       provider,
       keySource,
       apiKey,
@@ -773,7 +765,6 @@ export class AiProxyService {
   private async resolveKeyMaterial(input: {
     provider: AiProvider;
     session: CurrentSessionSnapshot;
-    workspaceId: string | undefined;
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
     requestId: string;
     model: string;
@@ -803,7 +794,6 @@ export class AiProxyService {
             ? await this.resolveUserKey({
                 provider: input.provider,
                 session: input.session,
-                workspaceId: input.workspaceId,
                 policy: input.policy,
               })
             : await this.resolvePlatformKey({
@@ -815,7 +805,6 @@ export class AiProxyService {
           this.logKeySourceFallback({
             requestId: input.requestId,
             userId: input.session.user.id,
-            workspaceId: input.workspaceId,
             provider: input.provider,
             model: input.model,
             requestedUseOwnKey,
@@ -826,7 +815,6 @@ export class AiProxyService {
           this.logKeySourceResolution({
             requestId: input.requestId,
             userId: input.session.user.id,
-            workspaceId: input.workspaceId,
             provider: input.provider,
             model: input.model,
             requestedUseOwnKey,
@@ -854,7 +842,6 @@ export class AiProxyService {
     this.logKeySourceFallback({
       requestId: input.requestId,
       userId: input.session.user.id,
-      workspaceId: input.workspaceId,
       provider: input.provider,
       model: input.model,
       requestedUseOwnKey,
@@ -907,7 +894,6 @@ export class AiProxyService {
   private logKeySourceResolution(input: {
     requestId: string;
     userId: string;
-    workspaceId: string | undefined;
     provider: AiProvider;
     model: string;
     requestedUseOwnKey?: boolean;
@@ -920,7 +906,6 @@ export class AiProxyService {
         occurredAt: new Date().toISOString(),
         requestId: input.requestId,
         userId: input.userId,
-        workspaceId: input.workspaceId,
         provider: input.provider,
         model: input.model,
         requestedUseOwnKey:
@@ -934,7 +919,6 @@ export class AiProxyService {
   private logKeySourceFallback(input: {
     requestId: string;
     userId: string;
-    workspaceId: string | undefined;
     provider: AiProvider;
     model: string;
     requestedUseOwnKey?: boolean;
@@ -957,7 +941,6 @@ export class AiProxyService {
         occurredAt: new Date().toISOString(),
         requestId: input.requestId,
         userId: input.userId,
-        workspaceId: input.workspaceId,
         provider: input.provider,
         model: input.model,
         requestedUseOwnKey:
@@ -1073,7 +1056,6 @@ export class AiProxyService {
   private async resolveUserKey(input: {
     provider: AiProvider;
     session: CurrentSessionSnapshot;
-    workspaceId: string | undefined;
     policy: Awaited<ReturnType<AiProviderPolicyService['resolvePolicyForWorkspace']>>;
   }): Promise<string> {
     if (!input.policy.allowBringYourOwnKey) {
@@ -1084,15 +1066,13 @@ export class AiProxyService {
 
     if (input.policy.requireAdminApproval) {
       throw new ForbiddenException(
-        input.policy.reason ?? 'Bring-your-own-key currently requires admin approval for this workspace.',
+        input.policy.reason ?? 'Bring-your-own-key currently requires admin approval.',
       );
     }
 
     const credential = await this.aiProxyRepository.findBestUserCredential({
       provider: input.provider,
       userId: input.session.user.id,
-      workspaceId: input.workspaceId,
-      allowWorkspaceShared: input.policy.allowWorkspaceSharedCredentials ?? false,
     });
 
     if (!credential) {
@@ -1435,7 +1415,6 @@ export class AiProxyService {
 
       return {
         requestId: input.invocation.requestId,
-        workspaceId: input.invocation.workspaceId,
         provider: input.invocation.provider,
         model: inspection.model ?? input.fallbackModel,
         keySource: input.invocation.keySource,
@@ -1548,7 +1527,6 @@ export class AiProxyService {
     responseId?: string;
   }): Promise<AiProxyQuotaSnapshot> {
     const nextCounter = await this.aiProxyRepository.recordProxyEvent({
-      workspaceId: input.invocation.workspaceId ?? null,
       userId: input.invocation.session.user.id,
       requestId: input.invocation.requestId,
       provider: input.invocation.provider,
@@ -1579,7 +1557,6 @@ export class AiProxyService {
   }) {
     try {
       await this.aiProxyRepository.recordProxyFailure({
-        workspaceId: input.invocation.workspaceId ?? null,
         userId: input.invocation.session.user.id,
         requestId: input.invocation.requestId,
         provider: input.invocation.provider,
@@ -1619,7 +1596,6 @@ export class AiProxyService {
       .persistContent({
         requestId: invocation.requestId,
         userId: invocation.session.user.id,
-        workspaceId: invocation.workspaceId,
         provider: invocation.provider,
         model: invocation.resolvedModel,
         requestType,

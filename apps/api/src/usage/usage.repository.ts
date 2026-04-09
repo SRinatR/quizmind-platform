@@ -12,14 +12,6 @@ const installationSelect = {
   lastSeenAt: true,
 } satisfies Prisma.ExtensionInstallationSelect;
 
-const quotaCounterSelect = {
-  key: true,
-  consumed: true,
-  periodStart: true,
-  periodEnd: true,
-  updatedAt: true,
-} satisfies Prisma.QuotaCounterSelect;
-
 const telemetrySelect = {
   id: true,
   eventType: true,
@@ -62,10 +54,6 @@ export type WorkspaceUsageInstallationRecord = Prisma.ExtensionInstallationGetPa
   select: typeof installationSelect;
 }>;
 
-export type WorkspaceQuotaCounterRecord = Prisma.QuotaCounterGetPayload<{
-  select: typeof quotaCounterSelect;
-}>;
-
 export type WorkspaceTelemetryRecord = Prisma.ExtensionTelemetryGetPayload<{
   select: typeof telemetrySelect;
 }>;
@@ -81,128 +69,6 @@ export type WorkspaceAiRequestRecord = Prisma.AiRequestGetPayload<{
 @Injectable()
 export class UsageRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
-
-  listInstallationsByWorkspaceId(workspaceId: string): Promise<WorkspaceUsageInstallationRecord[]> {
-    return this.prisma.extensionInstallation.findMany({
-      where: {
-        workspaceId,
-      },
-      orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
-      select: installationSelect,
-    });
-  }
-
-  listQuotaCountersByWorkspaceId(workspaceId: string): Promise<WorkspaceQuotaCounterRecord[]> {
-    return this.prisma.quotaCounter.findMany({
-      where: {
-        workspaceId,
-      },
-      orderBy: [{ periodEnd: 'desc' }, { updatedAt: 'desc' }],
-      select: quotaCounterSelect,
-    });
-  }
-
-  listRecentTelemetryByWorkspaceId(
-    workspaceId: string,
-    limit = 8,
-  ): Promise<WorkspaceTelemetryRecord[]> {
-    return this.prisma.extensionTelemetry.findMany({
-      where: {
-        installation: {
-          workspaceId,
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: limit,
-      select: telemetrySelect,
-    });
-  }
-
-  listTelemetryHistoryByWorkspaceId(input: {
-    workspaceId: string;
-    limit: number;
-    eventType?: string;
-    installationId?: string;
-  }): Promise<WorkspaceTelemetryRecord[]> {
-    return this.prisma.extensionTelemetry.findMany({
-      where: {
-        ...(input.eventType ? { eventType: input.eventType } : {}),
-        installation: {
-          workspaceId: input.workspaceId,
-          ...(input.installationId ? { installationId: input.installationId } : {}),
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: input.limit,
-      select: telemetrySelect,
-    });
-  }
-
-  listRecentActivityByWorkspaceId(workspaceId: string, limit = 8): Promise<WorkspaceActivityRecord[]> {
-    return this.prisma.activityLog.findMany({
-      where: {
-        workspaceId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: limit,
-      select: activitySelect,
-    });
-  }
-
-  listActivityHistoryByWorkspaceId(input: {
-    workspaceId: string;
-    limit: number;
-    eventType?: string;
-    actorId?: string;
-  }): Promise<WorkspaceActivityRecord[]> {
-    return this.prisma.activityLog.findMany({
-      where: {
-        workspaceId: input.workspaceId,
-        ...(input.eventType ? { eventType: input.eventType } : {}),
-        ...(input.actorId ? { actorId: input.actorId } : {}),
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: input.limit,
-      select: activitySelect,
-    });
-  }
-
-  listRecentAiRequestsByWorkspaceId(workspaceId: string, limit = 8): Promise<WorkspaceAiRequestRecord[]> {
-    return this.prisma.aiRequest.findMany({
-      where: {
-        workspaceId,
-      },
-      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
-      take: limit,
-      select: aiRequestSelect,
-    });
-  }
-
-  listAiRequestHistoryByWorkspaceId(input: {
-    workspaceId: string;
-    limit: number;
-    actorId?: string;
-    installationId?: string;
-  }): Promise<WorkspaceAiRequestRecord[]> {
-    return this.prisma.aiRequest.findMany({
-      where: {
-        workspaceId: input.workspaceId,
-        ...(input.actorId ? { userId: input.actorId } : {}),
-        ...(input.installationId ? { installationId: input.installationId } : {}),
-      },
-      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
-      take: input.limit,
-      select: aiRequestSelect,
-    });
-  }
 
   listInstallationsByUserId(userId: string): Promise<WorkspaceUsageInstallationRecord[]> {
     return this.prisma.extensionInstallation.findMany({

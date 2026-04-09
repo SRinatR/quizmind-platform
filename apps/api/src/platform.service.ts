@@ -693,16 +693,13 @@ export class PlatformService {
 
   private buildFoundationRemoteConfigVersions(
     activeLayers: RemoteConfigSnapshot['activeLayers'],
-    workspaceId?: string,
   ): RemoteConfigSnapshot['versions'] {
     const actor = getPersona('platform-admin');
-    const workspaceLabel = workspaceId ? `workspace-${workspaceId}` : 'global';
 
     return [
       {
-        id: `foundation-${workspaceLabel}-active`,
-        versionLabel: workspaceId ? `${workspaceId}-active` : 'foundation-default',
-        workspaceId,
+        id: 'foundation-global-active',
+        versionLabel: 'foundation-default',
         isActive: true,
         publishedAt: '2026-03-24T08:00:00.000Z',
         publishedBy: {
@@ -713,9 +710,8 @@ export class PlatformService {
         layers: activeLayers,
       },
       {
-        id: `foundation-${workspaceLabel}-previous`,
-        versionLabel: workspaceId ? `${workspaceId}-previous` : 'foundation-previous',
-        workspaceId,
+        id: 'foundation-global-previous',
+        versionLabel: 'foundation-previous',
         isActive: false,
         publishedAt: '2026-03-23T18:30:00.000Z',
         publishedBy: {
@@ -730,24 +726,8 @@ export class PlatformService {
 
   private resolveFoundationRemoteConfigVersion(versionId: string): RemoteConfigSnapshot['versions'][number] | null {
     const activeLayers = getFoundationOverview().remoteConfigLayers;
-    const globalMatch = this.buildFoundationRemoteConfigVersions(activeLayers).find((version) => version.id === versionId);
 
-    if (globalMatch) {
-      return globalMatch;
-    }
-
-    const workspaceMatch = /^foundation-workspace-(.+)-(active|previous)$/.exec(versionId);
-
-    if (!workspaceMatch) {
-      return null;
-    }
-
-    const workspaceId = workspaceMatch[1];
-
-    return (
-      this.buildFoundationRemoteConfigVersions(activeLayers, workspaceId).find((version) => version.id === versionId) ??
-      null
-    );
+    return this.buildFoundationRemoteConfigVersions(activeLayers).find((version) => version.id === versionId) ?? null;
   }
 
   async listWorkspacesForCurrentSession(session: CurrentSessionSnapshot) {
@@ -1067,7 +1047,6 @@ export class PlatformService {
   }
 
   exportUsage(personaKey?: string, request?: Partial<UsageExportRequest>): UsageExportResult {
-    const workspaceId = request?.workspaceId?.trim();
     const summary = this.getUsage(personaKey);
 
     return this.buildUsageExportResult(summary, request);
@@ -1796,12 +1775,10 @@ export class PlatformService {
     }
   }
 
-  listRemoteConfig(personaKey?: string, workspaceId?: string): RemoteConfigSnapshot {
+  listRemoteConfig(personaKey?: string): RemoteConfigSnapshot {
     const persona = getPersona(personaKey);
-    const resolvedWorkspaceId = workspaceId ?? '';
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
-      workspaceId: resolvedWorkspaceId,
       userId: persona.user.id,
       activeFlags: persona.principal.featureFlags,
     };
@@ -1811,7 +1788,7 @@ export class PlatformService {
       personaKey: persona.key,
       publishDecision: canPublishRemoteConfig(persona.principal),
       activeLayers,
-      versions: this.buildFoundationRemoteConfigVersions(activeLayers, resolvedWorkspaceId),
+      versions: this.buildFoundationRemoteConfigVersions(activeLayers),
       previewContext,
       preview: previewRemoteConfig({
         layers: activeLayers,
@@ -1823,7 +1800,6 @@ export class PlatformService {
 
   async listRemoteConfigForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<RemoteConfigSnapshot> {
     const accessDecision = canPublishRemoteConfig(session.principal as SessionPrincipal);
 
@@ -1831,15 +1807,13 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = workspaceId?.trim();
     const [activeLayerRecords, recentVersions] = await Promise.all([
-      this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId),
-      this.remoteConfigRepository.findRecentVersions(resolvedWorkspaceId),
+      this.remoteConfigRepository.findActiveLayers(),
+      this.remoteConfigRepository.findRecentVersions(),
     ]);
     const activeLayers = activeLayerRecords.map(mapRemoteConfigLayerRecordToDefinition);
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
-      workspaceId: resolvedWorkspaceId,
       userId: session.user.id,
       activeFlags: session.principal.featureFlags,
     };
@@ -1864,13 +1838,11 @@ export class PlatformService {
       versionLabel: request?.versionLabel ?? `local-${Date.now()}`,
       layers: request?.layers ?? getFoundationOverview().remoteConfigLayers,
       actorId: request?.actorId ?? fallbackActor.user.id,
-      workspaceId: request?.workspaceId,
     };
     const previewRequest: RemoteConfigPreviewRequest = {
       layers: publishRequest.layers,
       context: {
         environment: 'development',
-        workspaceId: publishRequest.workspaceId ?? '',
         userId: fallbackActor.user.id,
         activeFlags: ['beta.remote-config-v2'],
       },
@@ -1896,46 +1868,35 @@ export class PlatformService {
       versionLabel: request?.versionLabel ?? `connected-${Date.now()}`,
       layers: request?.layers ?? getFoundationOverview().remoteConfigLayers,
       actorId: session.user.id,
-      workspaceId: request?.workspaceId,
     };
 
-    try {
-      const persistedVersion = await this.remoteConfigRepository.publishVersion({
-        actorId: publishRequest.actorId,
-        layers: publishRequest.layers,
-        versionLabel: publishRequest.versionLabel,
-        workspaceId: publishRequest.workspaceId,
-      });
-      const previewRequest: RemoteConfigPreviewRequest = {
-        layers: publishRequest.layers,
-        context: {
-          environment: 'development',
-          workspaceId: publishRequest.workspaceId,
-          userId: session.user.id,
-          activeFlags: ['beta.remote-config-v2'],
-        },
-      };
-      const publishResult = publishRemoteConfigVersion(publishRequest, {
-        publishedAt: persistedVersion.createdAt.toISOString(),
-      });
-      await this.queueDispatchService.dispatch(
-        createQueueDispatchRequest({
-          queue: 'config-publish',
-          payload: publishResult.publishResult,
-        }),
-      );
+    const persistedVersion = await this.remoteConfigRepository.publishVersion({
+      actorId: publishRequest.actorId,
+      layers: publishRequest.layers,
+      versionLabel: publishRequest.versionLabel,
+    });
+    const previewRequest: RemoteConfigPreviewRequest = {
+      layers: publishRequest.layers,
+      context: {
+        environment: 'development',
+        userId: session.user.id,
+        activeFlags: ['beta.remote-config-v2'],
+      },
+    };
+    const publishResult = publishRemoteConfigVersion(publishRequest, {
+      publishedAt: persistedVersion.createdAt.toISOString(),
+    });
+    await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'config-publish',
+        payload: publishResult.publishResult,
+      }),
+    );
 
-      return {
-        ...publishResult,
-        preview: previewRemoteConfig(previewRequest),
-      };
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new NotFoundException('Workspace not found for remote config publication.');
-      }
-
-      throw error;
-    }
+    return {
+      ...publishResult,
+      preview: previewRemoteConfig(previewRequest),
+    };
   }
 
   activateRemoteConfigVersion(
@@ -2016,7 +1977,7 @@ export class PlatformService {
     const [compatibilityRule, featureFlags, remoteConfigLayers] = await Promise.all([
       this.extensionCompatibilityRepository.findLatest(),
       this.featureFlagRepository.findAll(),
-      this.remoteConfigRepository.findActiveLayers(request.workspaceId),
+      this.remoteConfigRepository.findActiveLayers(),
     ]);
 
     return resolveExtensionBootstrap(
@@ -2052,7 +2013,6 @@ export class PlatformService {
       eventType: 'extension.usage_queued',
       actorId: usageEvent.installationId,
       actorType: 'system',
-      workspaceId: usageEvent.workspaceId,
       targetType: 'extension_usage_event',
       targetId: usageEvent.installationId,
       occurredAt: usageEvent.occurredAt,
@@ -3254,7 +3214,6 @@ export class PlatformService {
   private buildUsageExportResult(
     summary: WorkspaceUsageSnapshot,
     request?: Partial<UsageExportRequest>,
-    workspaceId = '',
   ): UsageExportResult {
     const format = request?.format === 'csv' ? 'csv' : 'json';
     const scope = request?.scope ?? 'full';
@@ -3277,7 +3236,6 @@ export class PlatformService {
               : summary;
 
       return {
-        workspaceId,
         format,
         scope,
         fileName: `${fileStem}.json`,
@@ -3288,7 +3246,6 @@ export class PlatformService {
     }
 
     return {
-      workspaceId,
       format,
       scope,
       fileName: `${fileStem}.csv`,
@@ -3569,7 +3526,6 @@ export class PlatformService {
         email: supportPersona.user.email,
         displayName: supportPersona.user.displayName,
       },
-      workspaceId: fallbackTicket.workspace?.id,
       previousStatus: fallbackTicket.status,
       nextStatus: normalizedStatus,
       previousAssignee: fallbackTicket.assignedTo
@@ -3767,7 +3723,6 @@ export class PlatformService {
           email: session.user.email,
           displayName: session.user.displayName,
         },
-        workspaceId: existingTicket.workspace?.id,
         previousStatus: existingTicket.status,
         nextStatus: normalizedStatus ?? existingTicket.status,
         previousAssignee: existingTicket.assignedTo
@@ -3811,8 +3766,7 @@ export class PlatformService {
     return startSupportImpersonation({
       supportActorId: request?.supportActorId ?? getPersona('support-admin').user.id,
       targetUserId: request?.targetUserId ?? getPersona('workspace-viewer').user.id,
-      workspaceId: request?.workspaceId ?? 'ws_alpha',
-      reason: request?.reason ?? 'Investigating a workspace access issue in local foundation mode.',
+      reason: request?.reason ?? 'Investigating a user access issue in local foundation mode.',
       supportTicketId: request?.supportTicketId?.trim() || undefined,
       operatorNote: request?.operatorNote?.trim() || undefined,
     });
@@ -3837,8 +3791,7 @@ export class PlatformService {
     const result = startSupportImpersonation({
       supportActorId: session.user.id,
       targetUserId,
-      workspaceId: request?.workspaceId?.trim() || undefined,
-      reason: request?.reason?.trim() || 'Investigating a workspace access issue in connected runtime mode.',
+      reason: request?.reason?.trim() || 'Investigating a user access issue in connected runtime mode.',
       supportTicketId: request?.supportTicketId?.trim() || undefined,
       operatorNote: request?.operatorNote?.trim() || undefined,
     });
@@ -3848,7 +3801,6 @@ export class PlatformService {
         impersonationSessionId: result.result.impersonationSessionId,
         supportActorId: result.result.supportActorId,
         targetUserId: result.result.targetUserId,
-        workspaceId: result.result.workspaceId,
         supportTicketId: request?.supportTicketId?.trim() || undefined,
         reason: result.result.reason,
         operatorNote: request?.operatorNote?.trim() || undefined,
@@ -3858,7 +3810,7 @@ export class PlatformService {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new NotFoundException('Support actor, target user, workspace, or support ticket not found for impersonation.');
+        throw new NotFoundException('Support actor, target user, or support ticket not found for impersonation.');
       }
 
       throw error;
@@ -3923,7 +3875,6 @@ export class PlatformService {
       impersonationSessionId: existingSession.id,
       endedById: session.user.id,
       targetUserId: existingSession.targetUser.id,
-      workspaceId: existingSession.workspace?.id,
       reason: existingSession.reason,
       closeReason,
     });

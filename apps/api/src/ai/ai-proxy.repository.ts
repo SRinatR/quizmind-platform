@@ -19,7 +19,6 @@ const credentialSelect = {
   ownerType: true,
   ownerId: true,
   userId: true,
-  workspaceId: true,
   encryptedSecretJson: true,
   updatedAt: true,
   createdAt: true,
@@ -36,8 +35,6 @@ export type AiProxyCredentialRecord = Prisma.ProviderCredentialGetPayload<{
 interface FindUserCredentialInput {
   provider: string;
   userId: string;
-  workspaceId: string | undefined;
-  allowWorkspaceShared: boolean;
 }
 
 interface FindPlatformCredentialInput {
@@ -45,7 +42,6 @@ interface FindPlatformCredentialInput {
 }
 
 interface RecordProxyEventInput {
-  workspaceId: string | null;
   userId: string;
   requestId: string;
   provider: string;
@@ -67,7 +63,6 @@ interface RecordProxyEventInput {
 }
 
 interface RecordProxyFailureInput {
-  workspaceId: string | null;
   userId: string;
   requestId: string;
   provider: string;
@@ -91,22 +86,6 @@ function toNullableJsonInput(
   return value === null ? Prisma.JsonNull : value;
 }
 
-function selectCredentialRank(record: AiProxyCredentialRecord, workspaceId: string | undefined): number {
-  if (record.ownerType === 'user' && workspaceId && record.workspaceId === workspaceId) {
-    return 0;
-  }
-
-  if (record.ownerType === 'user' && record.workspaceId === null) {
-    return 1;
-  }
-
-  if (record.ownerType === 'workspace' && record.workspaceId === workspaceId) {
-    return 2;
-  }
-
-  return 10;
-}
-
 function normalizeTokenCount(value: number | undefined): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
     return 0;
@@ -127,67 +106,21 @@ function normalizeDurationMs(value: number | undefined): number | null {
 export class AiProxyRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  findActiveQuotaCounter(
-    workspaceId: string,
-    key: string,
-    occurredAt: Date,
-  ): Promise<AiProxyQuotaCounterRecord | null> {
-    return this.prisma.quotaCounter.findFirst({
-      where: {
-        workspaceId,
-        key,
-        periodStart: {
-          lte: occurredAt,
-        },
-        periodEnd: {
-          gt: occurredAt,
-        },
-      },
-      orderBy: [{ periodEnd: 'desc' }, { updatedAt: 'desc' }],
-      select: quotaCounterSelect,
-    });
-  }
-
   async findBestUserCredential(input: FindUserCredentialInput): Promise<AiProxyCredentialRecord | null> {
-    const userPredicate: Prisma.ProviderCredentialWhereInput = input.workspaceId
-      ? {
-          ownerType: 'user',
-          userId: input.userId,
-          OR: [{ workspaceId: input.workspaceId }, { workspaceId: null }],
-        }
-      : { ownerType: 'user', userId: input.userId, workspaceId: null };
-    const predicates: Prisma.ProviderCredentialWhereInput[] = [userPredicate];
-
-    if (input.allowWorkspaceShared && input.workspaceId) {
-      predicates.push({
-        ownerType: 'workspace',
-        workspaceId: input.workspaceId,
-      });
-    }
-
     const candidates = await this.prisma.providerCredential.findMany({
       where: {
         provider: input.provider,
         validationStatus: 'valid',
         revokedAt: null,
         disabledAt: null,
-        OR: predicates,
+        ownerType: 'user',
+        userId: input.userId,
       },
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       select: credentialSelect,
     });
 
-    const sorted = [...candidates].sort((left, right) => {
-      const rankDifference = selectCredentialRank(left, input.workspaceId) - selectCredentialRank(right, input.workspaceId);
-
-      if (rankDifference !== 0) {
-        return rankDifference;
-      }
-
-      return right.updatedAt.getTime() - left.updatedAt.getTime();
-    });
-
-    return sorted[0] ?? null;
+    return candidates[0] ?? null;
   }
 
   findLatestPlatformCredential(input: FindPlatformCredentialInput): Promise<AiProxyCredentialRecord | null> {
@@ -206,32 +139,6 @@ export class AiProxyRepository {
 
   async recordProxyEvent(input: RecordProxyEventInput): Promise<AiProxyQuotaCounterRecord | null> {
     return this.prisma.$transaction(async (transaction) => {
-      const nextCounter = input.consumeQuota && input.workspaceId
-        ? await transaction.quotaCounter.upsert({
-            where: {
-              workspaceId_key_periodStart_periodEnd: {
-                workspaceId: input.workspaceId,
-                key: input.quotaKey,
-                periodStart: input.periodStart,
-                periodEnd: input.periodEnd,
-              },
-            },
-            update: {
-              consumed: {
-                increment: 1,
-              },
-            },
-            create: {
-              workspaceId: input.workspaceId,
-              key: input.quotaKey,
-              consumed: 1,
-              periodStart: input.periodStart,
-              periodEnd: input.periodEnd,
-            },
-            select: quotaCounterSelect,
-          })
-        : null;
-
       const metadata = {
         requestId: input.requestId,
         provider: input.provider,
@@ -241,8 +148,8 @@ export class AiProxyRepository {
         usage: input.usage ?? null,
         responseId: input.responseId ?? null,
         quotaKey: input.quotaKey,
-        quotaConsumed: input.consumeQuota,
-        quotaConsumedTotal: nextCounter?.consumed ?? null,
+        quotaConsumed: false,
+        quotaConsumedTotal: null,
         durationMs: normalizeDurationMs(input.durationMs),
       } satisfies Prisma.InputJsonObject;
       const promptTokens = normalizeTokenCount(input.usage?.promptTokens);
@@ -253,7 +160,6 @@ export class AiProxyRepository {
       await transaction.aiRequest.create({
         data: {
           userId: input.userId,
-          workspaceId: input.workspaceId,
           installationId: null,
           provider: input.provider,
           model: input.model,
@@ -271,7 +177,6 @@ export class AiProxyRepository {
 
       await transaction.activityLog.create({
         data: {
-          workspaceId: input.workspaceId,
           actorId: input.userId,
           eventType: 'ai.proxy.completed',
           metadataJson: metadata,
@@ -281,7 +186,6 @@ export class AiProxyRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: input.workspaceId,
           eventType: 'ai.proxy.completed',
           payloadJson: metadata,
           createdAt: input.occurredAt,
@@ -291,7 +195,6 @@ export class AiProxyRepository {
       if (input.keySource === 'user') {
         await transaction.securityEvent.create({
           data: {
-            workspaceId: input.workspaceId,
             actorId: input.userId,
             eventType: 'ai.proxy.user_key_used',
             severity: 'info',
@@ -301,7 +204,7 @@ export class AiProxyRepository {
         });
       }
 
-      return nextCounter;
+      return null;
     });
   }
 
@@ -323,7 +226,6 @@ export class AiProxyRepository {
       await transaction.aiRequest.create({
         data: {
           userId: input.userId,
-          workspaceId: input.workspaceId,
           installationId: null,
           provider: input.provider,
           model: input.model,
@@ -341,7 +243,6 @@ export class AiProxyRepository {
 
       await transaction.activityLog.create({
         data: {
-          workspaceId: input.workspaceId,
           actorId: input.userId,
           eventType: 'ai.proxy.failed',
           metadataJson: metadata,
@@ -351,7 +252,6 @@ export class AiProxyRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: input.workspaceId,
           eventType: 'ai.proxy.failed',
           payloadJson: metadata,
           createdAt: input.occurredAt,
@@ -361,7 +261,6 @@ export class AiProxyRepository {
       if (input.keySource === 'user') {
         await transaction.securityEvent.create({
           data: {
-            workspaceId: input.workspaceId,
             actorId: input.userId,
             eventType: 'ai.proxy.user_key_failed',
             severity: 'warn',

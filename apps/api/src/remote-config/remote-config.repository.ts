@@ -33,21 +33,18 @@ interface PublishRemoteConfigVersionInput {
   actorId: string;
   layers: RemoteConfigLayerDefinition[];
   versionLabel: string;
-  workspaceId?: string;
 }
 
 @Injectable()
 export class RemoteConfigRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  findActiveLayers(workspaceId?: string): Promise<ActiveRemoteConfigLayerRecord[]> {
-    const workspacePredicates = workspaceId ? [{ workspaceId: null }, { workspaceId }] : [{ workspaceId: null }];
-
+  findActiveLayers(): Promise<ActiveRemoteConfigLayerRecord[]> {
     return this.prisma.remoteConfigLayer.findMany({
       where: {
         remoteConfigVersion: {
           isActive: true,
-          OR: workspacePredicates,
+          workspaceId: null,
         },
       },
       include: activeRemoteConfigLayerInclude,
@@ -55,12 +52,10 @@ export class RemoteConfigRepository {
     });
   }
 
-  findRecentVersions(workspaceId?: string, limit = 12): Promise<RemoteConfigVersionRecord[]> {
-    const workspacePredicates = workspaceId ? [{ workspaceId: null }, { workspaceId }] : [{ workspaceId: null }];
-
+  findRecentVersions(limit = 12): Promise<RemoteConfigVersionRecord[]> {
     return this.prisma.remoteConfigVersion.findMany({
       where: {
-        OR: workspacePredicates,
+        workspaceId: null,
       },
       include: remoteConfigVersionInclude,
       orderBy: [{ createdAt: 'desc' }],
@@ -72,7 +67,7 @@ export class RemoteConfigRepository {
     return this.prisma.$transaction(async (transaction) => {
       await transaction.remoteConfigVersion.updateMany({
         where: {
-          workspaceId: input.workspaceId ?? null,
+          workspaceId: null,
           isActive: true,
         },
         data: {
@@ -82,7 +77,7 @@ export class RemoteConfigRepository {
 
       return transaction.remoteConfigVersion.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+          workspaceId: null,
           publishedById: input.actorId,
           versionLabel: input.versionLabel,
           isActive: true,
@@ -108,7 +103,6 @@ export class RemoteConfigRepository {
         },
         select: {
           id: true,
-          workspaceId: true,
         },
       });
 
@@ -118,7 +112,7 @@ export class RemoteConfigRepository {
 
       await transaction.remoteConfigVersion.updateMany({
         where: {
-          workspaceId: existing.workspaceId,
+          workspaceId: null,
           isActive: true,
         },
         data: {
