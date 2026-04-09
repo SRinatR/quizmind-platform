@@ -6,6 +6,7 @@ import {
 } from '@quizmind/contracts';
 
 import { API_URL, getSession, type ApiEnvelope } from '../../../../lib/api';
+import { WEB_ENV } from '../../../../lib/web-env';
 import {
   BindCodeStoreUnavailableError,
   issueBindFallbackCode,
@@ -19,9 +20,13 @@ interface RouteErrorPayload {
   };
 }
 
+type ExtensionInstallationBindResultWithApiBase = ExtensionInstallationBindResult & {
+  platformApiBaseUrl: string;
+};
+
 interface RouteSuccessPayload {
   ok: true;
-  data: ExtensionInstallationBindResult;
+  data: ExtensionInstallationBindResultWithApiBase;
   fallbackCode?: {
     code: string;
     expiresAt: string;
@@ -280,6 +285,11 @@ export async function POST(request: Request) {
     return badRequest(fallbackMessage ?? 'Unable to bind the extension installation right now.', response.status || 500);
   }
 
+  const bindResultWithApiBase: ExtensionInstallationBindResultWithApiBase = {
+    ...payload.data,
+    platformApiBaseUrl: WEB_ENV.apiUrl,
+  };
+
   let fallbackCode: RouteSuccessPayload['fallbackCode'];
 
   if (bridgeMode === 'fallback_code' && requestId && bridgeNonce && targetOrigin) {
@@ -289,7 +299,7 @@ export async function POST(request: Request) {
         requestId,
         bridgeNonce,
         targetOrigin,
-        result: payload.data,
+        result: bindResultWithApiBase,
       });
     } catch (error) {
       if (!(error instanceof BindCodeStoreUnavailableError)) {
@@ -301,7 +311,7 @@ export async function POST(request: Request) {
   return NextResponse.json<RouteSuccessPayload>(
     {
       ok: true,
-      data: payload.data,
+      data: bindResultWithApiBase,
       fallbackCode,
     },
     {
