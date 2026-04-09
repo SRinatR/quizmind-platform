@@ -126,7 +126,7 @@ export const foundationTracks = [
     id: 'billing',
     title: 'Wallet & Payments',
     status: 'done',
-    description: 'Wallet top-up and YooKassa payment processing for workspace balance.',
+    description: 'Wallet top-up and YooKassa payment processing for user balance.',
   },
   {
     id: 'control-plane',
