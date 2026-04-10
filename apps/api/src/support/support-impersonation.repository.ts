@@ -19,13 +19,6 @@ const recentSupportImpersonationSessionInclude = {
       displayName: true,
     },
   },
-  workspace: {
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-    },
-  },
   supportTicket: {
     select: {
       id: true,

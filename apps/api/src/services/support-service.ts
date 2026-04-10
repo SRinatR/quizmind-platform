@@ -444,15 +444,6 @@ export function mapSupportImpersonationRecordToSnapshot(
       email: record.targetUser.email,
       ...(record.targetUser.displayName ? { displayName: record.targetUser.displayName } : {}),
     },
-    ...(record.workspace
-      ? {
-          workspace: {
-            id: record.workspace.id,
-            slug: record.workspace.slug,
-            name: record.workspace.name,
-          },
-        }
-      : {}),
     ...(record.supportTicket
       ? {
           supportTicket: {

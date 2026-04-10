@@ -197,17 +197,8 @@ model Workspace {
   memberships            WorkspaceMembership[]
   invitations            WorkspaceInvite[]
   featureFlagOverrides   FeatureFlagOverride[]
-  remoteConfigVersions   RemoteConfigVersion[]
-  extensionInstallations ExtensionInstallation[]
-  auditLogs              AuditLog[]
-  activityLogs           ActivityLog[]
-  securityEvents         SecurityEvent[]
-  domainEvents           DomainEvent[]
   supportTickets         SupportTicket[]
-  supportImpersonationSessions SupportImpersonationSession[]
-  providerCredentials    ProviderCredential[]
   aiRequests             AiRequest[]
-  aiProviderPolicies     AiProviderPolicy[]
 }
 
 model Wallet {
@@ -308,7 +299,6 @@ model WebhookEvent {
 
 model QuotaCounter {
   id          String   @id @default(cuid())
-  workspaceId String?
   key         String
   consumed    Int      @default(0)
   periodStart DateTime
@@ -316,9 +306,7 @@ model QuotaCounter {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Partial unique index enforced in migration: only global (workspaceId IS NULL) rows
-  // are constrained unique by (key, periodStart, periodEnd). See migration for rationale.
-  @@index([key, periodStart, periodEnd])
+  @@unique([key, periodStart, periodEnd])
 }
 
 model AiRequest {
@@ -380,12 +368,10 @@ model FeatureFlagOverride {
 
 model RemoteConfigVersion {
   id            String              @id @default(cuid())
-  workspaceId   String?
   publishedById String?
   versionLabel  String
   isActive      Boolean             @default(false)
   createdAt     DateTime            @default(now())
-  workspace     Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   publishedBy   User?               @relation("RemoteConfigPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
   layers        RemoteConfigLayer[]
 }
@@ -415,7 +401,6 @@ model ExtensionCompatibilityRule {
 model ExtensionInstallation {
   id               String               @id @default(cuid())
   userId           String
-  workspaceId      String?
   installationId   String               @unique
   browser          String
   extensionVersion String
@@ -425,7 +410,6 @@ model ExtensionInstallation {
   updatedAt        DateTime             @updatedAt
   lastSeenAt       DateTime?
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace        Workspace?           @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   telemetry        ExtensionTelemetry[]
   sessions         ExtensionInstallationSession[]
 }
@@ -448,7 +432,6 @@ model ProviderCredential {
   ownerType         CredentialOwnerType
   ownerId           String?
   userId            String?
-  workspaceId       String?
   encryptedSecretJson Json
   validationStatus  CredentialValidationStatus @default(pending)
   scopesJson        Json?
@@ -459,7 +442,6 @@ model ProviderCredential {
   createdAt         DateTime                   @default(now())
   updatedAt         DateTime                   @updatedAt
   user              User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  workspace         Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([provider, ownerType, createdAt])
 }
@@ -468,7 +450,6 @@ model AiProviderPolicy {
   id                              String                    @id @default(cuid())
   scopeKey                        String                    @unique
   scopeType                       AiProviderPolicyScopeType
-  workspaceId                     String?
   mode                            AiAccessPolicyMode
   allowPlatformManaged            Boolean                   @default(true)
   allowBringYourOwnKey            Boolean                   @default(false)
@@ -484,10 +465,9 @@ model AiProviderPolicy {
   updatedById                     String?
   createdAt                       DateTime                  @default(now())
   updatedAt                       DateTime                  @updatedAt
-  workspace                       Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   updatedBy                       User?                     @relation("AiProviderPolicyUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
-  @@index([scopeType, workspaceId])
+  @@index([scopeType])
 }
 
 model ExtensionTelemetry {
@@ -501,45 +481,37 @@ model ExtensionTelemetry {
 }
 
 model AuditLog {
-  id           String     @id @default(cuid())
-  workspaceId  String?
+  id           String   @id @default(cuid())
   actorId      String?
   action       String
   targetType   String
   targetId     String
   metadataJson Json?
-  createdAt    DateTime   @default(now())
-  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
 }
 
 model ActivityLog {
-  id           String     @id @default(cuid())
-  workspaceId  String?
+  id           String   @id @default(cuid())
   actorId      String?
   eventType    String
   metadataJson Json?
-  createdAt    DateTime   @default(now())
-  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
 }
 
 model SecurityEvent {
   id           String        @id @default(cuid())
-  workspaceId  String?
   actorId      String?
   eventType    String
   severity     EventSeverity
   metadataJson Json?
   createdAt    DateTime      @default(now())
-  workspace    Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 }
 
 model DomainEvent {
-  id          String     @id @default(cuid())
-  workspaceId String?
+  id          String   @id @default(cuid())
   eventType   String
   payloadJson Json?
-  createdAt   DateTime   @default(now())
-  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
 }
 
 model SupportTicket {
@@ -577,7 +549,6 @@ model SupportImpersonationSession {
   id             String     @id @default(cuid())
   supportActorId String
   targetUserId   String
-  workspaceId    String?
   supportTicketId String?
   reason         String
   operatorNote   String?
@@ -587,10 +558,8 @@ model SupportImpersonationSession {
   supportTicket  SupportTicket? @relation(fields: [supportTicketId], references: [id], onDelete: SetNull)
   supportActor   User       @relation("SupportImpersonationActor", fields: [supportActorId], references: [id], onDelete: Cascade)
   targetUser     User       @relation("SupportImpersonationTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
-  workspace      Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([supportActorId, createdAt])
   @@index([targetUserId, createdAt])
-  @@index([workspaceId, createdAt])
   @@index([supportTicketId, createdAt])
 }

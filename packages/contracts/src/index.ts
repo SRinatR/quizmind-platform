@@ -1545,7 +1545,6 @@ export interface SupportImpersonationSessionSnapshot {
   impersonationSessionId: string;
   supportActor: SupportImpersonationActor;
   targetUser: SupportImpersonationActor;
-  workspace?: SupportImpersonationWorkspace;
   reason: string;
   createdAt: string;
   endedAt?: string | null;
