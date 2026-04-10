@@ -87,7 +87,6 @@ export type AdminLogActorRecord = Prisma.UserGetPayload<{
 }>;
 
 interface ListAdminLogsInput {
-  workspaceId?: string;
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
   limit?: number;
@@ -117,7 +116,7 @@ export class AdminLogRepository {
 
   async listRecent(input: ListAdminLogsInput = {}): Promise<ListAdminLogsResult> {
     const take = resolveTake(input.limit, input.stream);
-    const workspaceWhere = input.workspaceId ? { workspaceId: input.workspaceId } : {};
+    const workspaceWhere = {};
     const securityWhere = {
       ...workspaceWhere,
       ...(input.severity && input.severity !== 'all' ? { severity: input.severity } : {}),

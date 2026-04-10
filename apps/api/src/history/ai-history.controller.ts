@@ -66,7 +66,7 @@ export class AiHistoryController {
       to: parseOptionalString(toQ),
     };
 
-    const result = await this.aiHistoryService.listHistory(session.user.id, undefined, filters);
+    const result = await this.aiHistoryService.listHistory(session.user.id, filters);
     return ok(result);
   }
 
@@ -103,7 +103,7 @@ export class AiHistoryController {
     const to = toQ ? new Date(toQ) : new Date();
     const from = fromQ ? new Date(fromQ) : new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const analytics = await this.aiHistoryService.getAnalytics(session.user.id, undefined, from, to);
+    const analytics = await this.aiHistoryService.getAnalytics(session.user.id, from, to);
     return ok(analytics);
   }
 

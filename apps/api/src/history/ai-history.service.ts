@@ -187,7 +187,6 @@ export class AiHistoryService {
 
   async listHistory(
     userId: string,
-    workspaceId: string | undefined,
     rawFilters: Partial<AiHistoryListFilters>,
   ): Promise<AiHistoryListResponse> {
     const limit = clampLimit(rawFilters.limit);
@@ -202,7 +201,7 @@ export class AiHistoryService {
       ...(rawFilters.to         ? { to: rawFilters.to }                   : {}),
     };
     const queryInput = {
-      userId, workspaceId,
+      userId,
       requestType: rawFilters.requestType,
       status: rawFilters.status,
       model: rawFilters.model,
@@ -253,11 +252,10 @@ export class AiHistoryService {
 
   async getAnalytics(
     userId: string,
-    workspaceId: string | undefined,
     from: Date,
     to: Date,
   ): Promise<AiAnalyticsSnapshot> {
-    const data = await this.repository.getAnalytics({ userId, workspaceId, from, to });
+    const data = await this.repository.getAnalytics({ userId, from, to });
 
     const byModel: AiAnalyticsModelBreakdown[] = data.byModel.map((row) => ({
       model: row.model,
@@ -290,7 +288,6 @@ export class AiHistoryService {
     requestId: string;        // matches requestMetadata.requestId on the AiRequest row
     aiRequestId?: string;     // direct id of the AiRequest row (preferred for blob key)
     userId: string;
-    workspaceId?: string;
     provider: string;
     model: string;
     requestType: 'text' | 'image' | 'file';

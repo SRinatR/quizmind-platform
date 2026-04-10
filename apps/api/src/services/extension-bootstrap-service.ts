@@ -82,7 +82,6 @@ export function resolveExtensionBootstrap(
     context: {
       environment: request.environment,
       userId: request.userId,
-      workspaceId: request.workspaceId,
       planCode: request.planCode,
     },
   });

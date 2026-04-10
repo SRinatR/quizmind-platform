@@ -11,7 +11,6 @@ const providerCredentialSelect = {
   ownerType: true,
   ownerId: true,
   userId: true,
-  workspaceId: true,
   encryptedSecretJson: true,
   validationStatus: true,
   scopesJson: true,
@@ -28,7 +27,6 @@ export type ProviderCredentialRecord = Prisma.ProviderCredentialGetPayload<{
 }>;
 
 interface ProviderCredentialLogInput {
-  workspaceId?: string | null;
   occurredAt: Date;
   auditLog: StructuredLogEvent;
   securityLog: StructuredLogEvent;
@@ -38,12 +36,10 @@ interface ProviderCredentialLogInput {
 
 interface ListAccessibleProviderCredentialsInput {
   userId: string;
-  workspaceId?: string | null;
   includePlatform?: boolean;
 }
 
 interface ListGovernanceProviderCredentialsInput {
-  workspaceId: string;
   includePlatform?: boolean;
 }
 
@@ -52,7 +48,6 @@ interface CreateProviderCredentialInput extends ProviderCredentialLogInput {
   ownerType: DatabaseCredentialOwnerType;
   ownerId?: string | null;
   userId?: string | null;
-  workspaceId?: string | null;
   encryptedSecretJson: Prisma.InputJsonValue;
   validationStatus: CredentialValidationStatus;
   scopesJson?: Prisma.InputJsonValue | null;
@@ -115,12 +110,6 @@ export class ProviderCredentialRepository {
       },
     ];
 
-    if (input.workspaceId) {
-      predicates.push({
-        workspaceId: input.workspaceId,
-      });
-    }
-
     if (input.includePlatform) {
       predicates.push({
         ownerType: 'platform',
@@ -139,22 +128,14 @@ export class ProviderCredentialRepository {
   listForGovernance(
     input: ListGovernanceProviderCredentialsInput,
   ): Promise<ProviderCredentialRecord[]> {
-    const predicates: Prisma.ProviderCredentialWhereInput[] = [
-      {
-        workspaceId: input.workspaceId,
-      },
-    ];
+    const predicates: Prisma.ProviderCredentialWhereInput[] = [];
 
     if (input.includePlatform) {
-      predicates.push({
-        ownerType: 'platform',
-      });
+      predicates.push({ ownerType: 'platform' });
     }
 
     return this.prisma.providerCredential.findMany({
-      where: {
-        OR: predicates,
-      },
+      where: predicates.length > 0 ? { OR: predicates } : {},
       orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       select: providerCredentialSelect,
     });
@@ -177,7 +158,7 @@ export class ProviderCredentialRepository {
           ownerType: input.ownerType,
           ownerId: input.ownerId ?? null,
           userId: input.userId ?? null,
-          workspaceId: input.workspaceId ?? null,
+          workspaceId: null,
           encryptedSecretJson: input.encryptedSecretJson,
           validationStatus: input.validationStatus,
           scopesJson: toNullableJsonInput(input.scopesJson),
@@ -189,7 +170,7 @@ export class ProviderCredentialRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -201,7 +182,7 @@ export class ProviderCredentialRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -212,7 +193,7 @@ export class ProviderCredentialRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+          workspaceId: null,
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
@@ -243,7 +224,7 @@ export class ProviderCredentialRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -255,7 +236,7 @@ export class ProviderCredentialRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -266,7 +247,7 @@ export class ProviderCredentialRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
@@ -293,7 +274,7 @@ export class ProviderCredentialRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -305,7 +286,7 @@ export class ProviderCredentialRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -316,7 +297,7 @@ export class ProviderCredentialRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
@@ -343,7 +324,7 @@ export class ProviderCredentialRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -355,7 +336,7 @@ export class ProviderCredentialRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -366,7 +347,7 @@ export class ProviderCredentialRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: record.workspaceId ?? null,
+          workspaceId: null,
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,

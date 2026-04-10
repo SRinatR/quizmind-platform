@@ -164,7 +164,6 @@ export class ProviderCredentialService {
 
   async listAdminProviderGovernanceForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<AdminProviderGovernanceSnapshot> {
     const accessDecision = canManageAiProviders(session.principal);
 
@@ -172,16 +171,12 @@ export class ProviderCredentialService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = workspaceId?.trim() || undefined;
     const writeDecision = canWriteProviderCredentials(session.principal);
     const rotateDecision = canRotateProviderCredentials(session.principal);
-    const items = await this.providerCredentialRepository.listForGovernance({
-      workspaceId: resolvedWorkspaceId ?? '',
-      includePlatform: true,
-    });
+    const items = await this.providerCredentialRepository.listForGovernance({ includePlatform: true });
     const mappedItems = items.map((item) => this.mapRecordToSummary(item));
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(resolvedWorkspaceId);
-    const policyHistory = await this.aiProviderPolicyService.listHistoryForCurrentSession(session, resolvedWorkspaceId);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
+    const policyHistory = await this.aiProviderPolicyService.listHistoryForCurrentSession(session);
 
     return {
       accessDecision,
@@ -235,12 +230,10 @@ export class ProviderCredentialService {
   ): Promise<ProviderCredentialMutationResult> {
     const provider = this.readProvider(request?.provider);
     const ownerType = this.readOwnerType(request?.ownerType);
-    const workspace = null;
-
-    this.assertCanCreateCredential(session, ownerType, workspace?.id);
+    this.assertCanCreateCredential(session, ownerType);
 
     if (ownerType !== 'platform') {
-      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(workspace?.id);
+      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
       this.assertPolicyAllowsCredentialManagement(policy, ownerType, provider, 'create');
     }
 
@@ -257,9 +250,7 @@ export class ProviderCredentialService {
     const ownerId =
       ownerType === 'platform'
         ? 'platform'
-        : ownerType === 'workspace'
-          ? workspace!.id
-          : request?.ownerId?.trim() || session.user.id;
+        : request?.ownerId?.trim() || session.user.id;
     const metadata = {
       ...buildSecretMetadata({
         provider,
@@ -274,7 +265,6 @@ export class ProviderCredentialService {
       proxyMode: 'proxy_only',
       ...(label ? { label } : {}),
       ...(keyHint ? { keyHint } : {}),
-      ...(workspace ? { workspaceId: workspace.id } : {}),
     };
     const logMetadata = redactSecrets({
       provider,
@@ -282,7 +272,6 @@ export class ProviderCredentialService {
       ownerId,
       scopes,
       secretPreview: metadata.secretPreview,
-      workspaceId: workspace?.id,
     });
     const auditLog = createLogEvent({
       category: 'audit',
@@ -290,7 +279,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.created',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: workspace?.id,
       targetType: 'provider_credential',
       targetId: ownerId,
       occurredAt: occurredAt.toISOString(),
@@ -304,7 +292,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.secret_added',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: workspace?.id,
       targetType: 'provider_credential',
       targetId: ownerId,
       occurredAt: occurredAt.toISOString(),
@@ -317,7 +304,6 @@ export class ProviderCredentialService {
       ownerType: ownerType as DatabaseCredentialOwnerType,
       ownerId,
       userId: ownerType === 'user' ? session.user.id : null,
-      workspaceId: workspace?.id ?? null,
       encryptedSecretJson: encryptSecret({
         plaintext: secretValidation.normalizedSecret,
         secret: this.env.providerCredentialSecret,
@@ -334,7 +320,6 @@ export class ProviderCredentialService {
         provider,
         ownerType,
         ownerId,
-        workspaceId: workspace?.id ?? null,
         scopes,
         validationStatus: 'valid',
       },
@@ -365,7 +350,7 @@ export class ProviderCredentialService {
     this.assertCanRotateCredential(session, existing);
 
     if (existing.ownerType !== 'platform' && !canManageAiProviders(session.principal).allowed) {
-      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(existing.workspaceId ?? undefined);
+      const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
       this.assertPolicyAllowsCredentialManagement(policy, existing.ownerType as CredentialOwnerType, existing.provider as AiProvider, 'rotate');
     }
 
@@ -389,9 +374,8 @@ export class ProviderCredentialService {
     const logMetadata = redactSecrets({
       provider,
       ownerType: existing.ownerType,
-      ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
+      ownerId: existing.ownerId ?? existing.userId,
       secretPreview: metadata.secretPreview,
-      workspaceId: existing.workspaceId,
       scopes,
     });
     const auditLog = createLogEvent({
@@ -400,7 +384,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.rotated',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: existing.workspaceId ?? undefined,
       targetType: 'provider_credential',
       targetId: existing.id,
       occurredAt: occurredAt.toISOString(),
@@ -414,7 +397,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.secret_rotated',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: existing.workspaceId ?? undefined,
       targetType: 'provider_credential',
       targetId: existing.id,
       occurredAt: occurredAt.toISOString(),
@@ -440,8 +422,7 @@ export class ProviderCredentialService {
         credentialId: existing.id,
         provider,
         ownerType: existing.ownerType,
-        ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
-        workspaceId: existing.workspaceId,
+        ownerId: existing.ownerId ?? existing.userId,
         scopes,
         validationStatus: 'valid',
       },
@@ -488,8 +469,7 @@ export class ProviderCredentialService {
     const logMetadata = redactSecrets({
       provider: existing.provider,
       ownerType: existing.ownerType,
-      ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
-      workspaceId: existing.workspaceId,
+      ownerId: existing.ownerId ?? existing.userId,
       reason: request?.reason?.trim() || null,
     });
     const auditLog = createLogEvent({
@@ -498,7 +478,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.revoked',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: existing.workspaceId ?? undefined,
       targetType: 'provider_credential',
       targetId: existing.id,
       occurredAt: occurredAt.toISOString(),
@@ -512,7 +491,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.secret_revoked',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: existing.workspaceId ?? undefined,
       targetType: 'provider_credential',
       targetId: existing.id,
       occurredAt: occurredAt.toISOString(),
@@ -533,8 +511,7 @@ export class ProviderCredentialService {
         credentialId: existing.id,
         provider: existing.provider,
         ownerType: existing.ownerType,
-        ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
-        workspaceId: existing.workspaceId,
+        ownerId: existing.ownerId ?? existing.userId,
         reason: request?.reason?.trim() || null,
       },
     });
@@ -647,7 +624,7 @@ export class ProviderCredentialService {
     this.assertUserApiKeyOwnership(session, existing);
     this.assertCanRotateCredential(session, existing);
 
-    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace(existing.workspaceId ?? undefined);
+    const policy = await this.aiProviderPolicyService.resolvePolicyForWorkspace();
     this.assertPolicyAllowsCredentialManagement(policy, 'user', existing.provider as AiProvider, 'rotate');
 
     if (existing.revokedAt) {
@@ -669,8 +646,7 @@ export class ProviderCredentialService {
     const logMetadata = redactSecrets({
       provider,
       ownerType: existing.ownerType,
-      ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
-      workspaceId: existing.workspaceId,
+      ownerId: existing.ownerId ?? existing.userId,
       validationStatus: isValid ? 'valid' : 'invalid',
     });
     const auditLog = createLogEvent({
@@ -679,7 +655,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.tested',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: existing.workspaceId ?? undefined,
       targetType: 'provider_credential',
       targetId: existing.id,
       occurredAt: occurredAt.toISOString(),
@@ -693,7 +668,6 @@ export class ProviderCredentialService {
       eventType: 'provider_credential.validation_tested',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId: existing.workspaceId ?? undefined,
       targetType: 'provider_credential',
       targetId: existing.id,
       occurredAt: occurredAt.toISOString(),
@@ -714,8 +688,7 @@ export class ProviderCredentialService {
         credentialId: existing.id,
         provider,
         ownerType: existing.ownerType,
-        ownerId: existing.ownerId ?? existing.workspaceId ?? existing.userId,
-        workspaceId: existing.workspaceId,
+        ownerId: existing.ownerId ?? existing.userId,
         validationStatus: isValid ? 'valid' : 'invalid',
       },
     });
@@ -731,7 +704,7 @@ export class ProviderCredentialService {
 
   private mapRecordToSummary(record: ProviderCredentialRecord): ProviderCredentialSummary {
     const metadata = readJsonObject(record.metadataJson);
-    const ownerId = record.ownerId ?? record.workspaceId ?? record.userId ?? 'unknown';
+    const ownerId = record.ownerId ?? record.userId ?? 'unknown';
     const secretPreview = readMetadataString(metadata, 'secretPreview');
     const keyHint = readMetadataString(metadata, 'keyHint') ?? (secretPreview ? secretPreview.slice(-4) : null);
 
@@ -741,7 +714,6 @@ export class ProviderCredentialService {
       ownerType: record.ownerType as CredentialOwnerType,
       ownerId,
       userId: record.userId,
-      workspaceId: record.workspaceId,
       label: readMetadataString(metadata, 'label'),
       keyHint,
       validationStatus: record.validationStatus,
@@ -760,7 +732,6 @@ export class ProviderCredentialService {
     return {
       id: summary.id,
       provider: summary.provider,
-      workspaceId: summary.workspaceId ?? null,
       label: summary.label ?? null,
       keyHint: summary.keyHint ?? null,
       validationStatus: summary.validationStatus,
@@ -878,7 +849,6 @@ export class ProviderCredentialService {
   private assertCanCreateCredential(
     session: CurrentSessionSnapshot,
     ownerType: CredentialOwnerType,
-    workspaceId?: string,
   ): void {
     if (ownerType === 'platform') {
       const accessDecision = canManageAiProviders(session.principal);

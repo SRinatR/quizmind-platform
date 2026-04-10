@@ -278,12 +278,11 @@ export class PlatformController {
   @Get('admin/remote-config')
   async listRemoteConfig(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
-    return ok(await this.platformService.listRemoteConfigForCurrentSession(session, workspaceId));
+    return ok(await this.platformService.listRemoteConfigForCurrentSession(session));
   }
 
   @Post('admin/remote-config/publish')

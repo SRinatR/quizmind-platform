@@ -316,7 +316,9 @@ model QuotaCounter {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([workspaceId, key, periodStart, periodEnd])
+  // Partial unique index enforced in migration: only global (workspaceId IS NULL) rows
+  // are constrained unique by (key, periodStart, periodEnd). See migration for rationale.
+  @@index([key, periodStart, periodEnd])
 }
 
 model AiRequest {

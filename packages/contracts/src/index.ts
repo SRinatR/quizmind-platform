@@ -739,7 +739,6 @@ export interface AiProviderPolicyHistoryEntry {
 
 export interface ExtensionInstallationBindingSummary {
   installationId: string;
-  workspaceId?: string;
   userId: string;
   browser: CompatibilityHandshake['browser'];
   extensionVersion: string;
@@ -758,7 +757,6 @@ export interface ExtensionInstallationTokenSession {
 
 export interface ExtensionBootstrapPayloadV2 {
   installationId: string;
-  workspaceId?: string;
   compatibility: CompatibilityResult;
   entitlements: string[];
   featureFlags: string[];
@@ -773,7 +771,6 @@ export interface ExtensionBootstrapPayloadV2 {
 
 export interface ExtensionInstallationBindRequest {
   installationId: string;
-  workspaceId?: string;
   environment: string;
   handshake: CompatibilityHandshake;
 }
@@ -786,7 +783,6 @@ export interface ExtensionInstallationBindResult {
 
 export interface ExtensionInstallationInventoryItem {
   installationId: string;
-  workspaceId?: string;
   browser: CompatibilityHandshake['browser'];
   extensionVersion: string;
   schemaVersion: string;
@@ -814,7 +810,6 @@ export interface ExtensionInstallationDisconnectRequest {
 
 export interface ExtensionInstallationDisconnectResult {
   installationId: string;
-  workspaceId?: string;
   revokedSessionCount: number;
   disconnectedAt: string;
   requiresReconnect: boolean;
@@ -827,7 +822,6 @@ export interface ExtensionInstallationRotateSessionRequest {
 
 export interface ExtensionInstallationRotateSessionResult {
   installationId: string;
-  workspaceId?: string;
   revokedSessionCount: number;
   rotatedAt: string;
   session: ExtensionInstallationTokenSession;
@@ -904,7 +898,6 @@ export interface AdminExtensionFleetSnapshot {
 
 export interface UsageEventPayload {
   installationId: string;
-  workspaceId?: string;
   eventType: string;
   occurredAt: string;
   payload: Record<string, unknown>;
@@ -935,7 +928,6 @@ export interface UsageExportRequest {
 }
 
 export interface UsageExportResult {
-  workspaceId?: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
   fileName: string;
@@ -957,7 +949,6 @@ export interface EmailQueueJobPayload {
 }
 
 export interface QuotaResetJobPayload {
-  workspaceId?: string;
   key: string;
   consumed: number;
   periodStart: string;
@@ -969,7 +960,6 @@ export interface QuotaResetJobPayload {
 
 export interface UsageAuditExportJobPayload {
   exportType: 'usage';
-  workspaceId?: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
   fileName: string;
@@ -980,7 +970,6 @@ export interface UsageAuditExportJobPayload {
 
 export interface AdminLogsAuditExportJobPayload {
   exportType: 'admin_logs';
-  workspaceId?: string;
   format: AdminLogExportFormat;
   fileName: string;
   contentType: string;
@@ -1109,7 +1098,6 @@ export interface ProviderCredentialSummary {
   ownerType: CredentialOwnerType;
   ownerId: string;
   userId?: string | null;
-  workspaceId?: string | null;
   label?: string | null;
   keyHint?: string | null;
   validationStatus: CredentialValidationStatus;
@@ -1194,7 +1182,6 @@ export interface AiProviderPolicyUpdateResult {
 }
 
 export interface AiProviderPolicyResetRequest {
-  workspaceId?: string;
 }
 
 export interface AiProviderPolicyResetResult {
@@ -1237,7 +1224,6 @@ export interface ProviderCredentialRevokeResult {
 export interface UserApiKeySummary {
   id: string;
   provider: AiProvider;
-  workspaceId?: string | null;
   label?: string | null;
   keyHint?: string | null;
   validationStatus: CredentialValidationStatus;
@@ -1299,7 +1285,6 @@ export interface AiProxyMessage {
 }
 
 export interface AiProxyRequest {
-  workspaceId?: string;
   provider?: AiProvider;
   model?: string;
   messages: AiProxyMessage[];
@@ -1326,7 +1311,6 @@ export interface ExtensionFileUploadAnswerResult {
 }
 
 export interface AiModelsCatalogPayload {
-  workspaceId?: string;
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
   defaultProvider?: AiProvider;
@@ -1352,7 +1336,6 @@ export interface AiProxyQuotaSnapshot {
 
 export interface AiProxyResult {
   requestId: string;
-  workspaceId?: string;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
