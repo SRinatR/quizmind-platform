@@ -98,7 +98,7 @@ export class SupportImpersonationRepository {
           id: input.impersonationSessionId,
           supportActorId: input.supportActorId,
           targetUserId: input.targetUserId,
-          workspaceId: null,
+
           supportTicketId: input.supportTicketId ?? null,
           reason: input.reason,
           operatorNote: input.operatorNote ?? null,
@@ -108,7 +108,7 @@ export class SupportImpersonationRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: null,
+
           actorId: input.supportActorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -120,7 +120,7 @@ export class SupportImpersonationRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: null,
+
           actorId: input.supportActorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -163,7 +163,7 @@ export class SupportImpersonationRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: null,
+
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -175,7 +175,7 @@ export class SupportImpersonationRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: null,
+
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,

@@ -83,7 +83,6 @@ function createVirtualPolicy(): AiProviderPolicySnapshot {
   return {
     scopeType: 'global',
     scopeKey: 'global',
-    workspaceId: null,
     updatedById: null,
     createdAt: new Date(0).toISOString(),
     updatedAt: new Date(0).toISOString(),
@@ -254,7 +253,6 @@ export class AiProviderPolicyService {
     return {
       scopeType: record.scopeType,
       scopeKey: record.scopeKey,
-      workspaceId: record.workspaceId,
       updatedById: record.updatedById,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
@@ -318,7 +316,6 @@ export class AiProviderPolicyService {
       ),
       scopeType,
       scopeKey,
-      workspaceId: readJsonString(metadata?.workspaceId) ?? record.workspaceId ?? undefined,
       actor: actor
         ? {
             id: actor.id,

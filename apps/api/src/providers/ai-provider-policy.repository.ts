@@ -8,7 +8,6 @@ const aiProviderPolicySelect = {
   id: true,
   scopeKey: true,
   scopeType: true,
-  workspaceId: true,
   mode: true,
   allowPlatformManaged: true,
   allowBringYourOwnKey: true,
@@ -28,7 +27,6 @@ const aiProviderPolicySelect = {
 
 const aiProviderPolicyHistorySelect = {
   id: true,
-  workspaceId: true,
   actorId: true,
   action: true,
   targetId: true,
@@ -166,7 +164,7 @@ export class AiProviderPolicyRepository {
         create: {
           scopeKey: input.scopeKey,
           scopeType: input.scopeType,
-          workspaceId: null,
+
           mode: input.mode,
           allowPlatformManaged: input.allowPlatformManaged,
           allowBringYourOwnKey: input.allowBringYourOwnKey,
@@ -201,7 +199,7 @@ export class AiProviderPolicyRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: null,
+
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -213,7 +211,7 @@ export class AiProviderPolicyRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: null,
+
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -224,7 +222,7 @@ export class AiProviderPolicyRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: null,
+
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,

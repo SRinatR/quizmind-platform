@@ -178,7 +178,6 @@ export class SupportTicketRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: null,
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,

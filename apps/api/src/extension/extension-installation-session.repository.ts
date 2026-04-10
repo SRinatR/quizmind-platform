@@ -8,7 +8,6 @@ const extensionInstallationSessionInclude = {
     select: {
       id: true,
       userId: true,
-      workspaceId: true,
       installationId: true,
       browser: true,
       extensionVersion: true,

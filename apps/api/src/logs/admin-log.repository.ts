@@ -4,12 +4,6 @@ import { type AdminLogSeverityFilter, type AdminLogStreamFilter } from '@quizmin
 
 import { PrismaService } from '../database/prisma.service';
 
-const workspaceSelect = {
-  id: true,
-  slug: true,
-  name: true,
-} satisfies Prisma.WorkspaceSelect;
-
 const userSelect = {
   id: true,
   email: true,
@@ -18,52 +12,36 @@ const userSelect = {
 
 const auditLogSelect = {
   id: true,
-  workspaceId: true,
   actorId: true,
   action: true,
   targetType: true,
   targetId: true,
   metadataJson: true,
   createdAt: true,
-  workspace: {
-    select: workspaceSelect,
-  },
 } satisfies Prisma.AuditLogSelect;
 
 const activityLogSelect = {
   id: true,
-  workspaceId: true,
   actorId: true,
   eventType: true,
   metadataJson: true,
   createdAt: true,
-  workspace: {
-    select: workspaceSelect,
-  },
 } satisfies Prisma.ActivityLogSelect;
 
 const securityEventSelect = {
   id: true,
-  workspaceId: true,
   actorId: true,
   eventType: true,
   severity: true,
   metadataJson: true,
   createdAt: true,
-  workspace: {
-    select: workspaceSelect,
-  },
 } satisfies Prisma.SecurityEventSelect;
 
 const domainEventSelect = {
   id: true,
-  workspaceId: true,
   eventType: true,
   payloadJson: true,
   createdAt: true,
-  workspace: {
-    select: workspaceSelect,
-  },
 } satisfies Prisma.DomainEventSelect;
 
 export type AdminLogAuditRecord = Prisma.AuditLogGetPayload<{

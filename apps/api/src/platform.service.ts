@@ -1755,7 +1755,6 @@ export class PlatformService {
         minimumExtensionVersion: normalized.minimumExtensionVersion ?? null,
         allowRoles: normalized.allowRoles,
         allowUsers: normalized.allowUsers,
-        allowWorkspaces: normalized.allowWorkspaces,
       });
 
       if (!updatedRecord) {
@@ -1956,7 +1955,6 @@ export class PlatformService {
     const bootstrapRequest: ExtensionBootstrapRequest = {
       installationId: request?.installationId ?? 'inst_local_browser',
       userId: request?.userId ?? fallbackPersona.user.id,
-      workspaceId: request?.workspaceId ?? '',
       environment: request?.environment ?? 'development',
       handshake: request?.handshake ?? {
         extensionVersion: '1.6.0',
@@ -2051,7 +2049,6 @@ export class PlatformService {
       ...(normalized.rolloutPercentage === undefined ? {} : { rolloutPercentage: normalized.rolloutPercentage }),
       ...(normalized.allowRoles.length > 0 ? { allowRoles: normalized.allowRoles } : {}),
       ...(normalized.allowUsers.length > 0 ? { allowUsers: normalized.allowUsers } : {}),
-      ...(normalized.allowWorkspaces.length > 0 ? { allowWorkspaces: normalized.allowWorkspaces } : {}),
       ...(normalized.minimumExtensionVersion
         ? { minimumExtensionVersion: normalized.minimumExtensionVersion }
         : {}),
@@ -2765,15 +2762,6 @@ export class PlatformService {
           ...(severity ? { severity } : {}),
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           targetType: record.targetType,
           targetId: record.targetId,
           ...(metadata ? { metadata } : {}),
@@ -2789,15 +2777,6 @@ export class PlatformService {
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           ...(metadata ? { metadata } : {}),
         };
       }),
@@ -2814,15 +2793,6 @@ export class PlatformService {
           severity: record.severity,
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           ...(metadata ? { metadata } : {}),
         };
       }),
@@ -2835,15 +2805,6 @@ export class PlatformService {
           eventType: record.eventType,
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           ...(metadata ? { metadata } : {}),
         };
       }),

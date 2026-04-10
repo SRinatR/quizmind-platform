@@ -803,7 +803,7 @@ export class ExtensionControlService {
 
   private normalizeBindRequest(
     request?: Partial<ExtensionInstallationBindRequest>,
-  ): Omit<ExtensionInstallationBindRequest, 'workspaceId'> {
+  ): ExtensionInstallationBindRequest {
     const installationId = readRequiredString(request?.installationId, 'installationId');
     const environment = readRequiredEnvironment(request?.environment ?? 'production', 'environment');
     const handshake = this.normalizeHandshake(request?.handshake);
@@ -906,7 +906,6 @@ export class ExtensionControlService {
 
     try {
       await this.extensionEventRepository.recordLifecycleEvent({
-        workspaceId: null,
         occurredAt,
         auditLog,
         securityLog,

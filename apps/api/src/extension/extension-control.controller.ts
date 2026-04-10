@@ -79,8 +79,7 @@ function normalizeIncomingUsageEvent(rawEvent: unknown): Partial<UsageEventPaylo
       key !== 'ts' &&
       key !== 'timestamp' &&
       key !== 'payload' &&
-      key !== 'installationId' &&
-      key !== 'workspaceId',
+      key !== 'installationId',
   );
   const payloadFromEnvelopeMeta = Object.fromEntries(metaPayloadEntries);
   const payload = {

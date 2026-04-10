@@ -46,7 +46,6 @@ export interface NormalizedFeatureFlagUpdate {
   minimumExtensionVersion?: string;
   allowRoles: Array<SystemRole | WorkspaceRole>;
   allowUsers: string[];
-  allowWorkspaces: string[];
 }
 
 export function normalizeFeatureFlagUpdate(
@@ -68,14 +67,12 @@ export function normalizeFeatureFlagUpdate(
     ...(minimumExtensionVersion ? { minimumExtensionVersion } : {}),
     allowRoles: request?.allowRoles ? parseAllowedRoles(request.allowRoles) : existing.allowRoles ?? [],
     allowUsers: request?.allowUsers ? normalizeList(request.allowUsers) : existing.allowUsers ?? [],
-    allowWorkspaces: request?.allowWorkspaces ? normalizeList(request.allowWorkspaces) : existing.allowWorkspaces ?? [],
   };
 }
 
 export function mapFeatureFlagRecordToDefinition(record: FeatureFlagRecord): FeatureFlagDefinition {
   const enabledOverrides = (record.overrides ?? []).filter((override) => override.enabled);
   const allowUsers = uniqueStrings(enabledOverrides.map((override) => override.userId));
-  const allowWorkspaces = uniqueStrings(enabledOverrides.map((override) => override.workspaceId));
   const allowRoles = parseAllowedRoles(record.allowRolesJson);
 
   return {
@@ -86,7 +83,6 @@ export function mapFeatureFlagRecordToDefinition(record: FeatureFlagRecord): Fea
     rolloutPercentage: record.rolloutPercentage ?? undefined,
     ...(allowRoles.length > 0 ? { allowRoles } : {}),
     ...(allowUsers.length > 0 ? { allowUsers } : {}),
-    ...(allowWorkspaces.length > 0 ? { allowWorkspaces } : {}),
     minimumExtensionVersion: record.minimumExtensionVersion ?? undefined,
   };
 }

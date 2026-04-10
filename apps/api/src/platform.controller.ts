@@ -121,7 +121,6 @@ export class PlatformController {
   @Get('admin/installations')
   async listAdminExtensionFleet(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Query('installationId') installationId?: string,
     @Query('compatibility') compatibility?: string,
     @Query('connection') connection?: string,
@@ -130,7 +129,6 @@ export class PlatformController {
     @Headers('authorization') authorization?: string,
   ) {
     const filters: Partial<AdminExtensionFleetFilters> = {
-      ...(workspaceId ? { workspaceId } : {}),
       ...(installationId ? { installationId } : {}),
       ...(compatibility ? { compatibility: compatibility as AdminExtensionFleetFilters['compatibility'] } : {}),
       ...(connection ? { connection: connection as AdminExtensionFleetFilters['connection'] } : {}),

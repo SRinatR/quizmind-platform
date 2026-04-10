@@ -44,7 +44,6 @@ export class RemoteConfigRepository {
       where: {
         remoteConfigVersion: {
           isActive: true,
-          workspaceId: null,
         },
       },
       include: activeRemoteConfigLayerInclude,
@@ -54,9 +53,6 @@ export class RemoteConfigRepository {
 
   findRecentVersions(limit = 12): Promise<RemoteConfigVersionRecord[]> {
     return this.prisma.remoteConfigVersion.findMany({
-      where: {
-        workspaceId: null,
-      },
       include: remoteConfigVersionInclude,
       orderBy: [{ createdAt: 'desc' }],
       take: limit,
@@ -67,7 +63,6 @@ export class RemoteConfigRepository {
     return this.prisma.$transaction(async (transaction) => {
       await transaction.remoteConfigVersion.updateMany({
         where: {
-          workspaceId: null,
           isActive: true,
         },
         data: {
@@ -77,7 +72,6 @@ export class RemoteConfigRepository {
 
       return transaction.remoteConfigVersion.create({
         data: {
-          workspaceId: null,
           publishedById: input.actorId,
           versionLabel: input.versionLabel,
           isActive: true,
@@ -112,7 +106,6 @@ export class RemoteConfigRepository {
 
       await transaction.remoteConfigVersion.updateMany({
         where: {
-          workspaceId: null,
           isActive: true,
         },
         data: {

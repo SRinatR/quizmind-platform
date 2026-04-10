@@ -6,7 +6,6 @@ import { PrismaService } from '../database/prisma.service';
 const extensionInstallationSelect = {
   id: true,
   userId: true,
-  workspaceId: true,
   installationId: true,
   browser: true,
   extensionVersion: true,
@@ -36,16 +35,6 @@ export class ExtensionInstallationRepository {
 
   listAll(): Promise<ExtensionInstallationRecord[]> {
     return this.prisma.extensionInstallation.findMany({
-      orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
-      select: extensionInstallationSelect,
-    });
-  }
-
-  listByWorkspaceId(workspaceId: string): Promise<ExtensionInstallationRecord[]> {
-    return this.prisma.extensionInstallation.findMany({
-      where: {
-        workspaceId,
-      },
       orderBy: [{ lastSeenAt: 'desc' }, { createdAt: 'desc' }],
       select: extensionInstallationSelect,
     });
@@ -85,7 +74,6 @@ export class ExtensionInstallationRepository {
       },
       update: {
         userId: input.userId,
-        workspaceId: null,
         browser: input.browser,
         extensionVersion: input.extensionVersion,
         schemaVersion: input.schemaVersion,

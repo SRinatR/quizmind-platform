@@ -147,7 +147,6 @@ export interface FeatureFlagDefinition {
   rolloutPercentage?: number;
   allowRoles?: Array<SystemRole | WorkspaceRole>;
   allowUsers?: string[];
-  allowWorkspaces?: string[];
   minimumExtensionVersion?: string;
 }
 
@@ -159,7 +158,6 @@ export interface FeatureFlagUpdateRequest {
   rolloutPercentage?: number | null;
   allowRoles?: Array<SystemRole | WorkspaceRole>;
   allowUsers?: string[];
-  allowWorkspaces?: string[];
   minimumExtensionVersion?: string | null;
 }
 
@@ -221,7 +219,6 @@ export interface AuditEvent {
   eventType: string;
   actorId: string;
   actorType: SubjectType;
-  workspaceId?: string;
   targetType: string;
   targetId: string;
   occurredAt: string;
@@ -245,7 +242,6 @@ export interface AccessDecision {
 export interface RemoteConfigContext {
   environment?: string;
   planCode?: string;
-  workspaceId?: string;
   userId?: string;
   extensionVersion?: string;
   buildId?: string;
@@ -416,14 +412,12 @@ export interface WorkspaceSummary {
 }
 
 export interface AdminUserWorkspaceMembership {
-  workspaceId: string;
   workspaceSlug: string;
   workspaceName: string;
   role: WorkspaceRole;
 }
 
 export interface AdminUserWorkspaceMembershipInput {
-  workspaceId: string;
   role: WorkspaceRole;
 }
 
@@ -473,12 +467,6 @@ export interface AdminLogActorSummary {
   displayName?: string;
 }
 
-export interface AdminLogWorkspaceSummary {
-  id: string;
-  slug: string;
-  name: string;
-}
-
 export interface AdminLogFilters {
   stream: AdminLogStreamFilter;
   severity: AdminLogSeverityFilter;
@@ -495,7 +483,6 @@ export interface AdminLogEntry {
   severity?: UsageEventSeverity;
   status?: 'success' | 'failure';
   actor?: AdminLogActorSummary;
-  workspace?: AdminLogWorkspaceSummary;
   targetType?: string;
   targetId?: string;
   metadata?: Record<string, unknown>;
@@ -652,7 +639,6 @@ export interface AdminWebhookRetryResult {
 export interface ExtensionBootstrapRequest {
   installationId: string;
   userId: string;
-  workspaceId?: string;
   environment: string;
   planCode?: string;
   handshake: CompatibilityHandshake;
@@ -705,7 +691,6 @@ export interface AiAccessPolicy {
 export interface AiProviderPolicySnapshot extends AiAccessPolicy {
   scopeType: AiProviderPolicyScopeType;
   scopeKey: string;
-  workspaceId?: string | null;
   updatedById?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -723,7 +708,6 @@ export interface AiProviderPolicyHistoryEntry {
   summary: string;
   scopeType: AiProviderPolicyScopeType;
   scopeKey: string;
-  workspaceId?: string | null;
   actor?: AiProviderPolicyHistoryActor | null;
   occurredAt: string;
   mode?: AiAccessPolicyMode;
@@ -944,7 +928,6 @@ export interface EmailQueueJobPayload {
   templateKey: EmailQueueTemplateKey;
   variables: Record<string, unknown>;
   requestedAt: string;
-  workspaceId?: string;
   requestedByUserId?: string;
 }
 

@@ -21,7 +21,6 @@ export interface ReplaceFeatureFlagDefinitionInput {
   minimumExtensionVersion?: string | null;
   allowRoles: string[];
   allowUsers: string[];
-  allowWorkspaces: string[];
 }
 
 @Injectable()
@@ -74,21 +73,10 @@ export class FeatureFlagRepository {
         userId,
         enabled: true,
       }));
-      const workspaceOverrideData = input.allowWorkspaces.map((workspaceId) => ({
-        featureFlagId: existing.id,
-        workspaceId,
-        enabled: true,
-      }));
 
       if (userOverrideData.length > 0) {
         await tx.featureFlagOverride.createMany({
           data: userOverrideData,
-        });
-      }
-
-      if (workspaceOverrideData.length > 0) {
-        await tx.featureFlagOverride.createMany({
-          data: workspaceOverrideData,
         });
       }
 
