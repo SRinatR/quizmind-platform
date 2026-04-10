@@ -48,7 +48,6 @@ export async function processEmailJob(
       eventType: 'email.delivered',
       actorId: payload.requestedByUserId ?? 'system',
       actorType: payload.requestedByUserId ? 'user' : 'system',
-      workspaceId: payload.workspaceId,
       targetType: 'email',
       targetId: payload.to,
       occurredAt: payload.requestedAt,

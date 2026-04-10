@@ -56,7 +56,6 @@ export interface ConnectToPlatformInput {
   relayUrl?: string;
   platformOrigin?: string;
   state: PlatformStateManager;
-  workspaceId?: string;
   requestId?: string;
   bridgeNonce?: string;
   bridgeMode?: 'bind_result' | 'fallback_code';
@@ -291,7 +290,6 @@ export function buildExtensionConnectUrl(input: {
   requestId: string;
   bridgeNonce: string;
   bridgeMode?: 'bind_result' | 'fallback_code';
-  workspaceId?: string;
 }): string {
   const url = new URL('/app/extension/connect', input.siteUrl);
   const normalizedTargetOrigin = normalizeOrigin(input.targetOrigin);
@@ -332,10 +330,6 @@ export function buildExtensionConnectUrl(input: {
 
   if (input.handshake.buildId) {
     url.searchParams.set('buildId', input.handshake.buildId);
-  }
-
-  if (input.workspaceId) {
-    url.searchParams.set('workspaceId', input.workspaceId);
   }
 
   return url.toString();
@@ -649,7 +643,6 @@ export async function connectToPlatform(input: ConnectToPlatformInput): Promise<
     requestId,
     bridgeNonce,
     bridgeMode: input.bridgeMode ?? 'fallback_code',
-    ...(normalizeString(input.workspaceId) ? { workspaceId: normalizeString(input.workspaceId) } : {}),
   });
   const bridgeResponse = await input.openBridge({
     url,

@@ -85,7 +85,6 @@ export async function refreshBootstrap(input: {
   }
 
   if (input.state) {
-    await input.state.setWorkspaceId(payload.data.workspaceId);
     await input.state.saveBootstrapCache(payload.data, payload.data.issuedAt);
   }
 

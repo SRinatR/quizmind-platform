@@ -91,16 +91,6 @@ function resolveQueueJobContext(job: Job<unknown>): QueueJobContext {
   };
 }
 
-function readWorkspaceIdFromQueuePayload(payload: unknown): string | null {
-  if (!payload || typeof payload !== 'object' || !('workspaceId' in payload)) {
-    return null;
-  }
-
-  const workspaceId = (payload as { workspaceId?: unknown }).workspaceId;
-
-  return typeof workspaceId === 'string' && workspaceId.trim().length > 0 ? workspaceId.trim() : null;
-}
-
 function readErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -138,7 +128,6 @@ async function persistDomainEvent(
             queue: queueContext.queueName,
             queueAttempt: queueContext.attemptNumber,
             domainEventType: domainEvent.eventType,
-            workspaceId: domainEvent.workspaceId,
             message: readErrorMessage(error),
           },
         }),
@@ -155,7 +144,6 @@ async function processQueueJobWithDomainLogging<T extends QueueJobProcessingResu
   job: Job<unknown>,
   domainEventRepository: WorkerDomainEventRepository,
   processJob: () => Promise<T>,
-  failureWorkspaceId?: string | null,
 ): Promise<T> {
   const queueContext = resolveQueueJobContext(job);
 
@@ -169,11 +157,7 @@ async function processQueueJobWithDomainLogging<T extends QueueJobProcessingResu
 
     return result;
   } catch (error) {
-    const failedEvent = buildQueueJobFailedDomainEvent(
-      queueContext,
-      error,
-      failureWorkspaceId ?? readWorkspaceIdFromQueuePayload(job.data),
-    );
+    const failedEvent = buildQueueJobFailedDomainEvent(queueContext, error);
 
     await persistDomainEvent(domainEventRepository, failedEvent, queueContext);
     jobsFailedTotal.inc({ queue: queueContext.queueName });
@@ -292,7 +276,6 @@ async function bootstrap() {
                     eventType: 'email.delivery_failed',
                     actorId: payload.requestedByUserId ?? 'system',
                     actorType: payload.requestedByUserId ? 'user' : 'system',
-                    workspaceId: payload.workspaceId,
                     targetType: 'email',
                     targetId: payload.to,
                     occurredAt: queueContext.processedAt,
@@ -328,7 +311,6 @@ async function bootstrap() {
                 const result = processQuotaResetJob(payload);
 
                 await usageProcessingRepository.saveQuotaCounter({
-                  workspaceId: result.nextCounter.workspaceId,
                   key: result.nextCounter.key,
                   consumed: result.nextCounter.consumed,
                   periodStart: new Date(result.nextCounter.periodStart),
@@ -337,7 +319,6 @@ async function bootstrap() {
 
                 return result;
               },
-              payload.workspaceId,
             );
           },
           {
@@ -353,7 +334,6 @@ async function bootstrap() {
               job,
               domainEventRepository,
               async () => propagateRemoteConfigPublish(payload),
-              payload.workspaceId ?? null,
             );
           },
           {
@@ -369,7 +349,6 @@ async function bootstrap() {
               job,
               domainEventRepository,
               async () => processAuditExportJob(payload),
-              payload.workspaceId ?? null,
             );
           },
           {
@@ -481,7 +460,6 @@ async function runDryRun() {
   const usageResult = processUsageEvent(
     {
       installationId: 'inst_local_browser',
-      workspaceId: 'ws_alpha',
       eventType: 'extension.quiz_answer_requested',
       occurredAt: new Date().toISOString(),
       payload: {
@@ -499,7 +477,6 @@ async function runDryRun() {
     appliedLayerCount: 3,
     publishedAt: new Date().toISOString(),
     actorId: 'user_platform_admin',
-    workspaceId: 'ws_alpha',
   });
   const emailResult = await processEmailJob(
     {
@@ -512,14 +489,12 @@ async function runDryRun() {
         supportEmail: 'support@quizmind.dev',
       },
       requestedAt: new Date().toISOString(),
-      workspaceId: 'ws_alpha',
       requestedByUserId: 'user_platform_admin',
     },
     createNoopEmailAdapter('worker-dry-run'),
   );
   const quotaResetResult = processQuotaResetJob(
     {
-      workspaceId: 'ws_alpha',
       key: 'limit.requests_per_day',
       consumed: 99,
       periodStart: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
@@ -531,7 +506,6 @@ async function runDryRun() {
   );
   const auditExportResult = processAuditExportJob({
     exportType: 'usage',
-    workspaceId: 'ws_alpha',
     format: 'json',
     scope: 'events',
     fileName: 'usage-ws_alpha-events-2026-03-27.json',

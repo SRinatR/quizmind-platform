@@ -105,14 +105,11 @@ export class PlatformRuntimeClient {
     eventType: string;
     payload: Record<string, unknown>;
     occurredAt?: string;
-    workspaceId?: string;
   }): Promise<void> {
     const installationId = await this.options.state.getOrCreateInstallationId();
-    const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
 
     await this.options.state.appendBufferedEvent({
       installationId,
-      ...(workspaceId ? { workspaceId } : {}),
       eventType: input.eventType,
       occurredAt: input.occurredAt ?? new Date().toISOString(),
       payload: input.payload,
@@ -125,7 +122,6 @@ export class PlatformRuntimeClient {
     status?: number;
     sourceEventType?: string;
     occurredAt?: string;
-    workspaceId?: string;
     skipIfAlreadyBuffered?: boolean;
   }): Promise<void> {
     if (
@@ -138,7 +134,6 @@ export class PlatformRuntimeClient {
     await this.bufferLifecycleEvent({
       eventType: 'extension.installation_reconnect_requested',
       occurredAt: input.occurredAt,
-      workspaceId: input.workspaceId,
       payload: {
         reason: input.reason,
         ...(input.message ? { message: input.message } : {}),
@@ -149,7 +144,6 @@ export class PlatformRuntimeClient {
   }
 
   async connectToPlatform(input?: {
-    workspaceId?: string;
     requestId?: string;
     bridgeNonce?: string;
     flushBufferedEventsOnConnect?: boolean;
@@ -169,14 +163,12 @@ export class PlatformRuntimeClient {
       state: this.options.state,
       openBridge: this.options.openBridge,
       fetcher: this.options.fetcher,
-      ...(input?.workspaceId ? { workspaceId: input.workspaceId } : {}),
       ...(input?.requestId ? { requestId: input.requestId } : {}),
       ...(input?.bridgeNonce ? { bridgeNonce: input.bridgeNonce } : {}),
     });
 
     if (shouldEmitReconnectedEvent) {
       await this.sendReconnectedEvent({
-        workspaceId: result.installation.workspaceId,
         extra: {
           source: 'connect_to_platform',
         },
@@ -322,17 +314,14 @@ export class PlatformRuntimeClient {
     eventType: string;
     payload: Record<string, unknown>;
     occurredAt?: string;
-    workspaceId?: string;
     bufferOnFailure?: boolean;
   }): Promise<UsageEventIngestResult> {
     const installationId = await this.options.state.getOrCreateInstallationId();
     const { session, expired } = await this.resolveSessionState();
-    const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
     const shouldBuffer = input.bufferOnFailure !== false;
     const occurredAt = input.occurredAt ?? new Date().toISOString();
     const event: UsageEventPayload = {
       installationId,
-      ...(workspaceId ? { workspaceId } : {}),
       eventType: input.eventType,
       occurredAt,
       payload: input.payload,
@@ -343,7 +332,6 @@ export class PlatformRuntimeClient {
         await this.options.state.appendBufferedEvent(event);
         await this.bufferReconnectRequestedLifecycleEvent({
           occurredAt,
-          workspaceId,
           reason: expired ? 'installation_session_expired' : 'installation_session_missing',
           message: expired
             ? 'Installation session expired. Reconnect required.'
@@ -375,7 +363,6 @@ export class PlatformRuntimeClient {
         if (shouldBuffer && error.status === 401) {
           await this.bufferReconnectRequestedLifecycleEvent({
             occurredAt: event.occurredAt,
-            workspaceId,
             reason: 'installation_session_invalid',
             message: error.message,
             status: error.status,
@@ -402,17 +389,14 @@ export class PlatformRuntimeClient {
     feature?: string;
     occurredAt?: string;
     extra?: Record<string, unknown>;
-    workspaceId?: string;
     bufferOnFailure?: boolean;
   }): Promise<UsageEventIngestResult> {
     const installationId = await this.options.state.getOrCreateInstallationId();
     const { session, expired } = await this.resolveSessionState();
-    const workspaceId = input.workspaceId ?? (await this.options.state.getWorkspaceId());
     const shouldBuffer = input.bufferOnFailure !== false;
     const occurredAt = input.occurredAt ?? new Date().toISOString();
     const event: UsageEventPayload = {
       installationId,
-      ...(workspaceId ? { workspaceId } : {}),
       eventType: 'extension.runtime_error',
       occurredAt,
       payload: {
@@ -430,7 +414,6 @@ export class PlatformRuntimeClient {
         await this.options.state.appendBufferedEvent(event);
         await this.bufferReconnectRequestedLifecycleEvent({
           occurredAt,
-          workspaceId,
           reason: expired ? 'installation_session_expired' : 'installation_session_missing',
           message: expired
             ? 'Installation session expired. Reconnect required.'
@@ -447,7 +430,6 @@ export class PlatformRuntimeClient {
         apiUrl: this.options.apiUrl,
         token: session.token,
         installationId,
-        ...(workspaceId ? { workspaceId } : {}),
         surface: input.surface,
         message: input.message,
         ...(input.stackPreview ? { stackPreview: input.stackPreview } : {}),
@@ -470,7 +452,6 @@ export class PlatformRuntimeClient {
         if (shouldBuffer && error.status === 401) {
           await this.bufferReconnectRequestedLifecycleEvent({
             occurredAt: event.occurredAt,
-            workspaceId,
             reason: 'installation_session_invalid',
             message: error.message,
             status: error.status,
@@ -540,13 +521,11 @@ export class PlatformRuntimeClient {
     status?: number;
     retryable?: boolean;
     occurredAt?: string;
-    workspaceId?: string;
     extra?: Record<string, unknown>;
   }): Promise<UsageEventIngestResult> {
     return this.sendUsageEvent({
       eventType: 'extension.bootstrap_refresh_failed',
       occurredAt: input.occurredAt,
-      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
       payload: {
         message: input.message,
         ...(typeof input.status === 'number' ? { status: input.status } : {}),
@@ -559,13 +538,11 @@ export class PlatformRuntimeClient {
   async sendReconnectRequestedEvent(input?: {
     reason?: string;
     occurredAt?: string;
-    workspaceId?: string;
     extra?: Record<string, unknown>;
   }): Promise<UsageEventIngestResult> {
     return this.sendUsageEvent({
       eventType: 'extension.installation_reconnect_requested',
       occurredAt: input?.occurredAt,
-      ...(input?.workspaceId ? { workspaceId: input.workspaceId } : {}),
       payload: {
         ...(input?.reason ? { reason: input.reason } : {}),
         ...(input?.extra ?? {}),
@@ -575,13 +552,11 @@ export class PlatformRuntimeClient {
 
   async sendReconnectedEvent(input?: {
     occurredAt?: string;
-    workspaceId?: string;
     extra?: Record<string, unknown>;
   }): Promise<UsageEventIngestResult> {
     return this.sendUsageEvent({
       eventType: 'extension.installation_reconnected',
       occurredAt: input?.occurredAt,
-      ...(input?.workspaceId ? { workspaceId: input.workspaceId } : {}),
       payload: {
         ...(input?.extra ?? {}),
       },

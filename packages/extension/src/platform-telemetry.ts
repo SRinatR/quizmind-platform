@@ -80,7 +80,6 @@ export async function sendRuntimeError(input: {
   apiUrl: string;
   token: string;
   installationId: string;
-  workspaceId?: string;
   surface: string;
   message: string;
   stackPreview?: string;
@@ -96,7 +95,6 @@ export async function sendRuntimeError(input: {
     fetcher: input.fetcher,
     event: {
       installationId: input.installationId,
-      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
       eventType: 'extension.runtime_error',
       occurredAt: input.occurredAt ?? new Date().toISOString(),
       payload: {

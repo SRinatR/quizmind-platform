@@ -63,7 +63,6 @@ export function buildQueueLogDomainEvent(
   const summary = readSummary(metadata, `${logEvent.eventType} processed on ${context.queueName}.`);
 
   return {
-    workspaceId: logEvent.workspaceId ?? null,
     eventType: logEvent.eventType,
     payloadJson: {
       summary,
@@ -87,10 +86,8 @@ export function buildQueueLogDomainEvent(
 export function buildQueueJobFailedDomainEvent(
   context: QueueJobContext,
   error: unknown,
-  workspaceId: string | null = null,
 ): CreateWorkerDomainEventInput {
   return {
-    workspaceId,
     eventType: `${context.queueName}.job_failed`,
     payloadJson: {
       summary: `Failed to process ${context.queueName} queue job ${context.queueJobId}.`,

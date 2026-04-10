@@ -57,7 +57,6 @@ export function buildEmailJobProcessedDomainEvent(
   context: QueueJobContext,
 ): CreateWorkerDomainEventInput {
   return {
-    workspaceId: payload.workspaceId ?? null,
     eventType: 'email.job_processed',
     payloadJson: {
       ...buildBasePayload(payload, context),
@@ -79,7 +78,6 @@ export function buildEmailJobFailedDomainEvent(
   context: QueueJobContext,
 ): CreateWorkerDomainEventInput {
   return {
-    workspaceId: payload.workspaceId ?? null,
     eventType: 'email.job_failed',
     payloadJson: {
       ...buildBasePayload(payload, context),

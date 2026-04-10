@@ -10,7 +10,6 @@ export interface QuotaResetJobResult extends QuotaResetResult {
 export function processQuotaResetJob(payload: QuotaResetJobPayload): QuotaResetJobResult {
   const result = resetQuotaCounter(
     {
-      workspaceId: payload.workspaceId,
       key: payload.key,
       consumed: payload.consumed,
       periodStart: payload.periodStart,
