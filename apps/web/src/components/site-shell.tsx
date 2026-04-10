@@ -2,7 +2,7 @@
 
 import { type ReactNode, useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { adminNavigation, dashboardNavigation } from '@quizmind/ui';
+import { type AdminNavGroup, adminNavigationGroups, dashboardNavigation } from '@quizmind/ui';
 import { LogoutButton } from './logout-button';
 import { usePreferences } from '../lib/preferences';
 import { ShellProfileContext } from '../lib/shell-profile-context';
@@ -64,6 +64,11 @@ interface SiteShellProps {
   userDisplayName?: string;
   /** User avatar URL — shown in sidebar dock; falls back to initials */
   userAvatarUrl?: string;
+  /**
+   * Filtered admin nav groups — only sections the current user can access.
+   * When omitted, falls back to the full unfiltered adminNavigationGroups.
+   */
+  adminNavGroups?: AdminNavGroup[];
 }
 
 function isActiveRoute(itemHref: string, pathname: string): boolean {
@@ -95,6 +100,7 @@ export function SiteShell({
   title,
   userDisplayName,
   userAvatarUrl,
+  adminNavGroups,
 }: SiteShellProps) {
   const { t } = usePreferences();
   const isConnected = apiState.startsWith('Connected');
@@ -178,25 +184,27 @@ export function SiteShell({
             })}
           </div>
 
-          {/* Admin nav group — only rendered for admins */}
-          {isAdmin ? (
-            <div className="app-nav-group">
-              <span className="app-nav-group__label">{t.nav.adminGroup}</span>
-              {adminNavigation.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={
-                    isActiveRoute(item.href, pathname)
-                      ? 'app-nav-item app-nav-item--active'
-                      : 'app-nav-item'
-                  }
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          ) : null}
+          {/* Admin nav — grouped, only rendered for admins */}
+          {isAdmin
+            ? (adminNavGroups ?? adminNavigationGroups).map((group) => (
+                <div key={group.label} className="app-nav-group">
+                  <span className="app-nav-group__label">{group.label}</span>
+                  {group.items.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={
+                        isActiveRoute(item.href, pathname)
+                          ? 'app-nav-item app-nav-item--active'
+                          : 'app-nav-item'
+                      }
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              ))
+            : null}
         </nav>
 
         {/* ── Sidebar account dock ── */}
