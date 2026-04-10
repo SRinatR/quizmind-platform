@@ -50,7 +50,6 @@ import {
   type RemoteConfigPublishRequest,
   type RemoteConfigPreviewRequest,
   type RemoteConfigSnapshot,
-  type QuotaResetJobPayload,
   supportTicketQueuePresets,
   type SupportImpersonationEndRequest,
   type SupportImpersonationEndResult,
@@ -694,16 +693,13 @@ export class PlatformService {
 
   private buildFoundationRemoteConfigVersions(
     activeLayers: RemoteConfigSnapshot['activeLayers'],
-    workspaceId?: string,
   ): RemoteConfigSnapshot['versions'] {
     const actor = getPersona('platform-admin');
-    const workspaceLabel = workspaceId ? `workspace-${workspaceId}` : 'global';
 
     return [
       {
-        id: `foundation-${workspaceLabel}-active`,
-        versionLabel: workspaceId ? `${workspaceId}-active` : 'foundation-default',
-        workspaceId,
+        id: 'foundation-global-active',
+        versionLabel: 'foundation-default',
         isActive: true,
         publishedAt: '2026-03-24T08:00:00.000Z',
         publishedBy: {
@@ -714,9 +710,8 @@ export class PlatformService {
         layers: activeLayers,
       },
       {
-        id: `foundation-${workspaceLabel}-previous`,
-        versionLabel: workspaceId ? `${workspaceId}-previous` : 'foundation-previous',
-        workspaceId,
+        id: 'foundation-global-previous',
+        versionLabel: 'foundation-previous',
         isActive: false,
         publishedAt: '2026-03-23T18:30:00.000Z',
         publishedBy: {
@@ -731,24 +726,8 @@ export class PlatformService {
 
   private resolveFoundationRemoteConfigVersion(versionId: string): RemoteConfigSnapshot['versions'][number] | null {
     const activeLayers = getFoundationOverview().remoteConfigLayers;
-    const globalMatch = this.buildFoundationRemoteConfigVersions(activeLayers).find((version) => version.id === versionId);
 
-    if (globalMatch) {
-      return globalMatch;
-    }
-
-    const workspaceMatch = /^foundation-workspace-(.+)-(active|previous)$/.exec(versionId);
-
-    if (!workspaceMatch) {
-      return null;
-    }
-
-    const workspaceId = workspaceMatch[1];
-
-    return (
-      this.buildFoundationRemoteConfigVersions(activeLayers, workspaceId).find((version) => version.id === versionId) ??
-      null
-    );
+    return this.buildFoundationRemoteConfigVersions(activeLayers).find((version) => version.id === versionId) ?? null;
   }
 
   async listWorkspacesForCurrentSession(session: CurrentSessionSnapshot) {
@@ -914,32 +893,18 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
-
-    if (!workspaceId) {
-      return {
-        accessDecision,
-        exportDecision,
-        quotas: [],
-        installations: [],
-        recentEvents: [],
-      };
-    }
-
-    const [installations, counters, telemetry, activity, aiRequests] = await Promise.all([
-      this.usageRepository.listInstallationsByWorkspaceId(workspaceId),
-      this.usageRepository.listQuotaCountersByWorkspaceId(workspaceId),
-      this.usageRepository.listRecentTelemetryByWorkspaceId(workspaceId),
-      this.usageRepository.listRecentActivityByWorkspaceId(workspaceId),
-      this.usageRepository.listRecentAiRequestsByWorkspaceId(workspaceId),
+    const userId = session.user.id;
+    const [installations, telemetry, activity, aiRequests] = await Promise.all([
+      this.usageRepository.listInstallationsByUserId(userId),
+      this.usageRepository.listRecentTelemetryByUserId(userId),
+      this.usageRepository.listRecentActivityByUserId(userId),
+      this.usageRepository.listRecentAiRequestsByUserId(userId),
     ]);
-    const usageSnapshot: WorkspaceUsageSnapshot = {
+
+    return {
       accessDecision,
       exportDecision,
-      quotas: buildUsageQuotas({
-        counters,
-        seatCount: 1,
-      }),
+      quotas: [],
       installations: mapUsageInstallations(installations),
       recentEvents: buildRecentUsageEvents({
         telemetry,
@@ -947,9 +912,6 @@ export class PlatformService {
         aiRequests,
       }),
     };
-    await this.enqueueQuotaResetsForExpiredUsageQuotas(workspaceId, usageSnapshot);
-
-    return usageSnapshot;
   }
 
   listUsageHistory(
@@ -988,7 +950,7 @@ export class PlatformService {
     }
 
     const exportDecision = canExportUsage(session.principal as SessionPrincipal);
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id);
+    const userId = session.user.id;
 
     const filters = this.normalizeUsageHistoryFilters({
       source: request?.source,
@@ -999,28 +961,28 @@ export class PlatformService {
     });
     const fetchLimit = Math.min(filters.limit * 2, maxUsageHistoryLimit);
     const telemetryPromise =
-      !workspaceId || filters.source === 'activity' || filters.source === 'ai'
+      filters.source === 'activity' || filters.source === 'ai'
         ? Promise.resolve([])
-        : this.usageRepository.listTelemetryHistoryByWorkspaceId({
-            workspaceId,
+        : this.usageRepository.listTelemetryHistoryByUserId({
+            userId,
             limit: fetchLimit,
             ...(filters.eventType ? { eventType: filters.eventType } : {}),
             ...(filters.installationId ? { installationId: filters.installationId } : {}),
           });
     const activityPromise =
-      !workspaceId || filters.source === 'telemetry' || filters.source === 'ai'
+      filters.source === 'telemetry' || filters.source === 'ai'
         ? Promise.resolve([])
-        : this.usageRepository.listActivityHistoryByWorkspaceId({
-            workspaceId,
+        : this.usageRepository.listActivityHistoryByUserId({
+            userId,
             limit: fetchLimit,
             ...(filters.eventType ? { eventType: filters.eventType } : {}),
             ...(filters.actorId ? { actorId: filters.actorId } : {}),
           });
     const aiRequestsPromise =
-      !workspaceId || filters.source === 'telemetry' || filters.source === 'activity'
+      filters.source === 'telemetry' || filters.source === 'activity'
         ? Promise.resolve([])
-        : this.usageRepository.listAiRequestHistoryByWorkspaceId({
-            workspaceId,
+        : this.usageRepository.listAiRequestHistoryByUserId({
+            userId,
             limit: fetchLimit,
             ...(filters.actorId ? { actorId: filters.actorId } : {}),
             ...(filters.installationId ? { installationId: filters.installationId } : {}),
@@ -1084,58 +1046,7 @@ export class PlatformService {
       .slice(0, filters.limit);
   }
 
-  private async enqueueQuotaResetsForExpiredUsageQuotas(workspaceId: string, summary: WorkspaceUsageSnapshot): Promise<void> {
-    const requestedAt = new Date().toISOString();
-    const dispatches: Array<Promise<unknown>> = [];
-
-    for (const quota of summary.quotas) {
-      if (quota.key === 'limit.seats') {
-        continue;
-      }
-
-      const periodStart = new Date(quota.periodStart);
-      const periodEnd = new Date(quota.periodEnd);
-
-      if (!Number.isFinite(periodStart.getTime()) || !Number.isFinite(periodEnd.getTime())) {
-        continue;
-      }
-
-      if (periodEnd.getTime() > Date.now()) {
-        continue;
-      }
-
-      const currentWindowMs = periodEnd.getTime() - periodStart.getTime();
-      const windowDurationMs = currentWindowMs > 0 ? currentWindowMs : 24 * 60 * 60 * 1000;
-      const queuePayload: QuotaResetJobPayload = {
-        workspaceId,
-        key: quota.key,
-        consumed: quota.consumed,
-        periodStart: quota.periodStart,
-        periodEnd: quota.periodEnd,
-        nextPeriodStart: periodEnd.toISOString(),
-        nextPeriodEnd: new Date(periodEnd.getTime() + windowDurationMs).toISOString(),
-        requestedAt,
-      };
-
-      dispatches.push(
-        this.queueDispatchService.dispatch(
-          createQueueDispatchRequest({
-            queue: 'quota-resets',
-            payload: queuePayload,
-          }),
-        ),
-      );
-    }
-
-    if (dispatches.length === 0) {
-      return;
-    }
-
-    await Promise.all(dispatches);
-  }
-
   exportUsage(personaKey?: string, request?: Partial<UsageExportRequest>): UsageExportResult {
-    const workspaceId = request?.workspaceId?.trim();
     const summary = this.getUsage(personaKey);
 
     return this.buildUsageExportResult(summary, request);
@@ -1151,15 +1062,12 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? '';
     const exportResult = this.buildUsageExportResult(
       await this.getUsageForCurrentSession(session),
       request,
-      resolvedWorkspaceId,
     );
     const queuePayload: AuditExportJobPayload = {
       exportType: 'usage',
-      workspaceId: exportResult.workspaceId,
       format: exportResult.format,
       scope: exportResult.scope,
       fileName: exportResult.fileName,
@@ -1847,7 +1755,6 @@ export class PlatformService {
         minimumExtensionVersion: normalized.minimumExtensionVersion ?? null,
         allowRoles: normalized.allowRoles,
         allowUsers: normalized.allowUsers,
-        allowWorkspaces: normalized.allowWorkspaces,
       });
 
       if (!updatedRecord) {
@@ -1867,12 +1774,10 @@ export class PlatformService {
     }
   }
 
-  listRemoteConfig(personaKey?: string, workspaceId?: string): RemoteConfigSnapshot {
+  listRemoteConfig(personaKey?: string): RemoteConfigSnapshot {
     const persona = getPersona(personaKey);
-    const resolvedWorkspaceId = workspaceId ?? '';
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
-      workspaceId: resolvedWorkspaceId,
       userId: persona.user.id,
       activeFlags: persona.principal.featureFlags,
     };
@@ -1882,7 +1787,7 @@ export class PlatformService {
       personaKey: persona.key,
       publishDecision: canPublishRemoteConfig(persona.principal),
       activeLayers,
-      versions: this.buildFoundationRemoteConfigVersions(activeLayers, resolvedWorkspaceId),
+      versions: this.buildFoundationRemoteConfigVersions(activeLayers),
       previewContext,
       preview: previewRemoteConfig({
         layers: activeLayers,
@@ -1894,7 +1799,6 @@ export class PlatformService {
 
   async listRemoteConfigForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<RemoteConfigSnapshot> {
     const accessDecision = canPublishRemoteConfig(session.principal as SessionPrincipal);
 
@@ -1902,15 +1806,13 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const resolvedWorkspaceId = workspaceId?.trim();
     const [activeLayerRecords, recentVersions] = await Promise.all([
-      this.remoteConfigRepository.findActiveLayers(resolvedWorkspaceId),
-      this.remoteConfigRepository.findRecentVersions(resolvedWorkspaceId),
+      this.remoteConfigRepository.findActiveLayers(),
+      this.remoteConfigRepository.findRecentVersions(),
     ]);
     const activeLayers = activeLayerRecords.map(mapRemoteConfigLayerRecordToDefinition);
     const previewContext: RemoteConfigPreviewRequest['context'] = {
       environment: 'development',
-      workspaceId: resolvedWorkspaceId,
       userId: session.user.id,
       activeFlags: session.principal.featureFlags,
     };
@@ -1935,13 +1837,11 @@ export class PlatformService {
       versionLabel: request?.versionLabel ?? `local-${Date.now()}`,
       layers: request?.layers ?? getFoundationOverview().remoteConfigLayers,
       actorId: request?.actorId ?? fallbackActor.user.id,
-      workspaceId: request?.workspaceId,
     };
     const previewRequest: RemoteConfigPreviewRequest = {
       layers: publishRequest.layers,
       context: {
         environment: 'development',
-        workspaceId: publishRequest.workspaceId ?? '',
         userId: fallbackActor.user.id,
         activeFlags: ['beta.remote-config-v2'],
       },
@@ -1967,46 +1867,35 @@ export class PlatformService {
       versionLabel: request?.versionLabel ?? `connected-${Date.now()}`,
       layers: request?.layers ?? getFoundationOverview().remoteConfigLayers,
       actorId: session.user.id,
-      workspaceId: request?.workspaceId,
     };
 
-    try {
-      const persistedVersion = await this.remoteConfigRepository.publishVersion({
-        actorId: publishRequest.actorId,
-        layers: publishRequest.layers,
-        versionLabel: publishRequest.versionLabel,
-        workspaceId: publishRequest.workspaceId,
-      });
-      const previewRequest: RemoteConfigPreviewRequest = {
-        layers: publishRequest.layers,
-        context: {
-          environment: 'development',
-          workspaceId: publishRequest.workspaceId,
-          userId: session.user.id,
-          activeFlags: ['beta.remote-config-v2'],
-        },
-      };
-      const publishResult = publishRemoteConfigVersion(publishRequest, {
-        publishedAt: persistedVersion.createdAt.toISOString(),
-      });
-      await this.queueDispatchService.dispatch(
-        createQueueDispatchRequest({
-          queue: 'config-publish',
-          payload: publishResult.publishResult,
-        }),
-      );
+    const persistedVersion = await this.remoteConfigRepository.publishVersion({
+      actorId: publishRequest.actorId,
+      layers: publishRequest.layers,
+      versionLabel: publishRequest.versionLabel,
+    });
+    const previewRequest: RemoteConfigPreviewRequest = {
+      layers: publishRequest.layers,
+      context: {
+        environment: 'development',
+        userId: session.user.id,
+        activeFlags: ['beta.remote-config-v2'],
+      },
+    };
+    const publishResult = publishRemoteConfigVersion(publishRequest, {
+      publishedAt: persistedVersion.createdAt.toISOString(),
+    });
+    await this.queueDispatchService.dispatch(
+      createQueueDispatchRequest({
+        queue: 'config-publish',
+        payload: publishResult.publishResult,
+      }),
+    );
 
-      return {
-        ...publishResult,
-        preview: previewRemoteConfig(previewRequest),
-      };
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new NotFoundException('Workspace not found for remote config publication.');
-      }
-
-      throw error;
-    }
+    return {
+      ...publishResult,
+      preview: previewRemoteConfig(previewRequest),
+    };
   }
 
   activateRemoteConfigVersion(
@@ -2066,7 +1955,6 @@ export class PlatformService {
     const bootstrapRequest: ExtensionBootstrapRequest = {
       installationId: request?.installationId ?? 'inst_local_browser',
       userId: request?.userId ?? fallbackPersona.user.id,
-      workspaceId: request?.workspaceId ?? '',
       environment: request?.environment ?? 'development',
       handshake: request?.handshake ?? {
         extensionVersion: '1.6.0',
@@ -2087,7 +1975,7 @@ export class PlatformService {
     const [compatibilityRule, featureFlags, remoteConfigLayers] = await Promise.all([
       this.extensionCompatibilityRepository.findLatest(),
       this.featureFlagRepository.findAll(),
-      this.remoteConfigRepository.findActiveLayers(request.workspaceId),
+      this.remoteConfigRepository.findActiveLayers(),
     ]);
 
     return resolveExtensionBootstrap(
@@ -2103,7 +1991,6 @@ export class PlatformService {
   async ingestUsageEvent(event?: Partial<UsageEventPayload>): Promise<UsageEventIngestResult> {
     const usageEvent: UsageEventPayload = {
       installationId: event?.installationId ?? 'inst_local_browser',
-      workspaceId: event?.workspaceId ?? 'ws_alpha',
       eventType: event?.eventType ?? 'extension.quiz_answer_requested',
       occurredAt: event?.occurredAt ?? new Date().toISOString(),
       payload: event?.payload ?? {
@@ -2124,7 +2011,6 @@ export class PlatformService {
       eventType: 'extension.usage_queued',
       actorId: usageEvent.installationId,
       actorType: 'system',
-      workspaceId: usageEvent.workspaceId,
       targetType: 'extension_usage_event',
       targetId: usageEvent.installationId,
       occurredAt: usageEvent.occurredAt,
@@ -2163,7 +2049,6 @@ export class PlatformService {
       ...(normalized.rolloutPercentage === undefined ? {} : { rolloutPercentage: normalized.rolloutPercentage }),
       ...(normalized.allowRoles.length > 0 ? { allowRoles: normalized.allowRoles } : {}),
       ...(normalized.allowUsers.length > 0 ? { allowUsers: normalized.allowUsers } : {}),
-      ...(normalized.allowWorkspaces.length > 0 ? { allowWorkspaces: normalized.allowWorkspaces } : {}),
       ...(normalized.minimumExtensionVersion
         ? { minimumExtensionVersion: normalized.minimumExtensionVersion }
         : {}),
@@ -2877,15 +2762,6 @@ export class PlatformService {
           ...(severity ? { severity } : {}),
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           targetType: record.targetType,
           targetId: record.targetId,
           ...(metadata ? { metadata } : {}),
@@ -2901,15 +2777,6 @@ export class PlatformService {
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           ...(metadata ? { metadata } : {}),
         };
       }),
@@ -2926,15 +2793,6 @@ export class PlatformService {
           severity: record.severity,
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           ...(metadata ? { metadata } : {}),
         };
       }),
@@ -2947,15 +2805,6 @@ export class PlatformService {
           eventType: record.eventType,
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
-          ...(record.workspace
-            ? {
-                workspace: {
-                  id: record.workspace.id,
-                  slug: record.workspace.slug,
-                  name: record.workspace.name,
-                },
-              }
-            : {}),
           ...(metadata ? { metadata } : {}),
         };
       }),
@@ -3326,7 +3175,6 @@ export class PlatformService {
   private buildUsageExportResult(
     summary: WorkspaceUsageSnapshot,
     request?: Partial<UsageExportRequest>,
-    workspaceId = '',
   ): UsageExportResult {
     const format = request?.format === 'csv' ? 'csv' : 'json';
     const scope = request?.scope ?? 'full';
@@ -3349,7 +3197,6 @@ export class PlatformService {
               : summary;
 
       return {
-        workspaceId,
         format,
         scope,
         fileName: `${fileStem}.json`,
@@ -3360,7 +3207,6 @@ export class PlatformService {
     }
 
     return {
-      workspaceId,
       format,
       scope,
       fileName: `${fileStem}.csv`,
@@ -3641,7 +3487,6 @@ export class PlatformService {
         email: supportPersona.user.email,
         displayName: supportPersona.user.displayName,
       },
-      workspaceId: fallbackTicket.workspace?.id,
       previousStatus: fallbackTicket.status,
       nextStatus: normalizedStatus,
       previousAssignee: fallbackTicket.assignedTo
@@ -3839,7 +3684,6 @@ export class PlatformService {
           email: session.user.email,
           displayName: session.user.displayName,
         },
-        workspaceId: existingTicket.workspace?.id,
         previousStatus: existingTicket.status,
         nextStatus: normalizedStatus ?? existingTicket.status,
         previousAssignee: existingTicket.assignedTo
@@ -3883,8 +3727,7 @@ export class PlatformService {
     return startSupportImpersonation({
       supportActorId: request?.supportActorId ?? getPersona('support-admin').user.id,
       targetUserId: request?.targetUserId ?? getPersona('workspace-viewer').user.id,
-      workspaceId: request?.workspaceId ?? 'ws_alpha',
-      reason: request?.reason ?? 'Investigating a workspace access issue in local foundation mode.',
+      reason: request?.reason ?? 'Investigating a user access issue in local foundation mode.',
       supportTicketId: request?.supportTicketId?.trim() || undefined,
       operatorNote: request?.operatorNote?.trim() || undefined,
     });
@@ -3909,8 +3752,7 @@ export class PlatformService {
     const result = startSupportImpersonation({
       supportActorId: session.user.id,
       targetUserId,
-      workspaceId: request?.workspaceId?.trim() || undefined,
-      reason: request?.reason?.trim() || 'Investigating a workspace access issue in connected runtime mode.',
+      reason: request?.reason?.trim() || 'Investigating a user access issue in connected runtime mode.',
       supportTicketId: request?.supportTicketId?.trim() || undefined,
       operatorNote: request?.operatorNote?.trim() || undefined,
     });
@@ -3920,7 +3762,6 @@ export class PlatformService {
         impersonationSessionId: result.result.impersonationSessionId,
         supportActorId: result.result.supportActorId,
         targetUserId: result.result.targetUserId,
-        workspaceId: result.result.workspaceId,
         supportTicketId: request?.supportTicketId?.trim() || undefined,
         reason: result.result.reason,
         operatorNote: request?.operatorNote?.trim() || undefined,
@@ -3930,7 +3771,7 @@ export class PlatformService {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
-        throw new NotFoundException('Support actor, target user, workspace, or support ticket not found for impersonation.');
+        throw new NotFoundException('Support actor, target user, or support ticket not found for impersonation.');
       }
 
       throw error;
@@ -3995,7 +3836,6 @@ export class PlatformService {
       impersonationSessionId: existingSession.id,
       endedById: session.user.id,
       targetUserId: existingSession.targetUser.id,
-      workspaceId: existingSession.workspace?.id,
       reason: existingSession.reason,
       closeReason,
     });

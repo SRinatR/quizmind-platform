@@ -79,8 +79,7 @@ function normalizeIncomingUsageEvent(rawEvent: unknown): Partial<UsageEventPaylo
       key !== 'ts' &&
       key !== 'timestamp' &&
       key !== 'payload' &&
-      key !== 'installationId' &&
-      key !== 'workspaceId',
+      key !== 'installationId',
   );
   const payloadFromEnvelopeMeta = Object.fromEntries(metaPayloadEntries);
   const payload = {
@@ -226,7 +225,6 @@ function normalizeExtensionMessage(entry: unknown, index: number): AiProxyReques
 
 function normalizeExtensionAiRequest(
   request: ExtensionAiRuntimeRequest | undefined,
-  workspaceId: string | undefined,
 ): Partial<AiProxyRequest> {
   if (!Array.isArray(request?.messages) || request?.messages.length === 0) {
     throw new BadRequestException('messages must contain at least one item.');
@@ -242,7 +240,6 @@ function normalizeExtensionAiRequest(
   const messages = request.messages.map((entry, index) => normalizeExtensionMessage(entry, index));
 
   return {
-    workspaceId,
     ...(provider ? { provider } : {}),
     ...(model ? { model } : {}),
     messages,
@@ -395,7 +392,6 @@ export class ExtensionControlController {
     @Headers('authorization') authorization?: string,
   ) {
     const installationSession = await this.requireInstallationSession(authorization);
-    const workspaceId = installationSession.installation.workspaceId;
 
     try {
       const session = buildInstallationRuntimeSession(installationSession);
@@ -420,7 +416,6 @@ export class ExtensionControlController {
       this.logExtensionAiFailure({
         action: 'models',
         installationId: installationSession.installation.installationId,
-        workspaceId,
         input: {
           type,
         },
@@ -456,11 +451,10 @@ export class ExtensionControlController {
 
   private async proxyExtensionAiRuntime(request: ExtensionAiRuntimeRequest | undefined, authorization?: string) {
     const installationSession = await this.requireInstallationSession(authorization);
-    const workspaceId = installationSession.installation.workspaceId;
 
     try {
       const session = buildInstallationRuntimeSession(installationSession);
-      const normalizedRequest = normalizeExtensionAiRequest(request, workspaceId ?? undefined);
+      const normalizedRequest = normalizeExtensionAiRequest(request);
       const proxyResult = await this.aiProxyService.proxyForCurrentSession(session, normalizedRequest);
       const upstreamResponse =
         proxyResult.response && typeof proxyResult.response === 'object'
@@ -491,7 +485,6 @@ export class ExtensionControlController {
       this.logExtensionAiFailure({
         action: 'proxy',
         installationId: installationSession.installation.installationId,
-        workspaceId,
         input: {
           provider: request?.provider,
           model: request?.model,
@@ -507,7 +500,6 @@ export class ExtensionControlController {
   private logExtensionAiFailure(input: {
     action: 'models' | 'proxy';
     installationId: string;
-    workspaceId?: string | null;
     input?: Record<string, unknown>;
     error: unknown;
   }): void {
@@ -522,7 +514,6 @@ export class ExtensionControlController {
         eventType: 'extension.ai_request_failed',
         action: input.action,
         installationId: input.installationId,
-        workspaceId: input.workspaceId ?? null,
         ...(input.input ? { input: input.input } : {}),
         errorMessage: message,
         ...(typeof status === 'number' ? { status } : {}),

@@ -26,7 +26,6 @@ const aiHistoryListSelect = {
 const aiHistoryDetailSelect = {
   ...aiHistoryListSelect,
   userId: true,
-  workspaceId: true,
   installationId: true,
   requestMetadata: true,
 } satisfies Prisma.AiRequestSelect;
@@ -47,7 +46,6 @@ export type AiHistoryDetailRecord = Prisma.AiRequestGetPayload<{
 
 export interface ListHistoryInput {
   userId: string;
-  workspaceId?: string;
   requestType?: string;
   status?: string;
   model?: string;
@@ -85,7 +83,6 @@ export interface AiAnalyticsRow {
 function buildWhere(input: Omit<ListHistoryInput, 'limit' | 'offset'>): Prisma.AiRequestWhereInput {
   return {
     userId: input.userId,
-    ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
     ...(input.requestType ? { requestType: input.requestType } : {}),
     ...(input.status ? { status: input.status } : {}),
     ...(input.model ? { model: input.model } : {}),
@@ -140,7 +137,6 @@ export class AiHistoryRepository {
 
   async getAnalytics(input: {
     userId: string;
-    workspaceId?: string;
     from: Date;
     to: Date;
   }): Promise<{
@@ -156,7 +152,6 @@ export class AiHistoryRepository {
   }> {
     const where: Prisma.AiRequestWhereInput = {
       userId: input.userId,
-      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
       occurredAt: { gte: input.from, lte: input.to },
     };
 

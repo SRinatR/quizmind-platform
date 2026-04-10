@@ -81,7 +81,6 @@ export function mapRemoteConfigVersionRecordToSummary(
   return {
     id: record.id,
     versionLabel: record.versionLabel,
-    workspaceId: record.workspaceId ?? undefined,
     isActive: record.isActive,
     publishedAt: record.createdAt.toISOString(),
     ...(record.publishedBy
@@ -117,7 +116,6 @@ export function publishRemoteConfigVersion(
     appliedLayerCount: request.layers.length,
     publishedAt,
     actorId: request.actorId,
-    workspaceId: request.workspaceId,
   };
 
   return {
@@ -127,7 +125,6 @@ export function publishRemoteConfigVersion(
       eventType: 'remote_config.published',
       actorId: request.actorId,
       actorType: 'user',
-      workspaceId: request.workspaceId,
       targetType: 'remote_config_version',
       targetId: request.versionLabel,
       occurredAt: publishResult.publishedAt,

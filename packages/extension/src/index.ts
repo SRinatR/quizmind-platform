@@ -96,7 +96,6 @@ export function resolveFeatureFlags(
   definitions: FeatureFlagDefinition[],
   context: {
     userId?: string;
-    workspaceId?: string;
     roles?: string[];
     planCode?: string;
     extensionVersion?: string;
@@ -107,12 +106,6 @@ export function resolveFeatureFlags(
     .filter((definition) => {
       if (definition.allowUsers) {
         if (!context.userId || !definition.allowUsers.includes(context.userId)) {
-          return false;
-        }
-      }
-
-      if (definition.allowWorkspaces) {
-        if (!context.workspaceId || !definition.allowWorkspaces.includes(context.workspaceId)) {
           return false;
         }
       }
@@ -188,7 +181,6 @@ export function buildExtensionBootstrap(input: {
   const compatibility = evaluateCompatibility(input.handshake, input.compatibilityPolicy);
   const featureFlags = resolveFeatureFlags(input.flagDefinitions, {
     userId: input.context.userId,
-    workspaceId: input.context.workspaceId,
     roles: input.context.roles,
     planCode: input.context.planCode,
     extensionVersion: input.handshake.extensionVersion,
@@ -209,7 +201,6 @@ export function buildExtensionBootstrap(input: {
 
 export function buildExtensionBootstrapV2(input: {
   installationId: string;
-  workspaceId?: string;
   handshake: CompatibilityHandshake;
   compatibilityPolicy: CompatibilityPolicy;
   flagDefinitions: FeatureFlagDefinition[];
@@ -227,7 +218,6 @@ export function buildExtensionBootstrapV2(input: {
   const compatibility = evaluateCompatibility(input.handshake, input.compatibilityPolicy);
   const featureFlags = resolveFeatureFlags(input.flagDefinitions, {
     userId: input.context.userId,
-    workspaceId: input.context.workspaceId,
     roles: input.context.roles,
     planCode: input.context.planCode,
     extensionVersion: input.handshake.extensionVersion,
@@ -243,7 +233,6 @@ export function buildExtensionBootstrapV2(input: {
 
   return {
     installationId: input.installationId,
-    ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
     compatibility,
     entitlements: [...input.entitlements].sort((left, right) => left.localeCompare(right)),
     featureFlags,

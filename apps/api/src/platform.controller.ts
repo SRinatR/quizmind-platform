@@ -121,7 +121,6 @@ export class PlatformController {
   @Get('admin/installations')
   async listAdminExtensionFleet(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Query('installationId') installationId?: string,
     @Query('compatibility') compatibility?: string,
     @Query('connection') connection?: string,
@@ -130,7 +129,6 @@ export class PlatformController {
     @Headers('authorization') authorization?: string,
   ) {
     const filters: Partial<AdminExtensionFleetFilters> = {
-      ...(workspaceId ? { workspaceId } : {}),
       ...(installationId ? { installationId } : {}),
       ...(compatibility ? { compatibility: compatibility as AdminExtensionFleetFilters['compatibility'] } : {}),
       ...(connection ? { connection: connection as AdminExtensionFleetFilters['connection'] } : {}),
@@ -278,12 +276,11 @@ export class PlatformController {
   @Get('admin/remote-config')
   async listRemoteConfig(
     @Query('persona') persona?: string,
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
-    return ok(await this.platformService.listRemoteConfigForCurrentSession(session, workspaceId));
+    return ok(await this.platformService.listRemoteConfigForCurrentSession(session));
   }
 
   @Post('admin/remote-config/publish')

@@ -12,7 +12,6 @@ import { buildExtensionBootstrapV2, evaluateCompatibility } from '@quizmind/exte
 import { createAuditLogEvent, createLogEvent, createSecurityLogEvent } from '@quizmind/logger';
 import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
 import { createQueueDispatchRequest } from '@quizmind/queue';
-import { buildQuotaHint } from '@quizmind/usage';
 import {
   type CompatibilityHandshake,
   type ExtensionBootstrapPayloadV2,
@@ -35,15 +34,12 @@ import {
   canReadExtensionInstallations,
   canWriteExtensionInstallations,
 } from '../services/access-service';
-import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import {
   defaultCompatibilityPolicy,
   mapExtensionCompatibilityRuleToPolicy,
 } from '../services/extension-bootstrap-service';
 import { mapFeatureFlagRecordToDefinition } from '../services/feature-flags-service';
 import { mapRemoteConfigLayerRecordToDefinition } from '../services/remote-config-service';
-import { buildUsageQuotas } from '../services/usage-service';
-import { UsageRepository } from '../usage/usage.repository';
 import { ExtensionCompatibilityRepository } from './extension-compatibility.repository';
 import { ExtensionEventRepository } from './extension-event.repository';
 import {
@@ -175,12 +171,8 @@ export class ExtensionControlService {
     private readonly remoteConfigRepository: RemoteConfigRepository,
     @Inject(AiProviderPolicyService)
     private readonly aiProviderPolicyService: AiProviderPolicyService,
-    @Inject(UsageRepository)
-    private readonly usageRepository: UsageRepository,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
-    @Inject(WorkspaceRepository)
-    private readonly workspaceRepository: WorkspaceRepository,
   ) {}
 
   async bindInstallationForCurrentSession(
@@ -188,14 +180,12 @@ export class ExtensionControlService {
     request?: Partial<ExtensionInstallationBindRequest>,
   ): Promise<ExtensionInstallationBindResult> {
     const normalizedRequest = this.normalizeBindRequest(request);
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? undefined;
     const occurredAt = new Date();
     const existingInstallation = await this.extensionInstallationRepository.findByInstallationId(
       normalizedRequest.installationId,
     );
     const installation = await this.extensionInstallationRepository.upsertBoundInstallation({
       userId: session.user.id,
-      ...(workspaceId ? { workspaceId } : {}),
       installationId: normalizedRequest.installationId,
       browser: normalizedRequest.handshake.browser,
       extensionVersion: normalizedRequest.handshake.extensionVersion,
@@ -218,7 +208,6 @@ export class ExtensionControlService {
     const result: ExtensionInstallationBindResult = {
       installation: {
         installationId: installation.installationId,
-        ...(installation.workspaceId ? { workspaceId: installation.workspaceId } : {}),
         userId: installation.userId,
         browser: installation.browser as CompatibilityHandshake['browser'],
         extensionVersion: installation.extensionVersion,
@@ -237,7 +226,6 @@ export class ExtensionControlService {
     };
 
     await this.recordLifecycleEventSafely({
-      workspaceId: installation.workspaceId ?? undefined,
       actorId: session.user.id,
       targetType: 'extension_installation',
       targetId: installation.installationId,
@@ -254,7 +242,6 @@ export class ExtensionControlService {
         : 'bound a new extension installation session',
       metadata: {
         installationId: installation.installationId,
-        workspaceId: installation.workspaceId ?? null,
         browser: installation.browser,
         extensionVersion: installation.extensionVersion,
         schemaVersion: installation.schemaVersion,
@@ -262,7 +249,6 @@ export class ExtensionControlService {
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
         refreshAfterSeconds: result.session.refreshAfterSeconds,
         revokedSessionCount,
-        previousWorkspaceId: existingInstallation?.workspaceId ?? null,
         previousUserId: existingInstallation?.userId ?? null,
       },
       domainEventType: existingInstallation
@@ -270,7 +256,6 @@ export class ExtensionControlService {
         : 'extension.installation_bound',
       domainPayload: {
         installationId: installation.installationId,
-        workspaceId: installation.workspaceId ?? null,
         actorId: session.user.id,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
         revokedSessionCount,
@@ -334,7 +319,6 @@ export class ExtensionControlService {
     try {
       installation = await this.extensionInstallationRepository.upsertBoundInstallation({
         userId: installationSession.installation.userId,
-        ...(installationSession.installation.workspaceId ? { workspaceId: installationSession.installation.workspaceId } : {}),
         installationId,
         browser: handshake.browser,
         extensionVersion: handshake.extensionVersion,
@@ -370,9 +354,6 @@ export class ExtensionControlService {
   ): Promise<UsageEventIngestResult> {
     const usageEvent: UsageEventPayload = {
       installationId: installationSession.installation.installationId,
-      ...(installationSession.installation.workspaceId
-        ? { workspaceId: installationSession.installation.workspaceId }
-        : {}),
       eventType: event?.eventType ?? 'extension.quiz_answer_requested',
       occurredAt: event?.occurredAt ?? new Date().toISOString(),
       payload: {
@@ -402,7 +383,6 @@ export class ExtensionControlService {
         usageEvent,
       });
       await this.recordLifecycleEventSafely({
-        workspaceId: usageEvent.workspaceId ?? installationSession.installation.workspaceId ?? undefined,
         actorId: installationSession.installation.userId,
         targetType: 'extension_installation',
         targetId: installationSession.installation.installationId,
@@ -413,14 +393,12 @@ export class ExtensionControlService {
         summary: 'extension usage event queue dispatch failed',
         metadata: {
           installationId: usageEvent.installationId,
-          workspaceId: usageEvent.workspaceId ?? installationSession.installation.workspaceId ?? null,
           sourceEventType: usageEvent.eventType,
           errorMessage,
         },
         domainEventType: 'extension.usage_event_queue_failed',
         domainPayload: {
           installationId: usageEvent.installationId,
-          workspaceId: usageEvent.workspaceId ?? installationSession.installation.workspaceId ?? null,
           sourceEventType: usageEvent.eventType,
           errorMessage,
         },
@@ -438,7 +416,6 @@ export class ExtensionControlService {
       eventType: 'extension.usage_queued',
       actorId: usageEvent.installationId,
       actorType: 'system',
-      workspaceId: usageEvent.workspaceId,
       targetType: 'extension_usage_event',
       targetId: usageEvent.installationId,
       occurredAt: usageEvent.occurredAt,
@@ -479,7 +456,6 @@ export class ExtensionControlService {
   }): ExtensionBootstrapPayloadV2 {
     return buildExtensionBootstrapV2({
       installationId: input.installation.installationId,
-      workspaceId: input.installation.workspaceId ?? undefined,
       handshake: input.handshake,
       compatibilityPolicy: defaultCompatibilityPolicy,
       flagDefinitions: [],
@@ -496,7 +472,6 @@ export class ExtensionControlService {
       }),
       context: {
         environment: input.environment,
-        workspaceId: input.installation.workspaceId ?? undefined,
         userId: input.installation.userId,
         buildId: input.handshake.buildId,
       },
@@ -543,7 +518,6 @@ export class ExtensionControlService {
     const occurredAt = Number.isNaN(parsedOccurredAt.getTime()) ? new Date() : parsedOccurredAt;
 
     await this.recordLifecycleEventSafely({
-      workspaceId: input.installation.workspaceId ?? undefined,
       actorId: input.installation.userId,
       targetType: 'extension_installation',
       targetId: input.installation.installationId,
@@ -555,14 +529,12 @@ export class ExtensionControlService {
       metadata: {
         sourceEventType: input.usageEvent.eventType,
         installationId: input.installation.installationId,
-        workspaceId: input.installation.workspaceId ?? null,
         payload: input.usageEvent.payload,
       },
       domainEventType: mapping.auditEventType,
       domainPayload: {
         sourceEventType: input.usageEvent.eventType,
         installationId: input.installation.installationId,
-        workspaceId: input.installation.workspaceId ?? null,
         payload: input.usageEvent.payload,
       },
       occurredAt,
@@ -649,7 +621,6 @@ export class ExtensionControlService {
     );
 
     await this.recordLifecycleEventSafely({
-      workspaceId: installation.workspaceId ?? undefined,
       actorId: session.user.id,
       targetType: 'extension_installation',
       targetId: installation.installationId,
@@ -660,7 +631,6 @@ export class ExtensionControlService {
       summary: 'disconnected an extension installation and revoked active sessions',
       metadata: {
         installationId: installation.installationId,
-        workspaceId: installation.workspaceId ?? null,
         reason,
         revokedSessionCount,
         requiresReconnect: true,
@@ -668,7 +638,6 @@ export class ExtensionControlService {
       domainEventType: 'extension.installation_disconnected',
       domainPayload: {
         installationId: installation.installationId,
-        workspaceId: installation.workspaceId ?? null,
         actorId: session.user.id,
         reason,
         revokedSessionCount,
@@ -678,7 +647,6 @@ export class ExtensionControlService {
 
     return {
       installationId: installation.installationId,
-      workspaceId: installation.workspaceId ?? undefined,
       revokedSessionCount,
       disconnectedAt: disconnectedAt.toISOString(),
       requiresReconnect: true,
@@ -712,7 +680,6 @@ export class ExtensionControlService {
     const { sessionToken, tokenRecord } = await this.issueInstallationSession(installation, installation.userId);
 
     await this.recordLifecycleEventSafely({
-      workspaceId: installation.workspaceId ?? undefined,
       actorId: session.user.id,
       targetType: 'extension_installation',
       targetId: installation.installationId,
@@ -723,7 +690,6 @@ export class ExtensionControlService {
       summary: 'rotated an extension installation session token',
       metadata: {
         installationId: installation.installationId,
-        workspaceId: installation.workspaceId ?? null,
         reason,
         revokedSessionCount,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
@@ -732,7 +698,6 @@ export class ExtensionControlService {
       domainEventType: 'extension.installation_session_rotated',
       domainPayload: {
         installationId: installation.installationId,
-        workspaceId: installation.workspaceId ?? null,
         actorId: session.user.id,
         reason,
         revokedSessionCount,
@@ -743,7 +708,6 @@ export class ExtensionControlService {
 
     return {
       installationId: installation.installationId,
-      workspaceId: installation.workspaceId ?? undefined,
       revokedSessionCount,
       rotatedAt: rotatedAt.toISOString(),
       session: {
@@ -761,30 +725,15 @@ export class ExtensionControlService {
     issuedAt?: string;
     refreshAfterSeconds: number;
   }): Promise<ExtensionBootstrapPayloadV2> {
-    const [compatibilityRule, featureFlags, remoteConfigLayers, aiAccessPolicy, quotaCounters] = await Promise.all([
+    const [compatibilityRule, featureFlags, remoteConfigLayers, aiAccessPolicy] = await Promise.all([
       this.extensionCompatibilityRepository.findLatest(),
       this.featureFlagRepository.findAll(),
-      this.remoteConfigRepository.findActiveLayers(input.installation.workspaceId ?? undefined),
-      this.aiProviderPolicyService.resolvePolicyForWorkspace(input.installation.workspaceId ?? undefined),
-      input.installation.workspaceId
-        ? this.usageRepository.listQuotaCountersByWorkspaceId(input.installation.workspaceId)
-        : Promise.resolve([]),
+      this.remoteConfigRepository.findActiveLayers(),
+      this.aiProviderPolicyService.resolvePolicyForWorkspace(),
     ]);
-    const quotaHints = buildUsageQuotas({
-      counters: quotaCounters,
-      seatCount: 1,
-    }).map((quota) =>
-      buildQuotaHint({
-        key: quota.key,
-        label: quota.label,
-        consumed: quota.consumed,
-        limit: quota.limit,
-      }),
-    );
 
     return buildExtensionBootstrapV2({
       installationId: input.installation.installationId,
-      workspaceId: input.installation.workspaceId ?? undefined,
       handshake: input.handshake,
       compatibilityPolicy: compatibilityRule
         ? mapExtensionCompatibilityRuleToPolicy(compatibilityRule)
@@ -797,11 +746,10 @@ export class ExtensionControlService {
       flagDefinitions: featureFlags.map(mapFeatureFlagRecordToDefinition),
       remoteConfigLayers: remoteConfigLayers.map(mapRemoteConfigLayerRecordToDefinition),
       entitlements: [],
-      quotaHints,
+      quotaHints: [],
       aiAccessPolicy,
       context: {
         environment: input.environment,
-        workspaceId: input.installation.workspaceId ?? undefined,
         userId: input.installation.userId,
         buildId: input.handshake.buildId,
       },
@@ -835,7 +783,6 @@ export class ExtensionControlService {
 
     return {
       installationId: installation.installationId,
-      ...(installation.workspaceId ? { workspaceId: installation.workspaceId } : {}),
       browser: normalizeBrowser(installation.browser),
       extensionVersion: installation.extensionVersion,
       schemaVersion: installation.schemaVersion,
@@ -856,7 +803,7 @@ export class ExtensionControlService {
 
   private normalizeBindRequest(
     request?: Partial<ExtensionInstallationBindRequest>,
-  ): Omit<ExtensionInstallationBindRequest, 'workspaceId'> {
+  ): ExtensionInstallationBindRequest {
     const installationId = readRequiredString(request?.installationId, 'installationId');
     const environment = readRequiredEnvironment(request?.environment ?? 'production', 'environment');
     const handshake = this.normalizeHandshake(request?.handshake);
@@ -913,7 +860,6 @@ export class ExtensionControlService {
   }
 
   private async recordLifecycleEventSafely(input: {
-    workspaceId?: string;
     actorId?: string;
     targetType: string;
     targetId: string;
@@ -938,7 +884,6 @@ export class ExtensionControlService {
       eventType: input.auditEventType,
       actorId: input.actorId ?? 'system',
       actorType,
-      workspaceId: input.workspaceId,
       targetType: input.targetType,
       targetId: input.targetId,
       occurredAt: occurredAt.toISOString(),
@@ -951,7 +896,6 @@ export class ExtensionControlService {
       eventType: input.securityEventType,
       actorId: input.actorId ?? 'system',
       actorType,
-      workspaceId: input.workspaceId,
       targetType: input.targetType,
       targetId: input.targetId,
       occurredAt: occurredAt.toISOString(),
@@ -962,7 +906,6 @@ export class ExtensionControlService {
 
     try {
       await this.extensionEventRepository.recordLifecycleEvent({
-        workspaceId: input.workspaceId ?? null,
         occurredAt,
         auditLog,
         securityLog,

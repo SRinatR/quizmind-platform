@@ -16,7 +16,6 @@ export function propagateRemoteConfigPublish(
       eventType: 'remote_config.propagated',
       actorId: publishResult.actorId,
       actorType: 'user',
-      workspaceId: publishResult.workspaceId,
       targetType: 'remote_config_version',
       targetId: publishResult.versionLabel,
       occurredAt: publishResult.publishedAt,

@@ -147,7 +147,6 @@ export interface FeatureFlagDefinition {
   rolloutPercentage?: number;
   allowRoles?: Array<SystemRole | WorkspaceRole>;
   allowUsers?: string[];
-  allowWorkspaces?: string[];
   minimumExtensionVersion?: string;
 }
 
@@ -159,7 +158,6 @@ export interface FeatureFlagUpdateRequest {
   rolloutPercentage?: number | null;
   allowRoles?: Array<SystemRole | WorkspaceRole>;
   allowUsers?: string[];
-  allowWorkspaces?: string[];
   minimumExtensionVersion?: string | null;
 }
 
@@ -221,7 +219,6 @@ export interface AuditEvent {
   eventType: string;
   actorId: string;
   actorType: SubjectType;
-  workspaceId?: string;
   targetType: string;
   targetId: string;
   occurredAt: string;
@@ -245,7 +242,6 @@ export interface AccessDecision {
 export interface RemoteConfigContext {
   environment?: string;
   planCode?: string;
-  workspaceId?: string;
   userId?: string;
   extensionVersion?: string;
   buildId?: string;
@@ -416,14 +412,12 @@ export interface WorkspaceSummary {
 }
 
 export interface AdminUserWorkspaceMembership {
-  workspaceId: string;
   workspaceSlug: string;
   workspaceName: string;
   role: WorkspaceRole;
 }
 
 export interface AdminUserWorkspaceMembershipInput {
-  workspaceId: string;
   role: WorkspaceRole;
 }
 
@@ -473,12 +467,6 @@ export interface AdminLogActorSummary {
   displayName?: string;
 }
 
-export interface AdminLogWorkspaceSummary {
-  id: string;
-  slug: string;
-  name: string;
-}
-
 export interface AdminLogFilters {
   stream: AdminLogStreamFilter;
   severity: AdminLogSeverityFilter;
@@ -495,7 +483,6 @@ export interface AdminLogEntry {
   severity?: UsageEventSeverity;
   status?: 'success' | 'failure';
   actor?: AdminLogActorSummary;
-  workspace?: AdminLogWorkspaceSummary;
   targetType?: string;
   targetId?: string;
   metadata?: Record<string, unknown>;
@@ -652,7 +639,6 @@ export interface AdminWebhookRetryResult {
 export interface ExtensionBootstrapRequest {
   installationId: string;
   userId: string;
-  workspaceId?: string;
   environment: string;
   planCode?: string;
   handshake: CompatibilityHandshake;
@@ -705,7 +691,6 @@ export interface AiAccessPolicy {
 export interface AiProviderPolicySnapshot extends AiAccessPolicy {
   scopeType: AiProviderPolicyScopeType;
   scopeKey: string;
-  workspaceId?: string | null;
   updatedById?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -723,7 +708,6 @@ export interface AiProviderPolicyHistoryEntry {
   summary: string;
   scopeType: AiProviderPolicyScopeType;
   scopeKey: string;
-  workspaceId?: string | null;
   actor?: AiProviderPolicyHistoryActor | null;
   occurredAt: string;
   mode?: AiAccessPolicyMode;
@@ -739,7 +723,6 @@ export interface AiProviderPolicyHistoryEntry {
 
 export interface ExtensionInstallationBindingSummary {
   installationId: string;
-  workspaceId?: string;
   userId: string;
   browser: CompatibilityHandshake['browser'];
   extensionVersion: string;
@@ -758,7 +741,6 @@ export interface ExtensionInstallationTokenSession {
 
 export interface ExtensionBootstrapPayloadV2 {
   installationId: string;
-  workspaceId?: string;
   compatibility: CompatibilityResult;
   entitlements: string[];
   featureFlags: string[];
@@ -773,7 +755,6 @@ export interface ExtensionBootstrapPayloadV2 {
 
 export interface ExtensionInstallationBindRequest {
   installationId: string;
-  workspaceId?: string;
   environment: string;
   handshake: CompatibilityHandshake;
 }
@@ -786,7 +767,6 @@ export interface ExtensionInstallationBindResult {
 
 export interface ExtensionInstallationInventoryItem {
   installationId: string;
-  workspaceId?: string;
   browser: CompatibilityHandshake['browser'];
   extensionVersion: string;
   schemaVersion: string;
@@ -814,7 +794,6 @@ export interface ExtensionInstallationDisconnectRequest {
 
 export interface ExtensionInstallationDisconnectResult {
   installationId: string;
-  workspaceId?: string;
   revokedSessionCount: number;
   disconnectedAt: string;
   requiresReconnect: boolean;
@@ -827,7 +806,6 @@ export interface ExtensionInstallationRotateSessionRequest {
 
 export interface ExtensionInstallationRotateSessionResult {
   installationId: string;
-  workspaceId?: string;
   revokedSessionCount: number;
   rotatedAt: string;
   session: ExtensionInstallationTokenSession;
@@ -904,7 +882,6 @@ export interface AdminExtensionFleetSnapshot {
 
 export interface UsageEventPayload {
   installationId: string;
-  workspaceId?: string;
   eventType: string;
   occurredAt: string;
   payload: Record<string, unknown>;
@@ -930,13 +907,11 @@ export interface UsageEventIngestResult {
 }
 
 export interface UsageExportRequest {
-  workspaceId: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
 }
 
 export interface UsageExportResult {
-  workspaceId: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
   fileName: string;
@@ -953,12 +928,10 @@ export interface EmailQueueJobPayload {
   templateKey: EmailQueueTemplateKey;
   variables: Record<string, unknown>;
   requestedAt: string;
-  workspaceId?: string;
   requestedByUserId?: string;
 }
 
 export interface QuotaResetJobPayload {
-  workspaceId: string;
   key: string;
   consumed: number;
   periodStart: string;
@@ -970,7 +943,6 @@ export interface QuotaResetJobPayload {
 
 export interface UsageAuditExportJobPayload {
   exportType: 'usage';
-  workspaceId: string;
   format: UsageExportFormat;
   scope: UsageExportScope;
   fileName: string;
@@ -981,7 +953,6 @@ export interface UsageAuditExportJobPayload {
 
 export interface AdminLogsAuditExportJobPayload {
   exportType: 'admin_logs';
-  workspaceId?: string;
   format: AdminLogExportFormat;
   fileName: string;
   contentType: string;
@@ -1110,7 +1081,6 @@ export interface ProviderCredentialSummary {
   ownerType: CredentialOwnerType;
   ownerId: string;
   userId?: string | null;
-  workspaceId?: string | null;
   label?: string | null;
   keyHint?: string | null;
   validationStatus: CredentialValidationStatus;
@@ -1175,7 +1145,6 @@ export interface AdminProviderGovernanceSnapshot {
 }
 
 export interface AiProviderPolicyUpdateRequest {
-  workspaceId?: string;
   mode?: AiAccessPolicyMode;
   allowPlatformManaged?: boolean;
   allowBringYourOwnKey?: boolean;
@@ -1196,11 +1165,9 @@ export interface AiProviderPolicyUpdateResult {
 }
 
 export interface AiProviderPolicyResetRequest {
-  workspaceId: string;
 }
 
 export interface AiProviderPolicyResetResult {
-  workspaceId: string;
   scopeKey: string;
   resetApplied: boolean;
   policy: AiProviderPolicySnapshot;
@@ -1240,7 +1207,6 @@ export interface ProviderCredentialRevokeResult {
 export interface UserApiKeySummary {
   id: string;
   provider: AiProvider;
-  workspaceId?: string | null;
   label?: string | null;
   keyHint?: string | null;
   validationStatus: CredentialValidationStatus;
@@ -1302,7 +1268,6 @@ export interface AiProxyMessage {
 }
 
 export interface AiProxyRequest {
-  workspaceId?: string;
   provider?: AiProvider;
   model?: string;
   messages: AiProxyMessage[];
@@ -1329,7 +1294,6 @@ export interface ExtensionFileUploadAnswerResult {
 }
 
 export interface AiModelsCatalogPayload {
-  workspaceId: string | undefined;
   providers: ProviderRegistryEntry[];
   models: ProviderModelCatalogEntry[];
   defaultProvider?: AiProvider;
@@ -1355,7 +1319,6 @@ export interface AiProxyQuotaSnapshot {
 
 export interface AiProxyResult {
   requestId: string;
-  workspaceId: string | undefined;
   provider: AiProvider;
   model: string;
   keySource: 'platform' | 'user';
@@ -1369,7 +1332,6 @@ export interface RemoteConfigPublishRequest {
   versionLabel: string;
   layers: RemoteConfigLayer[];
   actorId: string;
-  workspaceId?: string;
 }
 
 export interface RemoteConfigPublishResult {
@@ -1377,13 +1339,11 @@ export interface RemoteConfigPublishResult {
   appliedLayerCount: number;
   publishedAt: string;
   actorId: string;
-  workspaceId?: string;
 }
 
 export interface RemoteConfigVersionSummary {
   id: string;
   versionLabel: string;
-  workspaceId?: string;
   isActive: boolean;
   publishedAt: string;
   publishedBy?: {
@@ -1427,7 +1387,6 @@ export interface RemoteConfigActivateVersionResult {
 export interface SupportImpersonationRequest {
   supportActorId: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   supportTicketId?: string;
   operatorNote?: string;
@@ -1548,7 +1507,6 @@ export interface SupportImpersonationResult {
   impersonationSessionId: string;
   supportActorId: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   createdAt: string;
   supportTicket?: SupportTicketReference;
@@ -1563,7 +1521,6 @@ export interface SupportImpersonationEndRequest {
 export interface SupportImpersonationEndResult {
   impersonationSessionId: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   createdAt: string;
   endedAt: string;
@@ -1588,7 +1545,6 @@ export interface SupportImpersonationSessionSnapshot {
   impersonationSessionId: string;
   supportActor: SupportImpersonationActor;
   targetUser: SupportImpersonationActor;
-  workspace?: SupportImpersonationWorkspace;
   reason: string;
   createdAt: string;
   endedAt?: string | null;

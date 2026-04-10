@@ -13,7 +13,6 @@ export interface PlatformStateStore {
 
 export interface PlatformRuntimeStateSnapshot {
   installationId?: string;
-  workspaceId?: string;
   installationSession?: ExtensionInstallationTokenSession;
   lastBootstrap?: ExtensionBootstrapPayloadV2;
   lastBootstrapFetchedAt?: string;
@@ -55,9 +54,6 @@ function normalizeBufferedUsageEvent(value: unknown): UsageEventPayload | undefi
   );
   const eventType = normalizeTrimmedValue(typeof value.eventType === 'string' ? value.eventType : undefined);
   const occurredAt = normalizeTrimmedValue(typeof value.occurredAt === 'string' ? value.occurredAt : undefined);
-  const workspaceId = normalizeTrimmedValue(
-    typeof value.workspaceId === 'string' ? value.workspaceId : undefined,
-  );
   const payload = isRecord(value.payload) ? (value.payload as Record<string, unknown>) : undefined;
 
   if (!installationId || !eventType || !occurredAt || !payload) {
@@ -66,7 +62,6 @@ function normalizeBufferedUsageEvent(value: unknown): UsageEventPayload | undefi
 
   return {
     installationId,
-    ...(workspaceId ? { workspaceId } : {}),
     eventType,
     occurredAt,
     payload,
@@ -140,8 +135,6 @@ export function createWebStorageStateStore(
 export class PlatformStateManager {
   private readonly installationIdKey: string;
 
-  private readonly workspaceIdKey: string;
-
   private readonly installationSessionKey: string;
 
   private readonly bootstrapCacheKey: string;
@@ -157,7 +150,6 @@ export class PlatformStateManager {
     const normalizedNamespace = namespace.trim() || 'quizmind.platform';
 
     this.installationIdKey = `${normalizedNamespace}.installation_id`;
-    this.workspaceIdKey = `${normalizedNamespace}.workspace_id`;
     this.installationSessionKey = `${normalizedNamespace}.installation_session`;
     this.bootstrapCacheKey = `${normalizedNamespace}.bootstrap_cache`;
     this.bootstrapFetchedAtKey = `${normalizedNamespace}.bootstrap_fetched_at`;
@@ -184,21 +176,6 @@ export class PlatformStateManager {
     await this.store.setItem(this.installationIdKey, generatedInstallationId);
 
     return generatedInstallationId;
-  }
-
-  async setWorkspaceId(workspaceId?: string): Promise<void> {
-    const normalizedWorkspaceId = normalizeTrimmedValue(workspaceId ?? null);
-
-    if (!normalizedWorkspaceId) {
-      await this.store.removeItem(this.workspaceIdKey);
-      return;
-    }
-
-    await this.store.setItem(this.workspaceIdKey, normalizedWorkspaceId);
-  }
-
-  async getWorkspaceId(): Promise<string | undefined> {
-    return normalizeTrimmedValue(await this.store.getItem(this.workspaceIdKey));
   }
 
   async saveInstallationSession(session: ExtensionInstallationTokenSession): Promise<void> {
@@ -281,7 +258,6 @@ export class PlatformStateManager {
   }
 
   async saveBindResult(result: ExtensionInstallationBindResult): Promise<void> {
-    await this.setWorkspaceId(result.installation.workspaceId);
     await this.saveInstallationSession(result.session);
     await this.saveBootstrapCache(result.bootstrap, result.bootstrap.issuedAt);
   }
@@ -290,7 +266,6 @@ export class PlatformStateManager {
     await this.clearInstallationSession();
     await this.clearBootstrapCache();
     await this.clearBufferedEvents();
-    await this.setWorkspaceId(undefined);
 
     if (!options?.keepInstallationId) {
       await this.store.removeItem(this.installationIdKey);
@@ -299,13 +274,11 @@ export class PlatformStateManager {
 
   async getSnapshot(): Promise<PlatformRuntimeStateSnapshot> {
     const installationId = await this.getInstallationId();
-    const workspaceId = await this.getWorkspaceId();
     const installationSession = await this.getInstallationSession();
     const bootstrapCache = await this.getBootstrapCache();
 
     return {
       ...(installationId ? { installationId } : {}),
-      ...(workspaceId ? { workspaceId } : {}),
       ...(installationSession ? { installationSession } : {}),
       ...(bootstrapCache?.payload ? { lastBootstrap: bootstrapCache.payload } : {}),
       ...(bootstrapCache?.fetchedAt ? { lastBootstrapFetchedAt: bootstrapCache.fetchedAt } : {}),

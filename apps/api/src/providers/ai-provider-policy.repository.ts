@@ -8,7 +8,6 @@ const aiProviderPolicySelect = {
   id: true,
   scopeKey: true,
   scopeType: true,
-  workspaceId: true,
   mode: true,
   allowPlatformManaged: true,
   allowBringYourOwnKey: true,
@@ -28,7 +27,6 @@ const aiProviderPolicySelect = {
 
 const aiProviderPolicyHistorySelect = {
   id: true,
-  workspaceId: true,
   actorId: true,
   action: true,
   targetId: true,
@@ -54,7 +52,6 @@ export type AiProviderPolicyHistoryActorRecord = Prisma.UserGetPayload<{
   select: typeof aiProviderPolicyHistoryActorSelect;
 }>;
 interface AiProviderPolicyLogInput {
-  workspaceId?: string | null;
   occurredAt: Date;
   auditLog: StructuredLogEvent;
   securityLog: StructuredLogEvent;
@@ -65,7 +62,6 @@ interface AiProviderPolicyLogInput {
 interface UpsertAiProviderPolicyInput extends AiProviderPolicyLogInput {
   scopeKey: string;
   scopeType: 'global' | 'workspace';
-  workspaceId?: string | null;
   mode: 'platform_only' | 'user_key_optional' | 'user_key_required' | 'admin_approved_user_key' | 'enterprise_managed';
   allowPlatformManaged: boolean;
   allowBringYourOwnKey: boolean;
@@ -79,10 +75,6 @@ interface UpsertAiProviderPolicyInput extends AiProviderPolicyLogInput {
   defaultModel?: string | null;
   reason?: string | null;
   updatedById?: string | null;
-}
-
-interface DeleteWorkspaceOverrideInput extends AiProviderPolicyLogInput {
-  scopeKey: string;
 }
 
 function buildMetadataJson(event: StructuredLogEvent): Prisma.InputJsonValue {
@@ -112,15 +104,6 @@ export class AiProviderPolicyRepository {
     return this.prisma.aiProviderPolicy.findUnique({
       where: {
         scopeKey: 'global',
-      },
-      select: aiProviderPolicySelect,
-    });
-  }
-
-  findByWorkspaceId(workspaceId: string): Promise<AiProviderPolicyRecord | null> {
-    return this.prisma.aiProviderPolicy.findUnique({
-      where: {
-        scopeKey: `workspace:${workspaceId}`,
       },
       select: aiProviderPolicySelect,
     });
@@ -181,7 +164,7 @@ export class AiProviderPolicyRepository {
         create: {
           scopeKey: input.scopeKey,
           scopeType: input.scopeType,
-          workspaceId: input.workspaceId ?? null,
+
           mode: input.mode,
           allowPlatformManaged: input.allowPlatformManaged,
           allowBringYourOwnKey: input.allowBringYourOwnKey,
@@ -216,7 +199,7 @@ export class AiProviderPolicyRepository {
 
       await transaction.auditLog.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -228,7 +211,7 @@ export class AiProviderPolicyRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -239,7 +222,7 @@ export class AiProviderPolicyRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
+
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
@@ -247,61 +230,6 @@ export class AiProviderPolicyRepository {
       });
 
       return record;
-    });
-  }
-
-  async deleteWorkspaceOverrideWithLogs(input: DeleteWorkspaceOverrideInput): Promise<AiProviderPolicyRecord | null> {
-    return this.prisma.$transaction(async (transaction) => {
-      const existing = await transaction.aiProviderPolicy.findUnique({
-        where: {
-          scopeKey: input.scopeKey,
-        },
-        select: aiProviderPolicySelect,
-      });
-
-      if (!existing) {
-        return null;
-      }
-
-      await transaction.aiProviderPolicy.delete({
-        where: {
-          scopeKey: input.scopeKey,
-        },
-      });
-
-      await transaction.auditLog.create({
-        data: {
-          workspaceId: input.workspaceId ?? null,
-          actorId: input.auditLog.actorId,
-          action: input.auditLog.eventType,
-          targetType: input.auditLog.targetType,
-          targetId: input.auditLog.targetId,
-          metadataJson: buildMetadataJson(input.auditLog),
-          createdAt: input.occurredAt,
-        },
-      });
-
-      await transaction.securityEvent.create({
-        data: {
-          workspaceId: input.workspaceId ?? null,
-          actorId: input.securityLog.actorId,
-          eventType: input.securityLog.eventType,
-          severity: input.securityLog.severity,
-          metadataJson: buildMetadataJson(input.securityLog),
-          createdAt: input.occurredAt,
-        },
-      });
-
-      await transaction.domainEvent.create({
-        data: {
-          workspaceId: input.workspaceId ?? null,
-          eventType: input.domainEventType,
-          payloadJson: input.domainPayload,
-          createdAt: input.occurredAt,
-        },
-      });
-
-      return existing;
     });
   }
 }

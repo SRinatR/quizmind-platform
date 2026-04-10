@@ -5,7 +5,6 @@ import { type StructuredLogEvent } from '@quizmind/logger';
 import { PrismaService } from '../database/prisma.service';
 
 interface RecordExtensionLifecycleEventInput {
-  workspaceId?: string | null;
   occurredAt: Date;
   auditLog: StructuredLogEvent;
   securityLog: StructuredLogEvent;
@@ -30,7 +29,6 @@ export class ExtensionEventRepository {
     await this.prisma.$transaction(async (transaction) => {
       await transaction.auditLog.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
           actorId: input.auditLog.actorId || null,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
@@ -42,7 +40,6 @@ export class ExtensionEventRepository {
 
       await transaction.securityEvent.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
           actorId: input.securityLog.actorId || null,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
@@ -53,7 +50,6 @@ export class ExtensionEventRepository {
 
       await transaction.domainEvent.create({
         data: {
-          workspaceId: input.workspaceId ?? null,
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,

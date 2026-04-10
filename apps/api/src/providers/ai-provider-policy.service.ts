@@ -79,11 +79,10 @@ function readJsonBoolean(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined;
 }
 
-function createVirtualPolicy(input?: { workspaceId?: string }): AiProviderPolicySnapshot {
+function createVirtualPolicy(): AiProviderPolicySnapshot {
   return {
     scopeType: 'global',
     scopeKey: 'global',
-    workspaceId: null,
     updatedById: null,
     createdAt: new Date(0).toISOString(),
     updatedAt: new Date(0).toISOString(),
@@ -92,9 +91,7 @@ function createVirtualPolicy(input?: { workspaceId?: string }): AiProviderPolicy
       providers: ['openrouter'],
       defaultProvider: 'openrouter',
       defaultModel: 'openrouter/auto',
-      reason: input?.workspaceId
-        ? 'No workspace override exists yet, so the global platform-only policy applies.'
-        : 'No persisted AI provider policy exists yet, so the global platform-only default applies.',
+      reason: 'No persisted AI provider policy exists yet, so the global platform-only default applies.',
     }),
   };
 }
@@ -106,33 +103,22 @@ export class AiProviderPolicyService {
     private readonly aiProviderPolicyRepository: AiProviderPolicyRepository,
   ) {}
 
-  async resolvePolicyForWorkspace(workspaceId?: string): Promise<AiProviderPolicySnapshot> {
-    if (workspaceId) {
-      const workspacePolicy = await this.aiProviderPolicyRepository.findByWorkspaceId(workspaceId);
-
-      if (workspacePolicy) {
-        return this.mapRecordToSnapshot(workspacePolicy);
-      }
-    }
-
+  async resolvePolicyForWorkspace(): Promise<AiProviderPolicySnapshot> {
     const globalPolicy = await this.aiProviderPolicyRepository.findGlobal();
 
     if (globalPolicy) {
       return this.mapRecordToSnapshot(globalPolicy);
     }
 
-    return createVirtualPolicy({
-      workspaceId,
-    });
+    return createVirtualPolicy();
   }
 
   async listHistoryForCurrentSession(
     session: CurrentSessionSnapshot,
-    workspaceId?: string,
   ): Promise<AiProviderPolicyHistoryEntry[]> {
     this.assertCanManageAiProviders(session);
 
-    const scopeKeys = workspaceId ? [`workspace:${workspaceId}`, 'global'] : ['global'];
+    const scopeKeys = ['global'];
     const { records, actors } = await this.aiProviderPolicyRepository.listHistory(scopeKeys);
 
     return records.map((record) => this.mapHistoryRecordToEntry(record, actors));
@@ -144,9 +130,7 @@ export class AiProviderPolicyService {
   ): Promise<AiProviderPolicyUpdateResult> {
     this.assertCanManageAiProviders(session);
 
-    const workspaceId = request?.workspaceId?.trim() || undefined;
-
-    const basePolicy = await this.resolvePolicyForWorkspace(workspaceId);
+    const basePolicy = await this.resolvePolicyForWorkspace();
     const mode = normalizeMode(request?.mode, basePolicy.mode);
     const providers = normalizeProviderList(request?.providers, basePolicy.providers);
 
@@ -177,13 +161,12 @@ export class AiProviderPolicyService {
     const allowedModelTags = normalizeStringList(request?.allowedModelTags, basePolicy.allowedModelTags ?? []);
     const reason =
       request?.reason === null ? undefined : request?.reason?.trim() || basePolicy.reason || undefined;
-    const scopeType = workspaceId ? 'workspace' : 'global';
-    const scopeKey = workspaceId ? `workspace:${workspaceId}` : 'global';
+    const scopeType = 'global';
+    const scopeKey = 'global';
     const occurredAt = new Date();
     const metadata = {
       scopeKey,
       scopeType,
-      workspaceId: workspaceId ?? null,
       mode,
       allowPlatformManaged,
       allowBringYourOwnKey,
@@ -203,7 +186,6 @@ export class AiProviderPolicyService {
       eventType: 'ai_provider_policy.updated',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId,
       targetType: 'ai_provider_policy',
       targetId: scopeKey,
       occurredAt: occurredAt.toISOString(),
@@ -217,7 +199,6 @@ export class AiProviderPolicyService {
       eventType: 'ai_provider_policy.changed',
       actorId: session.user.id,
       actorType: 'user',
-      workspaceId,
       targetType: 'ai_provider_policy',
       targetId: scopeKey,
       occurredAt: occurredAt.toISOString(),
@@ -228,7 +209,6 @@ export class AiProviderPolicyService {
     const record = await this.aiProviderPolicyRepository.upsertWithLogs({
       scopeKey,
       scopeType,
-      workspaceId: workspaceId ?? null,
       mode,
       allowPlatformManaged,
       allowBringYourOwnKey,
@@ -257,78 +237,15 @@ export class AiProviderPolicyService {
 
   async resetPolicyForCurrentSession(
     session: CurrentSessionSnapshot,
-    request?: Partial<AiProviderPolicyResetRequest>,
+    _request?: Partial<AiProviderPolicyResetRequest>,
   ): Promise<AiProviderPolicyResetResult> {
     this.assertCanManageAiProviders(session);
 
-    const workspaceId = request?.workspaceId?.trim();
-
-    if (!workspaceId) {
-      throw new BadRequestException('workspaceId is required to reset a workspace AI provider policy.');
-    }
-
-    const existing = await this.aiProviderPolicyRepository.findByWorkspaceId(workspaceId);
-    const occurredAt = new Date();
-
-    if (existing) {
-      const currentPolicy = this.mapRecordToSnapshot(existing);
-      const metadata = {
-        scopeKey: currentPolicy.scopeKey,
-        scopeType: currentPolicy.scopeType,
-        workspaceId: workspaceId,
-        previousMode: currentPolicy.mode,
-        previousProviders: currentPolicy.providers,
-        previousDefaultProvider: currentPolicy.defaultProvider ?? null,
-        previousDefaultModel: currentPolicy.defaultModel ?? null,
-        previousReason: currentPolicy.reason ?? null,
-        resetToScope: 'global',
-      };
-      const auditLog = createLogEvent({
-        category: 'audit',
-        eventId: randomUUID(),
-        eventType: 'ai_provider_policy.reset',
-        actorId: session.user.id,
-        actorType: 'user',
-        workspaceId: workspaceId,
-        targetType: 'ai_provider_policy',
-        targetId: currentPolicy.scopeKey,
-        occurredAt: occurredAt.toISOString(),
-        severity: 'warn',
-        status: 'success',
-        metadata,
-      });
-      const securityLog = createLogEvent({
-        category: 'security',
-        eventId: randomUUID(),
-        eventType: 'ai_provider_policy.override_removed',
-        actorId: session.user.id,
-        actorType: 'user',
-        workspaceId: workspaceId,
-        targetType: 'ai_provider_policy',
-        targetId: currentPolicy.scopeKey,
-        occurredAt: occurredAt.toISOString(),
-        severity: 'warn',
-        status: 'success',
-        metadata,
-      });
-
-      await this.aiProviderPolicyRepository.deleteWorkspaceOverrideWithLogs({
-        scopeKey: currentPolicy.scopeKey,
-        workspaceId: workspaceId,
-        occurredAt,
-        auditLog,
-        securityLog,
-        domainEventType: 'ai_provider_policy.reset',
-        domainPayload: metadata as Prisma.InputJsonValue,
-      });
-    }
-
     return {
-      workspaceId: workspaceId,
-      scopeKey: `workspace:${workspaceId}`,
-      resetApplied: Boolean(existing),
-      policy: await this.resolvePolicyForWorkspace(workspaceId),
-      resetAt: occurredAt.toISOString(),
+      scopeKey: 'global',
+      resetApplied: false,
+      policy: await this.resolvePolicyForWorkspace(),
+      resetAt: new Date().toISOString(),
     };
   }
 
@@ -336,7 +253,6 @@ export class AiProviderPolicyService {
     return {
       scopeType: record.scopeType,
       scopeKey: record.scopeKey,
-      workspaceId: record.workspaceId,
       updatedById: record.updatedById,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
@@ -400,7 +316,6 @@ export class AiProviderPolicyService {
       ),
       scopeType,
       scopeKey,
-      workspaceId: readJsonString(metadata?.workspaceId) ?? record.workspaceId ?? undefined,
       actor: actor
         ? {
             id: actor.id,

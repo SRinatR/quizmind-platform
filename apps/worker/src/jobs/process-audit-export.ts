@@ -14,7 +14,6 @@ export function processAuditExportJob(payload: AuditExportJobPayload): AuditExpo
       eventType: 'audit.export_processed',
       actorId: payload.requestedByUserId,
       actorType: 'user',
-      workspaceId: payload.workspaceId,
       targetType: payload.exportType === 'usage' ? 'usage_export' : 'audit_log_export',
       targetId: payload.fileName,
       occurredAt: payload.exportedAt,

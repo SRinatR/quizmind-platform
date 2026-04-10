@@ -55,13 +55,11 @@ export class ProviderCredentialController {
 
   @Get('admin/providers')
   async getAdminGovernance(
-    @Query('workspaceId') workspaceId?: string,
     @Headers('authorization') authorization?: string,
   ) {
     return ok(
       await this.providerCredentialService.listAdminProviderGovernanceForCurrentSession(
         await this.requireConnectedSession(authorization),
-        workspaceId,
       ),
     );
   }

@@ -448,7 +448,6 @@ export class AuthService {
     templateKey: EmailQueueJobPayload['templateKey'];
     variables: Record<string, unknown>;
     fallbackTemplate: EmailTemplate<any>;
-    workspaceId?: string;
     requestedByUserId?: string;
   }): Promise<{ provider: string; messageId: string; acceptedAt: string }> {
     const queuePayload: EmailQueueJobPayload = {
@@ -456,7 +455,6 @@ export class AuthService {
       templateKey: input.templateKey,
       variables: input.variables,
       requestedAt: new Date().toISOString(),
-      ...(input.workspaceId ? { workspaceId: input.workspaceId } : {}),
       ...(input.requestedByUserId ? { requestedByUserId: input.requestedByUserId } : {}),
     };
 

@@ -233,7 +233,6 @@ export function createSupportTicketWorkflowAuditLog(input: {
   supportTicketId: string;
   ticketSubject: string;
   actor: TimelineActorLike;
-  workspaceId?: string;
   previousStatus: string;
   nextStatus: string;
   previousAssignee: TimelineActorLike | null;
@@ -257,7 +256,6 @@ export function createSupportTicketWorkflowAuditLog(input: {
     eventType: 'support.ticket_workflow_updated',
     actorId: input.actor.id,
     actorType: 'user',
-    workspaceId: input.workspaceId,
     targetType: 'support_ticket',
     targetId: input.supportTicketId,
     occurredAt,
@@ -330,7 +328,6 @@ export function startSupportImpersonation(
     impersonationSessionId: `${request.supportActorId}:${request.targetUserId}:${createdAt}`,
     supportActorId: request.supportActorId,
     targetUserId: request.targetUserId,
-    workspaceId: request.workspaceId,
     reason: request.reason,
     createdAt,
     ...(request.supportTicketId
@@ -352,7 +349,6 @@ export function startSupportImpersonation(
       eventType: 'support.impersonation_started',
       actorId: request.supportActorId,
       actorType: 'user',
-      workspaceId: request.workspaceId,
       targetType: 'user',
       targetId: request.targetUserId,
       occurredAt: createdAt,
@@ -369,7 +365,6 @@ export function startSupportImpersonation(
       eventType: 'security.impersonation_started',
       actorId: request.supportActorId,
       actorType: 'user',
-      workspaceId: request.workspaceId,
       targetType: 'user',
       targetId: request.targetUserId,
       occurredAt: createdAt,
@@ -388,7 +383,6 @@ export function endSupportImpersonation(input: {
   impersonationSessionId: string;
   endedById: string;
   targetUserId: string;
-  workspaceId?: string;
   reason: string;
   closeReason?: string;
 }): {
@@ -405,7 +399,6 @@ export function endSupportImpersonation(input: {
       eventType: 'support.impersonation_ended',
       actorId: input.endedById,
       actorType: 'user',
-      workspaceId: input.workspaceId,
       targetType: 'user',
       targetId: input.targetUserId,
       occurredAt: endedAt,
@@ -422,7 +415,6 @@ export function endSupportImpersonation(input: {
       eventType: 'security.impersonation_ended',
       actorId: input.endedById,
       actorType: 'user',
-      workspaceId: input.workspaceId,
       targetType: 'user',
       targetId: input.targetUserId,
       occurredAt: endedAt,
@@ -452,15 +444,6 @@ export function mapSupportImpersonationRecordToSnapshot(
       email: record.targetUser.email,
       ...(record.targetUser.displayName ? { displayName: record.targetUser.displayName } : {}),
     },
-    ...(record.workspace
-      ? {
-          workspace: {
-            id: record.workspace.id,
-            slug: record.workspace.slug,
-            name: record.workspace.name,
-          },
-        }
-      : {}),
     ...(record.supportTicket
       ? {
           supportTicket: {
@@ -484,7 +467,6 @@ export function mapSupportImpersonationRecordToEndResult(
   return {
     impersonationSessionId: record.id,
     targetUserId: record.targetUser.id,
-    ...(record.workspace ? { workspaceId: record.workspace.id } : {}),
     reason: record.reason,
     createdAt: record.createdAt.toISOString(),
     endedAt: (record.endedAt ?? record.createdAt).toISOString(),

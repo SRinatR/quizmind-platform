@@ -12,7 +12,6 @@ import { parseBearerToken } from '@quizmind/auth';
 import { type AiHistoryListFilters, type AiRequestStatus, type AiRequestType, type ApiSuccess } from '@quizmind/contracts';
 
 import { AuthService } from '../auth/auth.service';
-import { WorkspaceRepository } from '../workspaces/workspace.repository';
 import { AiHistoryService } from './ai-history.service';
 
 function ok<T>(data: T): ApiSuccess<T> {
@@ -35,8 +34,6 @@ export class AiHistoryController {
   constructor(
     @Inject(AuthService)
     private readonly authService: AuthService,
-    @Inject(WorkspaceRepository)
-    private readonly workspaceRepository: WorkspaceRepository,
     @Inject(AiHistoryService)
     private readonly aiHistoryService: AiHistoryService,
   ) {}
@@ -58,7 +55,6 @@ export class AiHistoryController {
     @Query('to') toQ?: string,
   ) {
     const session = await this.requireSession(authorization);
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? undefined;
     const filters: Partial<AiHistoryListFilters> = {
       limit: parsePositiveInt(limitQ, 25),
       offset: parsePositiveInt(offsetQ, 0) - 1 < 0 ? 0 : parsePositiveInt(offsetQ, 0),
@@ -70,7 +66,7 @@ export class AiHistoryController {
       to: parseOptionalString(toQ),
     };
 
-    const result = await this.aiHistoryService.listHistory(session.user.id, workspaceId, filters);
+    const result = await this.aiHistoryService.listHistory(session.user.id, filters);
     return ok(result);
   }
 
@@ -104,11 +100,10 @@ export class AiHistoryController {
     @Query('to') toQ?: string,
   ) {
     const session = await this.requireSession(authorization);
-    const workspaceId = await this.workspaceRepository.resolveUserWorkspaceId(session.user.id) ?? undefined;
     const to = toQ ? new Date(toQ) : new Date();
     const from = fromQ ? new Date(fromQ) : new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const analytics = await this.aiHistoryService.getAnalytics(session.user.id, workspaceId, from, to);
+    const analytics = await this.aiHistoryService.getAnalytics(session.user.id, from, to);
     return ok(analytics);
   }
 
