@@ -469,7 +469,7 @@ export function SupportTicketsClient({
             </label>
             <label className="filter-field">
               <span className="filter-field__label">Search</span>
-              <input defaultValue={filters.search ?? ''} disabled={isNavigating} name="ticketSearch" placeholder="subject, requester, workspace" type="text" />
+              <input defaultValue={filters.search ?? ''} disabled={isNavigating} name="ticketSearch" placeholder="subject, requester, keyword" type="text" />
             </label>
             <label className="filter-field">
               <span className="filter-field__label">Visible tickets</span>

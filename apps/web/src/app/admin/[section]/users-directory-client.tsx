@@ -430,7 +430,7 @@ export function UsersDirectoryClient({
       ) : null}
 
       {directoryItems.length > 0 ? (
-        <div style={{ display: 'grid', gap: '12px' }}>
+        <div style={{ display: 'grid', gap: '8px' }}>
           {directoryItems.map((user) => {
             const canStartForUser =
               isConnectedSession &&
@@ -441,29 +441,24 @@ export function UsersDirectoryClient({
             const roleDraft = getSystemRoleDraft(user);
 
             return (
-              <div className="panel" style={{ padding: '16px 20px' }} key={user.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <div className="panel" style={{ padding: '10px 16px' }} key={user.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: '4px' }}>
                   <div>
                     <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>
                       {user.displayName || user.email}
                     </p>
                     {user.displayName ? (
-                      <p className="list-muted" style={{ margin: '2px 0 0', fontSize: '0.84rem' }}>{user.email}</p>
+                      <p className="list-muted" style={{ margin: '1px 0 0', fontSize: '0.82rem' }}>{user.email}</p>
                     ) : null}
                   </div>
                   <div className="tag-row">
                     <span className={user.emailVerifiedAt ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
-                      {user.emailVerifiedAt ? 'email verified' : 'email pending'}
+                      {user.emailVerifiedAt ? 'verified' : 'unverified'}
                     </span>
                     {user.suspendedAt ? <span className="tag-soft tag-soft--orange">suspended</span> : null}
-                    {user.id === currentUserId ? <span className="tag-soft tag-soft--gray">current session</span> : null}
-                    {!user.lastLoginAt ? <span className="tag-soft tag-soft--gray">no login recorded</span> : null}
-                  </div>
-                </div>
-                <div className="kv-list">
-                  <div className="kv-row">
-                    <span className="kv-row__key">Roles</span>
-                    <span className="kv-row__value">{user.systemRoles.length > 0 ? user.systemRoles.join(', ') : 'no system roles'}</span>
+                    {user.systemRoles.length > 0 ? user.systemRoles.map((r) => <span key={r} className="tag-soft">{r}</span>) : <span className="tag-soft tag-soft--gray">no roles</span>}
+                    {user.id === currentUserId ? <span className="tag-soft tag-soft--gray">you</span> : null}
+                    {!user.lastLoginAt ? <span className="tag-soft tag-soft--gray">never logged in</span> : null}
                   </div>
                 </div>
 

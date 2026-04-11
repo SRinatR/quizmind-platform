@@ -158,8 +158,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             {supportImpersonationSessions?.accessDecision.allowed ? (
               <Link href="/admin/access-sessions" className="stat-card section-card--link" style={{ display: 'block' }}>
-                <p className="stat-value">{supportImpersonationSessions.items.length}</p>
-                <p className="stat-label">Support sessions</p>
+                <p className="stat-value">{supportImpersonationSessions.items.filter((s) => !s.endedAt).length}</p>
+                <p className="stat-label">Active sessions</p>
               </Link>
             ) : null}
 
@@ -283,30 +283,34 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     View security
                   </Link>
                 </div>
-                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Security incidents</h3>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Security signals</h3>
                 <div className="list-stack">
                   {adminSecurity.findings.suspiciousAuthFailures > 0 ? (
                     <div className="list-item">
                       <strong>Auth failures</strong>
                       <p>{adminSecurity.findings.suspiciousAuthFailures} suspicious login failure{adminSecurity.findings.suspiciousAuthFailures !== 1 ? 's' : ''}</p>
+                      <p className="list-muted" style={{ fontSize: '0.8rem' }}>Possible credential stuffing or brute-force. Review the security event log.</p>
                     </div>
                   ) : null}
                   {adminSecurity.findings.extensionReconnectOutstanding > 0 ? (
                     <div className="list-item">
                       <strong>Unresolved reconnects</strong>
                       <p>{adminSecurity.findings.extensionReconnectOutstanding} installation{adminSecurity.findings.extensionReconnectOutstanding !== 1 ? 's' : ''} pending reconnect</p>
+                      <p className="list-muted" style={{ fontSize: '0.8rem' }}>Installations on stale tokens. Ask affected users to reconnect, or rotate from Fleet.</p>
                     </div>
                   ) : null}
                   {adminSecurity.findings.extensionRuntimeErrors > 0 ? (
                     <div className="list-item">
                       <strong>Runtime errors</strong>
                       <p>{adminSecurity.findings.extensionRuntimeErrors} extension runtime error{adminSecurity.findings.extensionRuntimeErrors !== 1 ? 's' : ''}</p>
+                      <p className="list-muted" style={{ fontSize: '0.8rem' }}>May reduce capture reliability. Check the Events log for affected installations.</p>
                     </div>
                   ) : null}
                   {adminSecurity.findings.extensionBootstrapRefreshFailures > 0 ? (
                     <div className="list-item">
                       <strong>Bootstrap failures</strong>
                       <p>{adminSecurity.findings.extensionBootstrapRefreshFailures} refresh failure{adminSecurity.findings.extensionBootstrapRefreshFailures !== 1 ? 's' : ''}</p>
+                      <p className="list-muted" style={{ fontSize: '0.8rem' }}>Connectivity or credential issues at bootstrap. Review Fleet and the Events log.</p>
                     </div>
                   ) : null}
                 </div>
