@@ -168,7 +168,7 @@ const GROUP_LABELS: Record<AdminSectionGroup, string> = {
 
 /**
  * Builds grouped nav from a (possibly filtered) set of admin sections.
- * Empty groups are omitted. Overview is NOT included — add it separately.
+ * Empty groups are omitted.
  */
 export function buildAdminNavGroups(sections: AdminSection[]): AdminNavGroup[] {
   const groups: AdminNavGroup[] = [];
@@ -191,19 +191,8 @@ export function buildAdminNavGroups(sections: AdminSection[]): AdminNavGroup[] {
   return groups;
 }
 
-/** The Overview nav item — always shown to any admin, no permission check needed. */
-export const ADMIN_OVERVIEW_NAV_ITEM: NavigationItem = {
-  label: 'Overview',
-  href: '/admin',
-  requiresAuth: true,
-  adminOnly: true,
-};
-
 /**
- * Full unfiltered admin nav groups, including the Overview entry.
+ * Full unfiltered admin nav groups.
  * Use buildVisibleAdminNavGroups for permission-filtered output.
  */
-export const allAdminNavGroups: AdminNavGroup[] = [
-  { label: 'Admin', items: [ADMIN_OVERVIEW_NAV_ITEM] },
-  ...buildAdminNavGroups(adminSections),
-];
+export const allAdminNavGroups: AdminNavGroup[] = buildAdminNavGroups(adminSections);

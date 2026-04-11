@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildAccessContext } from '@quizmind/auth';
-import { systemRoles, type AccessContext } from '@quizmind/contracts';
+import { type AccessContext } from '@quizmind/contracts';
 
 import { adminSections } from '../src/features/admin/sections';
 import { demoAccounts } from '../src/features/auth/demo-accounts';
 import { getVisibleAdminSections } from '../src/features/navigation/visibility';
+import { isAdminEmail } from '../src/lib/admin-guard';
 
-function createWorkspaceContext(systemRoleList: AccessContext['systemRoles']): AccessContext {
+function createContext(systemRoleList: AccessContext['systemRoles']): AccessContext {
   return buildAccessContext({
     userId: 'user_demo',
     email: 'demo@quizmind.dev',
@@ -23,46 +24,50 @@ function createWorkspaceContext(systemRoleList: AccessContext['systemRoles']): A
   });
 }
 
-test('demo accounts include every system role for login testing coverage', () => {
-  const coveredRoles = new Set(
-    demoAccounts.flatMap((account) => account.systemRoles),
-  );
-
-  for (const role of systemRoles) {
-    assert.equal(
-      coveredRoles.has(role),
-      true,
-      `Expected demo account coverage for system role: ${role}`,
-    );
-  }
+test('demo accounts have exactly 2 entries: Admin and User', () => {
+  assert.equal(demoAccounts.length, 2);
+  assert.ok(demoAccounts.some((a) => a.systemRoles.length > 0), 'expected an admin account');
+  assert.ok(demoAccounts.some((a) => a.systemRoles.length === 0), 'expected a user account');
 });
 
-test('personal super admin demo account has all system roles', () => {
-  const personalSuperAdmin = demoAccounts.find((account) => account.email === 'admin@quizmind.dev');
-
-  assert.ok(personalSuperAdmin);
-  assert.deepEqual(
-    [...personalSuperAdmin.systemRoles].sort(),
-    [...systemRoles].sort(),
-  );
+test('admin demo account has at least one system role', () => {
+  const admin = demoAccounts.find((a) => a.systemRoles.length > 0);
+  assert.ok(admin, 'admin demo account must exist');
+  assert.ok(admin.systemRoles.length > 0);
 });
 
-test('personal super admin context resolves every admin section including logs', () => {
-  const personalSuperAdmin = demoAccounts.find((account) => account.email === 'admin@quizmind.dev');
+test('user demo account has no system roles', () => {
+  const user = demoAccounts.find((a) => a.systemRoles.length === 0);
+  assert.ok(user, 'user demo account must exist');
+  assert.equal(user.systemRoles.length, 0);
+});
 
-  assert.ok(personalSuperAdmin);
+test('admin demo account context resolves all admin sections', () => {
+  const admin = demoAccounts.find((a) => a.systemRoles.length > 0);
+  assert.ok(admin);
 
-  const context = createWorkspaceContext(personalSuperAdmin.systemRoles);
-  const visibleSections = getVisibleAdminSections(context, 'ws_demo');
-  const visibleIds = new Set(visibleSections.map((section) => section.id));
-
-  assert.equal(visibleIds.has('logs'), true);
+  const context = createContext(admin.systemRoles);
+  const visibleSections = getVisibleAdminSections(context);
+  const visibleIds = new Set(visibleSections.map((s) => s.id));
 
   for (const section of adminSections) {
     assert.equal(
       visibleIds.has(section.id),
       true,
-      `Expected admin section to be visible for personal super admin: ${section.id}`,
+      `Expected admin section visible for admin account: ${section.id}`,
     );
   }
+});
+
+test('user demo account context resolves zero admin sections', () => {
+  const user = demoAccounts.find((a) => a.systemRoles.length === 0);
+  assert.ok(user);
+
+  const context = createContext(user.systemRoles);
+  const visibleSections = getVisibleAdminSections(context);
+  assert.equal(visibleSections.length, 0, 'user account must not resolve any admin sections');
+});
+
+test('isAdminEmail returns false for unknown emails', () => {
+  assert.equal(isAdminEmail('unknown@quizmind.dev'), false);
 });

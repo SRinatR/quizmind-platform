@@ -5,7 +5,6 @@ import { type AdminNavGroup } from '@quizmind/ui';
 import {
   adminSections,
   buildAdminNavGroups,
-  ADMIN_OVERVIEW_NAV_ITEM,
   type AdminSection,
 } from '../admin/sections';
 import { dashboardSections, type DashboardSection } from '../dashboard/sections';
@@ -32,18 +31,11 @@ export function getVisibleAdminSections(
 
 /**
  * Returns admin nav groups filtered to sections the current user can actually
- * access, based on their permissions. Overview is always prepended since it
- * requires only admin role (already verified upstream).
+ * access, based on their permissions.
  */
 export function buildVisibleAdminNavGroups(
   context: AccessContext,
 ): AdminNavGroup[] {
   const visibleSections = getVisibleAdminSections(context);
-
-  return [
-    // Overview is always first — no per-section permission needed
-    { label: 'Admin', items: [ADMIN_OVERVIEW_NAV_ITEM] },
-    // Permission-filtered section groups derived from sections registry
-    ...buildAdminNavGroups(visibleSections),
-  ];
+  return buildAdminNavGroups(visibleSections);
 }

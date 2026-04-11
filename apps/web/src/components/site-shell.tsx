@@ -163,50 +163,50 @@ export function SiteShell({
         </div>
 
         <nav className="app-sidebar__nav">
-          {/* Dashboard nav group */}
-          <div className="app-nav-group">
-            <span className="app-nav-group__label">{t.nav.dashboardGroup}</span>
-            {dashboardNavigation.map((item) => {
-              const active = isActiveRoute(item.href, pathname);
-              const labelKey = NAV_LABEL_KEYS[item.href];
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={active ? 'app-nav-item app-nav-item--active' : 'app-nav-item'}
-                >
-                  {NAV_ICONS[item.href] != null ? (
-                    <span className="app-nav-item__icon" aria-hidden="true">
-                      {NAV_ICONS[item.href]}
-                    </span>
-                  ) : null}
-                  {labelKey != null ? t.nav[labelKey] : item.label}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Admin nav — grouped, only rendered for admins */}
-          {isAdmin
-            ? (adminNavGroups ?? allAdminNavGroups).map((group) => (
-                <div key={group.label} className="app-nav-group">
-                  <span className="app-nav-group__label">{group.label}</span>
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={
-                        isActiveRoute(item.href, pathname)
-                          ? 'app-nav-item app-nav-item--active'
-                          : 'app-nav-item'
-                      }
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              ))
-            : null}
+          {isAdmin ? (
+            /* Admin session — admin nav only */
+            (adminNavGroups ?? allAdminNavGroups).map((group) => (
+              <div key={group.label} className="app-nav-group">
+                <span className="app-nav-group__label">{group.label}</span>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={
+                      isActiveRoute(item.href, pathname)
+                        ? 'app-nav-item app-nav-item--active'
+                        : 'app-nav-item'
+                    }
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))
+          ) : (
+            /* User session — user dashboard nav only */
+            <div className="app-nav-group">
+              <span className="app-nav-group__label">{t.nav.dashboardGroup}</span>
+              {dashboardNavigation.map((item) => {
+                const active = isActiveRoute(item.href, pathname);
+                const labelKey = NAV_LABEL_KEYS[item.href];
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={active ? 'app-nav-item app-nav-item--active' : 'app-nav-item'}
+                  >
+                    {NAV_ICONS[item.href] != null ? (
+                      <span className="app-nav-item__icon" aria-hidden="true">
+                        {NAV_ICONS[item.href]}
+                      </span>
+                    ) : null}
+                    {labelKey != null ? t.nav[labelKey] : item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         {/* ── Sidebar account dock ── */}
