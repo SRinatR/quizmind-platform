@@ -165,12 +165,11 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
 
-  // Redirect legacy flat routes to new canonical routes (preserves query params)
+  // Redirect legacy flat routes to new canonical routes (preserves all query params including persona)
   const redirectTarget = ROUTE_REDIRECTS[resolvedParams.section];
   if (redirectTarget) {
     const query = new URLSearchParams();
     for (const [k, v] of Object.entries(resolvedSearchParams ?? {})) {
-      if (k === 'persona') continue;
       const val = Array.isArray(v) ? v[0] : v;
       if (val) query.set(k, val);
     }
@@ -251,19 +250,38 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     : null;
 
   // ── Section-targeted data fetching ───────────────────────────────────────────
-  // Each section only loads data it actually needs.
-  const needsUsers = sec === 'users';
-  const needsSupportSessions = sec === 'access-sessions' || sec === 'users';
-  const needsSupportTickets = sec === 'support';
-  const needsFleet = sec === 'extension-fleet';
-  const needsLogs = sec === 'events';
-  const needsSecurity = sec === 'security';
-  const needsWebhooks = sec === 'webhooks';
-  const needsUsage = sec === 'usage' || sec === 'bootstrap-simulator';
-  const needsCompatibility = sec === 'compatibility';
-  const needsFlags = sec === 'feature-flags';
-  const needsRemoteConfig = sec === 'remote-config';
-  const needsAiRouting = sec === 'ai-routing';
+  // Registry maps each section slug to the loaders it requires. Any section not
+  // listed gets an empty needs object (no fetches, shows fallback UI).
+  interface LoaderNeeds {
+    users?: true;
+    supportSessions?: true;
+    supportTickets?: true;
+    fleet?: true;
+    logs?: true;
+    security?: true;
+    webhooks?: true;
+    usage?: true;
+    compatibility?: true;
+    flags?: true;
+    remoteConfig?: true;
+    aiRouting?: true;
+  }
+  const SECTION_NEEDS: Record<string, LoaderNeeds> = {
+    users:                  { users: true, supportSessions: true },
+    support:                { supportTickets: true, supportSessions: true },
+    'access-sessions':      { supportSessions: true },
+    events:                 { logs: true },
+    security:               { security: true },
+    webhooks:               { webhooks: true },
+    usage:                  { usage: true },
+    'extension-fleet':      { fleet: true },
+    compatibility:          { compatibility: true },
+    'bootstrap-simulator':  { usage: true },
+    'feature-flags':        { flags: true },
+    'remote-config':        { remoteConfig: true },
+    'ai-routing':           { aiRouting: true },
+  };
+  const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
   const [
     featureFlags,
@@ -279,18 +297,18 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     adminSecurity,
     adminWebhooks,
   ] = await Promise.all([
-    needsFlags ? getFeatureFlags(persona, accessToken) : Promise.resolve(null),
-    needsAiRouting ? getAdminProviderGovernance(accessToken) : Promise.resolve(null),
-    needsCompatibility ? getCompatibilityRules(persona, accessToken) : Promise.resolve(null),
-    needsUsers ? getAdminUsers(persona, accessToken) : Promise.resolve(null),
-    needsRemoteConfig ? getRemoteConfigState(persona, undefined, accessToken) : Promise.resolve(null),
-    needsSupportSessions ? getSupportImpersonationSessions(persona, accessToken) : Promise.resolve(null),
-    needsSupportTickets ? getSupportTickets(persona, accessToken, supportTicketFilters) : Promise.resolve(null),
-    needsUsage ? getUsageSummary(persona, accessToken) : Promise.resolve(null),
-    needsFleet ? getAdminExtensionFleet(persona, extensionFleetFilters, accessToken) : Promise.resolve(null),
-    needsLogs ? getAdminLogs(persona, adminLogFilters, accessToken) : Promise.resolve(null),
-    needsSecurity ? getAdminSecurity(persona, adminLogFilters, accessToken) : Promise.resolve(null),
-    needsWebhooks ? getAdminWebhooks(persona, adminWebhookFilters, accessToken) : Promise.resolve(null),
+    needs.flags ? getFeatureFlags(persona, accessToken) : Promise.resolve(null),
+    needs.aiRouting ? getAdminProviderGovernance(accessToken) : Promise.resolve(null),
+    needs.compatibility ? getCompatibilityRules(persona, accessToken) : Promise.resolve(null),
+    needs.users ? getAdminUsers(persona, accessToken) : Promise.resolve(null),
+    needs.remoteConfig ? getRemoteConfigState(persona, undefined, accessToken) : Promise.resolve(null),
+    needs.supportSessions ? getSupportImpersonationSessions(persona, accessToken) : Promise.resolve(null),
+    needs.supportTickets ? getSupportTickets(persona, accessToken, supportTicketFilters) : Promise.resolve(null),
+    needs.usage ? getUsageSummary(persona, accessToken) : Promise.resolve(null),
+    needs.fleet ? getAdminExtensionFleet(persona, extensionFleetFilters, accessToken) : Promise.resolve(null),
+    needs.logs ? getAdminLogs(persona, adminLogFilters, accessToken) : Promise.resolve(null),
+    needs.security ? getAdminSecurity(persona, adminLogFilters, accessToken) : Promise.resolve(null),
+    needs.webhooks ? getAdminWebhooks(persona, adminWebhookFilters, accessToken) : Promise.resolve(null),
   ]);
 
   const extensionBootstrap =

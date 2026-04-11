@@ -74,7 +74,8 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const reconnectCount = adminExtensionFleet?.counts.reconnectRequired ?? 0;
   const failedWebhooks = adminWebhooks?.statusCounts.failed ?? 0;
   const securitySignals = adminSecurity?.findings.totalFailures ?? 0;
-  const hasAlerts = reconnectCount > 0 || failedWebhooks > 0 || securitySignals > 0;
+  const unboundQueues = adminWebhooks?.queues.filter((q) => q.processorState === 'declared_only') ?? [];
+  const hasAlerts = reconnectCount > 0 || failedWebhooks > 0 || securitySignals > 0 || unboundQueues.length > 0;
 
   return (
     <SiteShell
@@ -107,6 +108,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 {failedWebhooks > 0 ? (
                   <Link href="/admin/webhooks?webhookStatus=failed" className="tag warn">
                     {failedWebhooks} failed webhook{failedWebhooks !== 1 ? 's' : ''}
+                  </Link>
+                ) : null}
+                {unboundQueues.length > 0 ? (
+                  <Link href="/admin/webhooks" className="tag warn">
+                    {unboundQueues.length} unbound queue processor{unboundQueues.length !== 1 ? 's' : ''}
                   </Link>
                 ) : null}
                 {securitySignals > 0 ? (
@@ -185,6 +191,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                   {failedWebhooks > 0 ? (
                     <span className="tag warn" style={{ marginLeft: '6px' }}>!</span>
                   ) : null}
+                </p>
+              </Link>
+            ) : null}
+
+            {adminWebhooks && unboundQueues.length > 0 ? (
+              <Link href="/admin/webhooks" className="stat-card section-card--link" style={{ display: 'block' }}>
+                <p className="stat-value">{unboundQueues.length}</p>
+                <p className="stat-label">
+                  Unbound queue{unboundQueues.length !== 1 ? 's' : ''}
+                  <span className="tag warn" style={{ marginLeft: '6px' }}>!</span>
                 </p>
               </Link>
             ) : null}
@@ -293,6 +309,27 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                       <p>{adminSecurity.findings.extensionBootstrapRefreshFailures} refresh failure{adminSecurity.findings.extensionBootstrapRefreshFailures !== 1 ? 's' : ''}</p>
                     </div>
                   ) : null}
+                </div>
+              </article>
+            ) : null}
+
+            {/* Job queue health — only shown when processors are unbound */}
+            {adminWebhooks && unboundQueues.length > 0 ? (
+              <article className="panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span className="micro-label">Operations</span>
+                  <Link href="/admin/webhooks" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>
+                    View jobs
+                  </Link>
+                </div>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Job queue health</h3>
+                <div className="list-stack">
+                  {unboundQueues.map((q) => (
+                    <div className="list-item" key={q.name}>
+                      <strong>{q.name}</strong>
+                      <p>{q.description} — no processor bound</p>
+                    </div>
+                  ))}
                 </div>
               </article>
             ) : null}
