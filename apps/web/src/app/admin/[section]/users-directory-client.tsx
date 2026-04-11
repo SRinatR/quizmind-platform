@@ -9,7 +9,7 @@ import {
 } from '@quizmind/contracts';
 
 /** Canonical role granted when promoting a user to admin. */
-const ADMIN_ROLE = 'super_admin';
+const ADMIN_ROLE = 'admin';
 
 function isAdminUser(roles: string[]): boolean {
   return roles.length > 0;
