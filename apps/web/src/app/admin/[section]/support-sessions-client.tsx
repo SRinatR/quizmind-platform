@@ -134,7 +134,6 @@ export function SupportSessionsClient({
                     <span className={isActive ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--gray'}>
                       {isActive ? 'active' : 'ended'}
                     </span>
-                    {item.workspace ? <span className="tag-soft tag-soft--gray">{item.workspace.name}</span> : null}
                     {item.supportTicket ? <span className="tag-soft tag-soft--gray">ticket linked</span> : null}
                   </div>
                 </div>
@@ -198,7 +197,7 @@ export function SupportSessionsClient({
           })}
         </div>
       ) : (
-        <p className="list-muted">No impersonation sessions have been recorded yet for this environment.</p>
+        <p className="list-muted">No access sessions recorded for this environment yet.</p>
       )}
     </>
   );

@@ -7,7 +7,6 @@ import {
   type UsageExportResult,
   type UsageExportScope,
 } from '@quizmind/contracts';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -53,23 +52,11 @@ export function UsageExplorerClient({
   isConnectedSession,
   canExportUsage,
 }: UsageExplorerClientProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [exportFormat, setExportFormat] = useState<UsageExportFormat>('json');
   const [exportScope, setExportScope] = useState<UsageExportScope>('full');
   const [isExporting, setIsExporting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(
-    'Usage explorer now reads server-side quota counters and can export JSON or scoped CSV snapshots.',
-  );
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  function updateWorkspaceScope(workspaceId: string) {
-    const params = new URLSearchParams(searchParams.toString());
-
-    params.set('workspaceId', workspaceId);
-    router.push(`${pathname}?${params.toString()}`);
-  }
 
   function handleFormatChange(nextFormat: UsageExportFormat) {
     setExportFormat(nextFormat);
@@ -171,7 +158,7 @@ export function UsageExplorerClient({
             </span>
           </div>
           <p className="list-muted" style={{ fontSize: '0.82rem', marginTop: '8px' }}>
-            JSON supports full workspace snapshots. CSV is scoped to quotas, installations, or recent events.
+            JSON exports a full platform snapshot. CSV is scoped to quotas, installations, or recent events.
           </p>
         </article>
 
@@ -227,7 +214,7 @@ export function UsageExplorerClient({
               })}
             </div>
           ) : (
-            <p className="list-muted">No quota counters available for this workspace yet.</p>
+            <p className="list-muted">No quota counters available for this account.</p>
           )}
         </article>
 
@@ -252,7 +239,7 @@ export function UsageExplorerClient({
               ))}
             </div>
           ) : (
-            <p className="list-muted">No installations reported into this workspace yet.</p>
+            <p className="list-muted">No installations reported yet.</p>
           )}
         </article>
       </section>
@@ -281,7 +268,7 @@ export function UsageExplorerClient({
             ))}
           </div>
         ) : (
-          <p className="list-muted">No telemetry or activity recorded for this workspace yet.</p>
+          <p className="list-muted">No telemetry or activity recorded yet.</p>
         )}
       </section>
     </>

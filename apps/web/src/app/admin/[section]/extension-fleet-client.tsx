@@ -349,29 +349,13 @@ export function ExtensionFleetClient({
                     </span>
                   </div>
                 </div>
-                <div className="kv-list" style={{ marginTop: '8px' }}>
-                  <div className="kv-row">
-                    <span className="kv-row__key">User</span>
-                    <span className="kv-row__value">{item.userId}</span>
-                  </div>
-                  <div className="kv-row">
-                    <span className="kv-row__key">Bound</span>
-                    <span className="kv-row__value">{formatUtcDateTime(item.boundAt)}</span>
-                  </div>
-                  {item.lastSeenAt ? (
-                    <div className="kv-row">
-                      <span className="kv-row__key">Last seen</span>
-                      <span className="kv-row__value">{formatUtcDateTime(item.lastSeenAt)}</span>
-                    </div>
-                  ) : null}
-                  {item.compatibility.reason ? (
-                    <div className="kv-row">
-                      <span className="kv-row__key">Compat note</span>
-                      <span className="kv-row__value">{item.compatibility.reason}</span>
-                    </div>
-                  ) : null}
-                </div>
-                <div className="link-row" style={{ marginTop: '10px' }}>
+                <p className="list-muted" style={{ margin: '4px 0 0', fontSize: '0.8rem' }}>
+                  {item.userId}
+                  {' · bound '}{formatUtcDateTime(item.boundAt)}
+                  {item.lastSeenAt ? <>{' · last seen '}{formatUtcDateTime(item.lastSeenAt)}</> : null}
+                  {item.compatibility.reason ? <>{' · '}{item.compatibility.reason}</> : null}
+                </p>
+                <div className="link-row" style={{ marginTop: '8px' }}>
                   <button
                     className="btn-ghost"
                     disabled={!canManageInstallations || normalizedActionReason.length === 0 || pendingRotateInstallationId === item.installationId}

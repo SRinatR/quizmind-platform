@@ -44,7 +44,7 @@ export const adminSections: AdminSection[] = [
     title: 'Access Sessions',
     navLabel: 'Access Sessions',
     href: '/admin/access-sessions',
-    description: 'Recent impersonation sessions and support access logs.',
+    description: 'Recent support access sessions and operator activity logs.',
     // support:impersonate gates the impersonation log
     requirement: { permission: 'support:impersonate' },
     group: 'people',

@@ -79,9 +79,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchDraft, setSearchDraft] = useState(snapshot.filters.search ?? '');
-  const [statusMessage, setStatusMessage] = useState<string | null>(
-    'Billing webhook delivery state is now visible from the admin control plane.',
-  );
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
 
@@ -99,7 +97,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
       return;
     }
 
-    if (!window.confirm('Requeue this failed billing webhook delivery?')) {
+    if (!window.confirm('Requeue this failed webhook delivery?')) {
       return;
     }
 
@@ -146,7 +144,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
       <section className="split-grid">
         <article className="panel">
           <span className="micro-label">Filters</span>
-          <h2>Inspect billing webhook deliveries</h2>
+          <h2>Inspect webhook deliveries</h2>
           <div className="filter-grid">
             <label className="filter-field">
               <span className="filter-field__label">Provider</span>
@@ -199,7 +197,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
 
         <article className="panel">
           <span className="micro-label">Status</span>
-          <h2>Delivery distribution</h2>
+          <h2>Delivery health</h2>
           <div className="tag-row" style={{ marginBottom: '12px' }}>
             <span className="tag-soft tag-soft--gray">received {snapshot.statusCounts.received}</span>
             <span className="tag-soft tag-soft--green">processed {snapshot.statusCounts.processed}</span>
@@ -227,7 +225,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
       <section className="split-grid">
         <article className="panel">
           <span className="micro-label">Queues</span>
-          <h2>Worker queue catalog</h2>
+          <h2>Job queue catalog</h2>
           <div className="kv-list">
             {snapshot.queues.map((queue) => (
               <div className="kv-row" key={queue.name} style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
@@ -246,11 +244,11 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
           <div className="kv-list">
             <div className="kv-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
               <span className="kv-row__key">Eligible deliveries</span>
-              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Only failed Stripe deliveries can be requeued from this surface.</span>
+              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Only failed webhook deliveries can be requeued from this surface.</span>
             </div>
             <div className="kv-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
               <span className="kv-row__key">Job routing</span>
-              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Retries go onto the billing-webhooks queue with a fresh job id.</span>
+              <span className="kv-row__value" style={{ fontSize: '0.83rem' }}>Retries are requeued with a fresh job id on the appropriate delivery queue.</span>
             </div>
             <div className="kv-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: '2px' }}>
               <span className="kv-row__key">State reset</span>
@@ -262,7 +260,7 @@ export function WebhooksClient({ snapshot, isConnectedSession }: Props) {
 
       <section className="panel">
         <span className="micro-label">Deliveries</span>
-        <h2>Recent billing webhook events</h2>
+        <h2>Recent webhook events</h2>
         {snapshot.items.length > 0 ? (
           <div className="event-list">
             {snapshot.items.map((item) => (
