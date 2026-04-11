@@ -19,7 +19,7 @@ function createSession(): CurrentSessionSnapshot {
     principal: {
       userId: 'user_1',
       email: 'admin@quizmind.dev',
-      systemRoles: ['platform_admin'],
+      systemRoles: ['admin'],
       workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_owner' }],
       entitlements: [],
       featureFlags: [],

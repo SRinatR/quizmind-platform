@@ -10,68 +10,65 @@ import {
 
 function createContext(input: {
   systemRoles: AccessContext['systemRoles'];
-  workspaceRole: AccessContext['workspaceMemberships'][number]['role'];
 }): AccessContext {
   return buildAccessContext({
     userId: 'user_123',
     email: 'demo@quizmind.dev',
     systemRoles: input.systemRoles,
-    workspaceMemberships: [
-      {
-        workspaceId: 'ws_123',
-        role: input.workspaceRole,
-      },
-    ],
+    workspaceMemberships: [],
     entitlements: [],
     featureFlags: [],
   });
 }
 
-test('buildAccessMatrixRows exposes admin logs as allowed for security admin', () => {
+test('buildAccessMatrixRows exposes all admin sections as allowed for admin', () => {
   const rows = buildAccessMatrixRows({
-    context: createContext({
-      systemRoles: ['security_admin'],
-      workspaceRole: 'workspace_security_manager',
-    }),
-    workspaceId: 'ws_123',
+    context: createContext({ systemRoles: ['admin'] }),
     scopes: ['admin'],
   });
-  const logsRow = rows.find((row) => row.id === 'logs');
 
+  const logsRow = rows.find((row) => row.id === 'events');
   assert.ok(logsRow);
   assert.equal(logsRow.allowed, true);
+
+  for (const row of rows) {
+    assert.equal(row.allowed, true, `Expected section ${row.id} to be allowed for admin`);
+  }
 });
 
-test('buildAccessMatrixRows explains admin log denial for workspace-only viewer', () => {
+test('buildAccessMatrixRows denies all admin sections for user with no roles', () => {
   const rows = buildAccessMatrixRows({
-    context: createContext({
-      systemRoles: [],
-      workspaceRole: 'workspace_viewer',
-    }),
-    workspaceId: 'ws_123',
+    context: createContext({ systemRoles: [] }),
     scopes: ['admin'],
   });
-  const logsRow = rows.find((row) => row.id === 'logs');
 
-  assert.ok(logsRow);
-  assert.equal(logsRow.allowed, false);
-  assert.equal(Boolean(logsRow.reason?.includes('Missing permission: audit_logs:read')), true);
+  for (const row of rows) {
+    assert.equal(row.allowed, false, `Expected section ${row.id} to be denied for non-admin`);
+  }
+});
+
+test('buildAccessMatrixRows explains admin log denial for user', () => {
+  const rows = buildAccessMatrixRows({
+    context: createContext({ systemRoles: [] }),
+    scopes: ['admin'],
+  });
+  const eventsRow = rows.find((row) => row.id === 'events');
+
+  assert.ok(eventsRow);
+  assert.equal(eventsRow.allowed, false);
+  assert.equal(Boolean(eventsRow.reason?.includes('Missing permission: audit_logs:read')), true);
 });
 
 test('describeAccessRequirement summarizes compound requirements', () => {
   const summary = describeAccessRequirement({
     permission: 'users:read',
-    requireSystemRole: 'platform_admin',
-    requireWorkspaceRole: 'workspace_owner',
+    requireSystemRole: 'admin',
     requiredEntitlements: ['feature.text_answering'],
     requiredFlags: ['beta.remote-config-v2'],
-    requireOwnership: true,
   });
 
   assert.equal(summary.includes('permission users:read'), true);
-  assert.equal(summary.includes('system role platform_admin'), true);
-  assert.equal(summary.includes('workspace role workspace_owner'), true);
+  assert.equal(summary.includes('system role admin'), true);
   assert.equal(summary.includes('entitlements feature.text_answering'), true);
   assert.equal(summary.includes('feature flags beta.remote-config-v2'), true);
-  assert.equal(summary.includes('workspace ownership'), true);
 });

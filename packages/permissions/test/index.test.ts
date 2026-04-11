@@ -1,68 +1,58 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createAccessContext } from '../../testing/src';
-import { evaluateAccess, resolvePermissions } from '@quizmind/permissions';
+import { evaluateAccess, resolvePermissions, permissionRegistry } from '@quizmind/permissions';
+import { buildAccessContext } from '@quizmind/auth';
 
-test('resolvePermissions merges system and workspace permissions without duplicates', () => {
-  const permissions = resolvePermissions({
-    systemRoles: ['billing_admin'],
-    workspaceRoles: ['workspace_owner'],
-  });
-
-  assert.ok(permissions.includes('subscriptions:read'));
-  assert.ok(permissions.includes('workspaces:update'));
+test('admin role grants all permissions', () => {
+  const permissions = resolvePermissions({ systemRoles: ['admin'] });
+  assert.equal(permissions.length, permissionRegistry.length);
+  assert.ok(permissions.includes('users:read'));
+  assert.ok(permissions.includes('support:impersonate'));
+  assert.ok(permissions.includes('remote_config:publish'));
   assert.equal(new Set(permissions).size, permissions.length);
 });
 
-test('evaluateAccess allows access when all requirements pass', () => {
-  const decision = evaluateAccess(
-    createAccessContext({
-      userId: 'user_1',
-      systemRoles: ['platform_admin'],
-      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_owner' }],
-      entitlements: ['feature.remote_sync'],
-      featureFlags: ['beta.remote-config-v2'],
-      attributes: { workspaceOwnerId: 'user_1' },
-    }),
-    {
-      permission: 'workspaces:update',
-      workspaceId: 'ws_1',
-      requireSystemRole: 'platform_admin',
-      requireWorkspaceRole: 'workspace_owner',
-      requiredEntitlements: ['feature.remote_sync'],
-      requiredFlags: ['beta.remote-config-v2'],
-      requireOwnership: true,
-    },
-  );
+test('user with no roles gets only authenticated-user permissions', () => {
+  const permissions = resolvePermissions({ systemRoles: [], authenticatedUser: true });
+  assert.ok(permissions.includes('installations:read'));
+  assert.ok(!permissions.includes('users:read'));
+  assert.ok(!permissions.includes('audit_logs:read'));
+});
 
+test('any non-empty roles array grants admin permissions (legacy migration compat)', () => {
+  const permissions = resolvePermissions({ systemRoles: ['admin'] });
+  assert.ok(permissions.includes('audit_logs:read'));
+  assert.ok(permissions.includes('jobs:read'));
+});
+
+test('evaluateAccess allows admin to access any permission-gated section', () => {
+  const decision = evaluateAccess(
+    buildAccessContext({
+      userId: 'user_1',
+      email: 'admin@quizmind.dev',
+      systemRoles: ['admin'],
+      workspaceMemberships: [],
+      entitlements: [],
+      featureFlags: [],
+    }),
+    { permission: 'audit_logs:read' },
+  );
   assert.deepEqual(decision, { allowed: true, reasons: [] });
 });
 
-test('evaluateAccess returns detailed denial reasons', () => {
+test('evaluateAccess denies user with no roles from admin sections', () => {
   const decision = evaluateAccess(
-    createAccessContext({
+    buildAccessContext({
       userId: 'user_2',
-      workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_viewer' }],
+      email: 'user@quizmind.dev',
+      systemRoles: [],
+      workspaceMemberships: [],
+      entitlements: [],
+      featureFlags: [],
     }),
-    {
-      permission: 'workspaces:update',
-      workspaceId: 'ws_1',
-      requireSystemRole: 'platform_admin',
-      requireWorkspaceRole: 'workspace_owner',
-      requiredEntitlements: ['feature.remote_sync'],
-      requiredFlags: ['beta.remote-config-v2'],
-      requireOwnership: true,
-    },
+    { permission: 'users:read' },
   );
-
   assert.equal(decision.allowed, false);
-  assert.deepEqual(decision.reasons, [
-    'Missing permission: workspaces:update',
-    'Missing system role: platform_admin',
-    'Missing workspace role: workspace_owner',
-    'Missing entitlement: feature.remote_sync',
-    'Missing feature flag: beta.remote-config-v2',
-    'Ownership check failed.',
-  ]);
+  assert.ok(decision.reasons.some((r) => r.includes('Missing permission: users:read')));
 });

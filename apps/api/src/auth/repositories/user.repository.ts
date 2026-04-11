@@ -67,7 +67,8 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
     });
   }
 
+  /** Translation layer: any DB role assignment → application-level 'admin'. */
   getSystemRoles(user: AuthUserRecord): SystemRole[] {
-    return user.systemRoleAssignments.map((assignment) => assignment.role);
+    return user.systemRoleAssignments.length > 0 ? ['admin'] : [];
   }
 }

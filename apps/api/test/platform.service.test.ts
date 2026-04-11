@@ -620,7 +620,7 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
     ...createConnectedSessionSnapshot(),
     principal: {
       ...createConnectedSessionSnapshot().principal,
-      systemRoles: ['platform_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['users:read', 'workspaces:read'],
   });
@@ -636,7 +636,7 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
       emailVerifiedAt: '2026-03-23T08:00:00.000Z',
       suspendedAt: null,
       lastLoginAt: '2026-03-23T12:00:00.000Z',
-      systemRoles: ['platform_admin'],
+      systemRoles: ['admin'],
       workspaces: [
         {
           workspaceId: 'ws_1',
@@ -653,7 +653,7 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
       emailVerifiedAt: '2026-03-23T08:30:00.000Z',
       suspendedAt: null,
       lastLoginAt: null,
-      systemRoles: ['support_admin'],
+      systemRoles: ['admin'],
       workspaces: [],
     },
   ]);
@@ -711,7 +711,7 @@ test('PlatformService.createUserForCurrentSession creates a user with requested 
       ...createConnectedSessionSnapshot(),
       principal: {
         ...createConnectedSessionSnapshot().principal,
-        systemRoles: ['platform_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['users:read', 'users:update', 'workspaces:read'],
     },
@@ -719,7 +719,7 @@ test('PlatformService.createUserForCurrentSession creates a user with requested 
       email: '  NEW.ADMIN@quizmind.dev ',
       password: 'correct-horse-battery-staple',
       displayName: '  New Admin  ',
-      systemRoles: ['platform_admin'],
+      systemRoles: ['admin'],
       workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_admin' }],
       emailVerified: true,
     },
@@ -729,7 +729,7 @@ test('PlatformService.createUserForCurrentSession creates a user with requested 
   assert.equal(typeof capturedCreateData.passwordHash, 'string');
   assert.notEqual(capturedCreateData.passwordHash, 'correct-horse-battery-staple');
   assert.equal(capturedCreateData.displayName, 'New Admin');
-  assert.deepEqual(capturedCreateData.systemRoleAssignments.create, [{ role: 'platform_admin' }]);
+  assert.deepEqual(capturedCreateData.systemRoleAssignments.create, [{ role: 'super_admin' }]);
   assert.deepEqual(capturedCreateData.memberships.create, [
     {
       role: 'workspace_admin',
@@ -741,7 +741,7 @@ test('PlatformService.createUserForCurrentSession creates a user with requested 
     },
   ]);
   assert.equal(result.user.id, 'user_created');
-  assert.deepEqual(result.user.systemRoles, ['platform_admin']);
+  assert.deepEqual(result.user.systemRoles, ['admin']);
   assert.equal(result.updatedAt, '2026-03-29T10:00:00.000Z');
 });
 
@@ -794,14 +794,14 @@ test('PlatformService.updateUserAccessForCurrentSession updates role assignments
       ...createConnectedSessionSnapshot(),
       principal: {
         ...createConnectedSessionSnapshot().principal,
-        systemRoles: ['platform_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['users:read', 'users:update', 'workspaces:read'],
     },
     {
       userId: 'user_editor',
       displayName: 'Editor User Updated',
-      systemRoles: ['billing_admin'],
+      systemRoles: ['admin'],
       workspaceMemberships: [{ workspaceId: 'ws_1', role: 'workspace_billing_manager' }],
       suspend: true,
       suspendReason: 'Role migration freeze.',
@@ -811,7 +811,7 @@ test('PlatformService.updateUserAccessForCurrentSession updates role assignments
   assert.equal(capturedUpdateData.displayName, 'Editor User Updated');
   assert.deepEqual(capturedUpdateData.systemRoleAssignments, {
     deleteMany: {},
-    create: [{ role: 'billing_admin' }],
+    create: [{ role: 'super_admin' }],
   });
   assert.deepEqual(capturedUpdateData.memberships, {
     deleteMany: {},
@@ -2315,7 +2315,7 @@ test('PlatformService.listFeatureFlagsForCurrentSession maps persisted feature f
     ...createConnectedSessionSnapshot(),
     principal: {
       ...createConnectedSessionSnapshot().principal,
-      systemRoles: ['platform_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['feature_flags:read', 'feature_flags:write'],
   });
@@ -2401,7 +2401,7 @@ test('PlatformService.updateFeatureFlagForCurrentSession persists rollout target
       ...createConnectedSessionSnapshot(),
       principal: {
         ...createConnectedSessionSnapshot().principal,
-        systemRoles: ['platform_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['feature_flags:read', 'feature_flags:write'],
     },
@@ -2411,7 +2411,7 @@ test('PlatformService.updateFeatureFlagForCurrentSession persists rollout target
       status: 'paused',
       enabled: false,
       rolloutPercentage: 75,
-      allowRoles: ['platform_admin', 'workspace_owner'],
+      allowRoles: ['admin', 'workspace_owner'],
       allowPlans: ['business'],
       allowUsers: ['user_2'],
       allowWorkspaces: ['ws_2'],
@@ -2426,7 +2426,7 @@ test('PlatformService.updateFeatureFlagForCurrentSession persists rollout target
     enabled: false,
     rolloutPercentage: 75,
     minimumExtensionVersion: null,
-    allowRoles: ['platform_admin', 'workspace_owner'],
+    allowRoles: ['admin', 'workspace_owner'],
     allowPlans: ['business'],
     allowUsers: ['user_2'],
     allowWorkspaces: ['ws_2'],
@@ -2438,7 +2438,7 @@ test('PlatformService.updateFeatureFlagForCurrentSession persists rollout target
       description: 'Enable the second-generation remote config payload.',
       enabled: false,
       rolloutPercentage: 75,
-      allowRoles: ['platform_admin', 'workspace_owner'],
+      allowRoles: ['admin', 'workspace_owner'],
       allowPlans: ['business'],
       allowUsers: ['user_2'],
       allowWorkspaces: ['ws_2'],
@@ -2583,7 +2583,7 @@ test('PlatformService.publishRemoteConfigForCurrentSession persists a connected 
       ...createConnectedSessionSnapshot(),
       principal: {
         ...createConnectedSessionSnapshot().principal,
-        systemRoles: ['platform_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['remote_config:publish'],
     },
@@ -2668,7 +2668,7 @@ test('PlatformService.activateRemoteConfigVersionForCurrentSession reactivates a
       ...createConnectedSessionSnapshot(),
       principal: {
         ...createConnectedSessionSnapshot().principal,
-        systemRoles: ['platform_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['remote_config:publish'],
     },
@@ -2697,7 +2697,7 @@ test('PlatformService.activateRemoteConfigVersionForCurrentSession rejects missi
           ...createConnectedSessionSnapshot(),
           principal: {
             ...createConnectedSessionSnapshot().principal,
-            systemRoles: ['platform_admin'],
+            systemRoles: ['admin'],
           },
           permissions: ['remote_config:publish'],
         },
@@ -2859,7 +2859,7 @@ test('PlatformService.startSupportImpersonationForCurrentSession persists a conn
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -2958,7 +2958,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession ends an active su
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -3032,7 +3032,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession is idempotent for
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -3119,7 +3119,7 @@ test('PlatformService.listSupportTicketsForCurrentSession maps persisted support
       ...createConnectedSessionSnapshot().principal,
       userId: 'support_1',
       email: 'support@quizmind.dev',
-      systemRoles: ['support_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['support:impersonate', 'workspaces:read'],
   });
@@ -3238,7 +3238,7 @@ test('PlatformService.listSupportTicketsForCurrentSession applies queue filters 
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -3300,7 +3300,7 @@ test('PlatformService.listSupportTicketsForCurrentSession expands named queue pr
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -3348,7 +3348,7 @@ test('PlatformService.updateSupportTicketPresetFavoriteForCurrentSession persist
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -3462,7 +3462,7 @@ test('PlatformService.updateSupportTicketForCurrentSession persists ticket owner
         ...createConnectedSessionSnapshot().principal,
         userId: 'support_1',
         email: 'support@quizmind.dev',
-        systemRoles: ['support_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['support:impersonate', 'workspaces:read'],
     },
@@ -3532,7 +3532,7 @@ test('PlatformService.listSupportImpersonationSessionsForCurrentSession maps per
       ...createConnectedSessionSnapshot().principal,
       userId: 'support_1',
       email: 'support@quizmind.dev',
-      systemRoles: ['support_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['support:impersonate', 'workspaces:read'],
   });
@@ -3652,7 +3652,7 @@ test('PlatformService.startSupportImpersonationForCurrentSession requires a targ
           ...createConnectedSessionSnapshot(),
           principal: {
             ...createConnectedSessionSnapshot().principal,
-            systemRoles: ['support_admin'],
+            systemRoles: ['admin'],
           },
           permissions: ['support:impersonate'],
         },
@@ -3678,7 +3678,7 @@ test('PlatformService.endSupportImpersonationForCurrentSession requires an imper
           ...createConnectedSessionSnapshot(),
           principal: {
             ...createConnectedSessionSnapshot().principal,
-            systemRoles: ['support_admin'],
+            systemRoles: ['admin'],
           },
           permissions: ['support:impersonate'],
         },
@@ -3702,7 +3702,7 @@ test('PlatformService.updateSupportTicketForCurrentSession requires a support ti
           ...createConnectedSessionSnapshot(),
           principal: {
             ...createConnectedSessionSnapshot().principal,
-            systemRoles: ['support_admin'],
+            systemRoles: ['admin'],
           },
           permissions: ['support:impersonate'],
         },

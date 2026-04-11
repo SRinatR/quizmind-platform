@@ -110,7 +110,7 @@ test('AuthService.getCurrentSession keeps the mock-compatible session shape in c
       sub: user.id,
       userId: user.id,
       email: user.email,
-      roles: ['platform_admin'],
+      roles: ['admin'],
       sessionId: 'session_1',
       type: 'access',
     }) as any;

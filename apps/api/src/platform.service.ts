@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@quizmind/database';
+import { Prisma, SystemRole as DbSystemRole } from '@quizmind/database';
 import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 import { createLogEvent } from '@quizmind/logger';
@@ -185,6 +185,13 @@ const maxAdminUserDisplayNameLength = 120;
 const maxAdminSuspendReasonLength = 500;
 const adminUserEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const validSystemRoles = new Set<SystemRole>(systemRoles);
+
+/**
+ * DB compatibility layer: the Prisma schema still uses legacy SystemRole enum values.
+ * Application-level 'admin' is persisted as 'super_admin' in the DB.
+ * Reads always go through user.repository.ts which translates any assignment → 'admin'.
+ */
+const DB_ADMIN_ROLE = DbSystemRole.super_admin;
 
 function normalizeAdminEmail(value: unknown): string {
   if (typeof value !== 'string') {
@@ -1468,9 +1475,8 @@ export class PlatformService {
         ...(systemRoles.length > 0
           ? {
               systemRoleAssignments: {
-                create: systemRoles.map((role) => ({
-                  role,
-                })),
+                // DB compat: store as legacy super_admin value; reads translate to 'admin'
+                create: [{ role: DB_ADMIN_ROLE }],
               },
             }
           : {}),
@@ -1480,7 +1486,7 @@ export class PlatformService {
         actorUserId: session.user.id,
         targetUserId: createdUser.id,
         email: createdUser.email,
-        systemRoles: createdUser.systemRoleAssignments.map((assignment) => assignment.role),
+        isAdmin: createdUser.systemRoleAssignments.length > 0,
       });
 
       return {
@@ -1540,13 +1546,10 @@ export class PlatformService {
 
     if (systemRoles) {
       updateData.systemRoleAssignments = {
+        // Clear all existing DB role assignments, then set new canonical value if admin
         deleteMany: {},
         ...(systemRoles.length > 0
-          ? {
-              create: systemRoles.map((role) => ({
-                role,
-              })),
-            }
+          ? { create: [{ role: DB_ADMIN_ROLE }] }
           : {}),
       };
       mutationCount += 1;
@@ -1579,7 +1582,7 @@ export class PlatformService {
         email: updatedUser.email,
         suspendedAt: updatedUser.suspendedAt?.toISOString() ?? null,
         suspendReason: updatedUser.suspendReason ?? null,
-        systemRoles: updatedUser.systemRoleAssignments.map((assignment) => assignment.role),
+        isAdmin: updatedUser.systemRoleAssignments.length > 0,
       });
 
       return {
