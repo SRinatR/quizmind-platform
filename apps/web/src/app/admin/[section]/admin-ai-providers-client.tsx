@@ -3,7 +3,6 @@
 import {
   type AiAccessPolicyMode,
   type AiProvider,
-  type AiProviderPolicyScopeType,
   type AiProviderPolicyResetResult,
   type AiProviderPolicyUpdateRequest,
   type AiProviderPolicyUpdateResult,
@@ -36,8 +35,6 @@ function normalizeCsv(value: string): string[] {
 
 function createPolicyState(governance: AdminProviderGovernanceStateSnapshot) {
   return {
-    scopeType: governance.policy.scopeType as AiProviderPolicyScopeType,
-    workspaceId: '',
     mode: governance.policy.mode as AiAccessPolicyMode,
     allowPlatformManaged: governance.policy.allowPlatformManaged,
     allowBringYourOwnKey: governance.policy.allowBringYourOwnKey,
@@ -89,7 +86,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
   const [credentialState, setCredentialState] = useState({
     provider: governance.providers[0]?.provider ?? 'openrouter',
     ownerType: 'platform' as CredentialOwnerType,
-    workspaceId: '',
+    ownerId: '',
     label: '',
     scopes: '',
     secret: '',
@@ -127,7 +124,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
 
     try {
       const requestBody: AiProviderPolicyUpdateRequest = {
-        ...(policyState.scopeType === 'workspace' ? { workspaceId: policyState.workspaceId } : {}),
         mode: policyState.mode,
         allowPlatformManaged: policyState.allowPlatformManaged,
         allowBringYourOwnKey: policyState.allowBringYourOwnKey,
@@ -182,9 +178,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       const response = await fetch('/bff/admin/providers/policy/reset', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          workspaceId: policyState.workspaceId,
-        }),
+        body: JSON.stringify({}),
       });
       const payload = (await response.json().catch(() => null)) as MutationRouteResponse<AiProviderPolicyResetResult> | null;
 
@@ -226,7 +220,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         : {
             provider: credentialState.provider,
             ownerType: credentialState.ownerType,
-            ...(credentialState.ownerType === 'workspace' ? { workspaceId: credentialState.workspaceId } : {}),
+            ...(credentialState.ownerId.trim() ? { ownerId: credentialState.ownerId.trim() } : {}),
             ...(credentialState.label.trim() ? { label: credentialState.label.trim() } : {}),
             secret: credentialState.secret.trim(),
             scopes: normalizeCsv(credentialState.scopes),
@@ -245,7 +239,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         return;
       }
 
-      setCredentialState((current) => ({ ...current, ownerType: 'platform', label: '', scopes: payload.data!.credential.scopes.join(', '), secret: '' }));
+      setCredentialState((current) => ({ ...current, ownerType: 'platform', ownerId: '', label: '', scopes: payload.data!.credential.scopes.join(', '), secret: '' }));
       setEditingCredentialId(null);
       setIsSubmittingCredential(false);
       setStatusMessage(`Saved provider credential at ${formatUtcDateTime(payload.data.credential.updatedAt)}.`);
@@ -360,7 +354,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           {isConnectedSession ? (
             <>
               <div className="admin-ticket-editor">
-                <label className="admin-ticket-field"><span className="micro-label">Scope</span><select onChange={(event) => setPolicyState((c) => ({ ...c, scopeType: event.target.value as AiProviderPolicyScopeType }))} value={policyState.scopeType}><option value="global">global</option><option value="workspace">workspace</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Mode</span><select onChange={(event) => setPolicyState((c) => ({ ...c, mode: event.target.value as AiAccessPolicyMode }))} value={policyState.mode}><option value="platform_only">platform_only</option><option value="user_key_optional">user_key_optional</option><option value="user_key_required">user_key_required</option><option value="admin_approved_user_key">admin_approved_user_key</option><option value="enterprise_managed">enterprise_managed</option></select></label>
                 <label className="admin-ticket-field"><span className="micro-label">Providers</span><input onChange={(event) => setPolicyState((c) => ({ ...c, providersText: event.target.value }))} value={policyState.providersText} /></label>
                 <label className="admin-ticket-field"><span className="micro-label">Default provider</span><select onChange={(event) => setPolicyState((c) => ({ ...c, defaultProvider: event.target.value }))} value={policyState.defaultProvider}><option value="">platform-selected</option>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
@@ -394,7 +387,8 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           {credentialPolicyBlockReason ? <p className="list-muted">{credentialPolicyBlockReason}</p> : null}
           <div className="admin-ticket-editor">
             <label className="admin-ticket-field"><span className="micro-label">Provider</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, provider: event.target.value as AiProvider }))} value={credentialState.provider}>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
-            <label className="admin-ticket-field"><span className="micro-label">Ownership</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, ownerType: event.target.value as CredentialOwnerType }))} value={credentialState.ownerType}><option value="platform">platform</option><option disabled={!governance.policy.allowBringYourOwnKey || governance.policy.requireAdminApproval || !governance.policy.allowWorkspaceSharedCredentials} value="workspace">workspace</option>{editingCredentialId && credentialState.ownerType === 'user' ? <option value="user">user</option> : null}</select></label>
+            <label className="admin-ticket-field"><span className="micro-label">Ownership</span><select disabled={Boolean(editingCredentialId)} onChange={(event) => setCredentialState((c) => ({ ...c, ownerType: event.target.value as CredentialOwnerType, ownerId: '' }))} value={credentialState.ownerType}><option value="platform">platform</option><option disabled={!governance.policy.allowBringYourOwnKey || governance.policy.requireAdminApproval || !governance.policy.allowWorkspaceSharedCredentials} value="workspace">workspace</option>{editingCredentialId && credentialState.ownerType === 'user' ? <option value="user">user</option> : null}</select></label>
+            {!editingCredentialId && credentialState.ownerType !== 'platform' ? <label className="admin-ticket-field"><span className="micro-label">Owner ID</span><input disabled={Boolean(credentialPolicyBlockReason)} placeholder="workspace or user id" onChange={(event) => setCredentialState((c) => ({ ...c, ownerId: event.target.value }))} value={credentialState.ownerId} /></label> : null}
             {!editingCredentialId ? <label className="admin-ticket-field"><span className="micro-label">Label (optional)</span><input disabled={Boolean(credentialPolicyBlockReason)} placeholder="e.g. Production OpenRouter Key" onChange={(event) => setCredentialState((c) => ({ ...c, label: event.target.value }))} value={credentialState.label} /></label> : null}
             <label className="admin-ticket-field"><span className="micro-label">Scopes</span><input disabled={Boolean(credentialPolicyBlockReason)} onChange={(event) => setCredentialState((c) => ({ ...c, scopes: event.target.value }))} value={credentialState.scopes} /></label>
             <label className="admin-ticket-field"><span className="micro-label">Secret</span><input disabled={Boolean(credentialPolicyBlockReason)} type="password" onChange={(event) => setCredentialState((c) => ({ ...c, secret: event.target.value }))} value={credentialState.secret} /></label>
@@ -430,13 +424,13 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                 <div>
                   <strong>{credential.provider} | {credential.ownerType}</strong>
                   <p className="list-muted">{credential.secretPreview ?? 'Secret preview unavailable'} | {credential.validationStatus}</p>
-                  <p className="list-muted">owner {credential.ownerId} | workspace {credential.workspaceId ?? 'platform'} | updated {formatUtcDateTime(credential.updatedAt)}</p>
+                  <p className="list-muted">owner {credential.ownerId} | updated {formatUtcDateTime(credential.updatedAt)}</p>
                   {credential.validationMessage ? <p className="list-muted">{credential.validationMessage}</p> : null}
                 </div>
                 <div className="billing-history-meta">
                   {credential.revokedAt ? <span className="tag warn">revoked</span> : null}
                   <span className="tag">{credential.id.slice(0, 10)}</span>
-                  {!credential.revokedAt && canRotate ? <button className="btn-ghost" onClick={() => { setEditingCredentialId(credential.id); setCredentialState((c) => ({ ...c, provider: credential.provider, ownerType: credential.ownerType, workspaceId: credential.workspaceId ?? c.workspaceId, scopes: credential.scopes.join(', '), secret: '' })); }} type="button">Rotate</button> : null}
+                  {!credential.revokedAt && canRotate ? <button className="btn-ghost" onClick={() => { setEditingCredentialId(credential.id); setCredentialState((c) => ({ ...c, provider: credential.provider, ownerType: credential.ownerType, ownerId: credential.ownerId, scopes: credential.scopes.join(', '), secret: '' })); }} type="button">Rotate</button> : null}
                   {!credential.revokedAt && canRotate ? <button className="btn-ghost" disabled={isRevokingId === credential.id} onClick={() => void revokeCredential(credential.id)} type="button">{isRevokingId === credential.id ? 'Revoking...' : 'Revoke'}</button> : null}
                 </div>
               </div>

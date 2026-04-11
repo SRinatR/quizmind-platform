@@ -54,7 +54,6 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as Partial<RemoteConfigPublishRequest> | null;
   const versionLabel = body?.versionLabel?.trim();
-  const workspaceId = body?.workspaceId?.trim() || undefined;
   const layers = Array.isArray(body?.layers) ? body.layers.filter(isRemoteConfigLayer) : [];
 
   if (!versionLabel) {
@@ -75,7 +74,6 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       versionLabel,
       layers,
-      ...(workspaceId ? { workspaceId } : {}),
     }),
   });
 

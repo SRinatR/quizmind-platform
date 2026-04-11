@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   }
 
   const label = typeof body.label === 'string' && body.label.trim() ? body.label.trim() : undefined;
+  const ownerId = typeof body.ownerId === 'string' && body.ownerId.trim() ? body.ownerId.trim() : undefined;
 
   const response = await fetch(`${API_URL}/providers/credentials`, {
     method: 'POST',
@@ -52,6 +53,7 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       provider: body.provider,
       ownerType: body.ownerType,
+      ...(ownerId ? { ownerId } : {}),
       secret,
       ...(label ? { label } : {}),
       ...(body.scopes ? { scopes: body.scopes } : {}),
