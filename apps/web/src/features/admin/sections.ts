@@ -1,120 +1,209 @@
 import { type AccessRequirement } from '@quizmind/contracts';
+import { type AdminNavGroup, type NavigationItem } from '@quizmind/ui';
+
+export type AdminSectionGroup = 'people' | 'operations' | 'extensions' | 'control-plane';
 
 export interface AdminSection {
   id: string;
+  /** Full title shown in page headers and section cards. */
   title: string;
+  /** Short label shown in the sidebar nav. Defaults to title when equal. */
+  navLabel: string;
   href: string;
   description: string;
   requirement: AccessRequirement;
+  group: AdminSectionGroup;
+  groupLabel: string;
 }
 
 export const adminSections: AdminSection[] = [
+  // ── People ──────────────────────────────────────────────────────────
   {
     id: 'users',
     title: 'Users',
+    navLabel: 'Users',
     href: '/admin/users',
-    description: 'User directory, role assignments, and support access.',
-    requirement: {
-      permission: 'users:read',
-    },
+    description: 'User directory and role assignments.',
+    requirement: { permission: 'users:read' },
+    group: 'people',
+    groupLabel: 'People',
   },
   {
-    id: 'logs',
-    title: 'Audit Logs',
-    href: '/admin/logs',
-    description: 'Audit, activity, security, and domain event streams for ops visibility.',
-    requirement: {
-      permission: 'audit_logs:read',
-    },
+    id: 'support',
+    title: 'Support',
+    navLabel: 'Support',
+    href: '/admin/support',
+    description: 'Support ticket queue and operator context.',
+    // support_tickets:manage gates the ticket queue — distinct from impersonation
+    requirement: { permission: 'support_tickets:manage' },
+    group: 'people',
+    groupLabel: 'People',
+  },
+  {
+    id: 'access-sessions',
+    title: 'Access Sessions',
+    navLabel: 'Access Sessions',
+    href: '/admin/access-sessions',
+    description: 'Recent impersonation sessions and support access logs.',
+    // support:impersonate gates the impersonation log
+    requirement: { permission: 'support:impersonate' },
+    group: 'people',
+    groupLabel: 'People',
+  },
+  // ── Operations ───────────────────────────────────────────────────────
+  {
+    id: 'events',
+    title: 'Events',
+    navLabel: 'Events',
+    href: '/admin/events',
+    description: 'Audit, activity, security, and domain event streams.',
+    requirement: { permission: 'audit_logs:read' },
+    group: 'operations',
+    groupLabel: 'Operations',
   },
   {
     id: 'security',
     title: 'Security',
+    navLabel: 'Security',
     href: '/admin/security',
-    description: 'Security event review, privileged action trails, and hardening checkpoints.',
-    requirement: {
-      permission: 'audit_logs:read',
-    },
+    description: 'Security event review and hardening checkpoints.',
+    requirement: { permission: 'audit_logs:read' },
+    group: 'operations',
+    groupLabel: 'Operations',
   },
   {
     id: 'webhooks',
     title: 'Jobs & Webhooks',
+    navLabel: 'Jobs & Webhooks',
     href: '/admin/webhooks',
-    description: 'Billing webhook deliveries, queue bindings, and retry controls for ops workflows.',
-    requirement: {
-      permission: 'jobs:read',
-    },
+    description: 'Webhook deliveries, queue bindings, and retry controls.',
+    requirement: { permission: 'jobs:read' },
+    group: 'operations',
+    groupLabel: 'Operations',
   },
+  // ── Extensions ───────────────────────────────────────────────────────
   {
-    id: 'support',
-    title: 'Support Access',
-    href: '/admin/support',
-    description: 'Recent impersonation sessions, support actions, and operator context.',
-    requirement: {
-      permission: 'support:impersonate',
-    },
-  },
-  {
-    id: 'ai-providers',
-    title: 'AI Providers',
-    href: '/admin/ai-providers',
-    description: 'Provider registry, platform credentials, and workspace key governance.',
-    requirement: {
-      permission: 'ai_providers:manage',
-    },
+    id: 'extension-fleet',
+    title: 'Fleet',
+    navLabel: 'Fleet',
+    href: '/admin/extension-fleet',
+    description: 'Installation health, compatibility drift, and token activity.',
+    requirement: { permission: 'installations:read' },
+    group: 'extensions',
+    groupLabel: 'Extensions',
   },
   {
     id: 'usage',
-    title: 'Usage Explorer',
+    title: 'Usage',
+    navLabel: 'Usage',
     href: '/admin/usage',
-    description: 'Quota counters, installation fleet health, and exportable usage telemetry.',
-    requirement: {
-      permission: 'usage:read',
-    },
-  },
-  {
-    id: 'extension-fleet',
-    title: 'Extension Fleet',
-    href: '/admin/extension-fleet',
-    description: 'Workspace-scoped installation health, compatibility drift, and installation token activity.',
-    requirement: {
-      permission: 'installations:read',
-    },
-  },
-  {
-    id: 'feature-flags',
-    title: 'Feature Flags',
-    href: '/admin/feature-flags',
-    description: 'Rollouts, targeting, and beta controls.',
-    requirement: {
-      permission: 'feature_flags:read',
-    },
+    description: 'Quota counters, fleet health, and exportable usage telemetry.',
+    requirement: { permission: 'usage:read' },
+    group: 'extensions',
+    groupLabel: 'Extensions',
   },
   {
     id: 'compatibility',
     title: 'Compatibility',
+    navLabel: 'Compatibility',
     href: '/admin/compatibility',
-    description: 'Version gates, schema support, and rollout verdicts for extension bootstrap.',
-    requirement: {
-      permission: 'compatibility_rules:manage',
-    },
+    description: 'Version gates, schema support, and rollout verdicts.',
+    requirement: { permission: 'compatibility_rules:manage' },
+    group: 'extensions',
+    groupLabel: 'Extensions',
   },
   {
-    id: 'extension-control',
-    title: 'Extension Control',
-    href: '/admin/extension-control',
+    id: 'bootstrap-simulator',
+    title: 'Bootstrap Simulator',
+    navLabel: 'Bootstrap Sim.',
+    href: '/admin/bootstrap-simulator',
     description: 'Simulate bootstrap, compatibility, flags, and resolved remote config.',
-    requirement: {
-      permission: 'remote_config:read',
-    },
+    requirement: { permission: 'remote_config:read' },
+    group: 'extensions',
+    groupLabel: 'Extensions',
+  },
+  // ── Control Plane ────────────────────────────────────────────────────
+  {
+    id: 'feature-flags',
+    title: 'Feature Flags',
+    navLabel: 'Feature Flags',
+    href: '/admin/feature-flags',
+    description: 'Rollouts, targeting, and beta controls.',
+    requirement: { permission: 'feature_flags:read' },
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
   },
   {
     id: 'remote-config',
     title: 'Remote Config',
+    navLabel: 'Remote Config',
     href: '/admin/remote-config',
     description: 'Draft, preview, and publish extension config versions.',
-    requirement: {
-      permission: 'remote_config:publish',
-    },
+    requirement: { permission: 'remote_config:publish' },
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
   },
+  {
+    id: 'ai-routing',
+    title: 'AI Routing',
+    navLabel: 'AI Routing',
+    href: '/admin/ai-routing',
+    description: 'Provider registry, platform credentials, and routing policy.',
+    requirement: { permission: 'ai_providers:manage' },
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
+  },
+];
+
+// ── Group order and labels ────────────────────────────────────────────────────
+
+const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'extensions', 'control-plane'];
+
+const GROUP_LABELS: Record<AdminSectionGroup, string> = {
+  people: 'People',
+  operations: 'Operations',
+  extensions: 'Extensions',
+  'control-plane': 'Control Plane',
+};
+
+/**
+ * Builds grouped nav from a (possibly filtered) set of admin sections.
+ * Empty groups are omitted. Overview is NOT included — add it separately.
+ */
+export function buildAdminNavGroups(sections: AdminSection[]): AdminNavGroup[] {
+  const groups: AdminNavGroup[] = [];
+
+  for (const groupId of GROUP_ORDER) {
+    const items: NavigationItem[] = sections
+      .filter((s) => s.group === groupId)
+      .map((s) => ({
+        label: s.navLabel,
+        href: s.href,
+        requiresAuth: true,
+        adminOnly: true,
+      }));
+
+    if (items.length > 0) {
+      groups.push({ label: GROUP_LABELS[groupId], items });
+    }
+  }
+
+  return groups;
+}
+
+/** The Overview nav item — always shown to any admin, no permission check needed. */
+export const ADMIN_OVERVIEW_NAV_ITEM: NavigationItem = {
+  label: 'Overview',
+  href: '/admin',
+  requiresAuth: true,
+  adminOnly: true,
+};
+
+/**
+ * Full unfiltered admin nav groups, including the Overview entry.
+ * Use buildVisibleAdminNavGroups for permission-filtered output.
+ */
+export const allAdminNavGroups: AdminNavGroup[] = [
+  { label: 'Admin', items: [ADMIN_OVERVIEW_NAV_ITEM] },
+  ...buildAdminNavGroups(adminSections),
 ];
