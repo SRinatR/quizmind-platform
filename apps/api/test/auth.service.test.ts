@@ -81,7 +81,7 @@ test('AuthService.getCurrentSession keeps the mock-compatible session shape in c
       {
         id: 'role_1',
         userId: 'user_1',
-        role: 'platform_admin',
+        role: 'admin',
         createdAt: new Date('2026-03-23T08:00:00.000Z'),
       },
     ],
@@ -253,7 +253,7 @@ test('AuthService.resetPassword consumes the token, rotates sessions, and issues
       {
         id: 'role_1',
         userId: 'user_1',
-        role: 'platform_admin',
+        role: 'admin',
         createdAt: new Date('2026-03-24T12:00:00.000Z'),
       },
     ],

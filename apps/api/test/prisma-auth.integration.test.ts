@@ -112,7 +112,7 @@ test('Prisma-backed current session resolves persisted roles and workspace membe
   await harness.prisma.userSystemRole.create({
     data: {
       userId,
-      role: 'platform_admin',
+      role: 'admin',
     },
   });
 

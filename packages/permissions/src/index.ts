@@ -64,11 +64,6 @@ export const authenticatedUserPermissions: Permission[] = [
   'usage:export',
 ];
 
-/**
- * Admin accounts receive the full permission set.
- * Any non-empty systemRoles array (including legacy role strings during migration)
- * is treated as admin.
- */
 export function resolvePermissions(input: {
   systemRoles?: readonly string[];
   /** When true, includes the base authenticated-user permission set */
@@ -82,7 +77,7 @@ export function resolvePermissions(input: {
     }
   }
 
-  if ((input.systemRoles ?? []).length > 0) {
+  if ((input.systemRoles ?? []).includes('admin')) {
     for (const permission of permissionRegistry) {
       granted.add(permission);
     }

@@ -167,7 +167,7 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'platform_admin',
+          role: 'admin',
         },
       },
       memberships: {
@@ -189,7 +189,7 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
       emailVerifiedAt: new Date('2026-03-23T12:15:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -527,7 +527,7 @@ test('Prisma-backed feature flag listing returns persisted flags for connected a
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'platform_admin',
+          role: 'admin',
         },
       },
     },
@@ -664,7 +664,7 @@ test('Prisma-backed remote config publish persists a new active version and deac
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'platform_admin',
+          role: 'admin',
         },
       },
     },
@@ -1088,7 +1088,7 @@ test('Prisma-backed support impersonation persists a session plus audit and secu
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1265,7 +1265,7 @@ test('Prisma-backed support ticket queue returns recent open tickets for support
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1341,7 +1341,7 @@ test('Prisma-backed support ticket preset favorites persist per support operator
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1482,7 +1482,7 @@ test('Prisma-backed support ticket listing applies queue filters and timeline de
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1676,7 +1676,7 @@ test('Prisma-backed support ticket workflow update persists ownership, handoff n
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1887,7 +1887,7 @@ test('Prisma-backed support impersonation can end an active session and persist 
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },

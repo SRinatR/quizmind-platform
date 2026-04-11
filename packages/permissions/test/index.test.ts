@@ -20,7 +20,7 @@ test('user with no roles gets only authenticated-user permissions', () => {
   assert.ok(!permissions.includes('audit_logs:read'));
 });
 
-test('any non-empty roles array grants admin permissions (legacy migration compat)', () => {
+test('admin role grants audit and job permissions', () => {
   const permissions = resolvePermissions({ systemRoles: ['admin'] });
   assert.ok(permissions.includes('audit_logs:read'));
   assert.ok(permissions.includes('jobs:read'));

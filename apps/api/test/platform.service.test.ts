@@ -310,7 +310,7 @@ function createWebhookJobsSessionSnapshot(): CurrentSessionSnapshot {
     ...session,
     principal: {
       ...session.principal,
-      systemRoles: ['ops_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['jobs:read', 'jobs:retry'],
   };
@@ -591,7 +591,7 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
         emailVerifiedAt: new Date('2026-03-23T08:00:00.000Z'),
         suspendedAt: null,
         lastLoginAt: new Date('2026-03-23T12:00:00.000Z'),
-        systemRoleAssignments: [{ role: 'platform_admin' }],
+        systemRoleAssignments: [{ role: 'admin' }],
         memberships: [
           {
             workspaceId: 'ws_1',
@@ -611,7 +611,7 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
         emailVerifiedAt: new Date('2026-03-23T08:30:00.000Z'),
         suspendedAt: null,
         lastLoginAt: null,
-        systemRoleAssignments: [{ role: 'support_admin' }],
+        systemRoleAssignments: [{ role: 'admin' }],
         memberships: [],
       },
     ] as any;
@@ -690,7 +690,7 @@ test('PlatformService.createUserForCurrentSession creates a user with requested 
       id: 'user_created',
       email: 'new.admin@quizmind.dev',
       displayName: 'New Admin',
-      systemRoleAssignments: [{ role: 'platform_admin' }],
+      systemRoleAssignments: [{ role: 'admin' }],
       memberships: [
         {
           workspaceId: 'ws_1',
@@ -729,7 +729,7 @@ test('PlatformService.createUserForCurrentSession creates a user with requested 
   assert.equal(typeof capturedCreateData.passwordHash, 'string');
   assert.notEqual(capturedCreateData.passwordHash, 'correct-horse-battery-staple');
   assert.equal(capturedCreateData.displayName, 'New Admin');
-  assert.deepEqual(capturedCreateData.systemRoleAssignments.create, [{ role: 'super_admin' }]);
+  assert.deepEqual(capturedCreateData.systemRoleAssignments.create, [{ role: 'admin' }]);
   assert.deepEqual(capturedCreateData.memberships.create, [
     {
       role: 'workspace_admin',
@@ -771,7 +771,7 @@ test('PlatformService.updateUserAccessForCurrentSession updates role assignments
       id: 'user_editor',
       email: 'editor@quizmind.dev',
       displayName: 'Editor User Updated',
-      systemRoleAssignments: [{ role: 'billing_admin' }],
+      systemRoleAssignments: [{ role: 'admin' }],
       memberships: [
         {
           workspaceId: 'ws_1',
@@ -811,7 +811,7 @@ test('PlatformService.updateUserAccessForCurrentSession updates role assignments
   assert.equal(capturedUpdateData.displayName, 'Editor User Updated');
   assert.deepEqual(capturedUpdateData.systemRoleAssignments, {
     deleteMany: {},
-    create: [{ role: 'super_admin' }],
+    create: [{ role: 'admin' }],
   });
   assert.deepEqual(capturedUpdateData.memberships, {
     deleteMany: {},
@@ -2479,7 +2479,7 @@ test('PlatformService.listCompatibilityRulesForCurrentSession returns recent per
     ...createConnectedSessionSnapshot(),
     principal: {
       ...createConnectedSessionSnapshot().principal,
-      systemRoles: ['ops_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['compatibility_rules:manage'],
   });
@@ -2515,7 +2515,7 @@ test('PlatformService.publishCompatibilityRuleForCurrentSession persists a new c
       ...createConnectedSessionSnapshot(),
       principal: {
         ...createConnectedSessionSnapshot().principal,
-        systemRoles: ['ops_admin'],
+        systemRoles: ['admin'],
       },
       permissions: ['compatibility_rules:manage'],
     },
