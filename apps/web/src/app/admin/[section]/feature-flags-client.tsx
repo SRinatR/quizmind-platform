@@ -334,7 +334,7 @@ export function FeatureFlagsClient({
                     roles: event.target.value,
                   }))
                 }
-                placeholder="platform_admin, support_admin"
+                placeholder="admin"
                 value={previewContext.roles}
               />
             </label>
@@ -514,7 +514,7 @@ export function FeatureFlagsClient({
                       <span className="micro-label">Allowed roles</span>
                       <input
                         onChange={(event) => setDraftValue(flag.key, { allowRoles: event.target.value })}
-                        placeholder="platform_admin, support_admin"
+                        placeholder="admin"
                         value={draft.allowRoles}
                       />
                     </label>

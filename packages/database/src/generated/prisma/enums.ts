@@ -10,13 +10,7 @@
 */
 
 export const SystemRole = {
-  super_admin: 'super_admin',
-  platform_admin: 'platform_admin',
-  billing_admin: 'billing_admin',
-  support_admin: 'support_admin',
-  security_admin: 'security_admin',
-  ops_admin: 'ops_admin',
-  content_admin: 'content_admin'
+  admin: 'admin'
 } as const
 
 export type SystemRole = (typeof SystemRole)[keyof typeof SystemRole]

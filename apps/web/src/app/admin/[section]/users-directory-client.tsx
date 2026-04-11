@@ -6,8 +6,14 @@ import { useState, useTransition } from 'react';
 import {
   type AdminUserMutationResult,
   type SupportImpersonationResult,
-  systemRoles,
 } from '@quizmind/contracts';
+
+/** Canonical role granted when promoting a user to admin. */
+const ADMIN_ROLE = 'admin';
+
+function isAdminUser(roles: string[]): boolean {
+  return roles.length > 0;
+}
 
 import { type AdminUsersSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -95,7 +101,7 @@ export function UsersDirectoryClient({
   const [statusMessage, setStatusMessage] = useState<string | null>(
     isConnectedSession
       ? canManageUserAccess
-        ? 'Create users, assign admin roles, and manage account access directly from this directory.'
+        ? 'Create users, toggle admin access, and manage account status directly from this directory.'
         : canStartSupportSessions
           ? 'This connected session can start support sessions, but cannot change user access rights.'
           : 'This connected session can read users only.'
@@ -143,24 +149,18 @@ export function UsersDirectoryClient({
     setDraftSuspendReasons((current) => ({ ...current, [user.id]: '' }));
   }
 
-  function toggleRoleForUser(userId: string, role: (typeof systemRoles)[number], checked: boolean) {
+  function setAdminForUser(userId: string, makeAdmin: boolean) {
     setDraftSystemRoles((current) => {
       const previous = current[userId] ?? [];
-      const next = checked
-        ? Array.from(new Set([...previous, role]))
-        : previous.filter((item) => item !== role);
-
-      return {
-        ...current,
-        [userId]: next,
-      };
+      const next = makeAdmin
+        ? previous.length > 0 ? previous : [ADMIN_ROLE]
+        : [];
+      return { ...current, [userId]: next };
     });
   }
 
-  function toggleCreateRole(role: (typeof systemRoles)[number], checked: boolean) {
-    setCreateRoles((current) =>
-      checked ? Array.from(new Set([...current, role])) : current.filter((item) => item !== role),
-    );
+  function setCreateAdmin(makeAdmin: boolean) {
+    setCreateRoles(makeAdmin ? [ADMIN_ROLE] : []);
   }
 
   async function handleStartSupportSession(user: DirectoryUser) {
@@ -375,26 +375,18 @@ export function UsersDirectoryClient({
                 value={createDisplayName}
               />
             </label>
-            <label className="form-field">
-              <span className="form-field__label">System roles</span>
-              <div className="tag-row">
-                {systemRoles.map((role) => (
-                  <label className="tag-soft tag-soft--gray" key={`create-role-${role}`} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    <input
-                      checked={createRoles.includes(role)}
-                      disabled={creatingUser}
-                      onChange={(event) => toggleCreateRole(role, event.target.checked)}
-                      type="checkbox"
-                    />
-                    {role}
-                  </label>
-                ))}
-              </div>
-            </label>
           </div>
+          <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+            <input
+              checked={createRoles.length > 0}
+              disabled={creatingUser}
+              onChange={(event) => setCreateAdmin(event.target.checked)}
+              type="checkbox"
+            />
+            Admin account
+          </label>
           <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0 12px' }}>
-            User account: no system roles. Admin account: at least one system role (e.g.{' '}
-            <span className="monospace">platform_admin</span>).
+            Regular user by default. Check &ldquo;Admin account&rdquo; to grant admin access.
           </p>
           <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
             <input
@@ -456,7 +448,7 @@ export function UsersDirectoryClient({
                       {user.emailVerifiedAt ? 'verified' : 'unverified'}
                     </span>
                     {user.suspendedAt ? <span className="tag-soft tag-soft--orange">suspended</span> : null}
-                    {user.systemRoles.length > 0 ? user.systemRoles.map((r) => <span key={r} className="tag-soft">{r}</span>) : <span className="tag-soft tag-soft--gray">no roles</span>}
+                    {isAdminUser(user.systemRoles) ? <span className="tag-soft">admin</span> : <span className="tag-soft tag-soft--gray">user</span>}
                     {user.id === currentUserId ? <span className="tag-soft tag-soft--gray">you</span> : null}
                     {!user.lastLoginAt ? <span className="tag-soft tag-soft--gray">never logged in</span> : null}
                   </div>
@@ -482,20 +474,16 @@ export function UsersDirectoryClient({
                         />
                       </label>
                       <label className="form-field">
-                        <span className="form-field__label">System roles</span>
-                        <div className="tag-row">
-                          {systemRoles.map((role) => (
-                            <label className="tag-soft tag-soft--gray" key={`${user.id}:role:${role}`} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                              <input
-                                checked={roleDraft.includes(role)}
-                                disabled={activeAccessUserId === user.id}
-                                onChange={(event) => toggleRoleForUser(user.id, role, event.target.checked)}
-                                type="checkbox"
-                              />
-                              {role}
-                            </label>
-                          ))}
-                        </div>
+                        <span className="form-field__label">Account type</span>
+                        <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <input
+                            checked={isAdminUser(roleDraft)}
+                            disabled={activeAccessUserId === user.id || user.id === currentUserId}
+                            onChange={(event) => setAdminForUser(user.id, event.target.checked)}
+                            type="checkbox"
+                          />
+                          Admin
+                        </label>
                       </label>
                     </div>
                     <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', margin: '8px 0' }}>

@@ -1,10 +1,8 @@
 import {
-  systemRoles,
   type AccessContext,
   type AccessDecision,
   type AccessRequirement,
   type ResourceAction,
-  type SystemRole,
 } from '@quizmind/contracts';
 
 export const permissionRegistry = [
@@ -50,50 +48,11 @@ export const permissionRegistry = [
 
 export type Permission = (typeof permissionRegistry)[number];
 
-const systemRolePermissions: Record<SystemRole, Permission[]> = {
-  super_admin: [...permissionRegistry],
-  platform_admin: permissionRegistry.filter((permission) => permission !== 'support:impersonate'),
-  billing_admin: [
-    'subscriptions:read',
-    'subscriptions:update',
-    'payments:read',
-    'payments:refund',
-    'plans:manage',
-    'billing_providers:manage',
-    'entitlements:read',
-    'usage:read',
-    'jobs:read',
-  ],
-  support_admin: [
-    'users:read',
-    'workspaces:read',
-    'subscriptions:read',
-    'payments:read',
-    'audit_logs:read',
-    'support:impersonate',
-    'impersonation:end',
-    'support_tickets:manage',
-  ],
-  security_admin: ['users:read', 'audit_logs:read', 'audit_logs:export'],
-  ops_admin: [
-    'jobs:read',
-    'jobs:retry',
-    'remote_config:read',
-    'feature_flags:read',
-    'flags:simulate',
-    'config:simulate',
-    'compatibility_rules:manage',
-    'usage:read',
-    'audit_logs:read',
-  ],
-  content_admin: ['feature_flags:read'],
-};
-
-export const allSystemRoles = [...systemRoles];
+export const allSystemRoles = ['admin'] as const;
 
 /**
- * Base permissions granted to all authenticated users regardless of workspace membership.
- * These cover the personal account scope (dashboard, billing, settings, installations, credentials).
+ * Base permissions granted to all authenticated users regardless of role.
+ * Covers the personal account scope (dashboard, billing, settings, installations, credentials).
  */
 export const authenticatedUserPermissions: Permission[] = [
   'installations:read',
@@ -106,7 +65,7 @@ export const authenticatedUserPermissions: Permission[] = [
 ];
 
 export function resolvePermissions(input: {
-  systemRoles?: SystemRole[];
+  systemRoles?: readonly string[];
   /** When true, includes the base authenticated-user permission set */
   authenticatedUser?: boolean;
 }): Permission[] {
@@ -118,8 +77,8 @@ export function resolvePermissions(input: {
     }
   }
 
-  for (const role of input.systemRoles ?? []) {
-    for (const permission of systemRolePermissions[role]) {
+  if ((input.systemRoles ?? []).includes('admin')) {
+    for (const permission of permissionRegistry) {
       granted.add(permission);
     }
   }

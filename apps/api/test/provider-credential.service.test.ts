@@ -276,7 +276,7 @@ test('ProviderCredentialService.listAdminProviderGovernanceForCurrentSession ret
     ...createSession(),
     principal: {
       ...createSession().principal,
-      systemRoles: ['platform_admin'],
+      systemRoles: ['admin'],
     },
     permissions: ['ai_providers:manage', 'credentials:rotate', 'credentials:write'],
   };

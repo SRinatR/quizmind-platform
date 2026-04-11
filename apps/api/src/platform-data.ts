@@ -13,7 +13,7 @@ import { starterFlags, starterRemoteConfig } from './bootstrap/platform-blueprin
 import { apiModules } from './modules';
 import { apiRoutes } from './routes';
 
-export type PersonaKey = 'platform-admin' | 'support-admin' | 'workspace-viewer';
+export type PersonaKey = 'admin' | 'user';
 
 interface DemoUser {
   id: string;
@@ -30,68 +30,43 @@ export interface DemoPersona {
 }
 
 const personaCatalog: Record<PersonaKey, DemoPersona> = {
-  'platform-admin': {
-    key: 'platform-admin',
-    label: 'Platform Admin',
+  admin: {
+    key: 'admin',
+    label: 'Admin',
     notes: [
-      'Owns product rollout, billing visibility, and control-plane publishing.',
-      'Sees both /app and /admin sections.',
+      'Full platform operator. Access to all admin sections.',
+      'Cannot access the user dashboard or product area.',
     ],
     user: {
-      id: 'user_platform_admin',
+      id: 'user_admin',
       email: 'admin@quizmind.dev',
-      displayName: 'Amina Platform',
+      displayName: 'Amina Admin',
     },
     principal: {
-      userId: 'user_platform_admin',
+      userId: 'user_admin',
       email: 'admin@quizmind.dev',
-      systemRoles: ['platform_admin'],
-      entitlements: [
-        'feature.text_answering',
-        'feature.screenshot_answering',
-        'feature.remote_sync',
-        'limit.requests_per_day',
-      ],
-      featureFlags: ['beta.remote-config-v2', 'ops.force-upgrade-banner'],
+      systemRoles: ['admin'],
+      entitlements: [],
+      featureFlags: [],
     },
   },
-  'support-admin': {
-    key: 'support-admin',
-    label: 'Support Admin',
+  user: {
+    key: 'user',
+    label: 'User',
     notes: [
-      'Can read users, workspaces, and audit history, plus start impersonation.',
-      'Does not get publish rights for remote config.',
+      'Regular product user. Access to dashboard, billing, usage, and settings.',
+      'Cannot access admin sections.',
     ],
     user: {
-      id: 'user_support_admin',
-      email: 'support@quizmind.dev',
-      displayName: 'Mila Support',
+      id: 'user_regular',
+      email: 'owner@quizmind.dev',
+      displayName: 'Noah User',
     },
     principal: {
-      userId: 'user_support_admin',
-      email: 'support@quizmind.dev',
-      systemRoles: ['support_admin'],
-      entitlements: ['feature.text_answering', 'feature.remote_sync'],
-      featureFlags: ['ops.force-upgrade-banner'],
-    },
-  },
-  'workspace-viewer': {
-    key: 'workspace-viewer',
-    label: 'Workspace Viewer',
-    notes: [
-      'Can access overview-only dashboard data for a workspace.',
-      'Used to demonstrate route gating on /admin and limited billing access.',
-    ],
-    user: {
-      id: 'user_workspace_viewer',
-      email: 'viewer@quizmind.dev',
-      displayName: 'Noah Viewer',
-    },
-    principal: {
-      userId: 'user_workspace_viewer',
-      email: 'viewer@quizmind.dev',
+      userId: 'user_regular',
+      email: 'owner@quizmind.dev',
       systemRoles: [],
-      entitlements: ['feature.text_answering'],
+      entitlements: ['feature.text_answering', 'feature.remote_sync'],
       featureFlags: [],
     },
   },
@@ -138,7 +113,7 @@ export const foundationTracks = [
     id: 'web',
     title: 'Unified Web App',
     status: 'done',
-    description: 'Single Next.js frontend for landing, dashboard, and admin routes with persona-based gating.',
+    description: 'Single Next.js frontend for user dashboard and admin routes with clean role-based separation.',
   },
   {
     id: 'logging',
@@ -149,11 +124,10 @@ export const foundationTracks = [
 ] as const;
 
 export function resolvePersonaKey(input?: string): PersonaKey {
-  if (input === 'support-admin' || input === 'workspace-viewer' || input === 'platform-admin') {
-    return input;
+  if (input === 'user') {
+    return 'user';
   }
-
-  return 'platform-admin';
+  return 'admin';
 }
 
 export function getPersona(input?: string): DemoPersona {
@@ -188,82 +162,81 @@ export function listFoundationUsers(): AdminUserDirectoryEntry[] {
 }
 
 export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
-  const viewerPersona = getPersona('workspace-viewer');
-  const platformPersona = getPersona('platform-admin');
-  const supportPersona = getPersona('support-admin');
+  const userPersona = getPersona('user');
+  const adminPersona = getPersona('admin');
 
   return [
     {
       id: 'support-ticket-demo-1',
-      subject: 'Viewer cannot access billing settings',
-      body: 'The account viewer can open the product but lands on a denial state in billing settings.',
+      subject: 'User cannot access billing settings',
+      body: 'The account cannot access billing settings and lands on a denial state.',
       status: 'open',
       createdAt: '2026-03-23T10:15:00.000Z',
       updatedAt: '2026-03-23T10:20:00.000Z',
       requester: {
-        id: viewerPersona.user.id,
-        email: viewerPersona.user.email,
-        displayName: viewerPersona.user.displayName,
+        id: userPersona.user.id,
+        email: userPersona.user.email,
+        displayName: userPersona.user.displayName,
       },
       timeline: [
         {
           id: 'support-ticket-demo-1:event-1',
           eventType: 'support.ticket_workflow_updated',
-          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          summary: 'assigned the ticket; changed status from open to in progress',
           occurredAt: '2026-03-23T10:22:00.000Z',
           actor: {
-            id: 'user_support_admin',
-            email: 'support@quizmind.dev',
-            displayName: 'Mila Support',
+            id: adminPersona.user.id,
+            email: adminPersona.user.email,
+            displayName: adminPersona.user.displayName,
           },
           previousStatus: 'open',
           nextStatus: 'in_progress',
           nextAssignee: {
-            id: 'user_support_admin',
-            email: 'support@quizmind.dev',
-            displayName: 'Mila Support',
+            id: adminPersona.user.id,
+            email: adminPersona.user.email,
+            displayName: adminPersona.user.displayName,
           },
-          handoffNote: 'Support is reproducing the billing denial before replying to the requester.',
+          handoffNote: 'Reproducing the billing denial before replying to the requester.',
         },
       ],
     },
     {
       id: 'support-ticket-demo-2',
       subject: 'Need help planning an account upgrade',
-      body: 'The admin wants support to verify account impact before upgrading the subscription plan.',
+      body: 'The user wants support to verify account impact before upgrading the subscription plan.',
       status: 'in_progress',
       createdAt: '2026-03-23T09:30:00.000Z',
       updatedAt: '2026-03-23T09:55:00.000Z',
       requester: {
-        id: platformPersona.user.id,
-        email: platformPersona.user.email,
-        displayName: platformPersona.user.displayName,
+        id: adminPersona.user.id,
+        email: adminPersona.user.email,
+        displayName: adminPersona.user.displayName,
       },
       assignedTo: {
-        id: supportPersona.user.id,
-        email: supportPersona.user.email,
-        displayName: supportPersona.user.displayName,
+        id: adminPersona.user.id,
+        email: adminPersona.user.email,
+        displayName: adminPersona.user.displayName,
       },
-      handoffNote: 'Already picked up by support. Waiting on final plan-comparison notes before resolving.',
+      handoffNote: 'Waiting on final plan-comparison notes before resolving.',
       timeline: [
         {
           id: 'support-ticket-demo-2:event-1',
           eventType: 'support.ticket_workflow_updated',
-          summary: 'assigned the ticket to Mila Support; changed status from open to in progress; updated the handoff note',
+          summary: 'changed status from open to in progress; updated the handoff note',
           occurredAt: '2026-03-23T09:36:00.000Z',
           actor: {
-            id: supportPersona.user.id,
-            email: supportPersona.user.email,
-            displayName: supportPersona.user.displayName,
+            id: adminPersona.user.id,
+            email: adminPersona.user.email,
+            displayName: adminPersona.user.displayName,
           },
           previousStatus: 'open',
           nextStatus: 'in_progress',
           nextAssignee: {
-            id: supportPersona.user.id,
-            email: supportPersona.user.email,
-            displayName: supportPersona.user.displayName,
+            id: adminPersona.user.id,
+            email: adminPersona.user.email,
+            displayName: adminPersona.user.displayName,
           },
-          handoffNote: 'Already picked up by support. Waiting on final plan-comparison notes before resolving.',
+          handoffNote: 'Waiting on final plan-comparison notes before resolving.',
         },
       ],
     },
@@ -272,16 +245,11 @@ export function listFoundationSupportTickets(): SupportTicketQueueEntry[] {
 
 export function matchPersonaFromLogin(request: AuthLoginRequest): PersonaKey {
   const normalizedEmail = request.email.toLowerCase();
-
-  if (normalizedEmail.includes('support')) {
-    return 'support-admin';
+  // Any non-admin email → user persona; admin email → admin persona
+  if (normalizedEmail.includes('admin')) {
+    return 'admin';
   }
-
-  if (normalizedEmail.includes('viewer')) {
-    return 'workspace-viewer';
-  }
-
-  return 'platform-admin';
+  return 'user';
 }
 
 export function getFoundationOverview() {

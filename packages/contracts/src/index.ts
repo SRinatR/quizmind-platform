@@ -1,12 +1,4 @@
-export const systemRoles = [
-  'super_admin',
-  'platform_admin',
-  'billing_admin',
-  'support_admin',
-  'security_admin',
-  'ops_admin',
-  'content_admin',
-] as const;
+export const systemRoles = ['admin'] as const;
 
 export const workspaceRoles = [
   'workspace_owner',

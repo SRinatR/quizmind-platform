@@ -395,46 +395,9 @@ async function seed() {
     }),
   ]);
 
-  const allSystemRolesForAdmin: SystemRole[] = [
-    SystemRole.super_admin,
-    SystemRole.platform_admin,
-    SystemRole.billing_admin,
-    SystemRole.support_admin,
-    SystemRole.security_admin,
-    SystemRole.ops_admin,
-    SystemRole.content_admin,
-  ];
-
-  for (const role of allSystemRolesForAdmin) {
-    await ensureSystemRole({
-      userId: adminUser.id,
-      role,
-    });
-  }
-
   await ensureSystemRole({
-    userId: platformUser.id,
-    role: SystemRole.platform_admin,
-  });
-  await ensureSystemRole({
-    userId: supportUser.id,
-    role: SystemRole.support_admin,
-  });
-  await ensureSystemRole({
-    userId: billingUser.id,
-    role: SystemRole.billing_admin,
-  });
-  await ensureSystemRole({
-    userId: securityUser.id,
-    role: SystemRole.security_admin,
-  });
-  await ensureSystemRole({
-    userId: opsUser.id,
-    role: SystemRole.ops_admin,
-  });
-  await ensureSystemRole({
-    userId: contentUser.id,
-    role: SystemRole.content_admin,
+    userId: adminUser.id,
+    role: SystemRole.admin,
   });
 
   await prisma.supportTicketPresetFavorite.upsert({

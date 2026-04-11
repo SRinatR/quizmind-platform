@@ -186,6 +186,7 @@ const maxAdminSuspendReasonLength = 500;
 const adminUserEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const validSystemRoles = new Set<SystemRole>(systemRoles);
 
+
 function normalizeAdminEmail(value: unknown): string {
   if (typeof value !== 'string') {
     throw new BadRequestException('email is required.');
@@ -1468,9 +1469,7 @@ export class PlatformService {
         ...(systemRoles.length > 0
           ? {
               systemRoleAssignments: {
-                create: systemRoles.map((role) => ({
-                  role,
-                })),
+                create: [{ role: 'admin' }],
               },
             }
           : {}),
@@ -1480,7 +1479,7 @@ export class PlatformService {
         actorUserId: session.user.id,
         targetUserId: createdUser.id,
         email: createdUser.email,
-        systemRoles: createdUser.systemRoleAssignments.map((assignment) => assignment.role),
+        isAdmin: createdUser.systemRoleAssignments.length > 0,
       });
 
       return {
@@ -1542,11 +1541,7 @@ export class PlatformService {
       updateData.systemRoleAssignments = {
         deleteMany: {},
         ...(systemRoles.length > 0
-          ? {
-              create: systemRoles.map((role) => ({
-                role,
-              })),
-            }
+          ? { create: [{ role: 'admin' }] }
           : {}),
       };
       mutationCount += 1;
@@ -1579,7 +1574,7 @@ export class PlatformService {
         email: updatedUser.email,
         suspendedAt: updatedUser.suspendedAt?.toISOString() ?? null,
         suspendReason: updatedUser.suspendReason ?? null,
-        systemRoles: updatedUser.systemRoleAssignments.map((assignment) => assignment.role),
+        isAdmin: updatedUser.systemRoleAssignments.length > 0,
       });
 
       return {

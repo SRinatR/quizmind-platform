@@ -44,7 +44,7 @@ test('access token helpers issue and verify hs256 tokens', async () => {
     sessionId: 'session_123',
     userId: 'user_123',
     email: 'admin@quizmind.dev',
-    roles: ['platform_admin'],
+    roles: ['admin'],
     issuer: 'https://api.quizmind.dev',
     audience: 'https://app.quizmind.dev',
   });
@@ -57,7 +57,7 @@ test('access token helpers issue and verify hs256 tokens', async () => {
   assert.equal(verified.userId, 'user_123');
   assert.equal(verified.sessionId, 'session_123');
   assert.equal(verified.email, 'admin@quizmind.dev');
-  assert.deepEqual(verified.roles, ['platform_admin']);
+  assert.deepEqual(verified.roles, ['admin']);
   assert.equal(verified.type, 'access');
   assert.equal(typeof issued.expiresAt, 'string');
   assert.equal(verified.iss, 'https://api.quizmind.dev');

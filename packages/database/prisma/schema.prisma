@@ -8,13 +8,7 @@ datasource db {
 }
 
 enum SystemRole {
-  super_admin
-  platform_admin
-  billing_admin
-  support_admin
-  security_admin
-  ops_admin
-  content_admin
+  admin
 }
 
 enum WorkspaceRole {

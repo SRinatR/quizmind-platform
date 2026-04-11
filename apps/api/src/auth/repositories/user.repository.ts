@@ -68,6 +68,6 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
   }
 
   getSystemRoles(user: AuthUserRecord): SystemRole[] {
-    return user.systemRoleAssignments.map((assignment) => assignment.role);
+    return user.systemRoleAssignments.map((a) => a.role);
   }
 }

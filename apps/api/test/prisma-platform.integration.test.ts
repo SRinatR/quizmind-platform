@@ -24,9 +24,7 @@ async function createSessionSnapshotForUser(harness: NonNullable<Awaited<ReturnT
     sessionId: session.id,
     userId: input.userId,
     email: input.email,
-    roles: (input.roles ?? []) as Array<
-      'super_admin' | 'platform_admin' | 'billing_admin' | 'support_admin' | 'security_admin' | 'ops_admin' | 'content_admin'
-    >,
+    roles: (input.roles ?? []) as Array<'admin'>,
     issuer: harness.env.jwtIssuer,
     audience: harness.env.jwtAudience,
   });
@@ -169,7 +167,7 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'platform_admin',
+          role: 'admin',
         },
       },
       memberships: {
@@ -191,7 +189,7 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
       emailVerifiedAt: new Date('2026-03-23T12:15:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -202,7 +200,7 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: adminEmail,
     userId: adminUserId,
-    roles: ['platform_admin'],
+    roles: ['admin'],
   });
 
   const result = await harness.platformService.listUsersForCurrentSession(snapshot);
@@ -214,8 +212,8 @@ test('Prisma-backed admin user listing returns persisted users, roles, and works
   assert.equal(result.accessDecision.allowed, true);
   assert.equal(result.writeDecision.allowed, true);
   assert.equal(createdUsers.length, 2);
-  assert.ok(createdUsers.some((item) => item.email === adminEmail && item.systemRoles.includes('platform_admin')));
-  assert.ok(createdUsers.some((item) => item.email === supportEmail && item.systemRoles.includes('support_admin')));
+  assert.ok(createdUsers.some((item) => item.email === adminEmail && item.systemRoles.includes('admin')));
+  assert.ok(createdUsers.some((item) => item.email === supportEmail && item.systemRoles.includes('admin')));
   assert.ok(
     createdUsers.some(
       (item) =>
@@ -529,7 +527,7 @@ test('Prisma-backed feature flag listing returns persisted flags for connected a
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'platform_admin',
+          role: 'admin',
         },
       },
     },
@@ -543,7 +541,7 @@ test('Prisma-backed feature flag listing returns persisted flags for connected a
   const snapshot = await createSessionSnapshotForUser(harness, {
     email,
     userId,
-    roles: ['platform_admin'],
+    roles: ['admin'],
   });
   const result = await harness.platformService.listFeatureFlagsForCurrentSession(snapshot);
   const createdFlags = result.flags.filter((flag) => flag.key.includes(harness.uniqueId));
@@ -666,7 +664,7 @@ test('Prisma-backed remote config publish persists a new active version and deac
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'platform_admin',
+          role: 'admin',
         },
       },
     },
@@ -697,7 +695,7 @@ test('Prisma-backed remote config publish persists a new active version and deac
   const snapshot = await createSessionSnapshotForUser(harness, {
     email,
     userId,
-    roles: ['platform_admin'],
+    roles: ['admin'],
   });
 
   const result = await harness.platformService.publishRemoteConfigForCurrentSession(snapshot, {
@@ -1090,7 +1088,7 @@ test('Prisma-backed support impersonation persists a session plus audit and secu
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1130,7 +1128,7 @@ test('Prisma-backed support impersonation persists a session plus audit and secu
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: supportEmail,
     userId: supportUserId,
-    roles: ['support_admin'],
+    roles: ['admin'],
   });
 
   const result = await harness.platformService.startSupportImpersonationForCurrentSession(snapshot, {
@@ -1267,7 +1265,7 @@ test('Prisma-backed support ticket queue returns recent open tickets for support
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1290,7 +1288,7 @@ test('Prisma-backed support ticket queue returns recent open tickets for support
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: supportEmail,
     userId: supportUserId,
-    roles: ['support_admin'],
+    roles: ['admin'],
   });
 
   const result = await harness.platformService.listSupportTicketsForCurrentSession(snapshot);
@@ -1343,7 +1341,7 @@ test('Prisma-backed support ticket preset favorites persist per support operator
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1354,7 +1352,7 @@ test('Prisma-backed support ticket preset favorites persist per support operator
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: supportEmail,
     userId: supportUserId,
-    roles: ['support_admin'],
+    roles: ['admin'],
   });
 
   const favoriteResult = await harness.platformService.updateSupportTicketPresetFavoriteForCurrentSession(snapshot, {
@@ -1484,7 +1482,7 @@ test('Prisma-backed support ticket listing applies queue filters and timeline de
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1586,7 +1584,7 @@ test('Prisma-backed support ticket listing applies queue filters and timeline de
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: supportEmail,
     userId: supportUserId,
-    roles: ['support_admin'],
+    roles: ['admin'],
   });
 
   const filtered = await harness.platformService.listSupportTicketsForCurrentSession(snapshot, {
@@ -1678,7 +1676,7 @@ test('Prisma-backed support ticket workflow update persists ownership, handoff n
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1701,7 +1699,7 @@ test('Prisma-backed support ticket workflow update persists ownership, handoff n
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: supportEmail,
     userId: supportUserId,
-    roles: ['support_admin'],
+    roles: ['admin'],
   });
 
   const claimed = await harness.platformService.updateSupportTicketForCurrentSession(snapshot, {
@@ -1889,7 +1887,7 @@ test('Prisma-backed support impersonation can end an active session and persist 
       emailVerifiedAt: new Date('2026-03-23T12:00:00.000Z'),
       systemRoleAssignments: {
         create: {
-          role: 'support_admin',
+          role: 'admin',
         },
       },
     },
@@ -1929,7 +1927,7 @@ test('Prisma-backed support impersonation can end an active session and persist 
   const snapshot = await createSessionSnapshotForUser(harness, {
     email: supportEmail,
     userId: supportUserId,
-    roles: ['support_admin'],
+    roles: ['admin'],
   });
 
   const started = await harness.platformService.startSupportImpersonationForCurrentSession(snapshot, {
