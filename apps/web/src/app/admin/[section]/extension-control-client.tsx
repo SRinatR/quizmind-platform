@@ -85,7 +85,6 @@ export function ExtensionControlClient({
   const [formState, setFormState] = useState({
     installationId: initialRequest.installationId,
     userId: initialRequest.userId,
-    workspaceId: initialRequest.workspaceId ?? '',
     environment: initialRequest.environment,
     planCode: initialRequest.planCode ?? '',
     extensionVersion: initialRequest.handshake.extensionVersion,
@@ -101,7 +100,6 @@ export function ExtensionControlClient({
   const [isSimulating, setIsSimulating] = useState(false);
   const [usageFormState, setUsageFormState] = useState({
     installationId: initialUsageEvent.installationId,
-    workspaceId: initialUsageEvent.workspaceId ?? '',
     eventType: initialUsageEvent.eventType,
     occurredAt: initialUsageEvent.occurredAt,
     payload: stringifyJson(initialUsageEvent.payload),
@@ -149,7 +147,6 @@ export function ExtensionControlClient({
             capabilities,
             browser: formState.browser,
           },
-          ...(formState.workspaceId.trim() ? { workspaceId: formState.workspaceId.trim() } : {}),
           ...(formState.planCode.trim() ? { planCode: formState.planCode.trim() } : {}),
         } satisfies ExtensionBootstrapRequest),
       });
@@ -212,7 +209,6 @@ export function ExtensionControlClient({
           eventType: usageFormState.eventType.trim(),
           occurredAt: occurredAt.toISOString(),
           payload: parsedPayload,
-          ...(usageFormState.workspaceId.trim() ? { workspaceId: usageFormState.workspaceId.trim() } : {}),
         } satisfies UsageEventPayload),
       });
       const payload = (await response.json().catch(() => null)) as UsageRouteResponse | null;
@@ -276,20 +272,6 @@ export function ExtensionControlClient({
               />
             </label>
             <label className="admin-ticket-field">
-              <span className="micro-label">Workspace</span>
-              <select
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    workspaceId: event.target.value,
-                  }))
-                }
-                value={formState.workspaceId}
-              >
-                <option value="">No workspace binding</option>
-              </select>
-            </label>
-            <label className="admin-ticket-field">
               <span className="micro-label">Environment</span>
               <input
                 onChange={(event) =>
@@ -303,17 +285,16 @@ export function ExtensionControlClient({
             </label>
             <label className="admin-ticket-field">
               <span className="micro-label">Plan code</span>
-              <select
+              <input
                 onChange={(event) =>
                   setFormState((current) => ({
                     ...current,
                     planCode: event.target.value,
                   }))
                 }
+                placeholder="pro"
                 value={formState.planCode}
-              >
-                <option value="">Resolve from workspace defaults</option>
-              </select>
+              />
             </label>
             <label className="admin-ticket-field">
               <span className="micro-label">Browser</span>
@@ -447,20 +428,6 @@ export function ExtensionControlClient({
               />
             </label>
             <label className="admin-ticket-field">
-              <span className="micro-label">Workspace</span>
-              <select
-                onChange={(event) =>
-                  setUsageFormState((current) => ({
-                    ...current,
-                    workspaceId: event.target.value,
-                  }))
-                }
-                value={usageFormState.workspaceId}
-              >
-                <option value="">No workspace binding</option>
-              </select>
-            </label>
-            <label className="admin-ticket-field">
               <span className="micro-label">Event type</span>
               <input
                 onChange={(event) =>
@@ -575,8 +542,8 @@ export function ExtensionControlClient({
           ) : (
             <div className="empty-state">
               <span className="micro-label">No usage snapshot</span>
-              <h2>Usage summary is unavailable for this workspace.</h2>
-              <p>Open the control plane with a workspace-bound admin session to inspect quotas and recent telemetry.</p>
+              <h2>Usage summary is unavailable.</h2>
+              <p>Open the control plane with a connected admin session to inspect quotas and recent telemetry.</p>
             </div>
           )}
         </article>

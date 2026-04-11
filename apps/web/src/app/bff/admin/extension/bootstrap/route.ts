@@ -70,7 +70,6 @@ export async function POST(request: Request) {
   const installationId = body?.installationId?.trim();
   const userId = body?.userId?.trim();
   const environment = body?.environment?.trim();
-  const workspaceId = body?.workspaceId?.trim() || undefined;
   const planCode = body?.planCode?.trim() || undefined;
   const handshake = normalizeHandshake(body?.handshake);
 
@@ -90,7 +89,6 @@ export async function POST(request: Request) {
       userId,
       environment,
       handshake,
-      ...(workspaceId ? { workspaceId } : {}),
       ...(planCode ? { planCode } : {}),
     }),
   });

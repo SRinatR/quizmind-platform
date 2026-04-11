@@ -34,7 +34,6 @@ export async function POST(request: Request) {
   const accessToken = await getAccessTokenFromCookies();
   const body = (await request.json().catch(() => null)) as Partial<UsageEventPayload> | null;
   const installationId = body?.installationId?.trim();
-  const workspaceId = body?.workspaceId?.trim() || undefined;
   const eventType = body?.eventType?.trim();
   const occurredAt = body?.occurredAt?.trim();
   const payload = body?.payload;
@@ -59,7 +58,6 @@ export async function POST(request: Request) {
       eventType,
       occurredAt,
       payload,
-      ...(workspaceId ? { workspaceId } : {}),
     } satisfies UsageEventPayload),
   });
 
