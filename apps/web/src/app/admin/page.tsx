@@ -59,20 +59,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const canViewFleet = visibleSections.some((s) => s.id === 'extension-fleet');
   const canViewWebhooks = visibleSections.some((s) => s.id === 'webhooks');
   const canViewSecurity = visibleSections.some((s) => s.id === 'security');
+  const canViewUsers = visibleSections.some((s) => s.id === 'users');
+  const canViewSupportSessions = visibleSections.some((s) => s.id === 'access-sessions');
 
   const [adminUsers, supportImpersonationSessions, adminExtensionFleet, adminWebhooks, adminSecurity] =
     await Promise.all([
-      getAdminUsers(persona, accessToken),
-      getSupportImpersonationSessions(persona, accessToken),
+      canViewUsers ? getAdminUsers(persona, accessToken) : Promise.resolve(null),
+      canViewSupportSessions ? getSupportImpersonationSessions(persona, accessToken) : Promise.resolve(null),
       canViewFleet ? getAdminExtensionFleet(persona, {}, accessToken) : Promise.resolve(null),
       canViewWebhooks ? getAdminWebhooks(persona, {}, accessToken) : Promise.resolve(null),
       canViewSecurity ? getAdminSecurity(persona, {}, accessToken) : Promise.resolve(null),
     ]);
 
-  const hasAlerts =
-    (adminExtensionFleet?.counts.reconnectRequired ?? 0) > 0 ||
-    (adminWebhooks?.statusCounts.failed ?? 0) > 0 ||
-    (adminSecurity?.findings.totalFailures ?? 0) > 0;
+  const reconnectCount = adminExtensionFleet?.counts.reconnectRequired ?? 0;
+  const failedWebhooks = adminWebhooks?.statusCounts.failed ?? 0;
+  const securitySignals = adminSecurity?.findings.totalFailures ?? 0;
+  const hasAlerts = reconnectCount > 0 || failedWebhooks > 0 || securitySignals > 0;
 
   return (
     <SiteShell
@@ -89,32 +91,58 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     >
       {visibleSections.length > 0 ? (
         <>
-          {/* ── Alert strip ── */}
+          {/* ── Alert strip — only shown when attention is needed ── */}
           {hasAlerts ? (
-            <section className="panel" style={{ borderColor: 'rgba(184,92,56,0.35)', background: 'rgba(184,92,56,0.04)' }}>
+            <section
+              className="panel"
+              style={{ borderColor: 'rgba(184,92,56,0.35)', background: 'rgba(184,92,56,0.04)', padding: '12px 22px' }}
+            >
               <span className="micro-label" style={{ color: '#8a3c19' }}>Attention required</span>
               <div className="tag-row" style={{ marginTop: '8px' }}>
-                {(adminExtensionFleet?.counts.reconnectRequired ?? 0) > 0 ? (
+                {reconnectCount > 0 ? (
                   <Link href="/admin/extension-fleet?installationConnection=reconnect_required" className="tag warn">
-                    {adminExtensionFleet!.counts.reconnectRequired} reconnect required
+                    {reconnectCount} reconnect required
                   </Link>
                 ) : null}
-                {(adminWebhooks?.statusCounts.failed ?? 0) > 0 ? (
+                {failedWebhooks > 0 ? (
                   <Link href="/admin/webhooks?webhookStatus=failed" className="tag warn">
-                    {adminWebhooks!.statusCounts.failed} failed webhook{adminWebhooks!.statusCounts.failed !== 1 ? 's' : ''}
+                    {failedWebhooks} failed webhook{failedWebhooks !== 1 ? 's' : ''}
                   </Link>
                 ) : null}
-                {(adminSecurity?.findings.totalFailures ?? 0) > 0 ? (
+                {securitySignals > 0 ? (
                   <Link href="/admin/security" className="tag warn">
-                    {adminSecurity!.findings.totalFailures} security signal{adminSecurity!.findings.totalFailures !== 1 ? 's' : ''}
+                    {securitySignals} security signal{securitySignals !== 1 ? 's' : ''}
+                  </Link>
+                ) : null}
+                {(adminSecurity?.findings.suspiciousAuthFailures ?? 0) > 0 ? (
+                  <Link href="/admin/security?logStream=security&logSeverity=warn&logSearch=auth.login_failed" className="tag warn">
+                    {adminSecurity!.findings.suspiciousAuthFailures} auth failure{adminSecurity!.findings.suspiciousAuthFailures !== 1 ? 's' : ''}
+                  </Link>
+                ) : null}
+                {(adminSecurity?.findings.extensionReconnectOutstanding ?? 0) > 0 ? (
+                  <Link href="/admin/security?logStream=security&logSearch=extension.installation_reconnect_requested" className="tag warn">
+                    {adminSecurity!.findings.extensionReconnectOutstanding} unresolved reconnect{adminSecurity!.findings.extensionReconnectOutstanding !== 1 ? 's' : ''}
                   </Link>
                 ) : null}
               </div>
             </section>
-          ) : null}
+          ) : (
+            <section
+              className="panel"
+              style={{ borderColor: 'rgba(34,120,74,0.25)', background: 'rgba(34,120,74,0.03)', padding: '10px 22px' }}
+            >
+              <span className="micro-label" style={{ color: '#1a5c38' }}>All clear</span>
+              <p style={{ margin: '2px 0 0', fontSize: '0.84rem', color: 'var(--muted)' }}>
+                No critical alerts at this time.
+              </p>
+            </section>
+          )}
 
           {/* ── KPI metrics ── */}
-          <section className="section-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+          <section
+            className="section-grid"
+            style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
+          >
             {adminUsers?.accessDecision.allowed ? (
               <Link href="/admin/users" className="stat-card section-card--link" style={{ display: 'block' }}>
                 <p className="stat-value">{adminUsers.items.length}</p>
@@ -131,17 +159,15 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             {adminExtensionFleet ? (
               <Link
-                href="/admin/extension-fleet?installationConnection=reconnect_required"
+                href="/admin/extension-fleet"
                 className="stat-card section-card--link"
                 style={{ display: 'block' }}
               >
-                <p className={`stat-value${adminExtensionFleet.counts.reconnectRequired > 0 ? '' : ''}`}>
-                  {adminExtensionFleet.counts.reconnectRequired}
-                </p>
+                <p className="stat-value">{adminExtensionFleet.counts.total}</p>
                 <p className="stat-label">
-                  Reconnect required
-                  {adminExtensionFleet.counts.reconnectRequired > 0 ? (
-                    <span className="tag warn" style={{ marginLeft: '6px' }}>!</span>
+                  Installations
+                  {reconnectCount > 0 ? (
+                    <span className="tag warn" style={{ marginLeft: '6px' }}>{reconnectCount} reconnect</span>
                   ) : null}
                 </p>
               </Link>
@@ -149,14 +175,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             {adminWebhooks ? (
               <Link
-                href="/admin/webhooks?webhookStatus=failed"
+                href={failedWebhooks > 0 ? '/admin/webhooks?webhookStatus=failed' : '/admin/webhooks'}
                 className="stat-card section-card--link"
                 style={{ display: 'block' }}
               >
-                <p className="stat-value">{adminWebhooks.statusCounts.failed}</p>
+                <p className="stat-value">{failedWebhooks}</p>
                 <p className="stat-label">
                   Failed webhooks
-                  {adminWebhooks.statusCounts.failed > 0 ? (
+                  {failedWebhooks > 0 ? (
                     <span className="tag warn" style={{ marginLeft: '6px' }}>!</span>
                   ) : null}
                 </p>
@@ -165,10 +191,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
             {adminSecurity ? (
               <Link href="/admin/security" className="stat-card section-card--link" style={{ display: 'block' }}>
-                <p className="stat-value">{adminSecurity.findings.totalFailures}</p>
+                <p className="stat-value">{securitySignals}</p>
                 <p className="stat-label">
                   Security signals
-                  {adminSecurity.findings.totalFailures > 0 ? (
+                  {securitySignals > 0 ? (
                     <span className="tag warn" style={{ marginLeft: '6px' }}>!</span>
                   ) : null}
                 </p>
@@ -181,11 +207,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             {/* Recent users */}
             {adminUsers?.accessDecision.allowed && adminUsers.items.length > 0 ? (
               <article className="panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <span className="micro-label">People</span>
-                  <Link href="/admin/users" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>All users</Link>
+                  <Link href="/admin/users" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>
+                    All users
+                  </Link>
                 </div>
-                <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', fontWeight: 600 }}>Recent accounts</h3>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Recent accounts</h3>
                 {adminUsers.items.slice(0, 6).map((user) => (
                   <div className="kv-row" key={user.id}>
                     <span className="kv-row__key">{user.displayName || 'Unnamed'}</span>
@@ -195,14 +223,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               </article>
             ) : null}
 
-            {/* Recent support sessions */}
+            {/* Recent support access sessions */}
             {supportImpersonationSessions?.accessDecision.allowed ? (
               <article className="panel">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <span className="micro-label">People</span>
-                  <Link href="/admin/access-sessions" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>All sessions</Link>
+                  <Link href="/admin/access-sessions" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>
+                    All sessions
+                  </Link>
                 </div>
-                <h3 style={{ margin: '0 0 12px', fontSize: '0.95rem', fontWeight: 600 }}>Recent support access</h3>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Recent support access</h3>
                 {supportImpersonationSessions.items.length > 0 ? (
                   <div className="event-list">
                     {supportImpersonationSessions.items.slice(0, 5).map((item) => (
@@ -227,9 +257,78 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 )}
               </article>
             ) : null}
+
+            {/* Security incident summary */}
+            {adminSecurity && securitySignals > 0 ? (
+              <article className="panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span className="micro-label">Operations</span>
+                  <Link href="/admin/security" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>
+                    View security
+                  </Link>
+                </div>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Security incidents</h3>
+                <div className="list-stack">
+                  {adminSecurity.findings.suspiciousAuthFailures > 0 ? (
+                    <div className="list-item">
+                      <strong>Auth failures</strong>
+                      <p>{adminSecurity.findings.suspiciousAuthFailures} suspicious login failure{adminSecurity.findings.suspiciousAuthFailures !== 1 ? 's' : ''}</p>
+                    </div>
+                  ) : null}
+                  {adminSecurity.findings.extensionReconnectOutstanding > 0 ? (
+                    <div className="list-item">
+                      <strong>Unresolved reconnects</strong>
+                      <p>{adminSecurity.findings.extensionReconnectOutstanding} installation{adminSecurity.findings.extensionReconnectOutstanding !== 1 ? 's' : ''} pending reconnect</p>
+                    </div>
+                  ) : null}
+                  {adminSecurity.findings.extensionRuntimeErrors > 0 ? (
+                    <div className="list-item">
+                      <strong>Runtime errors</strong>
+                      <p>{adminSecurity.findings.extensionRuntimeErrors} extension runtime error{adminSecurity.findings.extensionRuntimeErrors !== 1 ? 's' : ''}</p>
+                    </div>
+                  ) : null}
+                  {adminSecurity.findings.extensionBootstrapRefreshFailures > 0 ? (
+                    <div className="list-item">
+                      <strong>Bootstrap failures</strong>
+                      <p>{adminSecurity.findings.extensionBootstrapRefreshFailures} refresh failure{adminSecurity.findings.extensionBootstrapRefreshFailures !== 1 ? 's' : ''}</p>
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+            ) : null}
+
+            {/* Fleet health summary */}
+            {adminExtensionFleet && (reconnectCount > 0 || adminExtensionFleet.counts.unsupported > 0) ? (
+              <article className="panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span className="micro-label">Extensions</span>
+                  <Link href="/admin/extension-fleet" className="btn-ghost" style={{ fontSize: '0.78rem', padding: '4px 10px' }}>
+                    View fleet
+                  </Link>
+                </div>
+                <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 600 }}>Fleet health</h3>
+                <div className="list-stack">
+                  {reconnectCount > 0 ? (
+                    <div className="list-item">
+                      <strong>Reconnect required</strong>
+                      <p>{reconnectCount} installation{reconnectCount !== 1 ? 's' : ''} need reconnection</p>
+                      <Link href="/admin/extension-fleet?installationConnection=reconnect_required" className="btn-ghost" style={{ fontSize: '0.78rem', marginTop: '4px', padding: '3px 8px' }}>
+                        Filter fleet →
+                      </Link>
+                    </div>
+                  ) : null}
+                  {adminExtensionFleet.counts.unsupported > 0 ? (
+                    <div className="list-item">
+                      <strong>Unsupported versions</strong>
+                      <p>{adminExtensionFleet.counts.unsupported} installation{adminExtensionFleet.counts.unsupported !== 1 ? 's' : ''} on unsupported extension version</p>
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+            ) : null}
           </section>
 
-          {/* ── Quick actions ── */}
+          {/* ── Section quick actions ── */}
           <section className="section-grid">
             {visibleSections.map((s) => (
               <Link key={s.id} href={s.href} className="section-card section-card--link">

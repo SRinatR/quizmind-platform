@@ -1,10 +1,14 @@
 import { type AccessRequirement } from '@quizmind/contracts';
+import { type AdminNavGroup, type NavigationItem } from '@quizmind/ui';
 
 export type AdminSectionGroup = 'people' | 'operations' | 'extensions' | 'control-plane';
 
 export interface AdminSection {
   id: string;
+  /** Full title shown in page headers and section cards. */
   title: string;
+  /** Short label shown in the sidebar nav. Defaults to title when equal. */
+  navLabel: string;
   href: string;
   description: string;
   requirement: AccessRequirement;
@@ -17,6 +21,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'users',
     title: 'Users',
+    navLabel: 'Users',
     href: '/admin/users',
     description: 'User directory and role assignments.',
     requirement: { permission: 'users:read' },
@@ -26,17 +31,21 @@ export const adminSections: AdminSection[] = [
   {
     id: 'support',
     title: 'Support',
+    navLabel: 'Support',
     href: '/admin/support',
     description: 'Support ticket queue and operator context.',
-    requirement: { permission: 'support:impersonate' },
+    // support_tickets:manage gates the ticket queue — distinct from impersonation
+    requirement: { permission: 'support_tickets:manage' },
     group: 'people',
     groupLabel: 'People',
   },
   {
     id: 'access-sessions',
     title: 'Access Sessions',
+    navLabel: 'Access Sessions',
     href: '/admin/access-sessions',
     description: 'Recent impersonation sessions and support access logs.',
+    // support:impersonate gates the impersonation log
     requirement: { permission: 'support:impersonate' },
     group: 'people',
     groupLabel: 'People',
@@ -45,6 +54,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'events',
     title: 'Events',
+    navLabel: 'Events',
     href: '/admin/events',
     description: 'Audit, activity, security, and domain event streams.',
     requirement: { permission: 'audit_logs:read' },
@@ -54,6 +64,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'security',
     title: 'Security',
+    navLabel: 'Security',
     href: '/admin/security',
     description: 'Security event review and hardening checkpoints.',
     requirement: { permission: 'audit_logs:read' },
@@ -63,6 +74,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'webhooks',
     title: 'Jobs & Webhooks',
+    navLabel: 'Jobs & Webhooks',
     href: '/admin/webhooks',
     description: 'Webhook deliveries, queue bindings, and retry controls.',
     requirement: { permission: 'jobs:read' },
@@ -73,6 +85,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'extension-fleet',
     title: 'Fleet',
+    navLabel: 'Fleet',
     href: '/admin/extension-fleet',
     description: 'Installation health, compatibility drift, and token activity.',
     requirement: { permission: 'installations:read' },
@@ -82,6 +95,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'usage',
     title: 'Usage',
+    navLabel: 'Usage',
     href: '/admin/usage',
     description: 'Quota counters, fleet health, and exportable usage telemetry.',
     requirement: { permission: 'usage:read' },
@@ -91,6 +105,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'compatibility',
     title: 'Compatibility',
+    navLabel: 'Compatibility',
     href: '/admin/compatibility',
     description: 'Version gates, schema support, and rollout verdicts.',
     requirement: { permission: 'compatibility_rules:manage' },
@@ -100,6 +115,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'bootstrap-simulator',
     title: 'Bootstrap Simulator',
+    navLabel: 'Bootstrap Sim.',
     href: '/admin/bootstrap-simulator',
     description: 'Simulate bootstrap, compatibility, flags, and resolved remote config.',
     requirement: { permission: 'remote_config:read' },
@@ -110,6 +126,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'feature-flags',
     title: 'Feature Flags',
+    navLabel: 'Feature Flags',
     href: '/admin/feature-flags',
     description: 'Rollouts, targeting, and beta controls.',
     requirement: { permission: 'feature_flags:read' },
@@ -119,6 +136,7 @@ export const adminSections: AdminSection[] = [
   {
     id: 'remote-config',
     title: 'Remote Config',
+    navLabel: 'Remote Config',
     href: '/admin/remote-config',
     description: 'Draft, preview, and publish extension config versions.',
     requirement: { permission: 'remote_config:publish' },
@@ -128,10 +146,64 @@ export const adminSections: AdminSection[] = [
   {
     id: 'ai-routing',
     title: 'AI Routing',
+    navLabel: 'AI Routing',
     href: '/admin/ai-routing',
     description: 'Provider registry, platform credentials, and routing policy.',
     requirement: { permission: 'ai_providers:manage' },
     group: 'control-plane',
     groupLabel: 'Control Plane',
   },
+];
+
+// ── Group order and labels ────────────────────────────────────────────────────
+
+const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'extensions', 'control-plane'];
+
+const GROUP_LABELS: Record<AdminSectionGroup, string> = {
+  people: 'People',
+  operations: 'Operations',
+  extensions: 'Extensions',
+  'control-plane': 'Control Plane',
+};
+
+/**
+ * Builds grouped nav from a (possibly filtered) set of admin sections.
+ * Empty groups are omitted. Overview is NOT included — add it separately.
+ */
+export function buildAdminNavGroups(sections: AdminSection[]): AdminNavGroup[] {
+  const groups: AdminNavGroup[] = [];
+
+  for (const groupId of GROUP_ORDER) {
+    const items: NavigationItem[] = sections
+      .filter((s) => s.group === groupId)
+      .map((s) => ({
+        label: s.navLabel,
+        href: s.href,
+        requiresAuth: true,
+        adminOnly: true,
+      }));
+
+    if (items.length > 0) {
+      groups.push({ label: GROUP_LABELS[groupId], items });
+    }
+  }
+
+  return groups;
+}
+
+/** The Overview nav item — always shown to any admin, no permission check needed. */
+export const ADMIN_OVERVIEW_NAV_ITEM: NavigationItem = {
+  label: 'Overview',
+  href: '/admin',
+  requiresAuth: true,
+  adminOnly: true,
+};
+
+/**
+ * Full unfiltered admin nav groups, including the Overview entry.
+ * Use buildVisibleAdminNavGroups for permission-filtered output.
+ */
+export const allAdminNavGroups: AdminNavGroup[] = [
+  { label: 'Admin', items: [ADMIN_OVERVIEW_NAV_ITEM] },
+  ...buildAdminNavGroups(adminSections),
 ];

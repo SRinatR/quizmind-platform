@@ -1,9 +1,13 @@
 import { type AccessContext, type AccessRequirement } from '@quizmind/contracts';
-// workspaceId is intentionally omitted — dashboard sections are now account-scoped
 import { evaluateAccess } from '@quizmind/permissions';
-import { type AdminNavGroup, adminNavigationGroups } from '@quizmind/ui';
+import { type AdminNavGroup } from '@quizmind/ui';
 
-import { adminSections, type AdminSection } from '../admin/sections';
+import {
+  adminSections,
+  buildAdminNavGroups,
+  ADMIN_OVERVIEW_NAV_ITEM,
+  type AdminSection,
+} from '../admin/sections';
 import { dashboardSections, type DashboardSection } from '../dashboard/sections';
 
 function isRequirementAllowed(context: AccessContext, requirement?: AccessRequirement): boolean {
@@ -26,17 +30,20 @@ export function getVisibleAdminSections(
   return adminSections.filter((section) => isRequirementAllowed(context, section.requirement));
 }
 
-/** Returns admin nav groups filtered to sections the user can actually access. */
+/**
+ * Returns admin nav groups filtered to sections the current user can actually
+ * access, based on their permissions. Overview is always prepended since it
+ * requires only admin role (already verified upstream).
+ */
 export function buildVisibleAdminNavGroups(
   context: AccessContext,
 ): AdminNavGroup[] {
   const visibleSections = getVisibleAdminSections(context);
-  const visibleHrefs = new Set(visibleSections.map((s) => s.href));
 
-  return adminNavigationGroups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => visibleHrefs.has(item.href)),
-    }))
-    .filter((group) => group.items.length > 0);
+  return [
+    // Overview is always first — no per-section permission needed
+    { label: 'Admin', items: [ADMIN_OVERVIEW_NAV_ITEM] },
+    // Permission-filtered section groups derived from sections registry
+    ...buildAdminNavGroups(visibleSections),
+  ];
 }

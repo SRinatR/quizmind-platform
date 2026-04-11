@@ -2,7 +2,8 @@
 
 import { type ReactNode, useState, useCallback, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { type AdminNavGroup, adminNavigationGroups, dashboardNavigation } from '@quizmind/ui';
+import { type AdminNavGroup, dashboardNavigation } from '@quizmind/ui';
+import { allAdminNavGroups } from '../features/admin/sections';
 import { LogoutButton } from './logout-button';
 import { usePreferences } from '../lib/preferences';
 import { ShellProfileContext } from '../lib/shell-profile-context';
@@ -66,14 +67,15 @@ interface SiteShellProps {
   userAvatarUrl?: string;
   /**
    * Filtered admin nav groups — only sections the current user can access.
-   * When omitted, falls back to the full unfiltered adminNavigationGroups.
+   * When omitted, falls back to the full unfiltered allAdminNavGroups.
    */
   adminNavGroups?: AdminNavGroup[];
 }
 
 function isActiveRoute(itemHref: string, pathname: string): boolean {
-  if (itemHref === '/app') {
-    return pathname === '/app';
+  // Exact-match roots to prevent /admin or /app from matching all children
+  if (itemHref === '/app' || itemHref === '/admin') {
+    return pathname === itemHref;
   }
   return pathname === itemHref || pathname.startsWith(itemHref + '/');
 }
@@ -186,7 +188,7 @@ export function SiteShell({
 
           {/* Admin nav — grouped, only rendered for admins */}
           {isAdmin
-            ? (adminNavGroups ?? adminNavigationGroups).map((group) => (
+            ? (adminNavGroups ?? allAdminNavGroups).map((group) => (
                 <div key={group.label} className="app-nav-group">
                   <span className="app-nav-group__label">{group.label}</span>
                   {group.items.map((item) => (
