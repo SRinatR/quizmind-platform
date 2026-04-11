@@ -19,7 +19,6 @@ interface FeatureFlagsClientProps {
     extensionVersion?: string;
     roles?: string[];
     userId?: string;
-    workspaceId?: string;
   };
 }
 
@@ -31,7 +30,6 @@ interface FeatureFlagDraft {
   minimumExtensionVersion: string;
   allowRoles: string;
   allowUsers: string;
-  allowWorkspaces: string;
 }
 
 interface MutationFeedback {
@@ -72,10 +70,6 @@ function describeTargeting(flag: FeatureFlagDefinition): string {
     parts.push(`roles: ${flag.allowRoles.join(', ')}`);
   }
 
-  if (flag.allowWorkspaces?.length) {
-    parts.push(`workspaces: ${flag.allowWorkspaces.join(', ')}`);
-  }
-
   if (flag.allowUsers?.length) {
     parts.push(`users: ${flag.allowUsers.join(', ')}`);
   }
@@ -96,7 +90,6 @@ function createDraft(flag: FeatureFlagDefinition): FeatureFlagDraft {
     minimumExtensionVersion: flag.minimumExtensionVersion ?? '',
     allowRoles: stringifyCsv(flag.allowRoles),
     allowUsers: stringifyCsv(flag.allowUsers),
-    allowWorkspaces: stringifyCsv(flag.allowWorkspaces),
   };
 }
 
@@ -163,7 +156,6 @@ export function FeatureFlagsClient({
     extensionVersion: initialPreviewContext.extensionVersion ?? '1.7.0',
     roles: stringifyCsv(initialPreviewContext.roles),
     userId: initialPreviewContext.userId ?? '',
-    workspaceId: initialPreviewContext.workspaceId ?? '',
   });
 
   const filteredFlags = flagItems.filter((flag) => matchesSearch(flag, deferredSearchTerm));
@@ -171,7 +163,6 @@ export function FeatureFlagsClient({
     extensionVersion: previewContext.extensionVersion.trim() || undefined,
     roles: parseCsv(previewContext.roles),
     userId: previewContext.userId.trim() || undefined,
-    workspaceId: previewContext.workspaceId.trim() || undefined,
   });
   const extensionVersionBlocks = filteredFlags.filter((flag) => {
     if (!flag.minimumExtensionVersion || !previewContext.extensionVersion.trim()) {
@@ -262,7 +253,6 @@ export function FeatureFlagsClient({
           minimumExtensionVersion: draft.minimumExtensionVersion.trim() || null,
           allowRoles: parseCsv(draft.allowRoles),
           allowUsers: parseCsv(draft.allowUsers),
-          allowWorkspaces: parseCsv(draft.allowWorkspaces),
         }),
       });
       const payload = (await response.json().catch(() => null)) as
@@ -320,19 +310,6 @@ export function FeatureFlagsClient({
                 onChange={(event) => setSearchTerm(event.target.value)}
                 placeholder="beta.remote-config-v2"
                 value={searchTerm}
-              />
-            </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Workspace ID</span>
-              <input
-                onChange={(event) =>
-                  setPreviewContext((current) => ({
-                    ...current,
-                    workspaceId: event.target.value,
-                  }))
-                }
-                placeholder="workspace id"
-                value={previewContext.workspaceId}
               />
             </label>
             <label className="admin-ticket-field">
@@ -547,14 +524,6 @@ export function FeatureFlagsClient({
                         onChange={(event) => setDraftValue(flag.key, { allowUsers: event.target.value })}
                         placeholder="user_1, user_2"
                         value={draft.allowUsers}
-                      />
-                    </label>
-                    <label className="admin-ticket-field">
-                      <span className="micro-label">Allowed workspaces</span>
-                      <input
-                        onChange={(event) => setDraftValue(flag.key, { allowWorkspaces: event.target.value })}
-                        placeholder="ws_1, ws_2"
-                        value={draft.allowWorkspaces}
                       />
                     </label>
                     <p className="admin-ticket-note">

@@ -66,7 +66,6 @@ export async function POST(request: Request) {
       : undefined;
   const allowRoles = normalizeStringArray(body?.allowRoles);
   const allowUsers = normalizeStringArray(body?.allowUsers);
-  const allowWorkspaces = normalizeStringArray(body?.allowWorkspaces);
 
   if (!key) {
     return badRequest('key is required.');
@@ -88,7 +87,6 @@ export async function POST(request: Request) {
       ...(minimumExtensionVersion !== undefined ? { minimumExtensionVersion } : {}),
       ...(body && 'allowRoles' in body ? { allowRoles } : {}),
       ...(body && 'allowUsers' in body ? { allowUsers } : {}),
-      ...(body && 'allowWorkspaces' in body ? { allowWorkspaces } : {}),
     }),
   });
 

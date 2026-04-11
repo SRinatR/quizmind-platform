@@ -67,11 +67,9 @@ function createEditableLayer(layer: RemoteConfigLayer): EditableLayer {
 function createNewEditableLayer(index: number): EditableLayer {
   return {
     id: `draft-layer-${index}`,
-    scope: 'workspace',
+    scope: 'global',
     priority: String(index * 10),
-    conditionsText: stringifyJson({
-      workspaceId: 'demo-workspace',
-    }),
+    conditionsText: stringifyJson({}),
     valuesText: stringifyJson({
       answerStyle: 'detailed',
     }),
@@ -157,7 +155,6 @@ function sanitizePreviewContext(context: RemoteConfigContext): RemoteConfigConte
   return {
     ...(context.environment?.trim() ? { environment: context.environment.trim() } : {}),
     ...(context.planCode?.trim() ? { planCode: context.planCode.trim() } : {}),
-    ...(context.workspaceId?.trim() ? { workspaceId: context.workspaceId.trim() } : {}),
     ...(context.userId?.trim() ? { userId: context.userId.trim() } : {}),
     ...(context.extensionVersion?.trim() ? { extensionVersion: context.extensionVersion.trim() } : {}),
     ...(activeFlags.length > 0 ? { activeFlags } : {}),
@@ -206,10 +203,8 @@ function parseActiveFlags(value: string): string[] {
     .filter(Boolean);
 }
 
-function createInitialVersionLabel(initialState: RemoteConfigStateSnapshot) {
-  const workspaceId = initialState.previewContext.workspaceId?.trim();
-
-  return workspaceId ? `draft-${workspaceId}` : 'draft-global';
+function createInitialVersionLabel(_initialState: RemoteConfigStateSnapshot) {
+  return 'draft-global';
 }
 
 export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteConfigClientProps) {
@@ -220,7 +215,6 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
   const [previewContext, setPreviewContext] = useState({
     environment: initialState.previewContext.environment ?? '',
     planCode: initialState.previewContext.planCode ?? '',
-    workspaceId: initialState.previewContext.workspaceId ?? '',
     userId: initialState.previewContext.userId ?? '',
     extensionVersion: initialState.previewContext.extensionVersion ?? '',
     activeFlags: (initialState.previewContext.activeFlags ?? []).join(', '),
@@ -239,7 +233,6 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
       ? resolveRemoteConfig(parsedLayers.layers, sanitizePreviewContext({
           environment: previewContext.environment,
           planCode: previewContext.planCode,
-          workspaceId: previewContext.workspaceId,
           userId: previewContext.userId,
           extensionVersion: previewContext.extensionVersion,
           activeFlags: parseActiveFlags(previewContext.activeFlags),
@@ -265,10 +258,6 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
     setLayers(version.layers.map(createEditableLayer));
     setNextDraftIndex(version.layers.length + 1);
     setVersionLabel(`${version.versionLabel}-draft`);
-    setPreviewContext((current) => ({
-      ...current,
-      workspaceId: version.workspaceId ?? current.workspaceId,
-    }));
     setErrorMessage(null);
     setStatusMessage(`Loaded ${version.versionLabel} into the draft editor.`);
   }
@@ -346,7 +335,6 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
         body: JSON.stringify({
           versionLabel: versionLabel.trim(),
           layers: parsedLayers.layers,
-          ...(previewContext.workspaceId.trim() ? { workspaceId: previewContext.workspaceId.trim() } : {}),
         }),
       });
       const payload = (await response.json().catch(() => null)) as RouteResponse | null;
@@ -425,19 +413,6 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
                 }
                 placeholder="pro"
                 value={previewContext.planCode}
-              />
-            </label>
-            <label className="admin-ticket-field">
-              <span className="micro-label">Workspace ID</span>
-              <input
-                onChange={(event) =>
-                  setPreviewContext((current) => ({
-                    ...current,
-                    workspaceId: event.target.value,
-                  }))
-                }
-                placeholder="workspace id"
-                value={previewContext.workspaceId}
               />
             </label>
             <label className="admin-ticket-field">
@@ -592,7 +567,6 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
                     <span className={version.isActive ? 'tag' : 'tag warn'}>
                       {version.isActive ? 'active' : 'inactive'}
                     </span>
-                    <span className="tag">{version.workspaceId ? `workspace ${version.workspaceId}` : 'global'}</span>
                     <span className="tag">
                       {version.layers.length} layer{version.layers.length === 1 ? '' : 's'}
                     </span>
@@ -615,7 +589,7 @@ export function RemoteConfigClient({ initialState, isConnectedSession }: RemoteC
             ))}
           </div>
         ) : (
-          <p>No published versions are available for this workspace context yet.</p>
+          <p>No published versions are available yet.</p>
         )}
       </section>
     </div>

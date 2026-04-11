@@ -46,8 +46,6 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json().catch(() => null)) as Partial<AiProviderPolicyUpdateRequest> | null;
-  const workspaceId =
-    body?.workspaceId === undefined ? undefined : typeof body.workspaceId === 'string' ? body.workspaceId.trim() : '';
   const defaultModel =
     body?.defaultModel === undefined
       ? undefined
@@ -83,7 +81,6 @@ export async function POST(request: Request) {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      ...(workspaceId !== undefined ? { workspaceId: workspaceId || undefined } : {}),
       ...(body?.mode ? { mode: body.mode } : {}),
       ...(typeof body?.allowPlatformManaged === 'boolean' ? { allowPlatformManaged: body.allowPlatformManaged } : {}),
       ...(typeof body?.allowBringYourOwnKey === 'boolean' ? { allowBringYourOwnKey: body.allowBringYourOwnKey } : {}),

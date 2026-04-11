@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import {
-  type AiProviderPolicyResetRequest,
   type AiProviderPolicyResetResult,
 } from '@quizmind/contracts';
 
@@ -30,15 +29,11 @@ export async function POST(request: Request) {
   const accessToken = await getAccessTokenFromCookies();
 
   if (!accessToken) {
-    return badRequest('Sign in to reset a workspace AI provider policy.', 401);
+    return badRequest('Sign in to reset the AI provider policy.', 401);
   }
 
-  const body = (await request.json().catch(() => null)) as Partial<AiProviderPolicyResetRequest> | null;
-  const workspaceId = typeof body?.workspaceId === 'string' ? body.workspaceId.trim() : '';
-
-  if (!workspaceId) {
-    return badRequest('workspaceId is required.');
-  }
+  // AiProviderPolicyResetRequest is now an empty contract — no fields required.
+  await request.json().catch(() => null);
 
   const response = await fetch(`${API_URL}/admin/providers/policy/reset`, {
     method: 'POST',
@@ -47,9 +42,7 @@ export async function POST(request: Request) {
       authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      workspaceId,
-    }),
+    body: JSON.stringify({}),
   });
 
   const payload = (await response.json().catch(() => null)) as

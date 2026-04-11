@@ -37,7 +37,6 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Partial<SupportImpersonationRequest> | null;
   const targetUserId = body?.targetUserId?.trim();
   const reason = body?.reason?.trim();
-  const workspaceId = body?.workspaceId?.trim() || undefined;
   const supportTicketId = body?.supportTicketId?.trim() || undefined;
   const operatorNote = body?.operatorNote?.trim() || undefined;
 
@@ -59,7 +58,6 @@ export async function POST(request: Request) {
     body: JSON.stringify({
       targetUserId,
       reason,
-      ...(workspaceId ? { workspaceId } : {}),
       ...(supportTicketId ? { supportTicketId } : {}),
       ...(operatorNote ? { operatorNote } : {}),
     }),
