@@ -90,6 +90,9 @@ export interface ApiEnv extends PlatformEnv {
   authRateLimitMaxRequests: number;
   s3Bucket?: string;
   s3Endpoint?: string;
+  adminBootstrapEmail?: string;
+  adminBootstrapPassword?: string;
+  adminBootstrapName?: string;
 }
 
 export interface WebEnv {
@@ -250,6 +253,9 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     authRateLimitMaxRequests: readNumberEnv(source, 'AUTH_RATE_LIMIT_MAX_REQUESTS', 10),
     s3Bucket: source.S3_BUCKET,
     s3Endpoint: source.S3_ENDPOINT,
+    adminBootstrapEmail: source.ADMIN_BOOTSTRAP_EMAIL,
+    adminBootstrapPassword: source.ADMIN_BOOTSTRAP_PASSWORD,
+    adminBootstrapName: source.ADMIN_BOOTSTRAP_NAME,
   };
 }
 
