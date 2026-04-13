@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AdminBootstrapService } from './bootstrap/admin-bootstrap.service';
 import { MetricsController } from './metrics.controller';
 import { AiProxyController } from './ai/ai-proxy.controller';
 import { AiProxyRepository } from './ai/ai-proxy.repository';
@@ -63,6 +64,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     AiHistoryController,
   ],
   providers: [
+    AdminBootstrapService,
     AiProxyRepository,
     AiProxyService,
     AiHistoryRepository,
