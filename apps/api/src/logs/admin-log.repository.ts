@@ -64,12 +64,9 @@ export type AdminLogActorRecord = Prisma.UserGetPayload<{
   select: typeof userSelect;
 }>;
 
-// Fixed per-stream row limit. All in-memory filters (search, status, category,
-// source, eventType) are applied after the DB fetch, so we must bring enough rows
-// to cover every page the caller might request. 5 000 per stream gives correct
-// pagination for any realistic admin-logs dataset, especially when combined with
-// the date-range pre-filter.
-const STREAM_SAFETY_LIMIT = 5_000;
+// Number of rows fetched per Prisma query when draining a stream.
+// This is an internal transport detail — it does NOT cap the total rows returned.
+const DRAIN_BATCH_SIZE = 1_000;
 
 interface ListAdminLogsInput {
   stream?: AdminLogStreamFilter;
@@ -94,8 +91,27 @@ function shouldReadStream(stream: AdminLogStreamFilter | undefined, candidate: E
 export class AdminLogRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  /**
+   * Exhaustively reads all rows from a single stream by issuing successive
+   * skip/take queries until the stream returns fewer rows than the batch size.
+   * This removes any per-stream hard cap while keeping individual DB round-trips
+   * bounded to DRAIN_BATCH_SIZE rows.
+   */
+  private async drainStream<T>(
+    fetcher: (skip: number, take: number) => Promise<T[]>,
+  ): Promise<T[]> {
+    const all: T[] = [];
+    let skip = 0;
+    while (true) {
+      const batch = await fetcher(skip, DRAIN_BATCH_SIZE);
+      all.push(...batch);
+      if (batch.length < DRAIN_BATCH_SIZE) break;
+      skip += batch.length;
+    }
+    return all;
+  }
+
   async listRecent(input: ListAdminLogsInput = {}): Promise<ListAdminLogsResult> {
-    const take = STREAM_SAFETY_LIMIT;
     const fromDate = input.from ? new Date(input.from) : undefined;
     const toDate = input.to ? new Date(input.to) : undefined;
     const dateWhere = {
@@ -112,40 +128,54 @@ export class AdminLogRepository {
       ...baseWhere,
       ...(input.severity && input.severity !== 'all' ? { severity: input.severity } : {}),
     };
+
     const [audit, activity, security, domain] = await Promise.all([
       shouldReadStream(input.stream, 'audit')
-        ? this.prisma.auditLog.findMany({
-            where: baseWhere,
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            take,
-            select: auditLogSelect,
-          })
+        ? this.drainStream((skip, take) =>
+            this.prisma.auditLog.findMany({
+              where: baseWhere,
+              orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+              skip,
+              take,
+              select: auditLogSelect,
+            }),
+          )
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'activity')
-        ? this.prisma.activityLog.findMany({
-            where: baseWhere,
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            take,
-            select: activityLogSelect,
-          })
+        ? this.drainStream((skip, take) =>
+            this.prisma.activityLog.findMany({
+              where: baseWhere,
+              orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+              skip,
+              take,
+              select: activityLogSelect,
+            }),
+          )
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'security')
-        ? this.prisma.securityEvent.findMany({
-            where: securityWhere,
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            take,
-            select: securityEventSelect,
-          })
+        ? this.drainStream((skip, take) =>
+            this.prisma.securityEvent.findMany({
+              where: securityWhere,
+              orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+              skip,
+              take,
+              select: securityEventSelect,
+            }),
+          )
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'domain')
-        ? this.prisma.domainEvent.findMany({
-            where: baseWhere,
-            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-            take,
-            select: domainEventSelect,
-          })
+        ? this.drainStream((skip, take) =>
+            this.prisma.domainEvent.findMany({
+              where: baseWhere,
+              orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+              skip,
+              take,
+              select: domainEventSelect,
+            }),
+          )
         : Promise.resolve([]),
     ]);
+
     const actorIds = Array.from(
       new Set(
         [...audit, ...activity, ...security]
