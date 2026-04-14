@@ -68,6 +68,9 @@ interface ListAdminLogsInput {
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
   limit?: number;
+  page?: number;
+  from?: string;
+  to?: string;
 }
 
 interface ListAdminLogsResult {
@@ -82,10 +85,13 @@ function shouldReadStream(stream: AdminLogStreamFilter | undefined, candidate: E
   return !stream || stream === 'all' || stream === candidate;
 }
 
-function resolveTake(limit?: number, stream?: AdminLogStreamFilter) {
-  const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit as number) : 12;
-
-  return Math.min(Math.max(normalizedLimit * (stream && stream !== 'all' ? 3 : 2), 12), 60);
+function resolveTake(limit?: number, page?: number, stream?: AdminLogStreamFilter) {
+  const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit as number) : 25;
+  const normalizedPage = Number.isFinite(page) && (page as number) > 1 ? Math.trunc(page as number) : 1;
+  // Fetch enough rows to cover current page + 1 extra page worth of buffer per stream.
+  // Cap at 500 per stream to stay sane.
+  const multiplier = stream && stream !== 'all' ? 3 : 2;
+  return Math.min(normalizedLimit * (normalizedPage + 1) * multiplier, 500);
 }
 
 @Injectable()
@@ -93,16 +99,27 @@ export class AdminLogRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async listRecent(input: ListAdminLogsInput = {}): Promise<ListAdminLogsResult> {
-    const take = resolveTake(input.limit, input.stream);
-    const workspaceWhere = {};
+    const take = resolveTake(input.limit, input.page, input.stream);
+    const fromDate = input.from ? new Date(input.from) : undefined;
+    const toDate = input.to ? new Date(input.to) : undefined;
+    const dateWhere = {
+      ...(fromDate && !isNaN(fromDate.getTime()) ? { createdAt: { gte: fromDate } } : {}),
+      ...(toDate && !isNaN(toDate.getTime()) ? { createdAt: { lte: toDate } } : {}),
+    };
+    // Merge date range when both from and to are present
+    const timeRange =
+      fromDate && !isNaN(fromDate.getTime()) && toDate && !isNaN(toDate.getTime())
+        ? { createdAt: { gte: fromDate, lte: toDate } }
+        : dateWhere;
+    const baseWhere = { ...timeRange };
     const securityWhere = {
-      ...workspaceWhere,
+      ...baseWhere,
       ...(input.severity && input.severity !== 'all' ? { severity: input.severity } : {}),
     };
     const [audit, activity, security, domain] = await Promise.all([
       shouldReadStream(input.stream, 'audit')
         ? this.prisma.auditLog.findMany({
-            where: workspaceWhere,
+            where: baseWhere,
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take,
             select: auditLogSelect,
@@ -110,7 +127,7 @@ export class AdminLogRepository {
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'activity')
         ? this.prisma.activityLog.findMany({
-            where: workspaceWhere,
+            where: baseWhere,
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take,
             select: activityLogSelect,
@@ -126,7 +143,7 @@ export class AdminLogRepository {
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'domain')
         ? this.prisma.domainEvent.findMany({
-            where: workspaceWhere,
+            where: baseWhere,
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take,
             select: domainEventSelect,

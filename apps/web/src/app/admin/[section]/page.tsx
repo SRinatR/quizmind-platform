@@ -1,52 +1,46 @@
 import { redirect } from 'next/navigation';
 import { buildAccessContext } from '@quizmind/auth';
 import {
-  type AdminExtensionFleetFilters,
   type AdminLogFilters,
-  type AdminWebhookFilters,
-  type ExtensionBootstrapRequest,
 } from '@quizmind/contracts';
 import Link from 'next/link';
 
 import { SiteShell } from '../../../components/site-shell';
-import { buildAdminSectionHref } from '../../../features/admin/admin-section-href';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { isAdminSession } from '../../../lib/admin-guard';
 import {
-  getAdminExtensionFleet,
   getAdminProviderGovernance,
   getAdminLogs,
-  getAdminSecurity,
-  getAdminWebhooks,
   getAdminUsers,
   getCompatibilityRules,
   getFeatureFlags,
   getRemoteConfigState,
   getSession,
-  getUsageSummary,
   resolvePersona,
-  simulateExtensionBootstrap,
 } from '../../../lib/api';
 import { getVisibleAdminSections, buildVisibleAdminNavGroups } from '../../../features/navigation/visibility';
 import { type AdminSection } from '../../../features/admin/sections';
-import { ExtensionControlClient } from './extension-control-client';
 import { FeatureFlagsClient } from './feature-flags-client';
 import { CompatibilityClient } from './compatibility-client';
 import { AdminAiProvidersClient } from './admin-ai-providers-client';
 import { RemoteConfigClient } from './remote-config-client';
 import { UsersDirectoryClient } from './users-directory-client';
-import { UsageExplorerClient } from './usage-explorer-client';
 import { LogsExplorerClient } from './logs-explorer-client';
-import { WebhooksClient } from './webhooks-client';
-import { ExtensionFleetClient } from './extension-fleet-client';
 
-// ── Route aliases: old flat routes → new canonical routes ───────────────────
+// ── Route aliases: old routes → /admin/logs ──────────────────────────────────
 const ROUTE_REDIRECTS: Record<string, string> = {
-  logs: 'events',
-  'extension-control': 'bootstrap-simulator',
+  // Old canonical aliases
   'ai-providers': 'ai-routing',
   support: 'users',
   'access-sessions': 'users',
+  // Fragmented operational tabs → unified Logs center
+  events: 'logs',
+  security: 'logs',
+  webhooks: 'logs',
+  'extension-fleet': 'logs',
+  usage: 'logs',
+  'bootstrap-simulator': 'logs',
+  'extension-control': 'logs',
 };
 
 interface AdminSectionPageProps {
@@ -70,26 +64,6 @@ function readIntegerSearchParam(
   if (!rawValue) return undefined;
   const parsed = Number(rawValue);
   return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function formatTrendBucketLabel(bucketStart: string): string {
-  const timestamp = Date.parse(bucketStart);
-  if (!Number.isFinite(timestamp)) return bucketStart;
-  return `${bucketStart.slice(5, 16).replace('T', ' ')} UTC`;
-}
-
-function createInitialExtensionBootstrapRequest(userId: string): ExtensionBootstrapRequest {
-  return {
-    installationId: 'sim-local-browser',
-    userId,
-    environment: 'development',
-    handshake: {
-      extensionVersion: '1.7.0',
-      schemaVersion: '2',
-      capabilities: ['quiz-capture', 'history-sync', 'remote-sync'],
-      browser: 'chrome',
-    },
-  };
 }
 
 /** Compact page header with group context and KPI chips. */
@@ -124,7 +98,7 @@ function SectionHeader({
   );
 }
 
-/** Cross-links to sibling sections in the same group — builds toolkit cohesion. */
+/** Cross-links to sibling sections in the same group. */
 function SectionGroupLinks({
   current,
   visibleSections,
@@ -162,7 +136,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
 
-  // Redirect legacy flat routes to new canonical routes (preserves all query params including persona)
+  // Redirect legacy/fragmented routes, preserving relevant query params
   const redirectTarget = ROUTE_REDIRECTS[resolvedParams.section];
   if (redirectTarget) {
     const query = new URLSearchParams();
@@ -207,63 +181,38 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   }
 
   const sec = resolvedParams.section;
-  const isSecurityRoute = sec === 'security';
 
-  // ── Section-specific filter objects (no workspaceId — platform-scoped) ──────
-  const requestedLogStream = readSearchParam(resolvedSearchParams, 'logStream') as AdminLogFilters['stream'] | undefined;
+  // ── Section-specific filter objects ──────────────────────────────────────────
   const adminLogFilters: Partial<AdminLogFilters> = {
-    stream: requestedLogStream ?? (isSecurityRoute ? 'security' : undefined),
+    stream: readSearchParam(resolvedSearchParams, 'logStream') as AdminLogFilters['stream'] | undefined,
     severity: readSearchParam(resolvedSearchParams, 'logSeverity') as AdminLogFilters['severity'] | undefined,
     search: readSearchParam(resolvedSearchParams, 'logSearch'),
     limit: readIntegerSearchParam(resolvedSearchParams, 'logLimit'),
+    category: readSearchParam(resolvedSearchParams, 'logCategory') as AdminLogFilters['category'] | undefined,
+    source: readSearchParam(resolvedSearchParams, 'logSource') as AdminLogFilters['source'] | undefined,
+    status: readSearchParam(resolvedSearchParams, 'logStatus') as AdminLogFilters['status'] | undefined,
+    eventType: readSearchParam(resolvedSearchParams, 'logEventType'),
+    from: readSearchParam(resolvedSearchParams, 'logFrom'),
+    to: readSearchParam(resolvedSearchParams, 'logTo'),
+    page: readIntegerSearchParam(resolvedSearchParams, 'logPage'),
   };
-
-  const adminWebhookFilters: Partial<AdminWebhookFilters> = {
-    provider: readSearchParam(resolvedSearchParams, 'webhookProvider') as AdminWebhookFilters['provider'] | undefined,
-    status: readSearchParam(resolvedSearchParams, 'webhookStatus') as AdminWebhookFilters['status'] | undefined,
-    search: readSearchParam(resolvedSearchParams, 'webhookSearch'),
-    limit: readIntegerSearchParam(resolvedSearchParams, 'webhookLimit'),
-  };
-
-  const extensionFleetFilters: Partial<AdminExtensionFleetFilters> = {
-    installationId: readSearchParam(resolvedSearchParams, 'fleetInstallationId'),
-    compatibility: readSearchParam(resolvedSearchParams, 'installationCompatibility') as AdminExtensionFleetFilters['compatibility'] | undefined,
-    connection: readSearchParam(resolvedSearchParams, 'installationConnection') as AdminExtensionFleetFilters['connection'] | undefined,
-    search: readSearchParam(resolvedSearchParams, 'installationSearch'),
-    limit: readIntegerSearchParam(resolvedSearchParams, 'installationLimit'),
-  };
-
-  const extensionBootstrapRequest = session
-    ? createInitialExtensionBootstrapRequest(session.user.id)
-    : null;
 
   // ── Section-targeted data fetching ───────────────────────────────────────────
-  // Registry maps each section slug to the loaders it requires. Any section not
-  // listed gets an empty needs object (no fetches, shows fallback UI).
   interface LoaderNeeds {
     users?: true;
-    fleet?: true;
     logs?: true;
-    security?: true;
-    webhooks?: true;
-    usage?: true;
     compatibility?: true;
     flags?: true;
     remoteConfig?: true;
     aiRouting?: true;
   }
   const SECTION_NEEDS: Record<string, LoaderNeeds> = {
-    users:                  { users: true },
-    events:                 { logs: true },
-    security:               { security: true },
-    webhooks:               { webhooks: true },
-    usage:                  { usage: true },
-    'extension-fleet':      { fleet: true },
-    compatibility:          { compatibility: true },
-    'bootstrap-simulator':  { usage: true },
-    'feature-flags':        { flags: true },
-    'remote-config':        { remoteConfig: true },
-    'ai-routing':           { aiRouting: true },
+    users:           { users: true },
+    logs:            { logs: true },
+    compatibility:   { compatibility: true },
+    'feature-flags': { flags: true },
+    'remote-config': { remoteConfig: true },
+    'ai-routing':    { aiRouting: true },
   };
   const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
@@ -285,28 +234,15 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     compatibilityRules,
     adminUsers,
     remoteConfigState,
-    usageSummary,
-    adminExtensionFleet,
     adminLogs,
-    adminSecurity,
-    adminWebhooks,
   ] = await Promise.all([
     needs.flags ? getFeatureFlags(persona, accessToken) : Promise.resolve(null),
     needs.aiRouting ? getAdminProviderGovernance(accessToken) : Promise.resolve(null),
     needs.compatibility ? getCompatibilityRules(persona, accessToken) : Promise.resolve(null),
     needs.users ? getAdminUsers(persona, accessToken, userFilters) : Promise.resolve(null),
     needs.remoteConfig ? getRemoteConfigState(persona, undefined, accessToken) : Promise.resolve(null),
-    needs.usage ? getUsageSummary(persona, accessToken) : Promise.resolve(null),
-    needs.fleet ? getAdminExtensionFleet(persona, extensionFleetFilters, accessToken) : Promise.resolve(null),
     needs.logs ? getAdminLogs(persona, adminLogFilters, accessToken) : Promise.resolve(null),
-    needs.security ? getAdminSecurity(persona, adminLogFilters, accessToken) : Promise.resolve(null),
-    needs.webhooks ? getAdminWebhooks(persona, adminWebhookFilters, accessToken) : Promise.resolve(null),
   ]);
-
-  const extensionBootstrap =
-    sec === 'bootstrap-simulator' && extensionBootstrapRequest
-      ? await simulateExtensionBootstrap(extensionBootstrapRequest, accessToken)
-      : null;
 
   const isConnectedSession = session?.personaKey === 'connected-user';
   const canEditFeatureFlags = Boolean(isConnectedSession && featureFlags?.writeDecision.allowed);
@@ -361,227 +297,32 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </section>
             )}
           </>
-        ) : // ── Operations: Events ────────────────────────────────────────
-        section.id === 'events' ? (
+        ) : // ── Operations: Logs ──────────────────────────────────────────────
+        section.id === 'logs' ? (
           <>
             <SectionHeader
               groupLabel={section.groupLabel}
               title={section.title}
               tags={[
                 { label: `${adminLogs?.items.length ?? 0} event${(adminLogs?.items.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: `stream: ${adminLogs?.filters.stream ?? 'all'}` },
+                { label: adminLogs?.filters.category ?? 'all categories' },
               ]}
             />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
             {adminLogs ? (
               <LogsExplorerClient
                 canExportLogs={adminLogs.exportDecision.allowed}
-                defaultStreamOnReset="all"
                 isConnectedSession={isConnectedSession}
                 snapshot={adminLogs}
               />
             ) : (
               <section className="empty-state">
-                <span className="micro-label">Events</span>
-                <h2>Event stream unavailable.</h2>
-                <p>The API did not return an audit log snapshot for this context.</p>
+                <span className="micro-label">Logs</span>
+                <h2>Log stream unavailable.</h2>
+                <p>The API did not return a log snapshot for this context.</p>
               </section>
             )}
           </>
-        ) : // ── Operations: Security ──────────────────────────────────────
-        section.id === 'security' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${adminSecurity?.items.length ?? 0} event${(adminSecurity?.items.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: `${adminSecurity?.findings.totalFailures ?? 0} flagged`, warn: (adminSecurity?.findings.totalFailures ?? 0) > 0 },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            {adminSecurity ? (
-              <>
-                <section className="panel">
-                  <span className="micro-label">Findings</span>
-                  <h3 style={{ margin: '4px 0 12px' }}>Detection summary</h3>
-                  <div className="tag-row">
-                    <span className={adminSecurity.findings.suspiciousAuthFailures > 0 ? 'tag warn' : 'tag'}>
-                      auth failures {adminSecurity.findings.suspiciousAuthFailures}
-                    </span>
-                    <span className="tag">impersonation {adminSecurity.findings.impersonationEvents}</span>
-                    <span className="tag">provider credentials {adminSecurity.findings.providerCredentialEvents}</span>
-                    <span className="tag">privileged actions {adminSecurity.findings.privilegedActionEvents}</span>
-                    <span className={adminSecurity.findings.extensionBootstrapRefreshFailures > 0 ? 'tag warn' : 'tag'}>
-                      bootstrap failures {adminSecurity.findings.extensionBootstrapRefreshFailures}
-                    </span>
-                    <span className="tag">reconnect requests {adminSecurity.findings.extensionReconnectRequests}</span>
-                    <span className="tag">reconnected {adminSecurity.findings.extensionReconnectRecoveries}</span>
-                    <span className={adminSecurity.findings.extensionReconnectOutstanding > 0 ? 'tag warn' : 'tag'}>
-                      unresolved reconnects {adminSecurity.findings.extensionReconnectOutstanding}
-                    </span>
-                    <span className="tag">session revocations {adminSecurity.findings.extensionSessionRevocations}</span>
-                    <span className="tag">session rotations {adminSecurity.findings.extensionSessionRotations}</span>
-                    <span className={adminSecurity.findings.extensionRuntimeErrors > 0 ? 'tag warn' : 'tag'}>
-                      runtime errors {adminSecurity.findings.extensionRuntimeErrors}
-                    </span>
-                  </div>
-                  <div className="tag-row" style={{ marginTop: '12px' }}>
-                    <Link
-                      className="btn-ghost"
-                      href={buildAdminSectionHref({ section: sec, currentSearchParams: resolvedSearchParams, overrides: { logStream: 'security', logSeverity: 'warn', logSearch: 'auth.login_failed' } })}
-                    >
-                      auth failures ({adminSecurity.findings.suspiciousAuthFailures})
-                    </Link>
-                    <Link
-                      className="btn-ghost"
-                      href={buildAdminSectionHref({ section: sec, currentSearchParams: resolvedSearchParams, overrides: { logStream: 'security', logSeverity: 'warn', logSearch: 'extension.bootstrap_refresh_failed' } })}
-                    >
-                      bootstrap failures ({adminSecurity.findings.extensionBootstrapRefreshFailures})
-                    </Link>
-                    <Link
-                      className="btn-ghost"
-                      href={buildAdminSectionHref({ section: sec, currentSearchParams: resolvedSearchParams, overrides: { logStream: 'security', logSeverity: 'all', logSearch: 'extension.installation_reconnect_requested' } })}
-                    >
-                      reconnect requests ({adminSecurity.findings.extensionReconnectRequests})
-                    </Link>
-                    <Link
-                      className="btn-ghost"
-                      href={buildAdminSectionHref({ section: sec, currentSearchParams: resolvedSearchParams, overrides: { logStream: 'security', logSeverity: 'all', logSearch: 'extension.installation_session_revoked' } })}
-                    >
-                      session revocations ({adminSecurity.findings.extensionSessionRevocations})
-                    </Link>
-                    <Link
-                      className="btn-ghost"
-                      href={buildAdminSectionHref({ section: sec, currentSearchParams: resolvedSearchParams, overrides: { logStream: 'security', logSeverity: 'warn', logSearch: 'extension.runtime_error' } })}
-                    >
-                      runtime errors ({adminSecurity.findings.extensionRuntimeErrors})
-                    </Link>
-                  </div>
-                </section>
-                <section className="panel">
-                  <span className="micro-label">Trend</span>
-                  <h3 style={{ margin: '4px 0 12px' }}>
-                    Extension lifecycle ({adminSecurity.lifecycleTrend.windowHours}h window, {adminSecurity.lifecycleTrend.bucketHours}h buckets)
-                  </h3>
-                  <div className="list-stack">
-                    {adminSecurity.lifecycleTrend.buckets.map((bucket) => (
-                      <div className="list-item" key={bucket.bucketStart}>
-                        <strong>{formatTrendBucketLabel(bucket.bucketStart)}</strong>
-                        <p>
-                          failures {bucket.extensionBootstrapRefreshFailures + bucket.extensionRuntimeErrors},{' '}
-                          reconnects {bucket.extensionReconnectRequests},{' '}
-                          recovered {bucket.extensionReconnectRecoveries},{' '}
-                          revocations {bucket.extensionSessionRevocations},{' '}
-                          rotations {bucket.extensionSessionRotations}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-                <section className="panel">
-                  <span className="micro-label">Controls</span>
-                  <h3 style={{ margin: '4px 0 12px' }}>Security hardening checkpoints</h3>
-                  <div className="list-stack">
-                    {adminSecurity.controls.map((control) => (
-                      <div className="list-item" key={control.id}>
-                        <strong>{control.title}</strong>
-                        <p>{control.description}</p>
-                        <span className={control.status === 'enabled' ? 'tag' : 'tag warn'}>
-                          {control.status.replace('_', ' ')}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-                <LogsExplorerClient
-                  canExportLogs={adminSecurity.exportDecision.allowed}
-                  defaultStreamOnReset="security"
-                  isConnectedSession={isConnectedSession}
-                  snapshot={adminSecurity}
-                />
-              </>
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">Security</span>
-                <h2>Security data unavailable.</h2>
-                <p>The API did not return a security log snapshot for this context.</p>
-              </section>
-            )}
-          </>
-        ) : // ── Operations: Jobs & Webhooks ───────────────────────────────
-        section.id === 'webhooks' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${adminWebhooks?.items.length ?? 0} deliver${(adminWebhooks?.items.length ?? 0) !== 1 ? 'ies' : 'y'}` },
-                { label: `${adminWebhooks?.statusCounts.failed ?? 0} failed`, warn: (adminWebhooks?.statusCounts.failed ?? 0) > 0 },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            {adminWebhooks ? (
-              <WebhooksClient isConnectedSession={isConnectedSession} snapshot={adminWebhooks} />
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">Jobs & Webhooks</span>
-                <h2>Webhook data unavailable.</h2>
-                <p>The API did not return webhook delivery data for this environment.</p>
-              </section>
-            )}
-          </>
-        ) : // ── Extensions: Fleet ─────────────────────────────────────────
-        section.id === 'extension-fleet' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${adminExtensionFleet?.counts.total ?? 0} installation${(adminExtensionFleet?.counts.total ?? 0) !== 1 ? 's' : ''}` },
-                { label: `${adminExtensionFleet?.counts.reconnectRequired ?? 0} reconnect required`, warn: (adminExtensionFleet?.counts.reconnectRequired ?? 0) > 0 },
-                { label: `${adminExtensionFleet?.counts.unsupported ?? 0} unsupported`, warn: (adminExtensionFleet?.counts.unsupported ?? 0) > 0 },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            {adminExtensionFleet ? (
-              <ExtensionFleetClient snapshot={adminExtensionFleet} />
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">Fleet</span>
-                <h2>Fleet data unavailable.</h2>
-                <p>The API did not return a fleet snapshot for this context.</p>
-              </section>
-            )}
-          </>
-        ) : // ── Extensions: Usage ─────────────────────────────────────────
-        section.id === 'usage' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${usageSummary?.quotas.length ?? 0} quota${(usageSummary?.quotas.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: `${usageSummary?.installations.length ?? 0} installation${(usageSummary?.installations.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: usageSummary?.exportDecision.allowed ? 'export access' : 'read-only', warn: !usageSummary?.exportDecision.allowed },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            {usageSummary ? (
-              <UsageExplorerClient
-                canExportUsage={usageSummary.exportDecision.allowed}
-                isConnectedSession={isConnectedSession}
-                usageSummary={usageSummary}
-              />
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">Usage</span>
-                <h2>Usage data unavailable.</h2>
-                <p>The API did not return a usage snapshot for this context.</p>
-              </section>
-            )}
-          </>
-        ) : // ── Extensions: Compatibility ──────────────────────────────────
+        ) : // ── Control Plane: Compatibility ───────────────────────────────────
         section.id === 'compatibility' ? (
           <>
             <SectionHeader
@@ -603,32 +344,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </section>
             )}
           </>
-        ) : // ── Extensions: Bootstrap Simulator ───────────────────────────
-        section.id === 'bootstrap-simulator' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${extensionBootstrap?.featureFlags.length ?? 0} flag${(extensionBootstrap?.featureFlags.length ?? 0) !== 1 ? 's' : ''} resolved` },
-                { label: `${extensionBootstrap?.remoteConfig.appliedLayerIds.length ?? 0} layer${(extensionBootstrap?.remoteConfig.appliedLayerIds.length ?? 0) !== 1 ? 's' : ''} applied` },
-                ...(extensionBootstrap?.compatibility.status ? [{ label: extensionBootstrap.compatibility.status }] : []),
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            <ExtensionControlClient
-              initialRequest={extensionBootstrapRequest!}
-              initialResult={extensionBootstrap}
-              initialUsageEvent={{
-                installationId: extensionBootstrapRequest!.installationId,
-                eventType: 'extension.quiz_answer_requested',
-                occurredAt: new Date().toISOString(),
-                payload: { questionType: 'multiple_choice', surface: 'content_script', answerMode: 'instant' },
-              }}
-              usageSummary={usageSummary}
-            />
-          </>
-        ) : // ── Control Plane: Feature Flags ──────────────────────────────
+        ) : // ── Control Plane: Feature Flags ──────────────────────────────────
         section.id === 'feature-flags' ? (
           <>
             <SectionHeader
@@ -649,7 +365,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               }}
             />
           </>
-        ) : // ── Control Plane: Remote Config ──────────────────────────────
+        ) : // ── Control Plane: Remote Config ──────────────────────────────────
         section.id === 'remote-config' ? (
           <>
             <SectionHeader
@@ -671,7 +387,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </section>
             )}
           </>
-        ) : // ── Control Plane: AI Routing ─────────────────────────────────
+        ) : // ── Control Plane: AI Routing ─────────────────────────────────────
         section.id === 'ai-routing' ? (
           <>
             <SectionHeader

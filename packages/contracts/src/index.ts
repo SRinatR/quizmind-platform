@@ -67,6 +67,9 @@ export const adminLogStreams = ['audit', 'activity', 'security', 'domain'] as co
 export const adminLogStreamFilters = ['all', 'audit', 'activity', 'security', 'domain'] as const;
 export const adminLogSeverityFilters = ['all', 'debug', 'info', 'warn', 'error'] as const;
 export const adminLogExportFormats = ['json', 'csv'] as const;
+export const adminLogCategoryFilters = ['all', 'auth', 'extension', 'ai', 'admin', 'system'] as const;
+export const adminLogSourceFilters = ['all', 'web', 'extension', 'api', 'worker', 'webhook'] as const;
+export const adminLogStatusFilters = ['all', 'success', 'failure'] as const;
 export const adminWebhookStatusFilters = ['all', 'received', 'processed', 'failed'] as const;
 export const adminWebhookProviderFilters = ['all', 'mock', 'stripe', 'manual', 'yookassa', 'paddle'] as const;
 export const adminQueueProcessorStates = ['bound', 'declared_only'] as const;
@@ -105,6 +108,9 @@ export type AdminLogStream = (typeof adminLogStreams)[number];
 export type AdminLogStreamFilter = (typeof adminLogStreamFilters)[number];
 export type AdminLogSeverityFilter = (typeof adminLogSeverityFilters)[number];
 export type AdminLogExportFormat = (typeof adminLogExportFormats)[number];
+export type AdminLogCategoryFilter = (typeof adminLogCategoryFilters)[number];
+export type AdminLogSourceFilter = (typeof adminLogSourceFilters)[number];
+export type AdminLogStatusFilter = (typeof adminLogStatusFilters)[number];
 export type AdminWebhookStatusFilter = (typeof adminWebhookStatusFilters)[number];
 export type AdminWebhookProviderFilter = (typeof adminWebhookProviderFilters)[number];
 export type AdminQueueProcessorState = (typeof adminQueueProcessorStates)[number];
@@ -468,6 +474,13 @@ export interface AdminLogFilters {
   severity: AdminLogSeverityFilter;
   search?: string;
   limit: number;
+  category?: AdminLogCategoryFilter;
+  source?: AdminLogSourceFilter;
+  status?: AdminLogStatusFilter;
+  eventType?: string;
+  from?: string;
+  to?: string;
+  page?: number;
 }
 
 export interface AdminLogEntry {
@@ -482,6 +495,19 @@ export interface AdminLogEntry {
   targetType?: string;
   targetId?: string;
   metadata?: Record<string, unknown>;
+  /** Derived domain category for filtering */
+  category?: Exclude<AdminLogCategoryFilter, 'all'>;
+  /** Derived request source */
+  source?: Exclude<AdminLogSourceFilter, 'all'>;
+  installationId?: string;
+  provider?: string;
+  model?: string;
+  durationMs?: number;
+  costUsd?: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  errorSummary?: string;
 }
 
 export interface AdminLogStreamCounts {
@@ -491,6 +517,14 @@ export interface AdminLogStreamCounts {
   domain: number;
 }
 
+export interface AdminLogCategoryCounts {
+  auth: number;
+  extension: number;
+  ai: number;
+  admin: number;
+  system: number;
+}
+
 export interface AdminLogsSnapshot {
   personaKey: string;
   accessDecision: AccessDecision;
@@ -498,6 +532,9 @@ export interface AdminLogsSnapshot {
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
+  categoryCounts: AdminLogCategoryCounts;
+  total: number;
+  hasNext: boolean;
   permissions: string[];
 }
 
@@ -548,6 +585,9 @@ export interface AdminSecuritySnapshot {
   filters: AdminLogFilters;
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
+  categoryCounts: AdminLogCategoryCounts;
+  total: number;
+  hasNext: boolean;
   findings: AdminSecurityFindingCounts;
   lifecycleTrend: AdminSecurityLifecycleTrend;
   controls: AdminSecurityControlCheckpoint[];
@@ -560,6 +600,12 @@ export interface AdminLogExportRequest {
   search?: string;
   limit?: number;
   format: AdminLogExportFormat;
+  category?: AdminLogCategoryFilter;
+  source?: AdminLogSourceFilter;
+  status?: AdminLogStatusFilter;
+  eventType?: string;
+  from?: string;
+  to?: string;
 }
 
 export interface AdminLogExportResult {

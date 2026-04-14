@@ -501,6 +501,13 @@ export async function getAdminLogs(
     severity: filters?.severity,
     search: filters?.search,
     limit: filters?.limit,
+    category: filters?.category,
+    source: filters?.source,
+    status: filters?.status,
+    eventType: filters?.eventType,
+    from: filters?.from,
+    to: filters?.to,
+    page: filters?.page,
   });
 
   return readApiData<AdminLogsStateSnapshot>(path, withAccessToken(undefined, accessToken));
