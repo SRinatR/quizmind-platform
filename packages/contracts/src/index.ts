@@ -420,6 +420,7 @@ export interface AdminUserDirectoryEntry {
   emailVerifiedAt?: string | null;
   suspendedAt?: string | null;
   lastLoginAt?: string | null;
+  createdAt: string;
   systemRoles: SystemRole[];
   workspaces: AdminUserWorkspaceMembership[];
 }
@@ -450,6 +451,9 @@ export interface AdminUserDirectorySnapshot {
   accessDecision: AccessDecision;
   writeDecision: AccessDecision;
   items: AdminUserDirectoryEntry[];
+  total: number;
+  page: number;
+  limit: number;
   permissions: string[];
 }
 

@@ -211,10 +211,31 @@ export class PlatformController {
   @Get('admin/users')
   async listUsers(
     @Query('persona') persona?: string,
+    @Query('query') query?: string,
+    @Query('role') role?: string,
+    @Query('banned') banned?: string,
+    @Query('verified') verified?: string,
+    @Query('sort') sort?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
     @Headers('authorization') authorization?: string,
   ) {
     void persona;
-    return ok(await this.platformService.listUsersForCurrentSession(await this.requireStrictConnectedSession(authorization)));
+    return ok(
+      await this.platformService.listUsersForCurrentSession(
+        await this.requireStrictConnectedSession(authorization),
+        { query, role, banned, verified, sort, page, limit },
+      ),
+    );
+  }
+
+  @Post('admin/users/delete')
+  async deleteUser(
+    @Body() request?: { userId?: string },
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.deleteUserForCurrentSession(session, request));
   }
 
   @Post('admin/users/create')
