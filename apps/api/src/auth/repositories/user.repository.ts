@@ -80,7 +80,7 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
     const sortMap: Record<string, Prisma.UserOrderByWithRelationInput> = {
       'created-desc': { createdAt: 'desc' },
       'created-asc':  { createdAt: 'asc' },
-      'login-desc':   { lastLoginAt: 'desc' },
+      'login-desc':   { lastLoginAt: { sort: 'desc', nulls: 'last' } },
       'email-asc':    { email: 'asc' },
     };
     const orderBy = sortMap[filters.sort ?? 'created-desc'] ?? { createdAt: 'desc' };

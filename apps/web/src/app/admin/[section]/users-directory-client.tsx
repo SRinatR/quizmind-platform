@@ -813,12 +813,14 @@ export function UsersDirectoryClient({
         </div>
       )}
 
-      <Pagination
-        page={initialPage}
-        limit={initialLimit}
-        total={initialTotal}
-        onPage={goToPage}
-      />
+      {initialTotal > 0 ? (
+        <Pagination
+          page={initialPage}
+          limit={initialLimit}
+          total={initialTotal}
+          onPage={goToPage}
+        />
+      ) : null}
 
       {selectedUser ? (
         <UserDrawer
