@@ -68,6 +68,8 @@ interface ListAdminLogsInput {
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
   limit?: number;
+  from?: string;
+  to?: string;
 }
 
 interface ListAdminLogsResult {
@@ -94,15 +96,26 @@ export class AdminLogRepository {
 
   async listRecent(input: ListAdminLogsInput = {}): Promise<ListAdminLogsResult> {
     const take = resolveTake(input.limit, input.stream);
-    const workspaceWhere = {};
+    const fromDate = input.from ? new Date(input.from) : undefined;
+    const toDate = input.to ? new Date(input.to) : undefined;
+    const dateWhere = {
+      ...(fromDate && !isNaN(fromDate.getTime()) ? { createdAt: { gte: fromDate } } : {}),
+      ...(toDate && !isNaN(toDate.getTime()) ? { createdAt: { lte: toDate } } : {}),
+    };
+    // Merge date range when both from and to are present
+    const timeRange =
+      fromDate && !isNaN(fromDate.getTime()) && toDate && !isNaN(toDate.getTime())
+        ? { createdAt: { gte: fromDate, lte: toDate } }
+        : dateWhere;
+    const baseWhere = { ...timeRange };
     const securityWhere = {
-      ...workspaceWhere,
+      ...baseWhere,
       ...(input.severity && input.severity !== 'all' ? { severity: input.severity } : {}),
     };
     const [audit, activity, security, domain] = await Promise.all([
       shouldReadStream(input.stream, 'audit')
         ? this.prisma.auditLog.findMany({
-            where: workspaceWhere,
+            where: baseWhere,
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take,
             select: auditLogSelect,
@@ -110,7 +123,7 @@ export class AdminLogRepository {
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'activity')
         ? this.prisma.activityLog.findMany({
-            where: workspaceWhere,
+            where: baseWhere,
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take,
             select: activityLogSelect,
@@ -126,7 +139,7 @@ export class AdminLogRepository {
         : Promise.resolve([]),
       shouldReadStream(input.stream, 'domain')
         ? this.prisma.domainEvent.findMany({
-            where: workspaceWhere,
+            where: baseWhere,
             orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
             take,
             select: domainEventSelect,

@@ -21,6 +21,12 @@ import {
   type AuditExportJobPayload,
   adminLogSeverityFilters,
   adminLogStreamFilters,
+  adminLogCategoryFilters,
+  adminLogSourceFilters,
+  adminLogStatusFilters,
+  type AdminLogCategoryFilter,
+  type AdminLogSourceFilter,
+  type AdminLogCategoryCounts,
   type AdminQueueSummary,
   type AdminLogEntry,
   type AdminLogFilters,
@@ -170,6 +176,9 @@ import { compareSemver, evaluateCompatibility } from '@quizmind/extension';
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
 const validAdminLogSeverityFilters = new Set<string>(adminLogSeverityFilters);
+const validAdminLogCategoryFilters = new Set<string>(adminLogCategoryFilters);
+const validAdminLogSourceFilters = new Set<string>(adminLogSourceFilters);
+const validAdminLogStatusFilters = new Set<string>(adminLogStatusFilters);
 const validAdminWebhookProviderFilters = new Set<string>(adminWebhookProviderFilters);
 const validAdminWebhookStatusFilters = new Set<string>(adminWebhookStatusFilters);
 const validAdminExtensionConnectionFilters = new Set<string>(adminExtensionConnectionFilters);
@@ -1338,6 +1347,7 @@ export class PlatformService {
       filters: normalizedFilters,
       items: filtered.items,
       streamCounts: filtered.streamCounts,
+      categoryCounts: filtered.categoryCounts,
       permissions,
     };
   }
@@ -1358,6 +1368,8 @@ export class PlatformService {
       stream: normalizedFilters.stream,
       severity: normalizedFilters.severity,
       limit: normalizedFilters.limit,
+      from: normalizedFilters.from,
+      to: normalizedFilters.to,
     });
     const baseItems = this.mapConnectedAdminLogEntries(records);
     const filtered = this.filterAdminLogEntries(baseItems, normalizedFilters);
@@ -1369,6 +1381,7 @@ export class PlatformService {
       filters: normalizedFilters,
       items: filtered.items,
       streamCounts: filtered.streamCounts,
+      categoryCounts: filtered.categoryCounts,
       permissions: session.permissions,
     };
   }
@@ -2719,14 +2732,40 @@ export class PlatformService {
     const search = filters?.search?.trim() || undefined;
     const limit =
       typeof filters?.limit === 'number' && Number.isFinite(filters.limit)
-        ? Math.min(Math.max(Math.trunc(filters.limit), 1), 50)
-        : 12;
+        ? Math.min(Math.max(Math.trunc(filters.limit), 1), 100)
+        : 25;
+    const category =
+      typeof filters?.category === 'string' && validAdminLogCategoryFilters.has(filters.category) && filters.category !== 'all'
+        ? (filters.category as Exclude<AdminLogCategoryFilter, 'all'>)
+        : undefined;
+    const source =
+      typeof filters?.source === 'string' && validAdminLogSourceFilters.has(filters.source) && filters.source !== 'all'
+        ? (filters.source as Exclude<AdminLogSourceFilter, 'all'>)
+        : undefined;
+    const status =
+      typeof filters?.status === 'string' && validAdminLogStatusFilters.has(filters.status) && filters.status !== 'all'
+        ? (filters.status as Exclude<AdminLogFilters['status'], 'all' | undefined>)
+        : undefined;
+    const eventType = filters?.eventType?.trim() || undefined;
+    const from = filters?.from?.trim() || undefined;
+    const to = filters?.to?.trim() || undefined;
+    const page =
+      typeof filters?.page === 'number' && Number.isFinite(filters.page)
+        ? Math.max(Math.trunc(filters.page), 1)
+        : 1;
 
     return {
       stream,
       severity,
       ...(search ? { search } : {}),
       limit,
+      ...(category ? { category } : {}),
+      ...(source ? { source } : {}),
+      ...(status ? { status } : {}),
+      ...(eventType ? { eventType } : {}),
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+      page,
     };
   }
 
@@ -2744,6 +2783,8 @@ export class PlatformService {
         occurredAt: '2026-03-24T13:40:00.000Z',
         severity: 'info',
         status: 'success',
+        category: 'admin' as const,
+        source: 'web' as const,
         actor: {
           id: platformAdmin.user.id,
           email: platformAdmin.user.email,
@@ -2762,6 +2803,8 @@ export class PlatformService {
         eventType: 'usage.dashboard_opened',
         summary: 'Opened the usage explorer and reviewed the latest quota counters.',
         occurredAt: '2026-03-24T13:28:00.000Z',
+        category: 'admin' as const,
+        source: 'web' as const,
         actor: {
           id: platformAdmin.user.id,
           email: platformAdmin.user.email,
@@ -2780,6 +2823,7 @@ export class PlatformService {
         occurredAt: '2026-03-24T12:58:00.000Z',
         severity: 'warn',
         status: 'failure',
+        category: 'auth' as const,
         actor: {
           id: workspaceViewer.user.id,
           email: workspaceViewer.user.email,
@@ -2799,6 +2843,8 @@ export class PlatformService {
         occurredAt: '2026-03-24T12:12:00.000Z',
         severity: 'info',
         status: 'success',
+        category: 'admin' as const,
+        source: 'web' as const,
         actor: {
           id: supportAdmin.user.id,
           email: supportAdmin.user.email,
@@ -2832,6 +2878,9 @@ export class PlatformService {
         const metadata = this.toAdminLogMetadata(record.metadataJson);
         const severity = this.readAdminLogSeverity(metadata);
         const status = this.readAdminLogStatus(metadata);
+        const category = this.deriveAdminLogCategory(record.action, 'audit', metadata);
+        const source = this.deriveAdminLogSource(record.action, metadata);
+        const richFields = this.extractAdminLogRichFields(metadata);
 
         return {
           id: `audit:${record.id}`,
@@ -2841,16 +2890,22 @@ export class PlatformService {
             this.readAdminLogSummary(metadata) ??
             `Audit event ${record.action} on ${record.targetType} ${record.targetId}.`,
           occurredAt: record.createdAt.toISOString(),
+          category,
+          ...(source ? { source } : {}),
           ...(severity ? { severity } : {}),
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
           targetType: record.targetType,
           targetId: record.targetId,
           ...(metadata ? { metadata } : {}),
+          ...richFields,
         };
       }),
       ...input.activity.map((record) => {
         const metadata = this.toAdminLogMetadata(record.metadataJson);
+        const category = this.deriveAdminLogCategory(record.eventType, 'activity', metadata);
+        const source = this.deriveAdminLogSource(record.eventType, metadata);
+        const richFields = this.extractAdminLogRichFields(metadata);
 
         return {
           id: `activity:${record.id}`,
@@ -2858,13 +2913,19 @@ export class PlatformService {
           eventType: record.eventType,
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
+          category,
+          ...(source ? { source } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
           ...(metadata ? { metadata } : {}),
+          ...richFields,
         };
       }),
       ...input.security.map((record) => {
         const metadata = this.toAdminLogMetadata(record.metadataJson);
         const status = this.readAdminLogStatus(metadata);
+        const category = this.deriveAdminLogCategory(record.eventType, 'security', metadata);
+        const source = this.deriveAdminLogSource(record.eventType, metadata);
+        const richFields = this.extractAdminLogRichFields(metadata);
 
         return {
           id: `security:${record.id}`,
@@ -2872,14 +2933,20 @@ export class PlatformService {
           eventType: record.eventType,
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
+          category,
+          ...(source ? { source } : {}),
           severity: record.severity,
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
           ...(metadata ? { metadata } : {}),
+          ...richFields,
         };
       }),
       ...input.domain.map((record) => {
         const metadata = this.toAdminLogMetadata(record.payloadJson);
+        const category = this.deriveAdminLogCategory(record.eventType, 'domain', metadata);
+        const source = this.deriveAdminLogSource(record.eventType, metadata);
+        const richFields = this.extractAdminLogRichFields(metadata);
 
         return {
           id: `domain:${record.id}`,
@@ -2887,7 +2954,10 @@ export class PlatformService {
           eventType: record.eventType,
           summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
           occurredAt: record.createdAt.toISOString(),
+          category,
+          ...(source ? { source } : {}),
           ...(metadata ? { metadata } : {}),
+          ...richFields,
         };
       }),
     ].sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime());
@@ -2896,32 +2966,67 @@ export class PlatformService {
   private filterAdminLogEntries(items: AdminLogEntry[], filters: AdminLogFilters): {
     items: AdminLogEntry[];
     streamCounts: AdminLogsSnapshot['streamCounts'];
+    categoryCounts: AdminLogCategoryCounts;
   } {
-    const afterSearchAndSeverity = items.filter((item) => {
-      if (filters.severity !== 'all' && item.severity !== filters.severity) {
-        return false;
+    const afterBaseFilters = items.filter((item) => {
+      if (filters.severity !== 'all' && item.severity !== filters.severity) return false;
+
+      if (filters.status && item.status !== filters.status) return false;
+
+      if (filters.eventType && !item.eventType.toLowerCase().includes(filters.eventType.toLowerCase())) return false;
+
+      if (filters.from) {
+        const fromMs = Date.parse(filters.from);
+        if (Number.isFinite(fromMs) && Date.parse(item.occurredAt) < fromMs) return false;
       }
 
-      if (!filters.search) {
-        return true;
+      if (filters.to) {
+        const toMs = Date.parse(filters.to);
+        if (Number.isFinite(toMs) && Date.parse(item.occurredAt) > toMs) return false;
       }
+
+      if (!filters.search) return true;
 
       return this.matchesAdminLogSearch(item, filters.search);
     });
+
     const streamCounts: AdminLogsSnapshot['streamCounts'] = {
-      audit: afterSearchAndSeverity.filter((item) => item.stream === 'audit').length,
-      activity: afterSearchAndSeverity.filter((item) => item.stream === 'activity').length,
-      security: afterSearchAndSeverity.filter((item) => item.stream === 'security').length,
-      domain: afterSearchAndSeverity.filter((item) => item.stream === 'domain').length,
+      audit: afterBaseFilters.filter((item) => item.stream === 'audit').length,
+      activity: afterBaseFilters.filter((item) => item.stream === 'activity').length,
+      security: afterBaseFilters.filter((item) => item.stream === 'security').length,
+      domain: afterBaseFilters.filter((item) => item.stream === 'domain').length,
     };
-    const filteredItems =
+
+    const categoryCounts: AdminLogCategoryCounts = {
+      auth: afterBaseFilters.filter((item) => item.category === 'auth').length,
+      extension: afterBaseFilters.filter((item) => item.category === 'extension').length,
+      ai: afterBaseFilters.filter((item) => item.category === 'ai').length,
+      admin: afterBaseFilters.filter((item) => item.category === 'admin').length,
+      system: afterBaseFilters.filter((item) => item.category === 'system').length,
+    };
+
+    const afterStreamFilter =
       filters.stream === 'all'
-        ? afterSearchAndSeverity
-        : afterSearchAndSeverity.filter((item) => item.stream === filters.stream);
+        ? afterBaseFilters
+        : afterBaseFilters.filter((item) => item.stream === filters.stream);
+
+    const afterCategoryFilter =
+      filters.category
+        ? afterStreamFilter.filter((item) => item.category === filters.category)
+        : afterStreamFilter;
+
+    const afterSourceFilter =
+      filters.source
+        ? afterCategoryFilter.filter((item) => item.source === filters.source)
+        : afterCategoryFilter;
+
+    const page = filters.page ?? 1;
+    const offset = (page - 1) * filters.limit;
 
     return {
-      items: filteredItems.slice(0, filters.limit),
+      items: afterSourceFilter.slice(offset, offset + filters.limit),
       streamCounts,
+      categoryCounts,
     };
   }
 
@@ -2933,6 +3038,7 @@ export class PlatformService {
       filters: snapshot.filters,
       items: snapshot.items,
       streamCounts: snapshot.streamCounts,
+      categoryCounts: snapshot.categoryCounts,
       findings: this.buildAdminSecurityFindings(snapshot.items),
       lifecycleTrend: this.buildAdminSecurityLifecycleTrend(snapshot.items),
       controls: this.buildAdminSecurityControls(),
@@ -3185,6 +3291,121 @@ export class PlatformService {
       .map(([key, value]) => `${key}=${String(value)}`);
 
     return entries.length > 0 ? entries.join(' | ') : fallback;
+  }
+
+  private deriveAdminLogCategory(
+    eventType: string,
+    stream: string,
+    metadata?: Record<string, unknown>,
+  ): Exclude<AdminLogCategoryFilter, 'all'> {
+    const et = eventType.toLowerCase();
+
+    // auth: login/logout/password/session/mfa/otp events
+    if (
+      et.startsWith('auth.') ||
+      et.includes('.login') ||
+      et.includes('.logout') ||
+      et.includes('login_failed') ||
+      et.includes('login_success') ||
+      et.includes('password_reset') ||
+      et.includes('session_expired') ||
+      et.includes('session_revoked') ||
+      et.includes('.otp') ||
+      et.includes('.mfa')
+    ) {
+      return 'auth';
+    }
+
+    // extension: installation lifecycle
+    if (
+      et.startsWith('extension.') ||
+      et.includes('installation') ||
+      et.includes('bootstrap')
+    ) {
+      return 'extension';
+    }
+
+    // ai: proxy/quiz requests, provider/model metadata present
+    if (
+      et.startsWith('ai.') ||
+      et.includes('quiz_answer') ||
+      et.includes('ai_request') ||
+      et.includes('proxy_request') ||
+      (typeof metadata?.provider === 'string' && metadata.provider.length > 0) ||
+      (typeof metadata?.model === 'string' && metadata.model.length > 0)
+    ) {
+      return 'ai';
+    }
+
+    // admin: audit-stream actions — provider policy, feature flags, users, remote config, compatibility, support, impersonation
+    if (
+      stream === 'audit' ||
+      et.startsWith('admin.') ||
+      et.includes('user.') ||
+      et.includes('ai_provider') ||
+      et.includes('feature_flag') ||
+      et.includes('remote_config') ||
+      et.includes('compatibility_rule') ||
+      et.includes('support.') ||
+      et.includes('impersonation')
+    ) {
+      return 'admin';
+    }
+
+    // system: webhooks, jobs, runtime failures, uncategorised domain events
+    return 'system';
+  }
+
+  private deriveAdminLogSource(
+    eventType: string,
+    metadata?: Record<string, unknown>,
+  ): Exclude<AdminLogSourceFilter, 'all'> | undefined {
+    const raw = metadata?.source ?? metadata?.origin ?? metadata?.platform ?? metadata?.client ?? metadata?.requestSource;
+    const surface = metadata?.surface;
+
+    if (typeof raw === 'string') {
+      const s = raw.toLowerCase();
+      if (s === 'web' || s === 'web_app' || s === 'dashboard') return 'web';
+      if (s === 'extension' || s === 'content_script' || s === 'extension_popup') return 'extension';
+      if (s === 'api') return 'api';
+      if (s === 'worker' || s === 'queue') return 'worker';
+      if (s === 'webhook') return 'webhook';
+    }
+
+    if (typeof surface === 'string') {
+      const sf = surface.toLowerCase();
+      if (sf === 'web_app' || sf === 'dashboard') return 'web';
+      if (sf === 'content_script' || sf === 'extension_popup') return 'extension';
+    }
+
+    const et = eventType.toLowerCase();
+    if (et.startsWith('webhook.') || et.includes('webhook_')) return 'webhook';
+
+    return undefined;
+  }
+
+  private extractAdminLogRichFields(metadata?: Record<string, unknown>): Partial<AdminLogEntry> {
+    if (!metadata) return {};
+
+    const result: Partial<AdminLogEntry> = {};
+
+    if (typeof metadata.installationId === 'string') result.installationId = metadata.installationId;
+    if (typeof metadata.provider === 'string') result.provider = metadata.provider;
+    if (typeof metadata.model === 'string') result.model = metadata.model;
+    if (typeof metadata.durationMs === 'number') result.durationMs = metadata.durationMs;
+    if (typeof metadata.costUsd === 'number') result.costUsd = metadata.costUsd;
+    if (typeof metadata.promptTokens === 'number') result.promptTokens = metadata.promptTokens;
+    if (typeof metadata.completionTokens === 'number') result.completionTokens = metadata.completionTokens;
+    if (typeof metadata.totalTokens === 'number') result.totalTokens = metadata.totalTokens;
+
+    const errorText =
+      typeof metadata.errorMessage === 'string' ? metadata.errorMessage :
+      typeof metadata.error === 'string' ? metadata.error :
+      typeof metadata.errorSummary === 'string' ? metadata.errorSummary :
+      undefined;
+    if (errorText) result.errorSummary = errorText.slice(0, 200);
+
+    return result;
   }
 
   private buildAdminLogExportResult(

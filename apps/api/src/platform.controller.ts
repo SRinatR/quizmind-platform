@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Param, Patch, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Patch, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
@@ -147,6 +147,13 @@ export class PlatformController {
     @Query('severity') severity?: string,
     @Query('search') search?: string,
     @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('source') source?: string,
+    @Query('status') status?: string,
+    @Query('eventType') eventType?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('page') page?: string,
     @Headers('authorization') authorization?: string,
   ) {
     const filters: Partial<AdminLogFilters> = {
@@ -154,6 +161,13 @@ export class PlatformController {
       ...(severity ? { severity: severity as AdminLogFilters['severity'] } : {}),
       ...(search ? { search } : {}),
       ...(limit ? { limit: Number(limit) } : {}),
+      ...(category ? { category: category as AdminLogFilters['category'] } : {}),
+      ...(source ? { source: source as AdminLogFilters['source'] } : {}),
+      ...(status ? { status: status as AdminLogFilters['status'] } : {}),
+      ...(eventType ? { eventType } : {}),
+      ...(from ? { from } : {}),
+      ...(to ? { to } : {}),
+      ...(page ? { page: Number(page) } : {}),
     };
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
@@ -346,10 +360,8 @@ export class PlatformController {
   @Post('admin/logs/export')
   async exportAdminLogs(
     @Body() request?: Partial<AdminLogExportRequest>,
-    @Query('persona') persona?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    void persona;
     const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.exportAdminLogsForCurrentSession(session, request));
   }

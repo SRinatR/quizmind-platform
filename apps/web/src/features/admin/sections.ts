@@ -1,7 +1,7 @@
 import { type AccessRequirement } from '@quizmind/contracts';
 import { type AdminNavGroup, type NavigationItem } from '@quizmind/ui';
 
-export type AdminSectionGroup = 'people' | 'operations' | 'extensions' | 'control-plane';
+export type AdminSectionGroup = 'people' | 'operations' | 'control-plane';
 
 export interface AdminSection {
   id: string;
@@ -30,56 +30,16 @@ export const adminSections: AdminSection[] = [
   },
   // ── Operations ───────────────────────────────────────────────────────
   {
-    id: 'events',
-    title: 'Events',
-    navLabel: 'Events',
-    href: '/admin/events',
-    description: 'Audit, activity, security, and domain event streams.',
+    id: 'logs',
+    title: 'Logs',
+    navLabel: 'Logs',
+    href: '/admin/logs',
+    description: 'Unified platform log center: auth, extension, AI, admin, and system events.',
     requirement: { permission: 'audit_logs:read' },
     group: 'operations',
     groupLabel: 'Operations',
   },
-  {
-    id: 'security',
-    title: 'Security',
-    navLabel: 'Security',
-    href: '/admin/security',
-    description: 'Security event review and hardening checkpoints.',
-    requirement: { permission: 'audit_logs:read' },
-    group: 'operations',
-    groupLabel: 'Operations',
-  },
-  {
-    id: 'webhooks',
-    title: 'Jobs & Webhooks',
-    navLabel: 'Jobs & Webhooks',
-    href: '/admin/webhooks',
-    description: 'Webhook deliveries, queue bindings, and retry controls.',
-    requirement: { permission: 'jobs:read' },
-    group: 'operations',
-    groupLabel: 'Operations',
-  },
-  // ── Extensions ───────────────────────────────────────────────────────
-  {
-    id: 'extension-fleet',
-    title: 'Fleet',
-    navLabel: 'Fleet',
-    href: '/admin/extension-fleet',
-    description: 'Installation health, compatibility drift, and token activity.',
-    requirement: { permission: 'installations:read' },
-    group: 'extensions',
-    groupLabel: 'Extensions',
-  },
-  {
-    id: 'usage',
-    title: 'Usage',
-    navLabel: 'Usage',
-    href: '/admin/usage',
-    description: 'Quota counters, fleet health, and exportable usage telemetry.',
-    requirement: { permission: 'usage:read' },
-    group: 'extensions',
-    groupLabel: 'Extensions',
-  },
+  // ── Control Plane ────────────────────────────────────────────────────
   {
     id: 'compatibility',
     title: 'Compatibility',
@@ -87,20 +47,9 @@ export const adminSections: AdminSection[] = [
     href: '/admin/compatibility',
     description: 'Version gates, schema support, and rollout verdicts.',
     requirement: { permission: 'compatibility_rules:manage' },
-    group: 'extensions',
-    groupLabel: 'Extensions',
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
   },
-  {
-    id: 'bootstrap-simulator',
-    title: 'Bootstrap Simulator',
-    navLabel: 'Bootstrap Sim.',
-    href: '/admin/bootstrap-simulator',
-    description: 'Simulate bootstrap, compatibility, flags, and resolved remote config.',
-    requirement: { permission: 'remote_config:read' },
-    group: 'extensions',
-    groupLabel: 'Extensions',
-  },
-  // ── Control Plane ────────────────────────────────────────────────────
   {
     id: 'feature-flags',
     title: 'Feature Flags',
@@ -135,12 +84,11 @@ export const adminSections: AdminSection[] = [
 
 // ── Group order and labels ────────────────────────────────────────────────────
 
-const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'extensions', 'control-plane'];
+const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'control-plane'];
 
 const GROUP_LABELS: Record<AdminSectionGroup, string> = {
   people: 'People',
   operations: 'Operations',
-  extensions: 'Extensions',
   'control-plane': 'Control Plane',
 };
 
