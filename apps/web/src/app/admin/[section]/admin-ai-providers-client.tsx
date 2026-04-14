@@ -387,7 +387,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         <div className="mini-list">
           <div className="list-item">
             <strong>Provider</strong>
-            <p>{governance.policy.defaultProvider ?? governance.policy.providers.join(', ') || 'None'}</p>
+            <p>{(governance.policy.defaultProvider ?? governance.policy.providers.join(', ')) || 'None'}</p>
           </div>
           <div className="list-item">
             <strong>Mode</strong>
