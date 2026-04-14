@@ -20,14 +20,12 @@ import {
 } from '../../../lib/api';
 import { getVisibleAdminSections, buildVisibleAdminNavGroups } from '../../../features/navigation/visibility';
 import { type AdminSection } from '../../../features/admin/sections';
-import { FeatureFlagsClient } from './feature-flags-client';
-import { CompatibilityClient } from './compatibility-client';
 import { AdminAiProvidersClient } from './admin-ai-providers-client';
-import { RemoteConfigClient } from './remote-config-client';
+import { ExtensionControlAdminClient } from './extension-control-admin-client';
 import { UsersDirectoryClient } from './users-directory-client';
 import { LogsExplorerClient } from './logs-explorer-client';
 
-// ── Route aliases: old routes → /admin/logs ──────────────────────────────────
+// ── Route aliases ─────────────────────────────────────────────────────────────
 const ROUTE_REDIRECTS: Record<string, string> = {
   // Old canonical aliases
   'ai-providers': 'ai-routing',
@@ -40,7 +38,10 @@ const ROUTE_REDIRECTS: Record<string, string> = {
   'extension-fleet': 'logs',
   usage: 'logs',
   'bootstrap-simulator': 'logs',
-  'extension-control': 'logs',
+  // Merged control-plane tabs → unified Extension Control
+  compatibility: 'extension-control',
+  'feature-flags': 'extension-control',
+  'remote-config': 'extension-control',
 };
 
 interface AdminSectionPageProps {
@@ -207,12 +208,10 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     aiRouting?: true;
   }
   const SECTION_NEEDS: Record<string, LoaderNeeds> = {
-    users:           { users: true },
-    logs:            { logs: true },
-    compatibility:   { compatibility: true },
-    'feature-flags': { flags: true },
-    'remote-config': { remoteConfig: true },
-    'ai-routing':    { aiRouting: true },
+    users:               { users: true },
+    logs:                { logs: true },
+    'extension-control': { compatibility: true, flags: true, remoteConfig: true },
+    'ai-routing':        { aiRouting: true },
   };
   const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
@@ -252,8 +251,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const visibleSections = context ? getVisibleAdminSections(context) : [];
   const visibleNavGroups = context ? buildVisibleAdminNavGroups(context) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${sec}`));
-  const previewRoles = session ? [...session.principal.systemRoles] : [];
-
   return (
     <SiteShell
       adminNavGroups={visibleNavGroups}
@@ -322,68 +319,32 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </section>
             )}
           </>
-        ) : // ── Control Plane: Compatibility ───────────────────────────────────
-        section.id === 'compatibility' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${compatibilityRules?.items.length ?? 0} rule${(compatibilityRules?.items.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: compatibilityRules?.publishDecision.allowed ? 'publish access' : 'publish blocked', warn: !compatibilityRules?.publishDecision.allowed },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            {compatibilityRules ? (
-              <CompatibilityClient initialState={compatibilityRules} isConnectedSession={isConnectedSession} />
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">Compatibility</span>
-                <h2>Compatibility data unavailable.</h2>
-                <p>The API did not return a compatibility rule snapshot for this environment.</p>
-              </section>
-            )}
-          </>
-        ) : // ── Control Plane: Feature Flags ──────────────────────────────────
-        section.id === 'feature-flags' ? (
+        ) : // ── Control Plane: Extension Control ──────────────────────────────
+        section.id === 'extension-control' ? (
           <>
             <SectionHeader
               groupLabel={section.groupLabel}
               title={section.title}
               tags={[
                 { label: `${featureFlags?.flags.length ?? 0} flag${(featureFlags?.flags.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: canEditFeatureFlags ? 'write access' : 'read-only', warn: !canEditFeatureFlags },
+                { label: `${remoteConfigState?.activeLayers.length ?? 0} layer${(remoteConfigState?.activeLayers.length ?? 0) !== 1 ? 's' : ''}` },
+                { label: compatibilityRules?.publishDecision.allowed ? 'publish access' : 'publish blocked', warn: !compatibilityRules?.publishDecision.allowed },
               ]}
             />
             <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            <FeatureFlagsClient
-              canEdit={canEditFeatureFlags}
-              flags={featureFlags?.flags ?? []}
-              initialPreviewContext={{
-                roles: previewRoles,
-                userId: session.user.id,
-              }}
-            />
-          </>
-        ) : // ── Control Plane: Remote Config ──────────────────────────────────
-        section.id === 'remote-config' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${remoteConfigState?.activeLayers.length ?? 0} active layer${(remoteConfigState?.activeLayers.length ?? 0) !== 1 ? 's' : ''}` },
-                { label: remoteConfigState?.publishDecision.allowed ? 'publish access' : 'publish blocked', warn: !remoteConfigState?.publishDecision.allowed },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            {remoteConfigState ? (
-              <RemoteConfigClient initialState={remoteConfigState} isConnectedSession={isConnectedSession} />
+            {compatibilityRules ? (
+              <ExtensionControlAdminClient
+                compatibilityRules={compatibilityRules}
+                featureFlags={featureFlags}
+                remoteConfig={remoteConfigState}
+                isConnectedSession={isConnectedSession}
+                canEditFlags={canEditFeatureFlags}
+              />
             ) : (
               <section className="empty-state">
-                <span className="micro-label">Remote Config</span>
-                <h2>Remote config unavailable.</h2>
-                <p>The API did not return an active remote config snapshot for this context.</p>
+                <span className="micro-label">Extension Control</span>
+                <h2>Control plane data unavailable.</h2>
+                <p>The API did not return a control plane snapshot for this environment.</p>
               </section>
             )}
           </>
