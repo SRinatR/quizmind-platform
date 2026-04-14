@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
 import { type AdminUserMutationResult } from '@quizmind/contracts';
 import { type AdminUsersSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -48,14 +48,18 @@ interface ToolbarProps {
   role: string;
   banned: string;
   verified: string;
+  sort: string;
   limit: number;
+  isFiltered: boolean;
   canManage: boolean;
   onQueryChange: (v: string) => void;
   onRoleChange: (v: string) => void;
   onBannedChange: (v: string) => void;
   onVerifiedChange: (v: string) => void;
+  onSortChange: (v: string) => void;
   onLimitChange: (v: number) => void;
   onApply: () => void;
+  onReset: () => void;
   onCreateUser: () => void;
 }
 
@@ -64,14 +68,18 @@ function Toolbar({
   role,
   banned,
   verified,
+  sort,
   limit,
+  isFiltered,
   canManage,
   onQueryChange,
   onRoleChange,
   onBannedChange,
   onVerifiedChange,
+  onSortChange,
   onLimitChange,
   onApply,
+  onReset,
   onCreateUser,
 }: ToolbarProps) {
   return (
@@ -120,6 +128,16 @@ function Toolbar({
         <option value="unverified">Unverified</option>
       </select>
       <select
+        onChange={(e) => onSortChange(e.target.value)}
+        style={{ padding: '5px 8px', fontSize: '0.85rem' }}
+        value={sort}
+      >
+        <option value="created-desc">Newest first</option>
+        <option value="created-asc">Oldest first</option>
+        <option value="login-desc">Recent login</option>
+        <option value="email-asc">Email A→Z</option>
+      </select>
+      <select
         onChange={(e) => onLimitChange(Number(e.target.value))}
         style={{ padding: '5px 8px', fontSize: '0.85rem' }}
         value={limit}
@@ -131,6 +149,11 @@ function Toolbar({
       <button className="btn-ghost" onClick={onApply} style={{ fontSize: '0.85rem', padding: '5px 12px' }} type="button">
         Search
       </button>
+      {isFiltered ? (
+        <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.85rem', padding: '5px 12px' }} type="button">
+          Reset
+        </button>
+      ) : null}
       {canManage ? (
         <button className="btn-primary" onClick={onCreateUser} style={{ fontSize: '0.85rem', padding: '5px 12px', marginLeft: 'auto' }} type="button">
           + Create user
@@ -414,29 +437,55 @@ export function UsersDirectoryClient({
     }
   }
 
-  // ── Filter state (controlled, applied on Search / Enter) ──────────────────
+  // ── Filter state (controlled, applied on Search / Enter / debounce) ─────────
   const [draftQuery, setDraftQuery] = useState(searchParams.get('userQuery') ?? '');
   const [draftRole, setDraftRole] = useState(searchParams.get('userRole') ?? 'all');
   const [draftBanned, setDraftBanned] = useState(searchParams.get('userBanned') ?? 'all');
   const [draftVerified, setDraftVerified] = useState(searchParams.get('userVerified') ?? 'all');
+  const [draftSort, setDraftSort] = useState(searchParams.get('userSort') ?? 'created-desc');
   const [draftLimit, setDraftLimit] = useState(initialLimit);
 
-  function buildParams(overrides: Record<string, string | number | undefined> = {}) {
+  // Stable refs so debounced callback always reads latest values
+  const draftQueryRef = useRef(draftQuery);
+  draftQueryRef.current = draftQuery;
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Whether any non-default filter is active in the URL (not draft)
+  const hasActiveFilters = Boolean(
+    searchParams.get('userQuery') ||
+    (searchParams.get('userRole') && searchParams.get('userRole') !== 'all') ||
+    (searchParams.get('userBanned') && searchParams.get('userBanned') !== 'all') ||
+    (searchParams.get('userVerified') && searchParams.get('userVerified') !== 'all') ||
+    (searchParams.get('userSort') && searchParams.get('userSort') !== 'created-desc'),
+  );
+
+  function buildParams(
+    overrides: Record<string, string | number | undefined> = {},
+    base?: { query: string; role: string; banned: string; verified: string; sort: string; limit: number },
+  ) {
+    const q = base?.query ?? draftQuery;
+    const r = base?.role ?? draftRole;
+    const b = base?.banned ?? draftBanned;
+    const v = base?.verified ?? draftVerified;
+    const s = base?.sort ?? draftSort;
+    const l = base?.limit ?? draftLimit;
+
     const next = new URLSearchParams(searchParams.toString());
-    const apply = {
-      userQuery: draftQuery || undefined,
-      userRole: draftRole !== 'all' ? draftRole : undefined,
-      userBanned: draftBanned !== 'all' ? draftBanned : undefined,
-      userVerified: draftVerified !== 'all' ? draftVerified : undefined,
-      userLimit: draftLimit !== 25 ? String(draftLimit) : undefined,
-      userPage: undefined as string | undefined,
-      ...overrides,
+    const apply: Record<string, string | undefined> = {
+      userQuery: q || undefined,
+      userRole: r !== 'all' ? r : undefined,
+      userBanned: b !== 'all' ? b : undefined,
+      userVerified: v !== 'all' ? v : undefined,
+      userSort: s !== 'created-desc' ? s : undefined,
+      userLimit: l !== 25 ? String(l) : undefined,
+      userPage: undefined,
+      ...Object.fromEntries(Object.entries(overrides).map(([k, val]) => [k, val === undefined ? undefined : String(val)])),
     };
-    for (const [k, v] of Object.entries(apply)) {
-      if (v === undefined || v === '') {
+    for (const [k, val] of Object.entries(apply)) {
+      if (val === undefined || val === '') {
         next.delete(k);
       } else {
-        next.set(k, String(v));
+        next.set(k, val);
       }
     }
     return next.toString();
@@ -446,6 +495,41 @@ export function UsersDirectoryClient({
     const qs = buildParams({ userPage: undefined });
     startTransition(() => {
       router.push(`?${qs}`, { scroll: false });
+    });
+  }
+
+  function handleQueryChange(v: string) {
+    setDraftQuery(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const qs = buildParams({ userPage: undefined }, {
+        query: draftQueryRef.current,
+        role: draftRole,
+        banned: draftBanned,
+        verified: draftVerified,
+        sort: draftSort,
+        limit: draftLimit,
+      });
+      startTransition(() => {
+        router.push(`?${qs}`, { scroll: false });
+      });
+    }, 400);
+  }
+
+  // Clean up debounce on unmount
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  function resetFilters() {
+    setDraftQuery('');
+    setDraftRole('all');
+    setDraftBanned('all');
+    setDraftVerified('all');
+    setDraftSort('created-desc');
+    setDraftLimit(25);
+    const next = new URLSearchParams(searchParams.toString());
+    ['userQuery', 'userRole', 'userBanned', 'userVerified', 'userSort', 'userLimit', 'userPage'].forEach((k) => next.delete(k));
+    startTransition(() => {
+      router.push(`?${next.toString()}`, { scroll: false });
     });
   }
 
@@ -469,9 +553,10 @@ export function UsersDirectoryClient({
 
   const handleToggleAdmin = useCallback(async (user: DirectoryUser) => {
     if (!isConnectedSession || !canManageUserAccess) return;
+    const makeAdmin = !isAdmin(user);
+    if (!makeAdmin && !window.confirm(`Remove admin access for ${user.email}?`)) return;
     setBusy(true);
     setErrorMessage(null);
-    const makeAdmin = !isAdmin(user);
     try {
       const res = await fetch('/bff/admin/users/update-access', {
         method: 'POST',
@@ -495,9 +580,10 @@ export function UsersDirectoryClient({
 
   const handleToggleBan = useCallback(async (user: DirectoryUser) => {
     if (!isConnectedSession || !canManageUserAccess) return;
+    const ban = !user.suspendedAt;
+    if (!window.confirm(`${ban ? 'Ban' : 'Unban'} ${user.email}?`)) return;
     setBusy(true);
     setErrorMessage(null);
-    const ban = !user.suspendedAt;
     try {
       const res = await fetch('/bff/admin/users/update-access', {
         method: 'POST',
@@ -603,14 +689,18 @@ export function UsersDirectoryClient({
         role={draftRole}
         banned={draftBanned}
         verified={draftVerified}
+        sort={draftSort}
         limit={draftLimit}
+        isFiltered={hasActiveFilters}
         canManage={canManage}
-        onQueryChange={setDraftQuery}
+        onQueryChange={handleQueryChange}
         onRoleChange={setDraftRole}
         onBannedChange={setDraftBanned}
         onVerifiedChange={setDraftVerified}
-        onLimitChange={(v) => { setDraftLimit(v); }}
+        onSortChange={setDraftSort}
+        onLimitChange={setDraftLimit}
         onApply={applyFilters}
+        onReset={resetFilters}
         onCreateUser={() => setShowCreateModal(true)}
       />
 
@@ -708,10 +798,18 @@ export function UsersDirectoryClient({
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : hasActiveFilters ? (
         <div className="empty-state" style={{ padding: '40px 0' }}>
           <span className="micro-label">No results</span>
           <h2>No users match the current filters</h2>
+          <div className="link-row" style={{ justifyContent: 'center', marginTop: '12px' }}>
+            <button className="btn-ghost" onClick={resetFilters} type="button">Reset filters</button>
+          </div>
+        </div>
+      ) : (
+        <div className="empty-state" style={{ padding: '40px 0' }}>
+          <span className="micro-label">No users</span>
+          <h2>No users in this environment yet</h2>
         </div>
       )}
 

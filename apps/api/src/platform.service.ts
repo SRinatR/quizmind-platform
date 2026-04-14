@@ -1447,7 +1447,11 @@ export class PlatformService {
       rawFilters?.banned === 'banned' ? true : rawFilters?.banned === 'not-banned' ? false : undefined;
     const verifiedFilter =
       rawFilters?.verified === 'verified' ? true : rawFilters?.verified === 'unverified' ? false : undefined;
-    const sortFilter = rawFilters?.sort === 'oldest' ? 'oldest' : 'newest';
+    const validSorts = ['created-desc', 'created-asc', 'login-desc', 'email-asc'] as const;
+    type SortKey = typeof validSorts[number];
+    const sortFilter: SortKey = (validSorts as readonly string[]).includes(rawFilters?.sort ?? '')
+      ? (rawFilters!.sort as SortKey)
+      : 'created-desc';
 
     const { items, total } = await this.userRepository.listWithFilters({
       query: rawFilters?.query,
@@ -1495,6 +1499,13 @@ export class PlatformService {
 
     if (!existingUser) {
       throw new NotFoundException('User not found.');
+    }
+
+    if (existingUser.systemRoleAssignments.length > 0) {
+      const adminCount = await this.userRepository.countAdmins();
+      if (adminCount <= 1) {
+        throw new BadRequestException('Cannot delete the last remaining admin account.');
+      }
     }
 
     await this.userRepository.delete(userId);
@@ -1607,6 +1618,13 @@ export class PlatformService {
     }
 
     if (systemRoles) {
+      const isDemotion = systemRoles.length === 0 && existingUser.systemRoleAssignments.length > 0;
+      if (isDemotion) {
+        const adminCount = await this.userRepository.countAdmins();
+        if (adminCount <= 1) {
+          throw new BadRequestException('Cannot remove admin access from the last remaining admin.');
+        }
+      }
       updateData.systemRoleAssignments = {
         deleteMany: {},
         ...(systemRoles.length > 0

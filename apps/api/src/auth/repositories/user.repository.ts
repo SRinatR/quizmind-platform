@@ -45,7 +45,7 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
     role?: 'admin' | 'user';
     banned?: boolean;
     verified?: boolean;
-    sort?: 'newest' | 'oldest';
+    sort?: 'created-desc' | 'created-asc' | 'login-desc' | 'email-asc';
     page: number;
     limit: number;
   }): Promise<{ items: AuthUserRecord[]; total: number }> {
@@ -77,8 +77,13 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
       where.systemRoleAssignments = { none: {} };
     }
 
-    const orderBy: Prisma.UserOrderByWithRelationInput =
-      filters.sort === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' };
+    const sortMap: Record<string, Prisma.UserOrderByWithRelationInput> = {
+      'created-desc': { createdAt: 'desc' },
+      'created-asc':  { createdAt: 'asc' },
+      'login-desc':   { lastLoginAt: 'desc' },
+      'email-asc':    { email: 'asc' },
+    };
+    const orderBy = sortMap[filters.sort ?? 'created-desc'] ?? { createdAt: 'desc' };
 
     const [total, items] = await this.prisma.$transaction([
       this.prisma.user.count({ where }),
@@ -92,6 +97,12 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
     ]);
 
     return { items, total };
+  }
+
+  countAdmins(): Promise<number> {
+    return this.prisma.user.count({
+      where: { systemRoleAssignments: { some: {} } },
+    });
   }
 
   delete(id: string): Promise<AuthUserRecord> {
