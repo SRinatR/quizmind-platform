@@ -64,11 +64,16 @@ export type AdminLogActorRecord = Prisma.UserGetPayload<{
   select: typeof userSelect;
 }>;
 
+// Fixed per-stream row limit. All in-memory filters (search, status, category,
+// source, eventType) are applied after the DB fetch, so we must bring enough rows
+// to cover every page the caller might request. 5 000 per stream gives correct
+// pagination for any realistic admin-logs dataset, especially when combined with
+// the date-range pre-filter.
+const STREAM_SAFETY_LIMIT = 5_000;
+
 interface ListAdminLogsInput {
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
-  limit?: number;
-  page?: number;
   from?: string;
   to?: string;
 }
@@ -85,21 +90,12 @@ function shouldReadStream(stream: AdminLogStreamFilter | undefined, candidate: E
   return !stream || stream === 'all' || stream === candidate;
 }
 
-function resolveTake(limit?: number, page?: number, stream?: AdminLogStreamFilter) {
-  const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit as number) : 25;
-  const normalizedPage = Number.isFinite(page) && (page as number) > 1 ? Math.trunc(page as number) : 1;
-  // Fetch enough rows to cover current page + 1 extra page worth of buffer per stream.
-  // Cap at 500 per stream to stay sane.
-  const multiplier = stream && stream !== 'all' ? 3 : 2;
-  return Math.min(normalizedLimit * (normalizedPage + 1) * multiplier, 500);
-}
-
 @Injectable()
 export class AdminLogRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async listRecent(input: ListAdminLogsInput = {}): Promise<ListAdminLogsResult> {
-    const take = resolveTake(input.limit, input.page, input.stream);
+    const take = STREAM_SAFETY_LIMIT;
     const fromDate = input.from ? new Date(input.from) : undefined;
     const toDate = input.to ? new Date(input.to) : undefined;
     const dateWhere = {
