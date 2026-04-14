@@ -1369,8 +1369,6 @@ export class PlatformService {
     const records = await this.adminLogRepository.listRecent({
       stream: normalizedFilters.stream,
       severity: normalizedFilters.severity,
-      limit: normalizedFilters.limit,
-      page: normalizedFilters.page,
       from: normalizedFilters.from,
       to: normalizedFilters.to,
     });
