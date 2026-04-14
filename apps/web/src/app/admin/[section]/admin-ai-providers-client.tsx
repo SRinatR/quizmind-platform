@@ -83,7 +83,18 @@ function deriveStatus(governance: AdminProviderGovernanceStateSnapshot): { label
     return { label: 'OpenRouter key missing', ok: false };
   }
 
-  if (policy.mode !== 'platform_only' || !policy.providers.includes('openrouter') || !policy.allowPlatformManaged) {
+  const policyOk =
+    policy.mode === 'platform_only' &&
+    policy.allowPlatformManaged === true &&
+    policy.allowBringYourOwnKey === false &&
+    policy.allowDirectProviderMode === false &&
+    (policy.allowWorkspaceSharedCredentials ?? false) === false &&
+    (policy.requireAdminApproval ?? false) === false &&
+    policy.providers.length === 1 &&
+    policy.providers[0] === 'openrouter' &&
+    policy.defaultProvider === 'openrouter';
+
+  if (!policyOk) {
     return { label: 'Policy not locked to platform-only', ok: false };
   }
 
@@ -142,9 +153,9 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         : canWriteCredentials && !credentialPolicyBlockReason;
   const workspaceOverrideActive = governance.policy.scopeType === 'workspace';
   const openrouterModels = governance.models.filter((m) => m.provider === 'openrouter');
-  const platformOpenRouterCred = governance.items.find(
-    (item) => item.provider === 'openrouter' && item.ownerType === 'platform' && !item.revokedAt,
-  );
+  const platformOpenRouterCred = governance.items
+    .filter((item) => item.provider === 'openrouter' && item.ownerType === 'platform' && !item.revokedAt)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0] ?? null;
   const status = deriveStatus(governance);
 
   async function saveAndActivate() {
@@ -156,63 +167,27 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
 
     setIsSavingAndActivating(true);
     setErrorMessage(null);
-    setStatusMessage('Saving OpenRouter key...');
+    setStatusMessage('Saving and activating OpenRouter routing...');
 
     try {
-      const credResponse = platformOpenRouterCred
-        ? await fetch('/bff/providers/credentials/rotate', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ credentialId: platformOpenRouterCred.id, secret: quickSecret.trim() }),
-          })
-        : await fetch('/bff/providers/credentials', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ provider: 'openrouter', ownerType: 'platform', secret: quickSecret.trim() }),
-          });
-
-      const credPayload = (await credResponse.json().catch(() => null)) as MutationRouteResponse<ProviderCredentialMutationResult> | null;
-
-      if (!credResponse.ok || !credPayload?.ok) {
-        setIsSavingAndActivating(false);
-        setStatusMessage(null);
-        setErrorMessage(credPayload?.error?.message ?? 'Unable to save OpenRouter key.');
-        return;
-      }
-
-      setStatusMessage('Activating platform-only policy...');
-
-      const policyBody: AiProviderPolicyUpdateRequest = {
-        mode: 'platform_only',
-        allowPlatformManaged: true,
-        allowBringYourOwnKey: false,
-        allowDirectProviderMode: false,
-        allowWorkspaceSharedCredentials: false,
-        requireAdminApproval: false,
-        providers: ['openrouter'],
-        defaultProvider: 'openrouter',
-        defaultModel: quickModel || null,
-        reason: 'Platform-managed OpenRouter routing. BYOK and direct provider mode disabled.',
-      };
-
-      const policyResponse = await fetch('/bff/admin/providers/policy', {
+      const response = await fetch('/bff/admin/ai-routing/openrouter/activate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(policyBody),
+        body: JSON.stringify({ secret: quickSecret.trim(), defaultModel: quickModel || null }),
       });
 
-      const policyPayload = (await policyResponse.json().catch(() => null)) as MutationRouteResponse<AiProviderPolicyUpdateResult> | null;
+      const payload = (await response.json().catch(() => null)) as MutationRouteResponse<{ credentialUpdatedAt: string; policyUpdatedAt: string }> | null;
 
-      if (!policyResponse.ok || !policyPayload?.ok || !policyPayload.data) {
+      if (!response.ok || !payload?.ok || !payload.data) {
         setIsSavingAndActivating(false);
         setStatusMessage(null);
-        setErrorMessage(policyPayload?.error?.message ?? 'Key saved but unable to activate policy.');
+        setErrorMessage(payload?.error?.message ?? 'Unable to activate OpenRouter routing.');
         return;
       }
 
       setQuickSecret('');
       setIsSavingAndActivating(false);
-      setStatusMessage(`Activated at ${formatUtcDateTime(policyPayload.data.updatedAt)}.`);
+      setStatusMessage(`Activated at ${formatUtcDateTime(payload.data.policyUpdatedAt)}.`);
       router.refresh();
     } catch {
       setIsSavingAndActivating(false);
