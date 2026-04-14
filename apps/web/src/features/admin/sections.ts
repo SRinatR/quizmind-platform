@@ -28,28 +28,6 @@ export const adminSections: AdminSection[] = [
     group: 'people',
     groupLabel: 'People',
   },
-  {
-    id: 'support',
-    title: 'Support',
-    navLabel: 'Support',
-    href: '/admin/support',
-    description: 'Support ticket queue and operator context.',
-    // support_tickets:manage gates the ticket queue — distinct from impersonation
-    requirement: { permission: 'support_tickets:manage' },
-    group: 'people',
-    groupLabel: 'People',
-  },
-  {
-    id: 'access-sessions',
-    title: 'Access Sessions',
-    navLabel: 'Access Sessions',
-    href: '/admin/access-sessions',
-    description: 'Recent support access sessions and operator activity logs.',
-    // support:impersonate gates the impersonation log
-    requirement: { permission: 'support:impersonate' },
-    group: 'people',
-    groupLabel: 'People',
-  },
   // ── Operations ───────────────────────────────────────────────────────
   {
     id: 'events',

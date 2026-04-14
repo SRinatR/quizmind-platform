@@ -1,597 +1,747 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import {
-  type AdminUserMutationResult,
-  type SupportImpersonationResult,
-} from '@quizmind/contracts';
-
-/** Canonical role granted when promoting a user to admin. */
-const ADMIN_ROLE = 'admin';
-
-function isAdminUser(roles: string[]): boolean {
-  return roles.length > 0;
-}
-
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useTransition, useCallback } from 'react';
+import { type AdminUserMutationResult } from '@quizmind/contracts';
 import { type AdminUsersSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+
+const ADMIN_ROLE = 'admin';
 
 type DirectoryUser = AdminUsersSnapshot['items'][number];
 
 interface UsersDirectoryClientProps {
   canManageUserAccess: boolean;
-  canStartSupportSessions: boolean;
   currentUserId: string;
   isConnectedSession: boolean;
   items: DirectoryUser[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
-interface SupportImpersonationRouteResponse {
-  ok: boolean;
-  data?: SupportImpersonationResult;
-  error?: {
-    message?: string;
-  };
-}
-
-interface AdminUserMutationRouteResponse {
+interface MutationRouteResponse {
   ok: boolean;
   data?: AdminUserMutationResult;
-  error?: {
-    message?: string;
-  };
+  error?: { message?: string };
 }
 
-function buildRoleDraft(items: DirectoryUser[]) {
-  return Object.fromEntries(items.map((item) => [item.id, item.systemRoles]));
+interface DeleteRouteResponse {
+  ok: boolean;
+  data?: { userId: string };
+  error?: { message?: string };
 }
 
-function buildDisplayNameDraft(items: DirectoryUser[]) {
-  return Object.fromEntries(items.map((item) => [item.id, item.displayName ?? '']));
+function isAdmin(user: DirectoryUser) {
+  return user.systemRoles.length > 0;
 }
 
-function buildSuspendDraft(items: DirectoryUser[]) {
-  return Object.fromEntries(items.map((item) => [item.id, Boolean(item.suspendedAt)]));
+function formatDate(iso: string | null | undefined) {
+  if (!iso) return '—';
+  return formatUtcDateTime(iso);
 }
 
-function buildSuspendReasonDraft(items: DirectoryUser[]) {
-  return Object.fromEntries(items.map((item) => [item.id, '']));
+// ── Toolbar ───────────────────────────────────────────────────────────────────
+
+interface ToolbarProps {
+  query: string;
+  role: string;
+  banned: string;
+  verified: string;
+  limit: number;
+  canManage: boolean;
+  onQueryChange: (v: string) => void;
+  onRoleChange: (v: string) => void;
+  onBannedChange: (v: string) => void;
+  onVerifiedChange: (v: string) => void;
+  onLimitChange: (v: number) => void;
+  onApply: () => void;
+  onCreateUser: () => void;
 }
 
-function applyMutation(items: DirectoryUser[], nextUser: DirectoryUser) {
-  const nextItems = items.filter((item) => item.id !== nextUser.id);
-  nextItems.push(nextUser);
-
-  return nextItems.sort((left, right) => left.email.localeCompare(right.email));
-}
-
-export function UsersDirectoryClient({
-  canManageUserAccess,
-  canStartSupportSessions,
-  currentUserId,
-  isConnectedSession,
-  items,
-}: UsersDirectoryClientProps) {
-  const router = useRouter();
-  const [directoryItems, setDirectoryItems] = useState<DirectoryUser[]>(items);
-  const [activeSupportUserId, setActiveSupportUserId] = useState<string | null>(null);
-  const [activeAccessUserId, setActiveAccessUserId] = useState<string | null>(null);
-  const [creatingUser, setCreatingUser] = useState(false);
-  const [draftReasons, setDraftReasons] = useState<Record<string, string>>({});
-  const [draftOperatorNotes, setDraftOperatorNotes] = useState<Record<string, string>>({});
-  const [draftSystemRoles, setDraftSystemRoles] =
-    useState<Record<string, string[]>>(() => buildRoleDraft(items));
-  const [draftDisplayNames, setDraftDisplayNames] = useState<Record<string, string>>(
-    () => buildDisplayNameDraft(items),
+function Toolbar({
+  query,
+  role,
+  banned,
+  verified,
+  limit,
+  canManage,
+  onQueryChange,
+  onRoleChange,
+  onBannedChange,
+  onVerifiedChange,
+  onLimitChange,
+  onApply,
+  onCreateUser,
+}: ToolbarProps) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: '8px',
+        padding: '10px 0 12px',
+      }}
+    >
+      <input
+        onChange={(e) => onQueryChange(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') onApply(); }}
+        placeholder="Search email, name, ID…"
+        style={{ minWidth: '200px', flex: '1 1 200px', padding: '5px 10px', fontSize: '0.85rem' }}
+        type="search"
+        value={query}
+      />
+      <select
+        onChange={(e) => onRoleChange(e.target.value)}
+        style={{ padding: '5px 8px', fontSize: '0.85rem' }}
+        value={role}
+      >
+        <option value="all">All roles</option>
+        <option value="admin">Admin</option>
+        <option value="user">User</option>
+      </select>
+      <select
+        onChange={(e) => onBannedChange(e.target.value)}
+        style={{ padding: '5px 8px', fontSize: '0.85rem' }}
+        value={banned}
+      >
+        <option value="all">All ban states</option>
+        <option value="banned">Banned</option>
+        <option value="not-banned">Not banned</option>
+      </select>
+      <select
+        onChange={(e) => onVerifiedChange(e.target.value)}
+        style={{ padding: '5px 8px', fontSize: '0.85rem' }}
+        value={verified}
+      >
+        <option value="all">All verified states</option>
+        <option value="verified">Verified</option>
+        <option value="unverified">Unverified</option>
+      </select>
+      <select
+        onChange={(e) => onLimitChange(Number(e.target.value))}
+        style={{ padding: '5px 8px', fontSize: '0.85rem' }}
+        value={limit}
+      >
+        <option value={25}>25 / page</option>
+        <option value={50}>50 / page</option>
+        <option value={100}>100 / page</option>
+      </select>
+      <button className="btn-ghost" onClick={onApply} style={{ fontSize: '0.85rem', padding: '5px 12px' }} type="button">
+        Search
+      </button>
+      {canManage ? (
+        <button className="btn-primary" onClick={onCreateUser} style={{ fontSize: '0.85rem', padding: '5px 12px', marginLeft: 'auto' }} type="button">
+          + Create user
+        </button>
+      ) : null}
+    </div>
   );
-  const [draftSuspended, setDraftSuspended] = useState<Record<string, boolean>>(
-    () => buildSuspendDraft(items),
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+
+interface PaginationProps {
+  page: number;
+  limit: number;
+  total: number;
+  onPage: (p: number) => void;
+}
+
+function Pagination({ page, limit, total, onPage }: PaginationProps) {
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const from = Math.min(total, (page - 1) * limit + 1);
+  const to = Math.min(total, page * limit);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0 4px', fontSize: '0.82rem', color: 'var(--muted)' }}>
+      <span>{from}–{to} of {total}</span>
+      <button
+        className="btn-ghost"
+        disabled={page <= 1}
+        onClick={() => onPage(page - 1)}
+        style={{ fontSize: '0.8rem', padding: '3px 10px' }}
+        type="button"
+      >
+        Prev
+      </button>
+      <span style={{ minWidth: '60px', textAlign: 'center' }}>
+        {page} / {totalPages}
+      </span>
+      <button
+        className="btn-ghost"
+        disabled={page >= totalPages}
+        onClick={() => onPage(page + 1)}
+        style={{ fontSize: '0.8rem', padding: '3px 10px' }}
+        type="button"
+      >
+        Next
+      </button>
+    </div>
   );
-  const [draftSuspendReasons, setDraftSuspendReasons] = useState<Record<string, string>>(
-    () => buildSuspendReasonDraft(items),
+}
+
+// ── User drawer ───────────────────────────────────────────────────────────────
+
+interface UserDrawerProps {
+  user: DirectoryUser;
+  canManage: boolean;
+  isSelf: boolean;
+  busy: boolean;
+  onClose: () => void;
+  onToggleAdmin: (u: DirectoryUser) => void;
+  onToggleBan: (u: DirectoryUser) => void;
+  onDelete: (u: DirectoryUser) => void;
+}
+
+function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onToggleBan, onDelete }: UserDrawerProps) {
+  return (
+    <>
+      {/* backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.18)', zIndex: 40,
+        }}
+      />
+      {/* panel */}
+      <div
+        style={{
+          position: 'fixed', top: 0, right: 0, bottom: 0, width: '360px', maxWidth: '100vw',
+          background: 'var(--surface, #fff)', boxShadow: '-4px 0 24px rgba(0,0,0,0.12)',
+          zIndex: 50, overflowY: 'auto', padding: '24px 20px',
+          display: 'flex', flexDirection: 'column', gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <span className="micro-label">User details</span>
+          <button className="btn-ghost" onClick={onClose} style={{ fontSize: '0.82rem', padding: '3px 10px' }} type="button">Close</button>
+        </div>
+
+        <div>
+          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.95rem' }}>{user.displayName ?? user.email}</p>
+          {user.displayName ? <p className="list-muted" style={{ margin: '2px 0 0', fontSize: '0.82rem' }}>{user.email}</p> : null}
+          <p className="list-muted" style={{ margin: '4px 0 0', fontSize: '0.76rem', fontFamily: 'monospace' }}>{user.id}</p>
+        </div>
+
+        <div className="tag-row" style={{ margin: 0 }}>
+          <span className={user.emailVerifiedAt ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
+            {user.emailVerifiedAt ? 'verified' : 'unverified'}
+          </span>
+          {user.suspendedAt ? <span className="tag-soft tag-soft--orange">banned</span> : <span className="tag-soft tag-soft--gray">not banned</span>}
+          {isAdmin(user) ? <span className="tag-soft">admin</span> : <span className="tag-soft tag-soft--gray">user</span>}
+          {isSelf ? <span className="tag-soft tag-soft--gray">you</span> : null}
+        </div>
+
+        <table style={{ fontSize: '0.82rem', borderCollapse: 'collapse', width: '100%' }}>
+          <tbody>
+            <tr><td style={{ padding: '3px 0', color: 'var(--muted)', width: '100px' }}>Created</td><td>{formatDate(user.createdAt)}</td></tr>
+            <tr><td style={{ padding: '3px 0', color: 'var(--muted)' }}>Last login</td><td>{formatDate(user.lastLoginAt)}</td></tr>
+            {user.suspendedAt ? <tr><td style={{ padding: '3px 0', color: 'var(--muted)' }}>Banned at</td><td>{formatDate(user.suspendedAt)}</td></tr> : null}
+          </tbody>
+        </table>
+
+        {canManage && !isSelf ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.1)' }}>
+            <span className="micro-label">Actions</span>
+            <button
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => onToggleAdmin(user)}
+              style={{ fontSize: '0.85rem', textAlign: 'left' }}
+              type="button"
+            >
+              {isAdmin(user) ? 'Remove admin' : 'Make admin'}
+            </button>
+            <button
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => onToggleBan(user)}
+              style={{ fontSize: '0.85rem', textAlign: 'left' }}
+              type="button"
+            >
+              {user.suspendedAt ? 'Unban' : 'Ban'}
+            </button>
+            <button
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => onDelete(user)}
+              style={{ fontSize: '0.85rem', textAlign: 'left', color: 'var(--destructive, #c0392b)' }}
+              type="button"
+            >
+              Delete account
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </>
   );
-  const [createEmail, setCreateEmail] = useState('');
-  const [createPassword, setCreatePassword] = useState('');
-  const [createDisplayName, setCreateDisplayName] = useState('');
-  const [createRoles, setCreateRoles] = useState<string[]>([]);
-  const [createEmailVerified, setCreateEmailVerified] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(
-    isConnectedSession
-      ? canManageUserAccess
-        ? 'Create users, toggle admin access, and manage account status directly from this directory.'
-        : canStartSupportSessions
-          ? 'This connected session can start support sessions, but cannot change user access rights.'
-          : 'This connected session can read users only.'
-      : 'Persona preview is read-only. Sign in with a connected admin account to manage access.',
-  );
-  const [lastStartedSession, setLastStartedSession] = useState<SupportImpersonationResult | null>(null);
-  const [lastStartedUser, setLastStartedUser] = useState<DirectoryUser | null>(null);
-  const [, startRefresh] = useTransition();
+}
 
-  function buildDefaultReason(user: DirectoryUser) {
-    return `Support follow-up from /admin/users for ${user.email}.`;
-  }
+// ── Create user modal ─────────────────────────────────────────────────────────
 
-  function getDraftReason(user: DirectoryUser) {
-    return draftReasons[user.id] ?? buildDefaultReason(user);
-  }
+interface CreateUserModalProps {
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (data: { email: string; password: string; displayName: string; isAdmin: boolean; emailVerified: boolean }) => void;
+}
 
-  function getDraftOperatorNote(user: DirectoryUser) {
-    return (
-      draftOperatorNotes[user.id] ??
-      'Started from the admin user directory without a linked support ticket.'
-    );
-  }
-
-  function getSystemRoleDraft(user: DirectoryUser) {
-    return draftSystemRoles[user.id] ?? user.systemRoles;
-  }
-
-  function getDisplayNameDraft(user: DirectoryUser) {
-    return draftDisplayNames[user.id] ?? user.displayName ?? '';
-  }
-
-  function getSuspendedDraft(user: DirectoryUser) {
-    return draftSuspended[user.id] ?? Boolean(user.suspendedAt);
-  }
-
-  function getSuspendReasonDraft(user: DirectoryUser) {
-    return draftSuspendReasons[user.id] ?? '';
-  }
-
-  function resetDraftsForUser(user: DirectoryUser) {
-    setDraftSystemRoles((current) => ({ ...current, [user.id]: user.systemRoles }));
-    setDraftDisplayNames((current) => ({ ...current, [user.id]: user.displayName ?? '' }));
-    setDraftSuspended((current) => ({ ...current, [user.id]: Boolean(user.suspendedAt) }));
-    setDraftSuspendReasons((current) => ({ ...current, [user.id]: '' }));
-  }
-
-  function setAdminForUser(userId: string, makeAdmin: boolean) {
-    setDraftSystemRoles((current) => {
-      const previous = current[userId] ?? [];
-      const next = makeAdmin
-        ? previous.length > 0 ? previous : [ADMIN_ROLE]
-        : [];
-      return { ...current, [userId]: next };
-    });
-  }
-
-  function setCreateAdmin(makeAdmin: boolean) {
-    setCreateRoles(makeAdmin ? [ADMIN_ROLE] : []);
-  }
-
-  async function handleStartSupportSession(user: DirectoryUser) {
-    const reason = getDraftReason(user).trim();
-    const operatorNote = getDraftOperatorNote(user).trim() || undefined;
-
-    if (!reason) {
-      setErrorMessage('Support session reason is required before launch.');
-      setStatusMessage(null);
-      return;
-    }
-
-    setActiveSupportUserId(user.id);
-    setErrorMessage(null);
-    setLastStartedSession(null);
-    setLastStartedUser(null);
-    setStatusMessage(`Starting a support session for ${user.displayName || user.email}...`);
-
-    try {
-      const response = await fetch('/bff/support/impersonation', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          targetUserId: user.id,
-          reason,
-          ...(operatorNote ? { operatorNote } : {}),
-        }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as SupportImpersonationRouteResponse | null;
-
-      if (!response.ok || !payload?.ok || !payload.data) {
-        setActiveSupportUserId(null);
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to start the support session right now.');
-        return;
-      }
-
-      setActiveSupportUserId(null);
-      setLastStartedSession(payload.data);
-      setLastStartedUser(user);
-      setStatusMessage(`Support session started for ${user.displayName || user.email}. Refreshing admin data...`);
-
-      startRefresh(() => {
-        router.refresh();
-      });
-    } catch {
-      setActiveSupportUserId(null);
-      setStatusMessage(null);
-      setErrorMessage('Unable to reach the support session route right now.');
-    }
-  }
-
-  async function handleCreateUser() {
-    if (!isConnectedSession || !canManageUserAccess) {
-      setErrorMessage('This session cannot create users.');
-      setStatusMessage(null);
-      return;
-    }
-
-    const email = createEmail.trim();
-    const password = createPassword.trim();
-    const displayName = createDisplayName.trim();
-
-    if (!email || !password) {
-      setErrorMessage('Email and password are required to create a user.');
-      setStatusMessage(null);
-      return;
-    }
-
-    setCreatingUser(true);
-    setErrorMessage(null);
-    setStatusMessage(`Creating user ${email}...`);
-
-    try {
-      const response = await fetch('/bff/admin/users/create', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          ...(displayName ? { displayName } : {}),
-          systemRoles: createRoles,
-          emailVerified: createEmailVerified,
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as AdminUserMutationRouteResponse | null;
-
-      if (!response.ok || !payload?.ok || !payload.data) {
-        setCreatingUser(false);
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to create user right now.');
-        return;
-      }
-
-      const nextUser = payload.data.user;
-
-      setDirectoryItems((current) => applyMutation(current, nextUser));
-      resetDraftsForUser(nextUser);
-      setCreateEmail('');
-      setCreatePassword('');
-      setCreateDisplayName('');
-      setCreateRoles([]);
-      setCreateEmailVerified(false);
-      setCreatingUser(false);
-      setStatusMessage(`User ${nextUser.email} created.`);
-      startRefresh(() => {
-        router.refresh();
-      });
-    } catch {
-      setCreatingUser(false);
-      setStatusMessage(null);
-      setErrorMessage('Unable to reach the create-user route right now.');
-    }
-  }
-
-  async function handleUpdateUserAccess(user: DirectoryUser) {
-    if (!isConnectedSession || !canManageUserAccess) {
-      setErrorMessage('This session cannot update user access.');
-      setStatusMessage(null);
-      return;
-    }
-
-    const displayName = getDisplayNameDraft(user).trim();
-    const systemRoleDraft = getSystemRoleDraft(user);
-    const suspend = getSuspendedDraft(user);
-    const suspendReason = getSuspendReasonDraft(user).trim();
-
-    setActiveAccessUserId(user.id);
-    setErrorMessage(null);
-    setStatusMessage(`Saving access profile for ${user.displayName || user.email}...`);
-
-    try {
-      const response = await fetch('/bff/admin/users/update-access', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          displayName: displayName || null,
-          systemRoles: systemRoleDraft,
-          suspend,
-          ...(suspend ? { suspendReason: suspendReason || null } : {}),
-        }),
-      });
-      const payload = (await response.json().catch(() => null)) as AdminUserMutationRouteResponse | null;
-
-      if (!response.ok || !payload?.ok || !payload.data) {
-        setActiveAccessUserId(null);
-        setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to update user access right now.');
-        return;
-      }
-
-      const nextUser = payload.data.user;
-      setDirectoryItems((current) => applyMutation(current, nextUser));
-      resetDraftsForUser(nextUser);
-      setActiveAccessUserId(null);
-      setStatusMessage(`Access profile updated for ${nextUser.displayName || nextUser.email}.`);
-      startRefresh(() => {
-        router.refresh();
-      });
-    } catch {
-      setActiveAccessUserId(null);
-      setStatusMessage(null);
-      setErrorMessage('Unable to reach the user-access update route right now.');
-    }
-  }
+function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [makeAdmin, setMakeAdmin] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   return (
     <>
-      {statusMessage ? <div className="banner banner-info">{statusMessage}</div> : null}
-      {errorMessage ? <div className="banner banner-error">{errorMessage}</div> : null}
-
-      {isConnectedSession && canManageUserAccess ? (
-        <section className="panel" style={{ marginBottom: '16px' }}>
-          <span className="micro-label">Create user or admin</span>
-          <h2>Provision a new account</h2>
-          <div className="form-grid">
-            <label className="form-field">
-              <span className="form-field__label">Email</span>
-              <input
-                disabled={creatingUser}
-                onChange={(event) => setCreateEmail(event.target.value)}
-                placeholder="new.user@quizmind.dev"
-                type="email"
-                value={createEmail}
-              />
-            </label>
-            <label className="form-field">
-              <span className="form-field__label">Password</span>
-              <input
-                disabled={creatingUser}
-                onChange={(event) => setCreatePassword(event.target.value)}
-                placeholder="At least 8 characters"
-                type="password"
-                value={createPassword}
-              />
-            </label>
-            <label className="form-field">
-              <span className="form-field__label">Display name</span>
-              <input
-                disabled={creatingUser}
-                onChange={(event) => setCreateDisplayName(event.target.value)}
-                placeholder="Optional display name"
-                type="text"
-                value={createDisplayName}
-              />
-            </label>
-          </div>
-          <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-            <input
-              checked={createRoles.length > 0}
-              disabled={creatingUser}
-              onChange={(event) => setCreateAdmin(event.target.checked)}
-              type="checkbox"
-            />
-            Admin account
-          </label>
-          <p className="list-muted" style={{ fontSize: '0.82rem', margin: '4px 0 12px' }}>
-            Regular user by default. Check &ldquo;Admin account&rdquo; to grant admin access.
-          </p>
-          <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-            <input
-              checked={createEmailVerified}
-              disabled={creatingUser}
-              onChange={(event) => setCreateEmailVerified(event.target.checked)}
-              type="checkbox"
-            />
-            mark email as verified
-          </label>
-          <div className="link-row">
-            <button className="btn-primary" disabled={creatingUser} onClick={() => void handleCreateUser()} type="button">
-              {creatingUser ? 'Creating user...' : 'Create user'}
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {lastStartedSession && lastStartedUser ? (
-        <div className="connect-success" style={{ marginBottom: '16px' }}>
-          <span className="micro-label">Support session started</span>
-          <p><strong>{lastStartedUser.displayName || lastStartedUser.email}</strong></p>
-          <p className="list-muted">
-            Session <span className="monospace">{lastStartedSession.impersonationSessionId}</span> opened at{' '}
-            {formatUtcDateTime(lastStartedSession.createdAt)}.
-          </p>
-          <div className="link-row" style={{ marginTop: '8px' }}>
-            <Link className="btn-ghost" href="/admin/support">
-              Open support history
-            </Link>
-          </div>
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.25)', zIndex: 60 }}
+      />
+      <div
+        style={{
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+          background: 'var(--surface, #fff)', borderRadius: '8px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.18)', zIndex: 70,
+          width: '420px', maxWidth: '96vw', padding: '24px',
+          display: 'flex', flexDirection: 'column', gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem' }}>Create user</h3>
+          <button className="btn-ghost" onClick={onClose} style={{ fontSize: '0.82rem', padding: '3px 10px' }} type="button">Cancel</button>
         </div>
+        <label className="form-field">
+          <span className="form-field__label">Email</span>
+          <input
+            disabled={busy}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="user@example.com"
+            type="email"
+            value={email}
+          />
+        </label>
+        <label className="form-field">
+          <span className="form-field__label">Password</span>
+          <input
+            disabled={busy}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="At least 8 characters"
+            type="password"
+            value={password}
+          />
+        </label>
+        <label className="form-field">
+          <span className="form-field__label">Display name <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></span>
+          <input
+            disabled={busy}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Optional"
+            type="text"
+            value={displayName}
+          />
+        </label>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+          <input
+            checked={makeAdmin}
+            disabled={busy}
+            onChange={(e) => setMakeAdmin(e.target.checked)}
+            type="checkbox"
+          />
+          Admin account
+        </label>
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+          <input
+            checked={emailVerified}
+            disabled={busy}
+            onChange={(e) => setEmailVerified(e.target.checked)}
+            type="checkbox"
+          />
+          Mark email as verified
+        </label>
+        <div className="link-row" style={{ marginTop: '4px' }}>
+          <button
+            className="btn-primary"
+            disabled={busy}
+            onClick={() => onSubmit({ email, password, displayName, isAdmin: makeAdmin, emailVerified })}
+            type="button"
+          >
+            {busy ? 'Creating…' : 'Create user'}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export function UsersDirectoryClient({
+  canManageUserAccess,
+  currentUserId,
+  isConnectedSession,
+  items: initialItems,
+  total: initialTotal,
+  page: initialPage,
+  limit: initialLimit,
+}: UsersDirectoryClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
+
+  // Local optimistic state: overrides applied after mutations until server refresh
+  const [localItems, setLocalItems] = useState<DirectoryUser[]>(initialItems);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<DirectoryUser | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+
+  // Keep local items in sync when server sends new props (after navigation)
+  // We use a key trick: items reference changes on every server render
+  const [prevInitialItems, setPrevInitialItems] = useState(initialItems);
+  if (prevInitialItems !== initialItems) {
+    setPrevInitialItems(initialItems);
+    setLocalItems(initialItems);
+    // Close drawer if the selected user is no longer visible
+    if (selectedUser) {
+      const still = initialItems.find((u) => u.id === selectedUser.id);
+      if (still) setSelectedUser(still);
+      else setSelectedUser(null);
+    }
+  }
+
+  // ── Filter state (controlled, applied on Search / Enter) ──────────────────
+  const [draftQuery, setDraftQuery] = useState(searchParams.get('userQuery') ?? '');
+  const [draftRole, setDraftRole] = useState(searchParams.get('userRole') ?? 'all');
+  const [draftBanned, setDraftBanned] = useState(searchParams.get('userBanned') ?? 'all');
+  const [draftVerified, setDraftVerified] = useState(searchParams.get('userVerified') ?? 'all');
+  const [draftLimit, setDraftLimit] = useState(initialLimit);
+
+  function buildParams(overrides: Record<string, string | number | undefined> = {}) {
+    const next = new URLSearchParams(searchParams.toString());
+    const apply = {
+      userQuery: draftQuery || undefined,
+      userRole: draftRole !== 'all' ? draftRole : undefined,
+      userBanned: draftBanned !== 'all' ? draftBanned : undefined,
+      userVerified: draftVerified !== 'all' ? draftVerified : undefined,
+      userLimit: draftLimit !== 25 ? String(draftLimit) : undefined,
+      userPage: undefined as string | undefined,
+      ...overrides,
+    };
+    for (const [k, v] of Object.entries(apply)) {
+      if (v === undefined || v === '') {
+        next.delete(k);
+      } else {
+        next.set(k, String(v));
+      }
+    }
+    return next.toString();
+  }
+
+  function applyFilters() {
+    const qs = buildParams({ userPage: undefined });
+    startTransition(() => {
+      router.push(`?${qs}`, { scroll: false });
+    });
+  }
+
+  function goToPage(p: number) {
+    const qs = buildParams({ userPage: p > 1 ? String(p) : undefined });
+    startTransition(() => {
+      router.push(`?${qs}`, { scroll: false });
+    });
+  }
+
+  function refresh() {
+    startTransition(() => { router.refresh(); });
+  }
+
+  // ── Mutation helpers ──────────────────────────────────────────────────────
+
+  function applyOptimisticMutation(nextUser: DirectoryUser) {
+    setLocalItems((curr) => curr.map((u) => (u.id === nextUser.id ? nextUser : u)));
+    if (selectedUser?.id === nextUser.id) setSelectedUser(nextUser);
+  }
+
+  const handleToggleAdmin = useCallback(async (user: DirectoryUser) => {
+    if (!isConnectedSession || !canManageUserAccess) return;
+    setBusy(true);
+    setErrorMessage(null);
+    const makeAdmin = !isAdmin(user);
+    try {
+      const res = await fetch('/bff/admin/users/update-access', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, systemRoles: makeAdmin ? [ADMIN_ROLE] : [] }),
+      });
+      const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
+      if (!res.ok || !payload?.ok || !payload.data) {
+        setErrorMessage(payload?.error?.message ?? 'Unable to update role.');
+      } else {
+        applyOptimisticMutation(payload.data.user);
+        setStatusMessage(`${makeAdmin ? 'Granted' : 'Removed'} admin for ${user.email}.`);
+        refresh();
+      }
+    } catch {
+      setErrorMessage('Unable to reach the update-access route.');
+    } finally {
+      setBusy(false);
+    }
+  }, [isConnectedSession, canManageUserAccess, selectedUser]);
+
+  const handleToggleBan = useCallback(async (user: DirectoryUser) => {
+    if (!isConnectedSession || !canManageUserAccess) return;
+    setBusy(true);
+    setErrorMessage(null);
+    const ban = !user.suspendedAt;
+    try {
+      const res = await fetch('/bff/admin/users/update-access', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, suspend: ban }),
+      });
+      const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
+      if (!res.ok || !payload?.ok || !payload.data) {
+        setErrorMessage(payload?.error?.message ?? 'Unable to update ban state.');
+      } else {
+        applyOptimisticMutation(payload.data.user);
+        setStatusMessage(`${ban ? 'Banned' : 'Unbanned'} ${user.email}.`);
+        refresh();
+      }
+    } catch {
+      setErrorMessage('Unable to reach the update-access route.');
+    } finally {
+      setBusy(false);
+    }
+  }, [isConnectedSession, canManageUserAccess, selectedUser]);
+
+  const handleDelete = useCallback(async (user: DirectoryUser) => {
+    if (!isConnectedSession || !canManageUserAccess) return;
+    if (!window.confirm(`Delete account for ${user.email}? This cannot be undone.`)) return;
+    setBusy(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/bff/admin/users/delete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const payload = (await res.json().catch(() => null)) as DeleteRouteResponse | null;
+      if (!res.ok || !payload?.ok) {
+        setErrorMessage(payload?.error?.message ?? 'Unable to delete user.');
+      } else {
+        setLocalItems((curr) => curr.filter((u) => u.id !== user.id));
+        setSelectedUser(null);
+        setStatusMessage(`Deleted account for ${user.email}.`);
+        refresh();
+      }
+    } catch {
+      setErrorMessage('Unable to reach the delete route.');
+    } finally {
+      setBusy(false);
+    }
+  }, [isConnectedSession, canManageUserAccess]);
+
+  const handleCreateUser = useCallback(async (data: {
+    email: string;
+    password: string;
+    displayName: string;
+    isAdmin: boolean;
+    emailVerified: boolean;
+  }) => {
+    if (!isConnectedSession || !canManageUserAccess) return;
+    if (!data.email.trim() || !data.password.trim()) {
+      setErrorMessage('Email and password are required.');
+      return;
+    }
+    setCreatingUser(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch('/bff/admin/users/create', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          email: data.email.trim(),
+          password: data.password.trim(),
+          ...(data.displayName.trim() ? { displayName: data.displayName.trim() } : {}),
+          systemRoles: data.isAdmin ? [ADMIN_ROLE] : [],
+          emailVerified: data.emailVerified,
+        }),
+      });
+      const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
+      if (!res.ok || !payload?.ok || !payload.data) {
+        setErrorMessage(payload?.error?.message ?? 'Unable to create user.');
+      } else {
+        setShowCreateModal(false);
+        setStatusMessage(`Created user ${payload.data.user.email}.`);
+        refresh();
+      }
+    } catch {
+      setErrorMessage('Unable to reach the create route.');
+    } finally {
+      setCreatingUser(false);
+    }
+  }, [isConnectedSession, canManageUserAccess]);
+
+  const canManage = isConnectedSession && canManageUserAccess;
+
+  return (
+    <>
+      {statusMessage ? (
+        <div className="banner banner-info" style={{ marginBottom: '8px' }}>{statusMessage}</div>
+      ) : null}
+      {errorMessage ? (
+        <div className="banner banner-error" style={{ marginBottom: '8px' }}>{errorMessage}</div>
       ) : null}
 
-      {directoryItems.length > 0 ? (
-        <div style={{ display: 'grid', gap: '8px' }}>
-          {directoryItems.map((user) => {
-            const canStartForUser =
-              isConnectedSession &&
-              canStartSupportSessions &&
-              user.id !== currentUserId &&
-              !user.suspendedAt;
-            const canManageUser = isConnectedSession && canManageUserAccess;
-            const roleDraft = getSystemRoleDraft(user);
+      <Toolbar
+        query={draftQuery}
+        role={draftRole}
+        banned={draftBanned}
+        verified={draftVerified}
+        limit={draftLimit}
+        canManage={canManage}
+        onQueryChange={setDraftQuery}
+        onRoleChange={setDraftRole}
+        onBannedChange={setDraftBanned}
+        onVerifiedChange={setDraftVerified}
+        onLimitChange={(v) => { setDraftLimit(v); }}
+        onApply={applyFilters}
+        onCreateUser={() => setShowCreateModal(true)}
+      />
 
-            return (
-              <div className="panel" style={{ padding: '10px 16px' }} key={user.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>
-                      {user.displayName || user.email}
-                    </p>
-                    {user.displayName ? (
-                      <p className="list-muted" style={{ margin: '1px 0 0', fontSize: '0.82rem' }}>{user.email}</p>
-                    ) : null}
-                  </div>
-                  <div className="tag-row">
-                    <span className={user.emailVerifiedAt ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
-                      {user.emailVerifiedAt ? 'verified' : 'unverified'}
-                    </span>
-                    {user.suspendedAt ? <span className="tag-soft tag-soft--orange">suspended</span> : null}
-                    {isAdminUser(user.systemRoles) ? <span className="tag-soft">admin</span> : <span className="tag-soft tag-soft--gray">user</span>}
-                    {user.id === currentUserId ? <span className="tag-soft tag-soft--gray">you</span> : null}
-                    {!user.lastLoginAt ? <span className="tag-soft tag-soft--gray">never logged in</span> : null}
-                  </div>
-                </div>
-
-                {canManageUser ? (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.07)' }}>
-                    <span className="micro-label">Access profile</span>
-                    <div className="form-grid" style={{ marginTop: '8px' }}>
-                      <label className="form-field">
-                        <span className="form-field__label">Display name</span>
-                        <input
-                          disabled={activeAccessUserId === user.id}
-                          onChange={(event) =>
-                            setDraftDisplayNames((current) => ({
-                              ...current,
-                              [user.id]: event.target.value,
-                            }))
-                          }
-                          placeholder="Display name"
-                          type="text"
-                          value={getDisplayNameDraft(user)}
-                        />
-                      </label>
-                      <label className="form-field">
-                        <span className="form-field__label">Account type</span>
-                        <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                          <input
-                            checked={isAdminUser(roleDraft)}
-                            disabled={activeAccessUserId === user.id || user.id === currentUserId}
-                            onChange={(event) => setAdminForUser(user.id, event.target.checked)}
-                            type="checkbox"
-                          />
-                          Admin
-                        </label>
-                      </label>
-                    </div>
-                    <label className="tag-soft tag-soft--gray" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', margin: '8px 0' }}>
-                      <input
-                        checked={getSuspendedDraft(user)}
-                        disabled={activeAccessUserId === user.id || user.id === currentUserId}
-                        onChange={(event) =>
-                          setDraftSuspended((current) => ({
-                            ...current,
-                            [user.id]: event.target.checked,
-                          }))
-                        }
-                        type="checkbox"
-                      />
-                      suspend account
-                    </label>
-                    {getSuspendedDraft(user) ? (
-                      <label className="form-field" style={{ marginTop: '6px' }}>
-                        <span className="form-field__label">Suspend reason</span>
-                        <textarea
-                          disabled={activeAccessUserId === user.id}
-                          onChange={(event) =>
-                            setDraftSuspendReasons((current) => ({
-                              ...current,
-                              [user.id]: event.target.value,
-                            }))
-                          }
-                          placeholder="Why this account is suspended."
-                          rows={2}
-                          value={getSuspendReasonDraft(user)}
-                        />
-                      </label>
-                    ) : null}
-                    <div className="link-row" style={{ marginTop: '10px' }}>
-                      <button
-                        className="btn-primary"
-                        disabled={activeAccessUserId === user.id}
-                        onClick={() => void handleUpdateUserAccess(user)}
-                        type="button"
-                      >
-                        {activeAccessUserId === user.id ? 'Saving access...' : 'Save access'}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {canStartForUser ? (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.07)' }}>
-                    <span className="micro-label">Support session</span>
-                    <div className="form-grid" style={{ marginTop: '8px' }}>
-                      <label className="form-field">
-                        <span className="form-field__label">Session reason</span>
-                        <textarea
-                          disabled={activeSupportUserId === user.id}
-                          onChange={(event) => {
-                            setDraftReasons((current) => ({
-                              ...current,
-                              [user.id]: event.target.value,
-                            }));
-                          }}
-                          placeholder="Explain why this support session is being opened."
-                          rows={3}
-                          value={getDraftReason(user)}
-                        />
-                      </label>
-                      <label className="form-field">
-                        <span className="form-field__label">Operator note</span>
-                        <textarea
-                          disabled={activeSupportUserId === user.id}
-                          onChange={(event) => {
-                            setDraftOperatorNotes((current) => ({
-                              ...current,
-                              [user.id]: event.target.value,
-                            }));
-                          }}
-                          placeholder="Capture support context that should stay with the session history."
-                          rows={3}
-                          value={getDraftOperatorNote(user)}
-                        />
-                      </label>
-                    </div>
-                    <div className="link-row" style={{ marginTop: '10px' }}>
-                      <button
-                        className="btn-primary"
-                        disabled={activeSupportUserId === user.id}
-                        onClick={() => void handleStartSupportSession(user)}
-                        type="button"
-                      >
-                        {activeSupportUserId === user.id
-                          ? 'Starting support session...'
-                          : 'Start support session'}
-                      </button>
-                      <Link className="btn-ghost" href="/admin/support">
-                        View support history
-                      </Link>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
+      {localItems.length > 0 ? (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid rgba(31,41,51,0.1)', textAlign: 'left' }}>
+                {(['User', 'Email', 'Role', 'Verified', 'Banned', 'Created', 'Last login', 'Actions'] as const).map((col) => (
+                  <th key={col} style={{ padding: '6px 10px', fontWeight: 600, fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {localItems.map((user) => {
+                const isSelf = user.id === currentUserId;
+                return (
+                  <tr
+                    key={user.id}
+                    onClick={() => setSelectedUser(user)}
+                    style={{
+                      borderBottom: '1px solid rgba(31,41,51,0.07)',
+                      cursor: 'pointer',
+                      background: selectedUser?.id === user.id ? 'rgba(31,41,51,0.04)' : undefined,
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(31,41,51,0.04)'; }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLTableRowElement).style.background =
+                        selectedUser?.id === user.id ? 'rgba(31,41,51,0.04)' : '';
+                    }}
+                  >
+                    <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontWeight: 500 }}>{user.displayName ?? <span style={{ color: 'var(--muted)' }}>—</span>}</span>
+                      {isSelf ? <span className="tag-soft tag-soft--gray" style={{ marginLeft: '6px', fontSize: '0.7rem' }}>you</span> : null}
+                    </td>
+                    <td style={{ padding: '7px 10px' }}>{user.email}</td>
+                    <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                      {isAdmin(user)
+                        ? <span className="tag-soft" style={{ fontSize: '0.75rem' }}>admin</span>
+                        : <span className="tag-soft tag-soft--gray" style={{ fontSize: '0.75rem' }}>user</span>}
+                    </td>
+                    <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                      {user.emailVerifiedAt
+                        ? <span className="tag-soft tag-soft--green" style={{ fontSize: '0.75rem' }}>yes</span>
+                        : <span className="tag-soft tag-soft--orange" style={{ fontSize: '0.75rem' }}>no</span>}
+                    </td>
+                    <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
+                      {user.suspendedAt
+                        ? <span className="tag-soft tag-soft--orange" style={{ fontSize: '0.75rem' }}>yes</span>
+                        : <span className="tag-soft tag-soft--gray" style={{ fontSize: '0.75rem' }}>no</span>}
+                    </td>
+                    <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{formatDate(user.createdAt)}</td>
+                    <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{formatDate(user.lastLoginAt)}</td>
+                    <td
+                      style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {canManage && !isSelf ? (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            className="btn-ghost"
+                            disabled={busy}
+                            onClick={() => void handleToggleAdmin(user)}
+                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                            type="button"
+                          >
+                            {isAdmin(user) ? 'Remove admin' : 'Make admin'}
+                          </button>
+                          <button
+                            className="btn-ghost"
+                            disabled={busy}
+                            onClick={() => void handleToggleBan(user)}
+                            style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                            type="button"
+                          >
+                            {user.suspendedAt ? 'Unban' : 'Ban'}
+                          </button>
+                          <button
+                            className="btn-ghost"
+                            disabled={busy}
+                            onClick={() => void handleDelete(user)}
+                            style={{ fontSize: '0.75rem', padding: '2px 8px', color: 'var(--destructive, #c0392b)' }}
+                            type="button"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      ) : <span style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>—</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
-        <div className="empty-state">
-          <span className="micro-label">No users</span>
-          <h2>No users are available in the directory for this environment</h2>
+        <div className="empty-state" style={{ padding: '40px 0' }}>
+          <span className="micro-label">No results</span>
+          <h2>No users match the current filters</h2>
         </div>
       )}
+
+      <Pagination
+        page={initialPage}
+        limit={initialLimit}
+        total={initialTotal}
+        onPage={goToPage}
+      />
+
+      {selectedUser ? (
+        <UserDrawer
+          user={selectedUser}
+          canManage={canManage}
+          isSelf={selectedUser.id === currentUserId}
+          busy={busy}
+          onClose={() => setSelectedUser(null)}
+          onToggleAdmin={(u) => void handleToggleAdmin(u)}
+          onToggleBan={(u) => void handleToggleBan(u)}
+          onDelete={(u) => void handleDelete(u)}
+        />
+      ) : null}
+
+      {showCreateModal ? (
+        <CreateUserModal
+          busy={creatingUser}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={(data) => void handleCreateUser(data)}
+        />
+      ) : null}
     </>
   );
 }

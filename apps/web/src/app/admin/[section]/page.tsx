@@ -5,7 +5,6 @@ import {
   type AdminLogFilters,
   type AdminWebhookFilters,
   type ExtensionBootstrapRequest,
-  type SupportTicketQueueFilters,
 } from '@quizmind/contracts';
 import Link from 'next/link';
 
@@ -24,8 +23,6 @@ import {
   getFeatureFlags,
   getRemoteConfigState,
   getSession,
-  getSupportImpersonationSessions,
-  getSupportTickets,
   getUsageSummary,
   resolvePersona,
   simulateExtensionBootstrap,
@@ -37,8 +34,6 @@ import { FeatureFlagsClient } from './feature-flags-client';
 import { CompatibilityClient } from './compatibility-client';
 import { AdminAiProvidersClient } from './admin-ai-providers-client';
 import { RemoteConfigClient } from './remote-config-client';
-import { SupportSessionsClient } from './support-sessions-client';
-import { SupportTicketsClient } from './support-tickets-client';
 import { UsersDirectoryClient } from './users-directory-client';
 import { UsageExplorerClient } from './usage-explorer-client';
 import { LogsExplorerClient } from './logs-explorer-client';
@@ -50,6 +45,8 @@ const ROUTE_REDIRECTS: Record<string, string> = {
   logs: 'events',
   'extension-control': 'bootstrap-simulator',
   'ai-providers': 'ai-routing',
+  support: 'users',
+  'access-sessions': 'users',
 };
 
 interface AdminSectionPageProps {
@@ -213,15 +210,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const isSecurityRoute = sec === 'security';
 
   // ── Section-specific filter objects (no workspaceId — platform-scoped) ──────
-  const supportTicketFilters: Partial<SupportTicketQueueFilters> = {
-    preset: readSearchParam(resolvedSearchParams, 'ticketPreset') as SupportTicketQueueFilters['preset'] | undefined,
-    status: readSearchParam(resolvedSearchParams, 'ticketStatus') as SupportTicketQueueFilters['status'] | undefined,
-    ownership: readSearchParam(resolvedSearchParams, 'ticketOwnership') as SupportTicketQueueFilters['ownership'] | undefined,
-    search: readSearchParam(resolvedSearchParams, 'ticketSearch'),
-    limit: readIntegerSearchParam(resolvedSearchParams, 'ticketLimit'),
-    timelineLimit: readIntegerSearchParam(resolvedSearchParams, 'ticketTimeline'),
-  };
-
   const requestedLogStream = readSearchParam(resolvedSearchParams, 'logStream') as AdminLogFilters['stream'] | undefined;
   const adminLogFilters: Partial<AdminLogFilters> = {
     stream: requestedLogStream ?? (isSecurityRoute ? 'security' : undefined),
@@ -254,8 +242,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   // listed gets an empty needs object (no fetches, shows fallback UI).
   interface LoaderNeeds {
     users?: true;
-    supportSessions?: true;
-    supportTickets?: true;
     fleet?: true;
     logs?: true;
     security?: true;
@@ -267,9 +253,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     aiRouting?: true;
   }
   const SECTION_NEEDS: Record<string, LoaderNeeds> = {
-    users:                  { users: true, supportSessions: true },
-    support:                { supportTickets: true, supportSessions: true },
-    'access-sessions':      { supportSessions: true },
+    users:                  { users: true },
     events:                 { logs: true },
     security:               { security: true },
     webhooks:               { webhooks: true },
@@ -283,14 +267,24 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   };
   const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
+  const userFilters = needs.users
+    ? {
+        query: readSearchParam(resolvedSearchParams, 'userQuery'),
+        role: readSearchParam(resolvedSearchParams, 'userRole'),
+        banned: readSearchParam(resolvedSearchParams, 'userBanned'),
+        verified: readSearchParam(resolvedSearchParams, 'userVerified'),
+        sort: readSearchParam(resolvedSearchParams, 'userSort'),
+        page: readIntegerSearchParam(resolvedSearchParams, 'userPage'),
+        limit: readIntegerSearchParam(resolvedSearchParams, 'userLimit'),
+      }
+    : undefined;
+
   const [
     featureFlags,
     adminProviderGovernance,
     compatibilityRules,
     adminUsers,
     remoteConfigState,
-    supportImpersonationSessions,
-    supportTickets,
     usageSummary,
     adminExtensionFleet,
     adminLogs,
@@ -300,10 +294,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     needs.flags ? getFeatureFlags(persona, accessToken) : Promise.resolve(null),
     needs.aiRouting ? getAdminProviderGovernance(accessToken) : Promise.resolve(null),
     needs.compatibility ? getCompatibilityRules(persona, accessToken) : Promise.resolve(null),
-    needs.users ? getAdminUsers(persona, accessToken) : Promise.resolve(null),
+    needs.users ? getAdminUsers(persona, accessToken, userFilters) : Promise.resolve(null),
     needs.remoteConfig ? getRemoteConfigState(persona, undefined, accessToken) : Promise.resolve(null),
-    needs.supportSessions ? getSupportImpersonationSessions(persona, accessToken) : Promise.resolve(null),
-    needs.supportTickets ? getSupportTickets(persona, accessToken, supportTicketFilters) : Promise.resolve(null),
     needs.usage ? getUsageSummary(persona, accessToken) : Promise.resolve(null),
     needs.fleet ? getAdminExtensionFleet(persona, extensionFleetFilters, accessToken) : Promise.resolve(null),
     needs.logs ? getAdminLogs(persona, adminLogFilters, accessToken) : Promise.resolve(null),
@@ -319,7 +311,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const isConnectedSession = session?.personaKey === 'connected-user';
   const canEditFeatureFlags = Boolean(isConnectedSession && featureFlags?.writeDecision.allowed);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const canManageSupportSessions = Boolean(isConnectedSession && supportImpersonationSessions?.accessDecision.allowed);
   const canManageUserAccess = Boolean(isConnectedSession && adminUsers?.writeDecision.allowed);
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleAdminSections(context) : [];
@@ -348,73 +339,27 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               groupLabel={section.groupLabel}
               title={section.title}
               tags={[
-                { label: `${adminUsers?.items.length ?? 0} user${(adminUsers?.items.length ?? 0) !== 1 ? 's' : ''}` },
+                { label: `${adminUsers?.total ?? 0} user${(adminUsers?.total ?? 0) !== 1 ? 's' : ''}` },
                 { label: canManageUserAccess ? 'write access' : 'read-only', warn: !canManageUserAccess },
               ]}
             />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            <section className="panel">
-              {adminUsers ? (
-                <UsersDirectoryClient
-                  canManageUserAccess={canManageUserAccess}
-                  canStartSupportSessions={canManageSupportSessions}
-                  currentUserId={session.user.id}
-                  isConnectedSession={isConnectedSession}
-                  items={adminUsers.items}
-                />
-              ) : (
-                <p>No users are available in the directory for this environment.</p>
-              )}
-            </section>
-          </>
-        ) : // ── People: Support (ticket queue) ────────────────────────────
-        section.id === 'support' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${supportTickets?.items.length ?? 0} ticket${(supportTickets?.items.length ?? 0) !== 1 ? 's' : ''}` },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            <section className="panel">
-              {supportTickets ? (
-                <SupportTicketsClient
-                  canStartSupportSessions={canManageSupportSessions}
-                  currentUserId={session.user.id}
-                  favoritePresets={supportTickets.favoritePresets}
-                  filters={supportTickets.filters}
-                  isConnectedSession={isConnectedSession}
-                  items={supportTickets.items}
-                />
-              ) : (
-                <p>No support tickets are available in this environment.</p>
-              )}
-            </section>
-          </>
-        ) : // ── People: Access Sessions (impersonation log) ───────────────
-        section.id === 'access-sessions' ? (
-          <>
-            <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
-              tags={[
-                { label: `${supportImpersonationSessions?.items.length ?? 0} session${(supportImpersonationSessions?.items.length ?? 0) !== 1 ? 's' : ''}` },
-              ]}
-            />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
-            <section className="panel">
-              {supportImpersonationSessions ? (
-                <SupportSessionsClient
-                  canEndSupportSessions={canManageSupportSessions}
-                  isConnectedSession={isConnectedSession}
-                  items={supportImpersonationSessions.items}
-                />
-              ) : (
-                <p>No impersonation sessions have been recorded yet for this environment.</p>
-              )}
-            </section>
+            {adminUsers ? (
+              <UsersDirectoryClient
+                canManageUserAccess={canManageUserAccess}
+                currentUserId={session.user.id}
+                isConnectedSession={isConnectedSession}
+                items={adminUsers.items}
+                total={adminUsers.total}
+                page={adminUsers.page}
+                limit={adminUsers.limit}
+              />
+            ) : (
+              <section className="empty-state">
+                <span className="micro-label">Users</span>
+                <h2>User directory unavailable.</h2>
+                <p>The API did not return a user directory snapshot for this environment.</p>
+              </section>
+            )}
           </>
         ) : // ── Operations: Events ────────────────────────────────────────
         section.id === 'events' ? (

@@ -40,6 +40,67 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
     });
   }
 
+  async listWithFilters(filters: {
+    query?: string;
+    role?: 'admin' | 'user';
+    banned?: boolean;
+    verified?: boolean;
+    sort?: 'newest' | 'oldest';
+    page: number;
+    limit: number;
+  }): Promise<{ items: AuthUserRecord[]; total: number }> {
+    const where: Prisma.UserWhereInput = {};
+
+    if (filters.query) {
+      where.OR = [
+        { email: { contains: filters.query, mode: 'insensitive' } },
+        { displayName: { contains: filters.query, mode: 'insensitive' } },
+        { id: { contains: filters.query } },
+      ];
+    }
+
+    if (filters.banned === true) {
+      where.suspendedAt = { not: null };
+    } else if (filters.banned === false) {
+      where.suspendedAt = null;
+    }
+
+    if (filters.verified === true) {
+      where.emailVerifiedAt = { not: null };
+    } else if (filters.verified === false) {
+      where.emailVerifiedAt = null;
+    }
+
+    if (filters.role === 'admin') {
+      where.systemRoleAssignments = { some: {} };
+    } else if (filters.role === 'user') {
+      where.systemRoleAssignments = { none: {} };
+    }
+
+    const orderBy: Prisma.UserOrderByWithRelationInput =
+      filters.sort === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        include: authUserInclude,
+        orderBy,
+        skip: (filters.page - 1) * filters.limit,
+        take: filters.limit,
+      }),
+    ]);
+
+    return { items, total };
+  }
+
+  delete(id: string): Promise<AuthUserRecord> {
+    return this.prisma.user.delete({
+      where: { id },
+      include: authUserInclude,
+    });
+  }
+
   create(data: Prisma.UserCreateInput): Promise<AuthUserRecord> {
     return this.prisma.user.create({
       data,

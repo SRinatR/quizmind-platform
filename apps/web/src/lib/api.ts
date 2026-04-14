@@ -435,8 +435,29 @@ export async function ingestUsageEvent(
   );
 }
 
-export async function getAdminUsers(_persona: string, accessToken?: string | null) {
-  return readApiData<AdminUsersSnapshot>('/admin/users', withAccessToken(undefined, accessToken));
+export async function getAdminUsers(
+  _persona: string,
+  accessToken?: string | null,
+  filters?: {
+    query?: string;
+    role?: string;
+    banned?: string;
+    verified?: string;
+    sort?: string;
+    page?: number;
+    limit?: number;
+  },
+) {
+  const path = withQuery('/admin/users', {
+    query: filters?.query,
+    role: filters?.role,
+    banned: filters?.banned,
+    verified: filters?.verified,
+    sort: filters?.sort,
+    page: filters?.page,
+    limit: filters?.limit,
+  });
+  return readApiData<AdminUsersSnapshot>(path, withAccessToken(undefined, accessToken));
 }
 
 export async function createAdminUser(

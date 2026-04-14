@@ -10,6 +10,7 @@ export function mapUserRecordToDirectoryEntry(user: AuthUserRecord): AdminUserDi
     emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
     suspendedAt: user.suspendedAt?.toISOString() ?? null,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+    createdAt: user.createdAt.toISOString(),
     systemRoles: user.systemRoleAssignments.map((a) => a.role),
     workspaces: [],
   };

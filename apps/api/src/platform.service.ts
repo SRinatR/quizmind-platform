@@ -1420,7 +1420,18 @@ export class PlatformService {
     };
   }
 
-  async listUsersForCurrentSession(session: CurrentSessionSnapshot): Promise<AdminUserDirectorySnapshot> {
+  async listUsersForCurrentSession(
+    session: CurrentSessionSnapshot,
+    rawFilters?: {
+      query?: string;
+      role?: string;
+      banned?: string;
+      verified?: string;
+      sort?: string;
+      page?: string;
+      limit?: string;
+    },
+  ): Promise<AdminUserDirectorySnapshot> {
     const accessDecision = canReadUsers(session.principal as SessionPrincipal);
     const writeDecision = canUpdateUsers(session.principal as SessionPrincipal);
 
@@ -1428,15 +1439,73 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const users = await this.userRepository.listAll();
+    const page = Math.max(1, Number(rawFilters?.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(rawFilters?.limit) || 25));
+    const roleFilter =
+      rawFilters?.role === 'admin' ? 'admin' : rawFilters?.role === 'user' ? 'user' : undefined;
+    const bannedFilter =
+      rawFilters?.banned === 'banned' ? true : rawFilters?.banned === 'not-banned' ? false : undefined;
+    const verifiedFilter =
+      rawFilters?.verified === 'verified' ? true : rawFilters?.verified === 'unverified' ? false : undefined;
+    const sortFilter = rawFilters?.sort === 'oldest' ? 'oldest' : 'newest';
+
+    const { items, total } = await this.userRepository.listWithFilters({
+      query: rawFilters?.query,
+      role: roleFilter,
+      banned: bannedFilter,
+      verified: verifiedFilter,
+      sort: sortFilter,
+      page,
+      limit,
+    });
 
     return {
       personaKey: 'connected-user',
       accessDecision,
       writeDecision,
-      items: users.map(mapUserRecordToDirectoryEntry),
+      items: items.map(mapUserRecordToDirectoryEntry),
+      total,
+      page,
+      limit,
       permissions: session.permissions,
     };
+  }
+
+  async deleteUserForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: { userId?: string },
+  ): Promise<{ userId: string }> {
+    const writeDecision = canUpdateUsers(session.principal as SessionPrincipal);
+
+    if (!writeDecision.allowed) {
+      throw new ForbiddenException(writeDecision.reasons.join('; '));
+    }
+
+    const userId = typeof request?.userId === 'string' ? request.userId.trim() : '';
+
+    if (!userId) {
+      throw new BadRequestException('userId is required.');
+    }
+
+    if (userId === session.user.id) {
+      throw new BadRequestException('Cannot delete your own account.');
+    }
+
+    const existingUser = await this.userRepository.findById(userId);
+
+    if (!existingUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    await this.userRepository.delete(userId);
+
+    this.logAdminUserMutation('admin.user_deleted', {
+      actorUserId: session.user.id,
+      targetUserId: userId,
+      email: existingUser.email,
+    });
+
+    return { userId };
   }
 
   async createUserForCurrentSession(
