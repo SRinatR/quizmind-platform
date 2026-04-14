@@ -68,6 +68,7 @@ interface ListAdminLogsInput {
   stream?: AdminLogStreamFilter;
   severity?: AdminLogSeverityFilter;
   limit?: number;
+  page?: number;
   from?: string;
   to?: string;
 }
@@ -84,10 +85,13 @@ function shouldReadStream(stream: AdminLogStreamFilter | undefined, candidate: E
   return !stream || stream === 'all' || stream === candidate;
 }
 
-function resolveTake(limit?: number, stream?: AdminLogStreamFilter) {
-  const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit as number) : 12;
-
-  return Math.min(Math.max(normalizedLimit * (stream && stream !== 'all' ? 3 : 2), 12), 60);
+function resolveTake(limit?: number, page?: number, stream?: AdminLogStreamFilter) {
+  const normalizedLimit = Number.isFinite(limit) ? Math.trunc(limit as number) : 25;
+  const normalizedPage = Number.isFinite(page) && (page as number) > 1 ? Math.trunc(page as number) : 1;
+  // Fetch enough rows to cover current page + 1 extra page worth of buffer per stream.
+  // Cap at 500 per stream to stay sane.
+  const multiplier = stream && stream !== 'all' ? 3 : 2;
+  return Math.min(normalizedLimit * (normalizedPage + 1) * multiplier, 500);
 }
 
 @Injectable()
@@ -95,7 +99,7 @@ export class AdminLogRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async listRecent(input: ListAdminLogsInput = {}): Promise<ListAdminLogsResult> {
-    const take = resolveTake(input.limit, input.stream);
+    const take = resolveTake(input.limit, input.page, input.stream);
     const fromDate = input.from ? new Date(input.from) : undefined;
     const toDate = input.to ? new Date(input.to) : undefined;
     const dateWhere = {

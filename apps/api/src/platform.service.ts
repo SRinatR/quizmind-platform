@@ -1348,6 +1348,8 @@ export class PlatformService {
       items: filtered.items,
       streamCounts: filtered.streamCounts,
       categoryCounts: filtered.categoryCounts,
+      total: filtered.total,
+      hasNext: filtered.hasNext,
       permissions,
     };
   }
@@ -1368,6 +1370,7 @@ export class PlatformService {
       stream: normalizedFilters.stream,
       severity: normalizedFilters.severity,
       limit: normalizedFilters.limit,
+      page: normalizedFilters.page,
       from: normalizedFilters.from,
       to: normalizedFilters.to,
     });
@@ -1382,6 +1385,8 @@ export class PlatformService {
       items: filtered.items,
       streamCounts: filtered.streamCounts,
       categoryCounts: filtered.categoryCounts,
+      total: filtered.total,
+      hasNext: filtered.hasNext,
       permissions: session.permissions,
     };
   }
@@ -2967,6 +2972,8 @@ export class PlatformService {
     items: AdminLogEntry[];
     streamCounts: AdminLogsSnapshot['streamCounts'];
     categoryCounts: AdminLogCategoryCounts;
+    total: number;
+    hasNext: boolean;
   } {
     const afterBaseFilters = items.filter((item) => {
       if (filters.severity !== 'all' && item.severity !== filters.severity) return false;
@@ -3020,13 +3027,17 @@ export class PlatformService {
         ? afterCategoryFilter.filter((item) => item.source === filters.source)
         : afterCategoryFilter;
 
+    const total = afterSourceFilter.length;
     const page = filters.page ?? 1;
     const offset = (page - 1) * filters.limit;
+    const hasNext = total > offset + filters.limit;
 
     return {
       items: afterSourceFilter.slice(offset, offset + filters.limit),
       streamCounts,
       categoryCounts,
+      total,
+      hasNext,
     };
   }
 
@@ -3039,6 +3050,8 @@ export class PlatformService {
       items: snapshot.items,
       streamCounts: snapshot.streamCounts,
       categoryCounts: snapshot.categoryCounts,
+      total: snapshot.total,
+      hasNext: snapshot.hasNext,
       findings: this.buildAdminSecurityFindings(snapshot.items),
       lifecycleTrend: this.buildAdminSecurityLifecycleTrend(snapshot.items),
       controls: this.buildAdminSecurityControls(),
@@ -3236,14 +3249,17 @@ export class PlatformService {
       item.summary,
       item.severity,
       item.status,
+      item.category,
+      item.source,
       item.actor?.id,
       item.actor?.email,
       item.actor?.displayName,
-      item.workspace?.id,
-      item.workspace?.slug,
-      item.workspace?.name,
       item.targetType,
       item.targetId,
+      item.installationId,
+      item.provider,
+      item.model,
+      item.errorSummary,
       item.metadata ? JSON.stringify(item.metadata) : '',
     ]
       .filter(Boolean)
@@ -3452,10 +3468,15 @@ export class PlatformService {
 
   private serializeAdminLogsCsv(snapshot: AdminLogsSnapshot): string {
     const header =
-      'stream,eventType,summary,occurredAt,severity,status,actorId,actorEmail,actorDisplayName,targetType,targetId,metadata';
+      'stream,category,source,eventType,summary,occurredAt,severity,status,' +
+      'actorId,actorEmail,actorDisplayName,targetType,targetId,' +
+      'installationId,provider,model,durationMs,costUsd,' +
+      'promptTokens,completionTokens,totalTokens,errorSummary,metadata';
     const rows = snapshot.items.map((item) =>
       [
         item.stream,
+        item.category ?? '',
+        item.source ?? '',
         item.eventType,
         item.summary,
         item.occurredAt,
@@ -3466,6 +3487,15 @@ export class PlatformService {
         item.actor?.displayName ?? '',
         item.targetType ?? '',
         item.targetId ?? '',
+        item.installationId ?? '',
+        item.provider ?? '',
+        item.model ?? '',
+        item.durationMs !== undefined ? String(item.durationMs) : '',
+        item.costUsd !== undefined ? String(item.costUsd) : '',
+        item.promptTokens !== undefined ? String(item.promptTokens) : '',
+        item.completionTokens !== undefined ? String(item.completionTokens) : '',
+        item.totalTokens !== undefined ? String(item.totalTokens) : '',
+        item.errorSummary ?? '',
         item.metadata ? JSON.stringify(item.metadata) : '',
       ]
         .map((value) => this.escapeCsv(value))

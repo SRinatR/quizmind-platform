@@ -32,6 +32,31 @@ interface MutationRouteResponse<T> {
   error?: { message?: string };
 }
 
+// ── Datetime-local helpers ────────────────────────────────────────────────────
+
+/**
+ * datetime-local inputs emit "YYYY-MM-DDTHH:mm" (no timezone).
+ * We treat the admin UI as UTC, so append explicit UTC suffix before sending to the API.
+ */
+function toIsoUtc(localStr: string): string {
+  if (!localStr) return localStr;
+  // "YYYY-MM-DDTHH:mm"   → append ":00.000Z"
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(localStr)) return `${localStr}:00.000Z`;
+  // "YYYY-MM-DDTHH:mm:ss" → append ".000Z"
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(localStr)) return `${localStr}.000Z`;
+  return localStr; // already has timezone
+}
+
+/**
+ * Convert an ISO/UTC string back to the "YYYY-MM-DDTHH:mm" format
+ * that datetime-local inputs expect (always display in UTC).
+ */
+function fromIsoToLocalInput(isoStr?: string): string {
+  if (!isoStr) return '';
+  // Slice to 16 chars: "YYYY-MM-DDTHH:mm"
+  return isoStr.slice(0, 16);
+}
+
 // ── Presets ───────────────────────────────────────────────────────────────────
 
 interface QuickPreset {
@@ -283,8 +308,8 @@ export function LogsExplorerClient({
   const searchParams = useSearchParams();
 
   const [searchDraft, setSearchDraft] = useState(snapshot.filters.search ?? '');
-  const [fromDraft, setFromDraft] = useState(snapshot.filters.from ?? '');
-  const [toDraft, setToDraft] = useState(snapshot.filters.to ?? '');
+  const [fromDraft, setFromDraft] = useState(() => fromIsoToLocalInput(snapshot.filters.from));
+  const [toDraft, setToDraft] = useState(() => fromIsoToLocalInput(snapshot.filters.to));
   const [eventTypeDraft, setEventTypeDraft] = useState(snapshot.filters.eventType ?? '');
   const [exportFormat, setExportFormat] = useState<AdminLogExportFormat>('json');
   const [isExporting, setIsExporting] = useState(false);
@@ -302,9 +327,10 @@ export function LogsExplorerClient({
     setErrorMessage(null);
     pushFilters({
       search: searchDraft,
-      from: fromDraft || undefined,
-      to: toDraft || undefined,
+      from: fromDraft ? toIsoUtc(fromDraft) : undefined,
+      to: toDraft ? toIsoUtc(toDraft) : undefined,
       eventType: eventTypeDraft || undefined,
+      page: 1,
     });
   }
 
@@ -589,7 +615,9 @@ export function LogsExplorerClient({
       {/* ── Category counters ── */}
       {counts ? (
         <div className="tag-row" style={{ padding: '0 2px' }}>
-          <span className="tag-soft tag-soft--gray">{snapshot.items.length} shown</span>
+          <span className="tag-soft tag-soft--gray">
+            {snapshot.total} total{snapshot.items.length !== snapshot.total ? ` · ${snapshot.items.length} on page` : ''}
+          </span>
           {(['auth', 'extension', 'ai', 'admin', 'system'] as const).map((cat) => (
             counts[cat] > 0 ? (
               <button
@@ -695,7 +723,7 @@ export function LogsExplorerClient({
       </section>
 
       {/* ── Pagination ── */}
-      {snapshot.items.length > 0 ? (
+      {(snapshot.items.length > 0 || (filters.page ?? 1) > 1) ? (
         <div className="tag-row" style={{ padding: '4px 0' }}>
           <button
             className="btn-ghost"
@@ -707,11 +735,11 @@ export function LogsExplorerClient({
             ← Prev
           </button>
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-            Page {filters.page ?? 1}
+            Page {filters.page ?? 1} · {snapshot.total} total
           </span>
           <button
             className="btn-ghost"
-            disabled={snapshot.items.length < filters.limit}
+            disabled={!snapshot.hasNext}
             onClick={() => pushFilters({ page: (filters.page ?? 1) + 1 })}
             type="button"
             style={{ fontSize: '0.8rem', padding: '4px 12px' }}

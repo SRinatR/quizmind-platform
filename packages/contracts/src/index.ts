@@ -533,6 +533,8 @@ export interface AdminLogsSnapshot {
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
   categoryCounts: AdminLogCategoryCounts;
+  total: number;
+  hasNext: boolean;
   permissions: string[];
 }
 
@@ -584,6 +586,8 @@ export interface AdminSecuritySnapshot {
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
   categoryCounts: AdminLogCategoryCounts;
+  total: number;
+  hasNext: boolean;
   findings: AdminSecurityFindingCounts;
   lifecycleTrend: AdminSecurityLifecycleTrend;
   controls: AdminSecurityControlCheckpoint[];
