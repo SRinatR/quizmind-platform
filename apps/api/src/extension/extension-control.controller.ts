@@ -419,6 +419,7 @@ export class ExtensionControlController {
       this.logExtensionAiFailure({
         action: 'models',
         installationId: installationSession.installation.installationId,
+        userId: installationSession.installation.userId,
         input: {
           type,
         },
@@ -488,6 +489,7 @@ export class ExtensionControlController {
       this.logExtensionAiFailure({
         action: 'proxy',
         installationId: installationSession.installation.installationId,
+        userId: installationSession.installation.userId,
         input: {
           provider: request?.provider,
           model: request?.model,
@@ -503,6 +505,7 @@ export class ExtensionControlController {
   private logExtensionAiFailure(input: {
     action: 'models' | 'proxy';
     installationId: string;
+    userId: string;
     input?: Record<string, unknown>;
     error: unknown;
   }): void {
@@ -514,14 +517,23 @@ export class ExtensionControlController {
 
     console.warn(
       JSON.stringify({
-        eventType: 'extension.ai_request_failed',
+        eventType: input.action === 'models' ? 'extension.ai_models_failed' : 'extension.ai_request_failed',
         action: input.action,
         installationId: input.installationId,
+        userId: input.userId,
         ...(input.input ? { input: input.input } : {}),
         errorMessage: message,
         ...(typeof status === 'number' ? { status } : {}),
         occurredAt: new Date().toISOString(),
       }),
     );
+
+    void this.extensionControlService.recordAiFailureSafely({
+      installationId: input.installationId,
+      userId: input.userId,
+      action: input.action,
+      requestData: input.input,
+      error: input.error,
+    });
   }
 }
