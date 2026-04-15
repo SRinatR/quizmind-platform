@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
   Inject,
   Injectable,
   NotFoundException,
@@ -856,6 +857,52 @@ export class ExtensionControlService {
         (handshake?.browser as CompatibilityHandshake['browser'] | undefined) ??
         normalizeBrowser(installation.browser),
       ...(handshake?.buildId?.trim() ? { buildId: handshake.buildId.trim() } : {}),
+    });
+  }
+
+  async recordAiFailureSafely(input: {
+    installationId: string;
+    userId: string;
+    action: 'models' | 'proxy';
+    requestData?: Record<string, unknown>;
+    error: unknown;
+  }): Promise<void> {
+    const occurredAt = new Date();
+    const eventType = input.action === 'models' ? 'extension.ai_models_failed' : 'extension.ai_request_failed';
+    const httpStatus = input.error instanceof HttpException ? input.error.getStatus() : undefined;
+    const errorMessage =
+      input.error instanceof Error ? input.error.message.trim().slice(0, 512) : 'Unknown extension AI error.';
+    const errorCode =
+      input.error instanceof HttpException ? String(input.error.getStatus()) : 'unknown';
+
+    await this.recordLifecycleEventSafely({
+      actorId: input.userId,
+      targetType: 'extension_installation',
+      targetId: input.installationId,
+      auditEventType: eventType,
+      securityEventType: eventType,
+      securitySeverity: 'error',
+      status: 'failure',
+      summary: `Extension AI ${input.action} request failed: ${errorMessage}`,
+      metadata: {
+        installationId: input.installationId,
+        userId: input.userId,
+        ...(input.requestData ?? {}),
+        errorCode,
+        errorMessage,
+        ...(typeof httpStatus === 'number' ? { httpStatus } : {}),
+        occurredAt: occurredAt.toISOString(),
+      },
+      domainEventType: eventType,
+      domainPayload: {
+        installationId: input.installationId,
+        actorId: input.userId,
+        ...(input.requestData ?? {}),
+        errorCode,
+        errorMessage,
+        ...(typeof httpStatus === 'number' ? { httpStatus } : {}),
+      },
+      occurredAt,
     });
   }
 
