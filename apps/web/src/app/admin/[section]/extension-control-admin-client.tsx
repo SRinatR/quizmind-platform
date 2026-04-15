@@ -117,6 +117,11 @@ function isDraftDirty(draft: FlagDraft, flag: FeatureFlagDefinition): boolean {
   return JSON.stringify(draft) !== JSON.stringify(initFlagDraft(flag));
 }
 
+function formatSimpleValue(v: unknown): string {
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function ExtensionControlAdminClient({
@@ -144,15 +149,16 @@ export function ExtensionControlAdminClient({
   const [reason, setReason] = useState(latestCompat?.reason ?? '');
   const [isPublishingCompat, setIsPublishingCompat] = useState(false);
 
-  // ── Section B: Feature Flags ──────────────────────────────────────────────
+  // ── Section B1: Feature Flags ─────────────────────────────────────────────
   const [flagItems, setFlagItems] = useState<FeatureFlagDefinition[]>(featureFlags?.flags ?? []);
   const [flagDrafts, setFlagDrafts] = useState<Record<string, FlagDraft>>(() =>
     Object.fromEntries((featureFlags?.flags ?? []).map((f) => [f.key, initFlagDraft(f)])),
   );
   const [flagSavingKey, setFlagSavingKey] = useState<string | null>(null);
   const [flagFeedbackMap, setFlagFeedbackMap] = useState<Record<string, ActionFeedback>>({});
+  const [lastFlagSave, setLastFlagSave] = useState<{ key: string; updatedAt: string } | null>(null);
 
-  // ── Section B: Effective Config ───────────────────────────────────────────
+  // ── Section B2: Remote Config ─────────────────────────────────────────────
   const [configVersionLabel, setConfigVersionLabel] = useState('draft-global');
   const [configLayers, setConfigLayers] = useState<EditableLayer[]>(() =>
     (remoteConfig?.activeLayers ?? []).map(initEditableLayer),
@@ -169,6 +175,16 @@ export function ExtensionControlAdminClient({
       return {};
     }
   })();
+
+  // Simple editable config draft (key → string representation of value)
+  const [simpleConfigDraft, setSimpleConfigDraft] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      Object.entries(previewValues).map(([k, v]) => [k, formatSimpleValue(v)]),
+    ),
+  );
+  const simpleConfigDirty = Object.entries(simpleConfigDraft).some(
+    ([k, v]) => formatSimpleValue(previewValues[k]) !== v,
+  );
 
   // ─── Actions ─────────────────────────────────────────────────────────────
 
@@ -262,12 +278,40 @@ export function ExtensionControlAdminClient({
           ...c,
           [key]: { tone: 'ok', message: `Saved ${formatUtcDateTime(payload.data!.updatedAt)}.` },
         }));
+        setLastFlagSave({ key, updatedAt: payload.data.updatedAt });
       }
     } catch {
       setFlagFeedbackMap((c) => ({ ...c, [key]: { tone: 'err', message: 'Unable to save flag.' } }));
     } finally {
       setFlagSavingKey((c) => (c === key ? null : c));
     }
+  }
+
+  // Merge simple key/value edits into the first global (or first) config layer draft
+  function applySimpleConfigEdits() {
+    if (configLayers.length === 0) return;
+    const targetIdx = Math.max(
+      configLayers.findIndex((l) => l.scope === 'global'),
+      0,
+    );
+    const target = configLayers[targetIdx]!;
+    let existing: Record<string, unknown> = {};
+    try {
+      existing = parseJsonObj(target.valuesText);
+    } catch {
+      existing = {};
+    }
+    const merged = { ...existing };
+    for (const [k, v] of Object.entries(simpleConfigDraft)) {
+      try {
+        merged[k] = JSON.parse(v) as unknown;
+      } catch {
+        merged[k] = v;
+      }
+    }
+    setConfigLayers((c) =>
+      c.map((l, i) => (i === targetIdx ? { ...l, valuesText: jsonOf(merged) } : l)),
+    );
   }
 
   async function publishConfig() {
@@ -431,37 +475,29 @@ export function ExtensionControlAdminClient({
         <span className="micro-label">Runtime Settings</span>
         <h2>Feature flags &amp; config</h2>
 
-        {/* B1: Feature Flags */}
-        <h3 style={{ fontSize: '0.9rem', margin: '16px 0 10px' }}>Feature Flags</h3>
+        {/* B1: Feature Flags — compact expandable list */}
+        <h3 style={{ fontSize: '0.9rem', margin: '16px 0 6px' }}>Feature Flags</h3>
         {flagItems.length > 0 ? (
-          <div className="admin-feature-flag-grid">
+          <div className="admin-flag-list">
             {flagItems.map((flag) => {
               const draft = flagDrafts[flag.key] ?? initFlagDraft(flag);
               const dirty = isDraftDirty(draft, flag);
               const fb = flagFeedbackMap[flag.key];
               return (
-                <article className="admin-feature-flag-card" key={flag.key}>
-                  <div className="billing-section-header">
-                    <div>
-                      <span className="micro-label">Feature flag</span>
-                      <h3>{flag.key}</h3>
-                    </div>
-                    <div className="tag-row">
-                      <span className={draft.enabled ? 'tag' : 'tag warn'}>
-                        {draft.enabled ? 'enabled' : 'disabled'}
-                      </span>
-                      {dirty ? <span className="tag warn">unsaved</span> : null}
-                    </div>
-                  </div>
-                  <p style={{ fontSize: '0.82rem', margin: '4px 0 8px', color: 'var(--muted)' }}>
-                    {flag.description}
-                  </p>
-                  {canEditFlags ? (
-                    <>
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <details className="admin-flag-row" key={flag.key}>
+                  <summary className="admin-flag-row-summary">
+                    <span className="admin-flag-row-key">{flag.key}</span>
+                    <span className="admin-flag-row-desc">{flag.description}</span>
+                    {canEditFlags ? (
+                      <span
+                        className="admin-flag-row-controls"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <select
                           value={draft.enabled ? 'enabled' : 'disabled'}
-                          onChange={(e) => patchFlagDraft(flag.key, { enabled: e.target.value === 'enabled' })}
+                          onChange={(e) =>
+                            patchFlagDraft(flag.key, { enabled: e.target.value === 'enabled' })
+                          }
                         >
                           <option value="enabled">Enabled</option>
                           <option value="disabled">Disabled</option>
@@ -470,83 +506,138 @@ export function ExtensionControlAdminClient({
                           <button
                             className="btn-primary"
                             disabled={flagSavingKey === flag.key}
-                            onClick={() => void saveFlag(flag.key)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void saveFlag(flag.key);
+                            }}
                             type="button"
                           >
                             {flagSavingKey === flag.key ? 'Saving...' : 'Save'}
                           </button>
+                        ) : (
+                          <span className={draft.enabled ? 'tag' : 'tag warn'}>
+                            {draft.enabled ? 'on' : 'off'}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className={flag.enabled ? 'tag' : 'tag warn'}>
+                        {flag.enabled ? 'on' : 'off'}
+                      </span>
+                    )}
+                  </summary>
+
+                  {/* Per-flag advanced fields */}
+                  <div className="admin-flag-row-advanced">
+                    {fb ? (
+                      <p
+                        className={
+                          fb.tone === 'err'
+                            ? 'admin-inline-feedback admin-inline-feedback--error'
+                            : 'admin-inline-feedback'
+                        }
+                      >
+                        {fb.message}
+                      </p>
+                    ) : null}
+                    {canEditFlags ? (
+                      <div className="admin-ticket-editor">
+                        <label className="admin-ticket-field">
+                          <span className="micro-label">Description</span>
+                          <textarea
+                            rows={2}
+                            value={draft.description}
+                            onChange={(e) =>
+                              patchFlagDraft(flag.key, { description: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label className="admin-ticket-field">
+                          <span className="micro-label">Rollout %</span>
+                          <input
+                            max={100}
+                            min={0}
+                            placeholder="leave blank for no gate"
+                            type="number"
+                            value={draft.rolloutPercentage}
+                            onChange={(e) =>
+                              patchFlagDraft(flag.key, { rolloutPercentage: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label className="admin-ticket-field">
+                          <span className="micro-label">Min extension version</span>
+                          <input
+                            placeholder="1.7.0"
+                            value={draft.minimumExtensionVersion}
+                            onChange={(e) =>
+                              patchFlagDraft(flag.key, { minimumExtensionVersion: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label className="admin-ticket-field">
+                          <span className="micro-label">Allowed roles</span>
+                          <input
+                            placeholder="admin"
+                            value={draft.allowRoles}
+                            onChange={(e) =>
+                              patchFlagDraft(flag.key, { allowRoles: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label className="admin-ticket-field">
+                          <span className="micro-label">Allowed users</span>
+                          <input
+                            placeholder="user_1, user_2"
+                            value={draft.allowUsers}
+                            onChange={(e) =>
+                              patchFlagDraft(flag.key, { allowUsers: e.target.value })
+                            }
+                          />
+                        </label>
+                        {dirty ? (
+                          <div className="admin-user-actions">
+                            <button
+                              className="btn-primary"
+                              disabled={flagSavingKey === flag.key}
+                              onClick={() => void saveFlag(flag.key)}
+                              type="button"
+                            >
+                              {flagSavingKey === flag.key ? 'Saving...' : 'Save'}
+                            </button>
+                          </div>
                         ) : null}
                       </div>
-                      {fb ? (
-                        <p
-                          className={
-                            fb.tone === 'err'
-                              ? 'admin-inline-feedback admin-inline-feedback--error'
-                              : 'admin-inline-feedback'
-                          }
-                        >
-                          {fb.message}
-                        </p>
-                      ) : null}
-                      <details style={{ marginTop: '10px' }}>
-                        <summary style={{ cursor: 'pointer', fontSize: '0.78rem', color: 'var(--muted)' }}>
-                          Advanced
-                        </summary>
-                        <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
-                          <label className="admin-ticket-field">
-                            <span className="micro-label">Description</span>
-                            <textarea
-                              rows={2}
-                              value={draft.description}
-                              onChange={(e) => patchFlagDraft(flag.key, { description: e.target.value })}
-                            />
-                          </label>
-                          <label className="admin-ticket-field">
-                            <span className="micro-label">Rollout %</span>
-                            <input
-                              max={100}
-                              min={0}
-                              placeholder="leave blank for no gate"
-                              type="number"
-                              value={draft.rolloutPercentage}
-                              onChange={(e) => patchFlagDraft(flag.key, { rolloutPercentage: e.target.value })}
-                            />
-                          </label>
-                          <label className="admin-ticket-field">
-                            <span className="micro-label">Min extension version</span>
-                            <input
-                              placeholder="1.7.0"
-                              value={draft.minimumExtensionVersion}
-                              onChange={(e) =>
-                                patchFlagDraft(flag.key, { minimumExtensionVersion: e.target.value })
-                              }
-                            />
-                          </label>
-                          <label className="admin-ticket-field">
-                            <span className="micro-label">Allowed roles</span>
-                            <input
-                              placeholder="admin"
-                              value={draft.allowRoles}
-                              onChange={(e) => patchFlagDraft(flag.key, { allowRoles: e.target.value })}
-                            />
-                          </label>
-                          <label className="admin-ticket-field">
-                            <span className="micro-label">Allowed users</span>
-                            <input
-                              placeholder="user_1, user_2"
-                              value={draft.allowUsers}
-                              onChange={(e) => patchFlagDraft(flag.key, { allowUsers: e.target.value })}
-                            />
-                          </label>
-                        </div>
-                      </details>
-                    </>
-                  ) : (
-                    <p className="admin-ticket-note">
-                      Read-only. Connected admin auth required to edit flags.
-                    </p>
-                  )}
-                </article>
+                    ) : (
+                      <div className="list-stack" style={{ marginTop: '6px' }}>
+                        {flag.rolloutPercentage !== undefined ? (
+                          <div className="list-item">
+                            <strong>Rollout</strong>
+                            <p>{flag.rolloutPercentage}%</p>
+                          </div>
+                        ) : null}
+                        {flag.minimumExtensionVersion ? (
+                          <div className="list-item">
+                            <strong>Min version</strong>
+                            <p>{flag.minimumExtensionVersion}</p>
+                          </div>
+                        ) : null}
+                        {flag.allowRoles?.length ? (
+                          <div className="list-item">
+                            <strong>Roles</strong>
+                            <p>{flag.allowRoles.join(', ')}</p>
+                          </div>
+                        ) : null}
+                        {flag.allowUsers?.length ? (
+                          <div className="list-item">
+                            <strong>Users</strong>
+                            <p>{flag.allowUsers.join(', ')}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                </details>
               );
             })}
           </div>
@@ -554,39 +645,56 @@ export function ExtensionControlAdminClient({
           <p style={{ color: 'var(--muted)' }}>No feature flags defined.</p>
         )}
 
-        {/* B2: Effective Config */}
-        <h3 style={{ fontSize: '0.9rem', margin: '24px 0 10px' }}>Effective Config</h3>
+        {/* B2: Effective Config — editable key/value default view */}
+        <h3 style={{ fontSize: '0.9rem', margin: '24px 0 6px' }}>Effective Config</h3>
         {remoteConfig ? (
           <>
-            <div className="split-grid">
-              <article className="panel" style={{ padding: '12px' }}>
-                <span className="micro-label">Resolved values</span>
-                {Object.keys(previewValues).length > 0 ? (
-                  <div className="list-stack" style={{ marginTop: '8px' }}>
-                    {Object.entries(previewValues).map(([k, v]) => (
-                      <div className="list-item" key={k}>
-                        <strong>{k}</strong>
-                        <p>{typeof v === 'object' ? JSON.stringify(v) : String(v)}</p>
-                      </div>
-                    ))}
+            {Object.keys(previewValues).length > 0 ? (
+              <div>
+                <div className="admin-config-kv-list">
+                  {Object.keys(previewValues).map((k) => (
+                    <div className="admin-config-kv-row" key={k}>
+                      <span className="admin-config-kv-key">{k}</span>
+                      {isConnectedSession ? (
+                        <input
+                          className="admin-config-kv-input"
+                          value={simpleConfigDraft[k] ?? formatSimpleValue(previewValues[k])}
+                          onChange={(e) =>
+                            setSimpleConfigDraft((c) => ({ ...c, [k]: e.target.value }))
+                          }
+                        />
+                      ) : (
+                        <span className="admin-config-kv-value">
+                          {formatSimpleValue(previewValues[k])}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {isConnectedSession && simpleConfigDirty ? (
+                  <div className="admin-user-actions" style={{ marginTop: '8px' }}>
+                    <button className="btn-ghost" type="button" onClick={applySimpleConfigEdits}>
+                      Stage edits to draft layer
+                    </button>
                   </div>
-                ) : (
-                  <p style={{ marginTop: '8px', color: 'var(--muted)' }}>
-                    No config values in active layers.
-                  </p>
-                )}
-                {activeConfigVersion ? (
-                  <p style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--muted)' }}>
-                    Active: {activeConfigVersion.versionLabel} (
-                    {activeConfigVersion.layers.length} layer
-                    {activeConfigVersion.layers.length === 1 ? '' : 's'})
-                  </p>
                 ) : null}
-              </article>
+              </div>
+            ) : (
+              <p style={{ color: 'var(--muted)' }}>No config values in active layers.</p>
+            )}
+            {activeConfigVersion ? (
+              <p style={{ marginTop: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
+                Active: {activeConfigVersion.versionLabel} ({activeConfigVersion.layers.length}{' '}
+                layer{activeConfigVersion.layers.length === 1 ? '' : 's'})
+              </p>
+            ) : null}
 
-              <article className="panel" style={{ padding: '12px' }}>
-                <span className="micro-label">Publish</span>
-                <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
+            <details style={{ marginTop: '12px' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
+                Advanced: Publish &amp; layer editor
+              </summary>
+              <div style={{ marginTop: '10px' }}>
+                <div className="admin-ticket-editor">
                   <label className="admin-ticket-field">
                     <span className="micro-label">Version label</span>
                     <input
@@ -606,15 +714,7 @@ export function ExtensionControlAdminClient({
                     {isPublishingConfig ? 'Publishing...' : 'Publish config'}
                   </button>
                 </div>
-              </article>
-            </div>
-
-            <details style={{ marginTop: '12px' }}>
-              <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Advanced: Layer editor
-              </summary>
-              <div style={{ marginTop: '10px' }}>
-                <div className="admin-remote-config-layers">
+                <div className="admin-remote-config-layers" style={{ marginTop: '12px' }}>
                   {configLayers.map((layer, i) => (
                     <article className="admin-remote-config-layer" key={layer.id}>
                       <div className="billing-section-header">
@@ -671,7 +771,9 @@ export function ExtensionControlAdminClient({
                             value={layer.priority}
                             onChange={(e) =>
                               setConfigLayers((c) =>
-                                c.map((l) => (l.id === layer.id ? { ...l, priority: e.target.value } : l)),
+                                c.map((l) =>
+                                  l.id === layer.id ? { ...l, priority: e.target.value } : l,
+                                ),
                               )
                             }
                           />
@@ -782,6 +884,11 @@ export function ExtensionControlAdminClient({
               {flagItems.length} flag{flagItems.length === 1 ? '' : 's'} &mdash;{' '}
               {flagItems.filter((f) => f.enabled).length} enabled
             </p>
+            {lastFlagSave ? (
+              <span className="list-muted">
+                Last change: {lastFlagSave.key} at {formatUtcDateTime(lastFlagSave.updatedAt)}
+              </span>
+            ) : null}
           </div>
         </div>
       </section>

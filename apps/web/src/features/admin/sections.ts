@@ -46,7 +46,7 @@ export const adminSections: AdminSection[] = [
     navLabel: 'Extension Control',
     href: '/admin/extension-control',
     description: 'Client version policy, runtime feature settings, and config rollouts.',
-    requirement: { permission: 'feature_flags:read' },
+    requirement: { permission: 'remote_config:read' },
     group: 'control-plane',
     groupLabel: 'Control Plane',
   },
