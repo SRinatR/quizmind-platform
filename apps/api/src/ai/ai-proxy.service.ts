@@ -33,6 +33,7 @@ import {
   type AiProxyQuotaCounterRecord,
 } from './ai-proxy.repository';
 import { OpenRouterCatalogService } from './openrouter-catalog.service';
+import { WalletRepository } from '../wallet/wallet.repository';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
 const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'openai', 'polza']);
@@ -412,6 +413,8 @@ export class AiProxyService {
     private readonly aiHistoryService: AiHistoryService,
     @Inject(OpenRouterCatalogService)
     private readonly openRouterCatalogService: OpenRouterCatalogService,
+    @Inject(WalletRepository)
+    private readonly walletRepository: WalletRepository,
   ) {}
 
   async proxyForCurrentSession(
@@ -730,6 +733,38 @@ export class AiProxyService {
         policy.reason ?? `Model "${selectedModel.modelId}" requires vision support that is disabled for user keys.`,
       );
     }
+
+    // ── Wallet balance gate for platform-managed OpenRouter ──────────────────
+    // Only enforced in connected mode (wallets exist) and when the platform key
+    // is being used (user-key requests are not subject to this gate).
+    if (provider === 'openrouter' && keySource === 'platform' && this.env.runtimeMode === 'connected') {
+      const isFreeModel = selectedModel.capabilityTags.includes('free');
+      const balanceKopecks = isFreeModel
+        ? null // skip DB lookup entirely for free models
+        : await this.walletRepository.findBalanceForUser(session.user.id);
+      const effectiveBalance = balanceKopecks ?? 0;
+      const blocked = !isFreeModel && effectiveBalance <= 0;
+
+      console.log(
+        JSON.stringify({
+          eventType: 'ai_proxy.wallet_gate',
+          modelId: selectedModel.modelId,
+          isFreeModel,
+          balanceKopecks: isFreeModel ? null : effectiveBalance,
+          decision: blocked ? 'blocked' : 'allowed',
+          keySource,
+          userId: session.user.id,
+          occurredAt: new Date().toISOString(),
+        }),
+      );
+
+      if (blocked) {
+        throw new ForbiddenException(
+          'Insufficient balance for paid model. Top up your balance or choose a free model.',
+        );
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     const invocation: PreparedProxyInvocation = {
       session,
