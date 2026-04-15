@@ -5,6 +5,7 @@ import { MetricsController } from './metrics.controller';
 import { AiProxyController } from './ai/ai-proxy.controller';
 import { AiProxyRepository } from './ai/ai-proxy.repository';
 import { AiProxyService } from './ai/ai-proxy.service';
+import { OpenRouterCatalogService } from './ai/openrouter-catalog.service';
 import { AiHistoryController } from './history/ai-history.controller';
 import { AiHistoryRepository } from './history/ai-history.repository';
 import { AiHistoryService } from './history/ai-history.service';
@@ -67,6 +68,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     AdminBootstrapService,
     AiProxyRepository,
     AiProxyService,
+    OpenRouterCatalogService,
     AiHistoryRepository,
     AiHistoryService,
     HistoryBlobService,

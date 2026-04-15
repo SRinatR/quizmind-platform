@@ -17,6 +17,7 @@ import {
   type AiProxyRequest,
   type AiProxyResult,
   type AiProvider,
+  type ProviderModelCatalogEntry,
 } from '@quizmind/contracts';
 import { type Prisma } from '@quizmind/database';
 import { getProviderCatalog, listAvailableModelsForPlan, providerRegistry } from '@quizmind/providers';
@@ -31,6 +32,7 @@ import {
   type AiProxyCredentialRecord,
   type AiProxyQuotaCounterRecord,
 } from './ai-proxy.repository';
+import { OpenRouterCatalogService } from './openrouter-catalog.service';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
 const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'openai', 'polza']);
@@ -408,6 +410,8 @@ export class AiProxyService {
     private readonly aiProxyRepository: AiProxyRepository,
     @Inject(AiHistoryService)
     private readonly aiHistoryService: AiHistoryService,
+    @Inject(OpenRouterCatalogService)
+    private readonly openRouterCatalogService: OpenRouterCatalogService,
   ) {}
 
   async proxyForCurrentSession(
@@ -963,7 +967,48 @@ export class AiProxyService {
     );
     const providerCatalog = getProviderCatalog();
     const providers = providerCatalog.providers.filter((entry) => policy.providers.includes(entry.provider));
-    const allModels = listAvailableModelsForPlan().filter((entry) => policy.providers.includes(entry.provider));
+
+    const isOpenRouterPlatformManaged =
+      policy.providers.includes('openrouter') && policy.allowPlatformManaged;
+
+    let allModels: ProviderModelCatalogEntry[];
+
+    if (isOpenRouterPlatformManaged) {
+      // Fetch the live OpenRouter catalog. Falls back to [] on failure so the
+      // static fallback below keeps things working.
+      const liveOpenRouterModels = await this.openRouterCatalogService.getLiveModels();
+
+      if (liveOpenRouterModels.length > 0) {
+        // Ensure openrouter/auto (virtual routing entry) is always present.
+        const hasAutoEntry = liveOpenRouterModels.some((m) => m.modelId === 'openrouter/auto');
+        const extraEntries: ProviderModelCatalogEntry[] = hasAutoEntry
+          ? []
+          : [
+              {
+                provider: 'openrouter',
+                modelId: 'openrouter/auto',
+                displayName: 'OpenRouter Auto',
+                capabilityTags: ['text', 'routing'],
+                availability: 'active',
+                latencyClass: 'low',
+                planAvailability: ['free', 'pro', 'business'],
+              },
+            ];
+
+        // Non-OpenRouter providers still come from the static catalog.
+        const staticNonOpenRouterModels = listAvailableModelsForPlan().filter(
+          (entry) => entry.provider !== 'openrouter' && policy.providers.includes(entry.provider),
+        );
+
+        allModels = [...extraEntries, ...liveOpenRouterModels, ...staticNonOpenRouterModels];
+      } else {
+        // Live fetch failed or no key configured — fall back to static catalog.
+        allModels = listAvailableModelsForPlan().filter((entry) => policy.providers.includes(entry.provider));
+      }
+    } else {
+      allModels = listAvailableModelsForPlan().filter((entry) => policy.providers.includes(entry.provider));
+    }
+
     const models =
       allowedModelTags.length > 0
         ? allModels.filter((entry) => entry.capabilityTags.some((tag) => allowedModelTags.includes(tag)))

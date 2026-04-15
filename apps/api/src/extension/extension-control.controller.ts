@@ -145,6 +145,7 @@ function readOptionalBoolean(value: unknown): boolean | undefined {
 function mapProviderModelToExtensionShape(entry: ProviderModelCatalogEntry) {
   const hasVision = entry.capabilityTags.includes('vision') || entry.capabilityTags.includes('image');
   const hasText = entry.capabilityTags.includes('text');
+  const isFree = entry.capabilityTags.includes('free');
 
   return {
     id: entry.modelId,
@@ -153,6 +154,8 @@ function mapProviderModelToExtensionShape(entry: ProviderModelCatalogEntry) {
     short_description: `${entry.displayName} (${entry.provider})`,
     provider: entry.provider,
     availability: entry.availability,
+    supportsVision: hasVision,
+    isFree,
     architecture: hasVision
       ? {
           modality: hasText ? 'image+text->text' : 'image->text',
