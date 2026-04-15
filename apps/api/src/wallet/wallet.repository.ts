@@ -79,6 +79,18 @@ export class WalletRepository {
     });
   }
 
+  /**
+   * Read-only balance lookup. Returns null when no wallet exists (treat as 0).
+   * Does NOT create a wallet — safe to call from hot paths.
+   */
+  async findBalanceForUser(userId: string): Promise<number | null> {
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+      select: { balanceKopecks: true },
+    });
+    return wallet?.balanceKopecks ?? null;
+  }
+
   async findTopUpsByUserId(userId: string, limit = 50): Promise<WalletTopUpRecord[]> {
     const wallet = await this.prisma.wallet.findUnique({
       where: { userId },
