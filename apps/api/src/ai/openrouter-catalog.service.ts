@@ -21,6 +21,9 @@ interface OpenRouterModelEntry {
   pricing?: {
     prompt?: string;
     completion?: string;
+    image?: string;
+    request?: string;
+    web_search?: string;
   };
 }
 
@@ -33,14 +36,37 @@ interface CatalogCache {
   fetchedAt: number;
 }
 
+/**
+ * A model is free only when every pricing field present in the payload is zero.
+ * Fields checked: prompt, completion, image, request, web_search.
+ * If no pricing data is returned at all, fall back to the :free suffix heuristic.
+ */
+function isOpenRouterModelFree(pricing: OpenRouterModelEntry['pricing'], modelId: string): boolean {
+  if (pricing) {
+    const presentValues = [
+      pricing.prompt,
+      pricing.completion,
+      pricing.image,
+      pricing.request,
+      pricing.web_search,
+    ].filter((v): v is string => v !== undefined && v !== null);
+
+    if (presentValues.length > 0) {
+      return presentValues.every((v) => parseFloat(v) === 0);
+    }
+  }
+
+  // Fallback when OpenRouter returns no pricing object at all.
+  return modelId.endsWith(':free');
+}
+
 function mapOpenRouterModel(entry: OpenRouterModelEntry): ProviderModelCatalogEntry {
   const inputModalities = entry.architecture?.input_modalities ?? [];
   const hasVision = inputModalities.includes('image');
-  // Text is assumed when modalities are unspecified or text is listed
+  // Text is assumed when modalities are unspecified or text is listed.
   const hasText = inputModalities.length === 0 || inputModalities.includes('text');
 
-  const promptPrice = parseFloat(entry.pricing?.prompt ?? '0');
-  const isFree = promptPrice === 0 || entry.id.endsWith(':free');
+  const isFree = isOpenRouterModelFree(entry.pricing, entry.id);
 
   const capabilityTags: string[] = [];
   if (hasText) capabilityTags.push('text');
@@ -122,7 +148,7 @@ export class OpenRouterCatalogService {
         return null;
       }
 
-      return decryptSecret(envelope);
+      return decryptSecret({ envelope, secret: this.env.providerCredentialSecret });
     } catch {
       return null;
     }
