@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 
 import { type AiHistoryListResponse } from '@quizmind/contracts';
 import { usePreferences } from '../../../lib/preferences';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { AiRequestDetailModal } from './ai-request-detail-modal';
 
 interface LegacyHistoryItem {
   id: string;
@@ -61,6 +63,7 @@ function formatTokens(n: number): string {
 
 export function HistoryPageClient(props: HistoryPageClientProps) {
   const { t } = usePreferences();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const {
     source, aiHistory, legacyHistory, effectivePage, pageSize,
@@ -205,7 +208,15 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
           {items.length > 0 ? (
             <div className="event-list">
               {items.map((item) => (
-                <div className="event-row" key={item.id}>
+                <div
+                  className="event-row"
+                  key={item.id}
+                  onClick={() => setSelectedId(item.id)}
+                  role="button"
+                  style={{ cursor: 'pointer' }}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedId(item.id); }}
+                >
                   <span className={requestTypeDot(item.requestType)} />
                   <div className="event-row__body">
                     <span className="event-row__type">{item.model}</span>
@@ -253,6 +264,10 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
             <Link className="btn-ghost" href="/app/installations">Installations</Link>
           </div>
         </section>
+
+        {selectedId && (
+          <AiRequestDetailModal id={selectedId} onClose={() => setSelectedId(null)} />
+        )}
       </>
     );
   }
