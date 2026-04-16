@@ -11,7 +11,7 @@ services:
       [
         "sh",
         "-lc",
-        "corepack pnpm --filter @quizmind/api start"
+        "DATABASE_URL_NEW=$(node -e \"require('dns').lookup('postgres',{family:4},(e,a)=>{if(e){process.exitCode=1;return;}const u=new URL(process.env.DATABASE_URL);u.hostname=a;process.stdout.write(u.toString())})\") && export DATABASE_URL=\"$DATABASE_URL_NEW\" && exec corepack pnpm --filter @quizmind/api start"
       ]
     environment:
       NODE_ENV: production
@@ -35,7 +35,7 @@ services:
       [
         "sh",
         "-lc",
-        "corepack pnpm --filter @quizmind/web build && corepack pnpm --filter @quizmind/web start --hostname 0.0.0.0 --port 3000"
+        "corepack pnpm --filter @quizmind/web start --hostname 0.0.0.0 --port 3000"
       ]
 
   worker:
@@ -44,7 +44,7 @@ services:
       [
         "sh",
         "-lc",
-        "corepack pnpm --filter @quizmind/worker start"
+        "DATABASE_URL_NEW=$(node -e \"require('dns').lookup('postgres',{family:4},(e,a)=>{if(e){process.exitCode=1;return;}const u=new URL(process.env.DATABASE_URL);u.hostname=a;process.stdout.write(u.toString())})\") && export DATABASE_URL=\"$DATABASE_URL_NEW\" && exec corepack pnpm --filter @quizmind/worker start"
       ]
     environment:
       NODE_ENV: production
