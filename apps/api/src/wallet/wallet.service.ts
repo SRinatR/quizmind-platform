@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 
 import {
   BadRequestException,
-  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -17,7 +16,6 @@ import {
 } from '@quizmind/contracts';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
-import { canUpdateBilling } from '../services/access-service';
 import { YookassaClient } from './yookassa.client';
 import { WalletRepository } from './wallet.repository';
 
@@ -98,12 +96,6 @@ export class WalletService {
     request?: Partial<WalletTopUpCreateRequest>,
   ): Promise<WalletTopUpCreateResult> {
     this.requireConnectedMode();
-
-    const accessDecision = canUpdateBilling(session.principal);
-
-    if (!accessDecision.allowed) {
-      throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
 
     const amountKopecks = request?.amountKopecks;
 
