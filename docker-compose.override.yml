@@ -11,7 +11,7 @@ services:
       [
         "sh",
         "-lc",
-        "corepack pnpm --filter @quizmind/database db:migrate:deploy && corepack pnpm --filter @quizmind/api start"
+        "corepack pnpm --filter @quizmind/api start"
       ]
     environment:
       NODE_ENV: production
@@ -40,6 +40,12 @@ services:
 
   worker:
     pull_policy: never
+    command:
+      [
+        "sh",
+        "-lc",
+        "corepack pnpm --filter @quizmind/worker start"
+      ]
     environment:
       NODE_ENV: production
       API_URL: "http://api:4000"
