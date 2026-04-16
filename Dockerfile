@@ -45,4 +45,10 @@ COPY . .
 
 RUN corepack pnpm --filter @quizmind/database db:generate
 
+ARG NEXT_PUBLIC_API_URL=https://ods.uz/api
+ARG NEXT_PUBLIC_APP_URL=https://ods.uz
+RUN NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
+    corepack pnpm --filter @quizmind/web build
+
 CMD ["corepack", "pnpm", "dev"]
