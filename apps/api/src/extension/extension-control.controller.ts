@@ -316,13 +316,18 @@ export class ExtensionControlController {
     );
   }
 
-  @Post('extension/installations/session/refresh')
+  @Post('extension/session/refresh')
   async refreshInstallationSession(
     @Headers('authorization') authorization?: string,
   ) {
-    const installationSession = await this.requireInstallationSession(authorization);
+    return this.handleRefreshInstallationSession(authorization);
+  }
 
-    return ok(await this.extensionControlService.refreshInstallationSessionForToken(installationSession));
+  @Post('extension/installations/session/refresh')
+  async refreshInstallationSessionAlias(
+    @Headers('authorization') authorization?: string,
+  ) {
+    return this.handleRefreshInstallationSession(authorization);
   }
 
   @Post('extension/bootstrap/v2')
@@ -436,6 +441,12 @@ export class ExtensionControlController {
       });
       throw error;
     }
+  }
+
+  private async handleRefreshInstallationSession(authorization?: string) {
+    const installationSession = await this.requireInstallationSession(authorization);
+
+    return ok(await this.extensionControlService.refreshInstallationSessionForToken(installationSession));
   }
 
   private async requireConnectedSession(authorization?: string): Promise<CurrentSessionSnapshot> {

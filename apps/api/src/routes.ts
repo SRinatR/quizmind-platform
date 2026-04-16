@@ -136,8 +136,13 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
-    path: '/extension/installations/session/refresh',
+    path: '/extension/session/refresh',
     summary: 'Silently refresh an installation session token using the current token, without requiring user re-login.',
+  },
+  {
+    method: 'POST',
+    path: '/extension/installations/session/refresh',
+    summary: 'Alias for /extension/session/refresh — kept for backward compatibility.',
   },
   {
     method: 'POST',

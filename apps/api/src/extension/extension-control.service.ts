@@ -757,12 +757,10 @@ export class ExtensionControlService {
 
     return {
       installationId: installationSession.installation.installationId,
-      session: {
-        token: sessionToken,
-        expiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
-      },
-      refreshedAt: refreshedAt.toISOString(),
+      installationToken: sessionToken,
+      tokenExpiresAt: tokenRecord.expiresAt.toISOString(),
+      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      status: 'refreshed' as const,
     };
   }
 

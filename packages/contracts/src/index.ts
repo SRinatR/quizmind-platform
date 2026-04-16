@@ -785,8 +785,10 @@ export type ExtensionConnectionStatus = 'connected' | 'expiring_soon' | 'reconne
 
 export interface ExtensionInstallationSessionRefreshResult {
   installationId: string;
-  session: ExtensionInstallationTokenSession;
-  refreshedAt: string;
+  installationToken: string;
+  tokenExpiresAt: string;
+  refreshAfterSeconds: number;
+  status: 'refreshed';
 }
 
 export interface ExtensionBootstrapPayloadV2 {

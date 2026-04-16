@@ -100,7 +100,7 @@ export async function refreshInstallationSession(input: {
   fetcher?: typeof fetch;
 }): Promise<ExtensionInstallationTokenSession> {
   const fetcher = input.fetcher ?? fetch;
-  const response = await fetcher(`${trimTrailingSlash(input.apiUrl)}/extension/installations/session/refresh`, {
+  const response = await fetcher(`${trimTrailingSlash(input.apiUrl)}/extension/session/refresh`, {
     method: 'POST',
     headers: {
       authorization: `Bearer ${input.token}`,
@@ -116,7 +116,11 @@ export async function refreshInstallationSession(input: {
     throw new PlatformRequestError(message, response.status, retryable);
   }
 
-  const { session } = payload.data;
+  const session: ExtensionInstallationTokenSession = {
+    token: payload.data.installationToken,
+    expiresAt: payload.data.tokenExpiresAt,
+    refreshAfterSeconds: payload.data.refreshAfterSeconds,
+  };
 
   if (input.state) {
     await input.state.saveInstallationSession(session);
