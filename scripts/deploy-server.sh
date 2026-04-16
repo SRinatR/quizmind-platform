@@ -66,16 +66,14 @@ echo "==> Running Prisma migrations"
 PG_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
   "$($DC ps -q postgres)")"
 
-# Build a migration-only DATABASE_URL with the resolved IP in place of the hostname.
-# This does NOT permanently rewrite .env.docker.
-RAW_DB_URL="$(grep '^DATABASE_URL=' .env.docker | cut -d= -f2-)"
-MIGRATION_DB_URL="$(echo "$RAW_DB_URL" | sed "s|@[^:/@]*|@${PG_IP}|")"
-
 $DC run --rm \
   -e HOME=/tmp \
   -e XDG_CONFIG_HOME=/tmp/.config \
-  -e DATABASE_URL="${MIGRATION_DB_URL}" \
-  api sh -lc 'corepack pnpm --filter @quizmind/database db:migrate:deploy'
+  -e DB_HOST_IP="${PG_IP}" \
+  api sh -lc '
+    export DATABASE_URL=$(node -e "const u=new URL(process.env.DATABASE_URL);u.hostname=process.env.DB_HOST_IP;process.stdout.write(u.toString())")
+    exec corepack pnpm --filter @quizmind/database db:migrate:deploy
+  '
 
 echo "==> Migrations complete"
 
