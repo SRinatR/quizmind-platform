@@ -12,6 +12,7 @@ import { connectToPlatform, redeemBindFallbackCode as redeemBindFallbackCodeRequ
 import {
   PlatformRequestError,
   refreshBootstrap,
+  refreshInstallationSession as refreshInstallationSessionRequest,
   resolveBootstrapRefreshDelayMs,
 } from './platform-bootstrap';
 import { type PlatformStateManager } from './platform-state';
@@ -203,6 +204,29 @@ export class PlatformRuntimeClient {
     await this.options.state.saveBindResult(result);
 
     return result;
+  }
+
+  async refreshInstallationSession(): Promise<ExtensionInstallationTokenSession> {
+    const { session, expired } = await this.resolveSessionState();
+
+    if (!session) {
+      throw createReconnectRequiredError(expired ? 'expired' : 'missing');
+    }
+
+    try {
+      return await refreshInstallationSessionRequest({
+        apiUrl: this.options.apiUrl,
+        token: session.token,
+        state: this.options.state,
+        fetcher: this.options.fetcher,
+      });
+    } catch (error) {
+      if (error instanceof PlatformRequestError && error.status === 401) {
+        await this.options.state.clearInstallationSession();
+      }
+
+      throw error;
+    }
   }
 
   async refreshBootstrap(input?: {

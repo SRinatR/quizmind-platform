@@ -316,6 +316,15 @@ export class ExtensionControlController {
     );
   }
 
+  @Post('extension/installations/session/refresh')
+  async refreshInstallationSession(
+    @Headers('authorization') authorization?: string,
+  ) {
+    const installationSession = await this.requireInstallationSession(authorization);
+
+    return ok(await this.extensionControlService.refreshInstallationSessionForToken(installationSession));
+  }
+
   @Post('extension/bootstrap/v2')
   async bootstrapV2(
     @Body() request?: Partial<ExtensionBootstrapRequestV2>,

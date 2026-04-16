@@ -781,6 +781,14 @@ export interface ExtensionInstallationTokenSession {
   refreshAfterSeconds: number;
 }
 
+export type ExtensionConnectionStatus = 'connected' | 'expiring_soon' | 'reconnect_required';
+
+export interface ExtensionInstallationSessionRefreshResult {
+  installationId: string;
+  session: ExtensionInstallationTokenSession;
+  refreshedAt: string;
+}
+
 export interface ExtensionBootstrapPayloadV2 {
   installationId: string;
   compatibility: CompatibilityResult;
@@ -820,6 +828,7 @@ export interface ExtensionInstallationInventoryItem {
   lastSessionExpiresAt?: string;
   compatibility: CompatibilityResult;
   requiresReconnect: boolean;
+  connectionStatus: ExtensionConnectionStatus;
 }
 
 export interface ExtensionInstallationInventorySnapshot {
