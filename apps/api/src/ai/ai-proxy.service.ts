@@ -9,6 +9,7 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
+  TooManyRequestsException,
 } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
 import {
@@ -1207,6 +1208,12 @@ export class AiProxyService {
     if (!response.ok) {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
+      if (response.status === 429) {
+        throw new TooManyRequestsException(
+          `OpenRouter provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
+
       throw new BadGatewayException(
         `OpenRouter request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
       );
@@ -1251,6 +1258,12 @@ export class AiProxyService {
     if (!response.ok) {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
+      if (response.status === 429) {
+        throw new TooManyRequestsException(
+          `OpenAI provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
+
       throw new BadGatewayException(
         `OpenAI request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
       );
@@ -1294,6 +1307,12 @@ export class AiProxyService {
 
     if (!response.ok) {
       const responseErrorMessage = readResponseErrorMessage(payload);
+
+      if (response.status === 429) {
+        throw new TooManyRequestsException(
+          `Polza provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
 
       throw new BadGatewayException(
         `Polza request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
@@ -1345,6 +1364,12 @@ export class AiProxyService {
       const rawResponseText = await response.text();
       const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
       const responseErrorMessage = readResponseErrorMessage(payload);
+
+      if (response.status === 429) {
+        throw new TooManyRequestsException(
+          `OpenRouter provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
 
       throw new BadGatewayException(
         `OpenRouter request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
@@ -1403,6 +1428,12 @@ export class AiProxyService {
       const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
       const responseErrorMessage = readResponseErrorMessage(payload);
 
+      if (response.status === 429) {
+        throw new TooManyRequestsException(
+          `OpenAI provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
+
       throw new BadGatewayException(
         `OpenAI request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
       );
@@ -1459,6 +1490,12 @@ export class AiProxyService {
       const rawResponseText = await response.text();
       const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
       const responseErrorMessage = readResponseErrorMessage(payload);
+
+      if (response.status === 429) {
+        throw new TooManyRequestsException(
+          `Polza provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
 
       throw new BadGatewayException(
         `Polza request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
@@ -1690,6 +1727,10 @@ export class AiProxyService {
   }
 
   private resolveProxyFailureCode(error: unknown): string {
+    if (error instanceof TooManyRequestsException) {
+      return 'provider_rate_limited';
+    }
+
     if (error instanceof BadGatewayException) {
       return 'upstream_bad_gateway';
     }

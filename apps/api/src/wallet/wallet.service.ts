@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 
 import {
   BadRequestException,
-  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -17,7 +16,6 @@ import {
 } from '@quizmind/contracts';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
-import { canReadBilling, canUpdateBilling } from '../services/access-service';
 import { YookassaClient } from './yookassa.client';
 import { WalletRepository } from './wallet.repository';
 
@@ -59,12 +57,6 @@ export class WalletService {
   async getBalance(session: CurrentSessionSnapshot): Promise<WalletBalanceSnapshot> {
     this.requireConnectedMode();
 
-    const accessDecision = canReadBilling(session.principal);
-
-    if (!accessDecision.allowed) {
-      throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
-
     const wallet = await this.walletRepository.findOrCreateWalletForUser(session.user.id);
 
     if (!wallet) {
@@ -80,12 +72,6 @@ export class WalletService {
 
   async listTopUps(session: CurrentSessionSnapshot): Promise<WalletTopUpsPayload> {
     this.requireConnectedMode();
-
-    const accessDecision = canReadBilling(session.principal);
-
-    if (!accessDecision.allowed) {
-      throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
 
     const topUps = await this.walletRepository.findTopUpsByUserId(session.user.id);
 
@@ -110,12 +96,6 @@ export class WalletService {
     request?: Partial<WalletTopUpCreateRequest>,
   ): Promise<WalletTopUpCreateResult> {
     this.requireConnectedMode();
-
-    const accessDecision = canUpdateBilling(session.principal);
-
-    if (!accessDecision.allowed) {
-      throw new ForbiddenException(accessDecision.reasons.join('; '));
-    }
 
     const amountKopecks = request?.amountKopecks;
 
