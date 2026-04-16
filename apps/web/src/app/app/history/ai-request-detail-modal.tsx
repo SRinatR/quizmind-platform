@@ -20,26 +20,48 @@ function statusBadgeClass(status: string): string {
   return 'tag-soft tag-soft--gray';
 }
 
-function extractPromptText(json: unknown, excerpt: string | null | undefined): string {
-  if (typeof json === 'string') return json;
+interface ParsedPrompt {
+  userText: string;
+  systemText: string;
+  fallbackText: string;
+}
+
+function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedPrompt {
   if (Array.isArray(json)) {
-    return json
-      .map((msg: unknown) => {
-        if (typeof msg === 'object' && msg !== null) {
-          const m = msg as Record<string, unknown>;
-          const role = typeof m.role === 'string' ? `[${m.role}]` : '';
-          const content =
-            typeof m.content === 'string'
-              ? m.content
-              : JSON.stringify(m.content, null, 2);
-          return role ? `${role}\n${content}` : content;
-        }
-        return String(msg);
-      })
-      .join('\n\n');
+    const msgs = json as Array<Record<string, unknown>>;
+    const userParts = msgs
+      .filter((m) => m.role === 'user')
+      .map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content, null, 2)));
+    const systemParts = msgs
+      .filter((m) => m.role === 'system')
+      .map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content, null, 2)));
+    return {
+      userText: userParts.join('\n\n'),
+      systemText: systemParts.join('\n\n'),
+      fallbackText: '',
+    };
   }
-  if (json !== null && json !== undefined) return JSON.stringify(json, null, 2);
-  return excerpt ?? '';
+  // non-array: use existing behavior as fallback
+  let fallback = '';
+  if (typeof json === 'string') fallback = json;
+  else if (json !== null && json !== undefined) fallback = JSON.stringify(json, null, 2);
+  else fallback = excerpt ?? '';
+  return { userText: '', systemText: '', fallbackText: fallback };
+}
+
+function extractFinalAnswer(json: unknown): string {
+  try {
+    const obj = json as Record<string, unknown>;
+    const choices = obj?.choices;
+    if (Array.isArray(choices) && choices.length > 0) {
+      const first = choices[0] as Record<string, unknown>;
+      const msg = first?.message as Record<string, unknown> | undefined;
+      if (typeof msg?.content === 'string') return msg.content;
+    }
+  } catch {
+    // fall through
+  }
+  return '';
 }
 
 function extractResponseText(json: unknown, excerpt: string | null | undefined): string {
@@ -65,6 +87,33 @@ const codeBlockStyle: React.CSSProperties = {
   margin: 0,
   fontFamily: 'monospace',
 };
+
+function ExpandableSection({ label, content }: { label: string; content: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginTop: '12px' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+          fontSize: '0.78rem',
+          opacity: 0.55,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+        }}
+      >
+        <span style={{ fontFamily: 'monospace' }}>{open ? '▾' : '▸'}</span>
+        {label}
+      </button>
+      {open && <pre style={{ ...codeBlockStyle, marginTop: '6px' }}>{content}</pre>}
+    </div>
+  );
+}
 
 export function AiRequestDetailModal({ id, onClose }: Props) {
   const [detail, setDetail] = useState<AiHistoryDetail | null>(null);
@@ -97,12 +146,16 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
     return () => { cancelled = true; };
   }, [id]);
 
-  const promptText = detail
-    ? extractPromptText(detail.promptContentJson, detail.promptExcerpt)
+  const parsed = detail ? parsePrompt(detail.promptContentJson, detail.promptExcerpt) : null;
+  const displayPrompt = parsed
+    ? (parsed.userText || parsed.fallbackText)
     : '';
-  const responseText = detail
+
+  const rawResponseText = detail
     ? extractResponseText(detail.responseContentJson, detail.responseExcerpt)
     : '';
+  const finalAnswer = detail ? extractFinalAnswer(detail.responseContentJson) : '';
+  const displayResponse = finalAnswer || rawResponseText;
 
   return (
     <div
@@ -197,7 +250,7 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
               </div>
             )}
 
-            {/* Prompt */}
+            {/* Prompt — user message only */}
             <section style={{ marginBottom: '20px' }}>
               <div
                 style={{
@@ -208,10 +261,10 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
                 }}
               >
                 <span className="micro-label">Request / Prompt</span>
-                {promptText && (
+                {displayPrompt && (
                   <button
                     className="btn-ghost"
-                    onClick={() => copyText(promptText)}
+                    onClick={() => copyText(displayPrompt)}
                     style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                     type="button"
                   >
@@ -219,16 +272,19 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
                   </button>
                 )}
               </div>
-              {promptText ? (
-                <pre style={codeBlockStyle}>{promptText}</pre>
+              {displayPrompt ? (
+                <pre style={codeBlockStyle}>{displayPrompt}</pre>
               ) : (
                 <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>
                   No prompt content available.
                 </p>
               )}
+              {parsed?.systemText && (
+                <ExpandableSection label="System" content={parsed.systemText} />
+              )}
             </section>
 
-            {/* Response */}
+            {/* Response — final answer only */}
             <section>
               <div
                 style={{
@@ -239,10 +295,10 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
                 }}
               >
                 <span className="micro-label">Response</span>
-                {responseText && (
+                {displayResponse && (
                   <button
                     className="btn-ghost"
-                    onClick={() => copyText(responseText)}
+                    onClick={() => copyText(displayResponse)}
                     style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                     type="button"
                   >
@@ -250,12 +306,15 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
                   </button>
                 )}
               </div>
-              {responseText ? (
-                <pre style={codeBlockStyle}>{responseText}</pre>
+              {displayResponse ? (
+                <pre style={codeBlockStyle}>{displayResponse}</pre>
               ) : (
                 <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>
                   No response content available.
                 </p>
+              )}
+              {rawResponseText && (
+                <ExpandableSection label="Raw response" content={rawResponseText} />
               )}
             </section>
           </>
