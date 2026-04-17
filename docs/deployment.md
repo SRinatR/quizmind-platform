@@ -36,12 +36,15 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 ## How the Deploy Script Works
 
 `scripts/deploy-server.sh`:
-- Accepts `--ref <branch>` (defaults to `main` when omitted)
-- Validates and sanitizes the ref before use; exits with an error if the ref is unsafe or not found on the remote
+- Accepts `--sha` / `--ref` arguments passed from CI
+- **Validates `.env.docker`** exists and that `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `DATABASE_URL` are all present and non-empty — exits immediately if any are missing
 - `cd /opt/quizmind-platform`
-- `git fetch origin && git reset --hard origin/<ref>` — deploys the exact requested ref
-- `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build`
-- Prints current commit SHA and container status
+- `git fetch origin && git reset --hard origin/main` — deploys the exact commit
+- Builds images with `docker compose … --env-file .env.docker build`
+- Starts postgres and redis; waits for each to be healthy
+- **DB auth preflight**: runs a `pg.Client` probe (Node.js `require('pg')`) inside the built `api` image using `DATABASE_URL` exactly as provided in `.env.docker` — no bash URL parsing. Exits non-zero immediately if authentication fails, before migrations or service startup
+- Runs Prisma migrations
+- Starts api, worker, and web
 - Prunes dangling images with `docker image prune -f`
 - Writes `.deployed-sha` with `sha`, `ref`, `ci_sha`, and `deployed_at` fields
 
@@ -125,7 +128,9 @@ fail the auth preflight check.
 
 ### If credentials have already drifted
 
-The deploy script runs a fail-fast auth check before migrations.
+The deploy script validates `.env.docker` for required vars, then runs a
+fail-fast auth preflight using `pg.Client` (Node.js) with the exact
+`DATABASE_URL` string from `.env.docker` — no bash URL parsing.
 If it fails with `ERROR: DB authentication preflight FAILED`, choose one:
 
 **Option A — update the Postgres role to match `.env.docker`:**

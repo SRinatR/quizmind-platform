@@ -19,6 +19,22 @@ done
 echo "==> Deploying QuizMind Platform"
 cd "$DEPLOY_DIR"
 
+echo "==> Validating .env.docker"
+if [[ ! -f .env.docker ]]; then
+  echo "ERROR: .env.docker not found at $(pwd)/.env.docker"
+  echo "  Copy .env.docker.example to .env.docker and fill in production values."
+  exit 1
+fi
+for _var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB DATABASE_URL; do
+  _val="$(grep -E "^${_var}=" .env.docker | head -1 | cut -d= -f2-)"
+  if [[ -z "$_val" ]]; then
+    echo "ERROR: required variable ${_var} is missing or empty in .env.docker"
+    exit 1
+  fi
+done
+unset _var _val
+echo "  .env.docker OK"
+
 echo "==> Updating code from origin/main"
 git fetch origin
 git reset --hard origin/main
@@ -60,36 +76,37 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-echo "==> Preflight: verifying DB authentication"
-# Extract DATABASE_URL from .env.docker and parse user/pass/db using bash
-# string operations (no external tools required).  URL format expected:
-#   postgresql://USER:PASSWORD@HOST:PORT/DBNAME
-_DB_URL_RAW="$(grep -E '^DATABASE_URL=' .env.docker | head -1 | cut -d= -f2-)"
-if [[ -z "$_DB_URL_RAW" ]]; then
-  echo "ERROR: DATABASE_URL not found in .env.docker — cannot run preflight check"
-  exit 1
-fi
-_DB_USERINFO="${_DB_URL_RAW##*://}"   # strip scheme://
-_DB_USERINFO="${_DB_USERINFO%%@*}"    # keep only user:password
-_DB_USER="${_DB_USERINFO%%:*}"
-_DB_PASS="${_DB_USERINFO#*:}"
-_DB_NAME="${_DB_URL_RAW##*/}"
-_DB_NAME="${_DB_NAME%%\?*}"           # strip query string if present
-if ! docker exec \
-    -e PGPASSWORD="${_DB_PASS}" \
-    quizmind-postgres \
-    psql -U "${_DB_USER}" -d "${_DB_NAME}" -c "SELECT 1" -q --no-psqlrc \
-    > /dev/null 2>&1; then
+echo "==> Resolving postgres container IP"
+PG_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
+  "$($DC ps -q postgres)")"
+
+echo "==> Preflight: verifying DB credentials against running Postgres"
+# Uses pg.Client (require('pg'), available via shamefully-hoist=true) inside the
+# built api image.  DATABASE_URL is passed as-is from .env.docker — no bash URL
+# parsing.  Same hostname-to-IP rewrite used by migration and runtime containers.
+if ! $DC run --rm \
+    -e HOME=/tmp \
+    -e XDG_CONFIG_HOME=/tmp/.config \
+    -e DB_HOST_IP="${PG_IP}" \
+    api node -e '
+      const { Client } = require("pg");
+      const u = new URL(process.env.DATABASE_URL);
+      u.hostname = process.env.DB_HOST_IP;
+      const client = new Client({ connectionString: u.toString() });
+      client.connect()
+        .then(() => client.end())
+        .then(() => process.exit(0))
+        .catch((err) => { process.stderr.write(err.message + "\n"); process.exit(1); });
+    ' 2>&1; then
   echo ""
   echo "ERROR: DB authentication preflight FAILED."
-  echo "  The credentials in .env.docker (DATABASE_URL) cannot authenticate to the"
-  echo "  running Postgres instance. The persisted database role password does not"
-  echo "  match what is configured in .env.docker."
+  echo "  DATABASE_URL in .env.docker cannot authenticate to the running Postgres."
+  echo "  The persisted Postgres role password does not match .env.docker credentials."
   echo ""
   echo "  To fix — choose one option:"
-  echo "    A) Update the Postgres role to match .env.docker:"
+  echo "    A) Update the Postgres role password to match DATABASE_URL in .env.docker:"
   echo "         docker exec -it quizmind-postgres psql -U <current_user> \\"
-  echo "           -c \"ALTER USER ${_DB_USER} WITH PASSWORD '<new_password>';\""
+  echo "           -c \"ALTER USER <user> WITH PASSWORD '<password_from_env_docker>';\""
   echo "    B) Update DATABASE_URL (and POSTGRES_PASSWORD) in .env.docker to match"
   echo "       the actual password stored in the persisted Postgres volume."
   echo ""
@@ -99,10 +116,7 @@ fi
 echo "  DB authentication OK"
 
 echo "==> Running Prisma migrations"
-# Resolve the postgres container IP to avoid hostname resolution issues
-# inside the one-off migration container
-PG_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
-  "$($DC ps -q postgres)")"
+# PG_IP already resolved above.
 
 $DC run --rm \
   -e HOME=/tmp \
