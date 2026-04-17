@@ -26,7 +26,10 @@ if [[ ! -f .env.docker ]]; then
   exit 1
 fi
 for _var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB DATABASE_URL; do
-  _val="$(grep -E "^${_var}=" .env.docker | head -1 | cut -d= -f2-)"
+  # xargs: trims whitespace and strips surrounding quotes (handles blank/quoted-empty).
+  # || true: suppresses grep's exit-1-on-no-match so set -e doesn't fire before
+  # the error message can print; -z check below handles the missing-var case.
+  _val="$(grep -E "^${_var}=" .env.docker | head -1 | cut -d= -f2- | xargs || true)"
   if [[ -z "$_val" ]]; then
     echo "ERROR: required variable ${_var} is missing or empty in .env.docker"
     exit 1
