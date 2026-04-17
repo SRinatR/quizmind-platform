@@ -2,6 +2,8 @@ import {
   type CompatibilityHandshake,
   type ExtensionBootstrapPayloadV2,
   type ExtensionBootstrapRequestV2,
+  type ExtensionInstallationSessionRefreshResult,
+  type ExtensionInstallationTokenSession,
 } from '@quizmind/contracts';
 
 import { type PlatformStateManager } from './platform-state';
@@ -89,6 +91,42 @@ export async function refreshBootstrap(input: {
   }
 
   return payload.data;
+}
+
+export async function refreshInstallationSession(input: {
+  apiUrl: string;
+  token: string;
+  state?: PlatformStateManager;
+  fetcher?: typeof fetch;
+}): Promise<ExtensionInstallationTokenSession> {
+  const fetcher = input.fetcher ?? fetch;
+  const response = await fetcher(`${trimTrailingSlash(input.apiUrl)}/extension/session/refresh`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${input.token}`,
+      'content-type': 'application/json',
+    },
+  });
+  const payload = (await response.json().catch(() => null)) as ApiEnvelope<ExtensionInstallationSessionRefreshResult> | null;
+
+  if (!response.ok || !payload?.ok || !payload.data) {
+    const message = resolveErrorMessage(payload, `Unable to refresh installation session (status ${response.status}).`);
+    const retryable = response.status >= 500 || response.status === 429;
+
+    throw new PlatformRequestError(message, response.status, retryable);
+  }
+
+  const session: ExtensionInstallationTokenSession = {
+    token: payload.data.installationToken,
+    expiresAt: payload.data.tokenExpiresAt,
+    refreshAfterSeconds: payload.data.refreshAfterSeconds,
+  };
+
+  if (input.state) {
+    await input.state.saveInstallationSession(session);
+  }
+
+  return session;
 }
 
 export function resolveBootstrapRefreshDelayMs(input: {

@@ -17,6 +17,7 @@ import {
   type CompatibilityHandshake,
   type ExtensionBootstrapPayloadV2,
   type ExtensionBootstrapRequestV2,
+  type ExtensionConnectionStatus,
   type ExtensionInstallationDisconnectRequest,
   type ExtensionInstallationDisconnectResult,
   type ExtensionInstallationBindRequest,
@@ -25,6 +26,7 @@ import {
   type ExtensionInstallationInventorySnapshot,
   type ExtensionInstallationRotateSessionRequest,
   type ExtensionInstallationRotateSessionResult,
+  type ExtensionInstallationSessionRefreshResult,
   type UsageEventIngestResult,
   type UsageEventPayload,
 } from '@quizmind/contracts';
@@ -719,6 +721,49 @@ export class ExtensionControlService {
     };
   }
 
+  async refreshInstallationSessionForToken(
+    installationSession: ExtensionInstallationSessionRecord,
+  ): Promise<ExtensionInstallationSessionRefreshResult> {
+    const refreshedAt = new Date();
+    await this.extensionInstallationSessionRepository.revoke(installationSession.id, refreshedAt);
+    const { sessionToken, tokenRecord } = await this.issueInstallationSession(
+      installationSession.installation,
+      installationSession.installation.userId,
+    );
+
+    await this.recordLifecycleEventSafely({
+      actorId: installationSession.installation.userId,
+      targetType: 'extension_installation',
+      targetId: installationSession.installation.installationId,
+      auditEventType: 'extension.installation_session_refreshed',
+      securityEventType: 'extension.installation_session_refreshed',
+      securitySeverity: 'info',
+      status: 'success',
+      summary: 'extension installation session silently refreshed',
+      metadata: {
+        installationId: installationSession.installation.installationId,
+        previousSessionId: installationSession.id,
+        sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      },
+      domainEventType: 'extension.installation_session_refreshed',
+      domainPayload: {
+        installationId: installationSession.installation.installationId,
+        actorId: installationSession.installation.userId,
+        sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
+      },
+      occurredAt: refreshedAt,
+    });
+
+    return {
+      installationId: installationSession.installation.installationId,
+      installationToken: sessionToken,
+      tokenExpiresAt: tokenRecord.expiresAt.toISOString(),
+      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      status: 'refreshed' as const,
+    };
+  }
+
   private async buildBootstrapPayload(input: {
     installation: ExtensionInstallationRecord;
     environment: string;
@@ -772,6 +817,9 @@ export class ExtensionControlService {
     >,
   ): ExtensionInstallationInventoryItem {
     const installationSessionStats = sessionStats.get(installation.id);
+    const activeSessionCount = installationSessionStats?.count ?? 0;
+    const lastSessionExpiresAt = installationSessionStats?.lastSessionExpiresAt;
+    const connectionStatus = this.computeConnectionStatus(activeSessionCount, lastSessionExpiresAt);
     const compatibility = evaluateCompatibility(
       {
         extensionVersion: installation.extensionVersion,
@@ -790,16 +838,36 @@ export class ExtensionControlService {
       capabilities: normalizeCapabilities(installation.capabilitiesJson),
       boundAt: installation.createdAt.toISOString(),
       ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt.toISOString() } : {}),
-      activeSessionCount: installationSessionStats?.count ?? 0,
+      activeSessionCount,
       ...(installationSessionStats?.lastSessionIssuedAt
         ? { lastSessionIssuedAt: installationSessionStats.lastSessionIssuedAt }
         : {}),
-      ...(installationSessionStats?.lastSessionExpiresAt
-        ? { lastSessionExpiresAt: installationSessionStats.lastSessionExpiresAt }
-        : {}),
+      ...(lastSessionExpiresAt ? { lastSessionExpiresAt } : {}),
       compatibility,
-      requiresReconnect: (installationSessionStats?.count ?? 0) === 0,
+      connectionStatus,
+      requiresReconnect: connectionStatus === 'reconnect_required',
     };
+  }
+
+  private computeConnectionStatus(
+    activeSessionCount: number,
+    lastSessionExpiresAt: string | undefined,
+    now = new Date(),
+  ): ExtensionConnectionStatus {
+    if (activeSessionCount === 0) {
+      return 'reconnect_required';
+    }
+
+    if (lastSessionExpiresAt) {
+      const expiresAtMs = Date.parse(lastSessionExpiresAt);
+      const EXPIRING_SOON_MS = 5 * 60 * 1000;
+
+      if (Number.isFinite(expiresAtMs) && expiresAtMs - now.getTime() <= EXPIRING_SOON_MS) {
+        return 'expiring_soon';
+      }
+    }
+
+    return 'connected';
   }
 
   private normalizeBindRequest(
