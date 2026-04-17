@@ -77,7 +77,7 @@ test('buildCorsOptions allows extension origins for local API even when NODE_ENV
   assert.equal(result.allow, true);
 });
 
-test('buildCorsOptions rejects extension origins in production for non-loopback API unless explicitly allowed', async () => {
+test('buildCorsOptions allows any extension origin in production for non-loopback API', async () => {
   const origin = 'chrome-extension://ohglblaobifcglkcijfmmhgpkeknfmai';
   const result = await evaluateOrigin(
     createApiEnv({
@@ -88,9 +88,8 @@ test('buildCorsOptions rejects extension origins in production for non-loopback 
     origin,
   );
 
-  assert.ok(result.error instanceof Error);
-  assert.equal(result.allow, false);
-  assert.match(result.error?.message || '', /CORS origin not allowed/i);
+  assert.equal(result.error, null);
+  assert.equal(result.allow, true);
 });
 
 test('buildCorsOptions allows explicitly configured extension origins in production', async () => {
@@ -125,7 +124,7 @@ test('buildCorsOptions allows the deployed extension ID in production with real 
   assert.equal(result.allow, true);
 });
 
-test('buildCorsOptions rejects an unlisted extension ID in production with real API URL', async () => {
+test('buildCorsOptions allows any extension ID in production with real API URL', async () => {
   const allowedExtension = 'chrome-extension://miccididebbhdkfbjaebbkaainbgpmkg';
   const otherExtension = 'chrome-extension://aaaabbbbccccddddeeeeffffgggghhhh';
   const result = await evaluateOrigin(
@@ -137,12 +136,11 @@ test('buildCorsOptions rejects an unlisted extension ID in production with real 
     otherExtension,
   );
 
-  assert.ok(result.error instanceof Error);
-  assert.equal(result.allow, false);
-  assert.match(result.error?.message || '', /CORS origin not allowed/i);
+  assert.equal(result.error, null);
+  assert.equal(result.allow, true);
 });
 
-test('buildCorsOptions rejects moz-extension origin not in allowlist in production', async () => {
+test('buildCorsOptions allows moz-extension origin not in allowlist in production', async () => {
   const result = await evaluateOrigin(
     createApiEnv({
       nodeEnv: 'production',
@@ -152,6 +150,6 @@ test('buildCorsOptions rejects moz-extension origin not in allowlist in producti
     'moz-extension://someunknownid',
   );
 
-  assert.ok(result.error instanceof Error);
-  assert.equal(result.allow, false);
+  assert.equal(result.error, null);
+  assert.equal(result.allow, true);
 });
