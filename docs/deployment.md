@@ -36,12 +36,15 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 ## How the Deploy Script Works
 
 `scripts/deploy-server.sh`:
-- Accepts `--ref <branch>` (defaults to `main` when omitted)
-- Validates and sanitizes the ref before use; exits with an error if the ref is unsafe or not found on the remote
+- Accepts `--sha` / `--ref` arguments passed from CI
+- **Validates `.env.docker`** exists and that `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `DATABASE_URL` are all present and non-empty — exits immediately if any are missing
 - `cd /opt/quizmind-platform`
-- `git fetch origin && git reset --hard origin/<ref>` — deploys the exact requested ref
-- `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build`
-- Prints current commit SHA and container status
+- `git fetch origin && git reset --hard origin/main` — deploys the exact commit
+- Builds images with `docker compose … --env-file .env.docker build`
+- Starts postgres and redis; waits for each to be healthy
+- **DB auth preflight**: runs a `pg.Client` probe (Node.js `require('pg')`) inside the built `api` image using `DATABASE_URL` exactly as provided in `.env.docker` — no bash URL parsing. Exits non-zero immediately if authentication fails, before migrations or service startup
+- Runs Prisma migrations
+- Starts api, worker, and web
 - Prunes dangling images with `docker image prune -f`
 - Writes `.deployed-sha` with `sha`, `ref`, `ci_sha`, and `deployed_at` fields
 
@@ -103,6 +106,46 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.
 3. Click **Run workflow**
 
 The workflow resolves the ref from the explicit input (for `workflow_dispatch`) or from `github.ref_name` (for push triggers), then passes it as `--ref` to the server-side script.
+
+---
+
+## Database Credential Management
+
+Production DB credentials are sourced exclusively from `.env.docker` on the server.
+The four variables that must be consistent with each other are:
+
+```
+POSTGRES_USER=...
+POSTGRES_PASSWORD=...
+POSTGRES_DB=...
+DATABASE_URL=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>
+```
+
+**Important:** `POSTGRES_PASSWORD` in `docker-compose.yml` / `.env.docker` is only used
+by Postgres during **initial volume initialisation**. If the data volume already exists,
+changing this variable does **not** update the stored role password — the deploy will
+fail the auth preflight check.
+
+### If credentials have already drifted
+
+The deploy script validates `.env.docker` for required vars, then runs a
+fail-fast auth preflight using `pg.Client` (Node.js) with the exact
+`DATABASE_URL` string from `.env.docker` — no bash URL parsing.
+If it fails with `ERROR: DB authentication preflight FAILED`, choose one:
+
+**Option A — update the Postgres role to match `.env.docker`:**
+```bash
+# Connect using the password that the volume was originally initialised with:
+docker exec -it quizmind-postgres psql -U <current_user>
+ALTER USER <user> WITH PASSWORD '<new_password_from_env_docker>';
+\q
+```
+
+**Option B — update `.env.docker` to match the stored password:**
+Edit `/opt/quizmind-platform/.env.docker` and set `POSTGRES_PASSWORD` and `DATABASE_URL`
+to reflect the password that was used when the volume was first created.
+
+After either fix, re-run the deploy script.
 
 ---
 
