@@ -277,16 +277,16 @@ export class ExtensionControlService {
       await this.recordLifecycleEventSafely({
         targetType: 'extension_installation_session',
         targetId: tokenHash.slice(0, 16),
-        auditEventType: 'extension.installation_session_refresh_failed',
-        securityEventType: 'extension.installation_session_refresh_failed',
+        auditEventType: 'extension.installation_session_auth_failed',
+        securityEventType: 'extension.installation_session_auth_failed',
         securitySeverity: 'warn',
         status: 'failure',
-        summary: 'extension installation session refresh failed due to invalid or expired token',
+        summary: 'extension installation session authentication failed due to invalid or expired token',
         metadata: {
           reason: 'invalid_or_expired_token',
           tokenHashPrefix: tokenHash.slice(0, 16),
         },
-        domainEventType: 'extension.installation_session_refresh_failed',
+        domainEventType: 'extension.installation_session_auth_failed',
         domainPayload: {
           reason: 'invalid_or_expired_token',
           tokenHashPrefix: tokenHash.slice(0, 16),
