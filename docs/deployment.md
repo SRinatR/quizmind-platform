@@ -7,6 +7,28 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 
 ---
 
+## Single Source of Truth: `.env.docker`
+
+All DB credentials and runtime secrets are read exclusively from
+`/opt/quizmind-platform/.env.docker` on the server. There is no fallback to
+hardcoded values.
+
+The four DB variables must be internally consistent:
+
+```dotenv
+POSTGRES_USER=...
+POSTGRES_PASSWORD=...
+POSTGRES_DB=...
+DATABASE_URL=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>
+```
+
+**Changing `POSTGRES_PASSWORD` in `.env.docker` alone does NOT update the stored
+Postgres role.** The deploy script will catch the mismatch via the DB auth
+preflight and abort before any migration runs. See *Database Credential
+Management* below for the fix procedure.
+
+---
+
 ## Required GitHub Secrets
 
 | Secret | Value |
@@ -43,10 +65,12 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 - Builds images with `docker compose … --env-file .env.docker build`
 - Starts postgres and redis; waits for each to be healthy
 - **DB auth preflight**: runs a `pg.Client` probe (Node.js `require('pg')`) inside the built `api` image using `DATABASE_URL` exactly as provided in `.env.docker` — no bash URL parsing. Exits non-zero immediately if authentication fails, before migrations or service startup
-- Runs Prisma migrations
+- Runs Prisma migrations (exits non-zero if migrations fail)
 - Starts api, worker, and web
+- **Waits for api and web containers to report healthy** (up to 3 minutes each; exits non-zero on timeout)
+- **Post-deploy smoke checks**: HTTP GET on `api /health`, `api /ready`, and `web :3000` from localhost — exits non-zero and marks deploy failed if any check fails. No silent broken deploys.
 - Prunes dangling images with `docker image prune -f`
-- Writes `.deployed-sha` with `sha`, `ref`, `ci_sha`, and `deployed_at` fields
+- Writes `.deployed-sha` with `sha`, `ref`, `ci_sha`, and `deployed_at` fields only after all checks pass
 
 ---
 
@@ -149,6 +173,27 @@ After either fix, re-run the deploy script.
 
 ---
 
+## Quick Verification After Deploy
+
+Run these from the server to confirm a healthy state:
+
+```bash
+# Container health status
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
+
+# API liveness / readiness
+curl -sf http://127.0.0.1:4000/health && echo " OK /health"
+curl -sf http://127.0.0.1:4000/ready  && echo " OK /ready"
+
+# Web root (nginx/Next.js)
+curl -sf http://127.0.0.1:3000 -o /dev/null -w "%{http_code}\n"
+
+# Confirm which SHA is deployed
+cat /opt/quizmind-platform/.deployed-sha
+```
+
+---
+
 ## Rollback
 
 To roll back to a previous commit, SSH into the server and reset manually:
@@ -157,8 +202,7 @@ To roll back to a previous commit, SSH into the server and reset manually:
 ssh root@ods.uz
 cd /opt/quizmind-platform
 git log --oneline -10          # find the target SHA
-git reset --hard <target-sha>
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build
+bash /opt/quizmind-platform/scripts/rollback-server.sh --sha <target-sha>
 ```
 
 ---
@@ -221,9 +265,18 @@ BLACKBOX_EXPORTER_IMAGE=dockerhub.timeweb.cloud/prom/blackbox-exporter:v0.25.0
 CADVISOR_IMAGE=gcr.io/cadvisor/cadvisor:v0.49.1
 ```
 
+### Required: `POSTGRES_EXPORTER_DSN`
+
+`docker-compose.observability.yml` requires `POSTGRES_EXPORTER_DSN` to be set
+in `.env.docker` — there is no hardcoded fallback. Example:
+
+```dotenv
+POSTGRES_EXPORTER_DSN=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>?sslmode=disable
+```
+
 ### Launching the observability stack
 
-After setting the image variables in `.env.docker`, start the stack:
+After setting the image variables (and `POSTGRES_EXPORTER_DSN`) in `.env.docker`, start the stack:
 
 ```bash
 cd /opt/quizmind-platform

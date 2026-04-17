@@ -3,7 +3,7 @@ set -euo pipefail
 
 DEPLOY_DIR="/opt/quizmind-platform"
 DEPLOYED_SHA_FILE="${DEPLOY_DIR}/.deployed-sha"
-DC="docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker"
+DC="docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker"
 
 # Parse optional --sha and --ref arguments passed from CI
 DEPLOYED_SHA=""
@@ -137,6 +137,63 @@ $DC up -d api worker web
 
 echo "==> Container status"
 $DC ps
+
+echo "==> Waiting for api to become healthy"
+for i in $(seq 1 60); do
+  _api_status=$(docker inspect --format='{{.State.Health.Status}}' quizmind-api 2>/dev/null || echo "missing")
+  if [ "$_api_status" = "healthy" ]; then
+    echo "  api is healthy"
+    break
+  fi
+  if [ "$i" = "60" ]; then
+    echo "ERROR: api did not become healthy within 3 minutes (last status: ${_api_status})"
+    $DC logs --tail=50 api
+    exit 1
+  fi
+  echo "  waiting for api... ($i/60) [${_api_status}]"
+  sleep 3
+done
+
+echo "==> Waiting for web to become healthy"
+for i in $(seq 1 60); do
+  _web_status=$(docker inspect --format='{{.State.Health.Status}}' quizmind-web 2>/dev/null || echo "missing")
+  if [ "$_web_status" = "healthy" ]; then
+    echo "  web is healthy"
+    break
+  fi
+  if [ "$i" = "60" ]; then
+    echo "ERROR: web did not become healthy within 3 minutes (last status: ${_web_status})"
+    $DC logs --tail=50 web
+    exit 1
+  fi
+  echo "  waiting for web... ($i/60) [${_web_status}]"
+  sleep 3
+done
+
+echo "==> Post-deploy smoke checks"
+_smoke_fail=0
+for _endpoint in "http://127.0.0.1:4000/health" "http://127.0.0.1:4000/ready"; do
+  if curl -sf --max-time 10 "$_endpoint" > /dev/null; then
+    echo "  OK: ${_endpoint}"
+  else
+    echo "  FAIL: ${_endpoint}"
+    _smoke_fail=1
+  fi
+done
+if curl -sf --max-time 15 "http://127.0.0.1:3000" > /dev/null; then
+  echo "  OK: http://127.0.0.1:3000 (web)"
+else
+  echo "  FAIL: http://127.0.0.1:3000 (web)"
+  _smoke_fail=1
+fi
+if [ "$_smoke_fail" = "1" ]; then
+  echo ""
+  echo "ERROR: Post-deploy smoke checks FAILED. Deploy is in a broken state."
+  echo "  Inspect logs:  $DC logs api"
+  echo "  Inspect logs:  $DC logs web"
+  exit 1
+fi
+echo "  All smoke checks passed."
 
 echo "==> Pruning dangling images"
 docker image prune -f

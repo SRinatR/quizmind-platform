@@ -149,7 +149,7 @@ services:
     container_name: quizmind-postgres-exporter
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN:-postgresql://postgres:postgres@postgres:5432/quizmind?sslmode=disable}"
+      DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN}"
     networks: [app_net, obs_net]
 
   redis-exporter:
