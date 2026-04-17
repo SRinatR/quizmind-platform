@@ -234,6 +234,13 @@ function normalizeExtensionAiRequest(
   }
 
   const model = readString(request?.model) ?? undefined;
+
+  if (!model) {
+    throw new BadRequestException(
+      'Extension AI request is missing a required model ID. The extension must send an explicit model for every request.',
+    );
+  }
+
   const provider = readString(request?.provider) as AiProvider | null;
   const useOwnKey = readOptionalBoolean(request?.useOwnKey) ?? readOptionalBoolean(request?.options?.useOwnKey);
   const temperature = readFiniteNumber(request?.options?.temperature ?? request?.temperature);
@@ -480,6 +487,16 @@ export class ExtensionControlController {
       const session = buildInstallationRuntimeSession(installationSession);
       const normalizedRequest = normalizeExtensionAiRequest(request);
       const proxyResult = await this.aiProxyService.proxyForCurrentSession(session, normalizedRequest);
+
+      this.logExtensionAiRequest({
+        installationId: installationSession.installation.installationId,
+        userId: installationSession.installation.userId,
+        requestedModel: request?.model,
+        resolvedModel: proxyResult.model,
+        provider: proxyResult.provider,
+        messageCount: Array.isArray(request?.messages) ? request.messages.length : 0,
+      });
+
       const upstreamResponse =
         proxyResult.response && typeof proxyResult.response === 'object'
           ? (proxyResult.response as Record<string, unknown>)
@@ -522,6 +539,29 @@ export class ExtensionControlController {
     }
   }
 
+  private logExtensionAiRequest(input: {
+    installationId: string;
+    userId: string;
+    requestedModel: string | undefined;
+    resolvedModel: string;
+    provider: string;
+    messageCount: number;
+  }): void {
+    console.info(
+      JSON.stringify({
+        eventType: 'extension.ai_request_ok',
+        installationId: input.installationId,
+        userId: input.userId,
+        requestedModel: input.requestedModel ?? null,
+        resolvedModel: input.resolvedModel,
+        provider: input.provider,
+        modelWasMissing: !input.requestedModel,
+        messageCount: input.messageCount,
+        occurredAt: new Date().toISOString(),
+      }),
+    );
+  }
+
   private logExtensionAiFailure(input: {
     action: 'models' | 'proxy';
     installationId: string;
@@ -534,6 +574,10 @@ export class ExtensionControlController {
       input.error instanceof Error
         ? input.error.message.trim().slice(0, 512)
         : 'Unknown extension AI error.';
+    const rawModel =
+      input.action === 'proxy' && typeof input.input?.model === 'string'
+        ? input.input.model.trim()
+        : null;
 
     console.warn(
       JSON.stringify({
@@ -542,6 +586,7 @@ export class ExtensionControlController {
         installationId: input.installationId,
         userId: input.userId,
         ...(input.input ? { input: input.input } : {}),
+        ...(input.action === 'proxy' ? { modelWasMissing: !rawModel } : {}),
         errorMessage: message,
         ...(typeof status === 'number' ? { status } : {}),
         occurredAt: new Date().toISOString(),
