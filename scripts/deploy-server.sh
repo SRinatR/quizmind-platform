@@ -60,6 +60,44 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+echo "==> Preflight: verifying DB authentication"
+# Extract DATABASE_URL from .env.docker and parse user/pass/db using bash
+# string operations (no external tools required).  URL format expected:
+#   postgresql://USER:PASSWORD@HOST:PORT/DBNAME
+_DB_URL_RAW="$(grep -E '^DATABASE_URL=' .env.docker | head -1 | cut -d= -f2-)"
+if [[ -z "$_DB_URL_RAW" ]]; then
+  echo "ERROR: DATABASE_URL not found in .env.docker — cannot run preflight check"
+  exit 1
+fi
+_DB_USERINFO="${_DB_URL_RAW##*://}"   # strip scheme://
+_DB_USERINFO="${_DB_USERINFO%%@*}"    # keep only user:password
+_DB_USER="${_DB_USERINFO%%:*}"
+_DB_PASS="${_DB_USERINFO#*:}"
+_DB_NAME="${_DB_URL_RAW##*/}"
+_DB_NAME="${_DB_NAME%%\?*}"           # strip query string if present
+if ! docker exec \
+    -e PGPASSWORD="${_DB_PASS}" \
+    quizmind-postgres \
+    psql -U "${_DB_USER}" -d "${_DB_NAME}" -c "SELECT 1" -q --no-psqlrc \
+    > /dev/null 2>&1; then
+  echo ""
+  echo "ERROR: DB authentication preflight FAILED."
+  echo "  The credentials in .env.docker (DATABASE_URL) cannot authenticate to the"
+  echo "  running Postgres instance. The persisted database role password does not"
+  echo "  match what is configured in .env.docker."
+  echo ""
+  echo "  To fix — choose one option:"
+  echo "    A) Update the Postgres role to match .env.docker:"
+  echo "         docker exec -it quizmind-postgres psql -U <current_user> \\"
+  echo "           -c \"ALTER USER ${_DB_USER} WITH PASSWORD '<new_password>';\""
+  echo "    B) Update DATABASE_URL (and POSTGRES_PASSWORD) in .env.docker to match"
+  echo "       the actual password stored in the persisted Postgres volume."
+  echo ""
+  echo "  See docs/deployment.md — 'Database Credential Management' for details."
+  exit 1
+fi
+echo "  DB authentication OK"
+
 echo "==> Running Prisma migrations"
 # Resolve the postgres container IP to avoid hostname resolution issues
 # inside the one-off migration container

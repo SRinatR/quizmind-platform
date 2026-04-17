@@ -106,6 +106,44 @@ The workflow resolves the ref from the explicit input (for `workflow_dispatch`) 
 
 ---
 
+## Database Credential Management
+
+Production DB credentials are sourced exclusively from `.env.docker` on the server.
+The four variables that must be consistent with each other are:
+
+```
+POSTGRES_USER=...
+POSTGRES_PASSWORD=...
+POSTGRES_DB=...
+DATABASE_URL=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>
+```
+
+**Important:** `POSTGRES_PASSWORD` in `docker-compose.yml` / `.env.docker` is only used
+by Postgres during **initial volume initialisation**. If the data volume already exists,
+changing this variable does **not** update the stored role password — the deploy will
+fail the auth preflight check.
+
+### If credentials have already drifted
+
+The deploy script runs a fail-fast auth check before migrations.
+If it fails with `ERROR: DB authentication preflight FAILED`, choose one:
+
+**Option A — update the Postgres role to match `.env.docker`:**
+```bash
+# Connect using the password that the volume was originally initialised with:
+docker exec -it quizmind-postgres psql -U <current_user>
+ALTER USER <user> WITH PASSWORD '<new_password_from_env_docker>';
+\q
+```
+
+**Option B — update `.env.docker` to match the stored password:**
+Edit `/opt/quizmind-platform/.env.docker` and set `POSTGRES_PASSWORD` and `DATABASE_URL`
+to reflect the password that was used when the volume was first created.
+
+After either fix, re-run the deploy script.
+
+---
+
 ## Rollback
 
 To roll back to a previous commit, SSH into the server and reset manually:
