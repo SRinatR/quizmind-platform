@@ -27,22 +27,8 @@ function isExtensionOrigin(value: string): boolean {
   }
 }
 
-function isLoopbackHostname(hostname: string): boolean {
-  const normalized = String(hostname || '').trim().toLowerCase();
-  return normalized === 'localhost' || normalized === '127.0.0.1' || normalized === '::1';
-}
-
-function isLoopbackUrl(value: string): boolean {
-  try {
-    return isLoopbackHostname(new URL(value).hostname);
-  } catch {
-    return false;
-  }
-}
-
 export function buildCorsOptions(env: ApiEnv) {
   const allowedOrigins = new Set(env.corsAllowedOrigins);
-  const allowAnyExtensionOrigin = env.nodeEnv !== 'production' || isLoopbackUrl(env.apiUrl);
 
   return {
     origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
@@ -58,7 +44,9 @@ export function buildCorsOptions(env: ApiEnv) {
         return;
       }
 
-      if (allowAnyExtensionOrigin && normalizedOrigin && isExtensionOrigin(normalizedOrigin)) {
+      // Any browser extension origin is allowed; real security is enforced by
+      // installation session tokens, bind flow, and auth/session validation.
+      if (normalizedOrigin && isExtensionOrigin(normalizedOrigin)) {
         callback(null, true);
         return;
       }
