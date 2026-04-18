@@ -171,8 +171,18 @@ for i in $(seq 1 60); do
 done
 
 echo "==> Post-deploy smoke checks"
+API_HOST_PORT="$(grep -E "^API_HOST_PORT=" .env.docker | head -1 | cut -d= -f2- | xargs || true)"
+WEB_HOST_PORT="$(grep -E "^WEB_HOST_PORT=" .env.docker | head -1 | cut -d= -f2- | xargs || true)"
+if [[ -z "$API_HOST_PORT" ]]; then
+  echo "ERROR: API_HOST_PORT is missing or empty in .env.docker"
+  exit 1
+fi
+if [[ -z "$WEB_HOST_PORT" ]]; then
+  echo "ERROR: WEB_HOST_PORT is missing or empty in .env.docker"
+  exit 1
+fi
 _smoke_fail=0
-for _endpoint in "http://127.0.0.1:4000/health" "http://127.0.0.1:4000/ready"; do
+for _endpoint in "http://127.0.0.1:${API_HOST_PORT}/health" "http://127.0.0.1:${API_HOST_PORT}/ready"; do
   if curl -sf --max-time 10 "$_endpoint" > /dev/null; then
     echo "  OK: ${_endpoint}"
   else
@@ -180,10 +190,10 @@ for _endpoint in "http://127.0.0.1:4000/health" "http://127.0.0.1:4000/ready"; d
     _smoke_fail=1
   fi
 done
-if curl -sf --max-time 15 "http://127.0.0.1:3000" > /dev/null; then
-  echo "  OK: http://127.0.0.1:3000 (web)"
+if curl -sf --max-time 15 "http://127.0.0.1:${WEB_HOST_PORT}" > /dev/null; then
+  echo "  OK: http://127.0.0.1:${WEB_HOST_PORT} (web)"
 else
-  echo "  FAIL: http://127.0.0.1:3000 (web)"
+  echo "  FAIL: http://127.0.0.1:${WEB_HOST_PORT} (web)"
   _smoke_fail=1
 fi
 if [ "$_smoke_fail" = "1" ]; then
