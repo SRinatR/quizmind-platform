@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 
 import { ExtensionControlController } from '../src/extension/extension-control.controller';
 
@@ -209,11 +209,12 @@ test('ExtensionControlController.answerV2 proxies extension runtime AI payload t
   assert.equal(response.ok, true);
   assert.equal((response.data as any).id, 'gen_1');
   assert.equal((response.data as any).provider, 'openrouter');
-  assert.equal((capturedRequest as any)?.workspaceId, 'ws_1');
   assert.equal((capturedRequest as any)?.model, 'openrouter/auto');
   assert.equal((capturedRequest as any)?.temperature, 0.1);
   assert.equal((capturedRequest as any)?.maxTokens, 222);
-  assert.equal((capturedSession as any)?.workspaces?.[0]?.id, 'ws_1');
+  assert.equal((capturedRequest as any)?.stream, false);
+  assert.equal((capturedSession as any)?.user?.id, 'user_1');
+  assert.equal((capturedSession as any)?.personaKey, 'extension-installation');
 });
 
 test('ExtensionControlController.listExtensionModels returns extension-friendly model shape', async () => {
@@ -277,5 +278,112 @@ test('ExtensionControlController.listExtensionModels returns extension-friendly 
   assert.deepEqual(
     (imageResponse.data as any).models.map((entry: Record<string, unknown>) => entry.id),
     ['gpt-4.1-mini'],
+  );
+});
+
+function makeInstallationSession() {
+  return {
+    async resolveInstallationSession() {
+      return {
+        installation: {
+          installationId: 'inst_1',
+          userId: 'user_1',
+        },
+      };
+    },
+    recordAiFailureSafely: async () => undefined,
+  };
+}
+
+test('ExtensionControlController.answerV2 rejects request when model is missing', async () => {
+  const controller = new ExtensionControlController(
+    {} as any,
+    makeInstallationSession() as any,
+    {} as any,
+  );
+
+  await assert.rejects(
+    () =>
+      controller.answerV2(
+        {
+          messages: [{ role: 'user', content: 'Hello!' }],
+        } as any,
+        'Bearer installation-token',
+      ),
+    (err: unknown) => {
+      assert.ok(err instanceof BadRequestException);
+      assert.match(err.message, /missing a required model id/i);
+      return true;
+    },
+  );
+});
+
+test('ExtensionControlController.chatV2 rejects request when model is empty string', async () => {
+  const controller = new ExtensionControlController(
+    {} as any,
+    makeInstallationSession() as any,
+    {} as any,
+  );
+
+  await assert.rejects(
+    () =>
+      controller.chatV2(
+        {
+          model: '   ',
+          messages: [{ role: 'user', content: 'Hello!' }],
+        } as any,
+        'Bearer installation-token',
+      ),
+    (err: unknown) => {
+      assert.ok(err instanceof BadRequestException);
+      assert.match(err.message, /missing a required model id/i);
+      return true;
+    },
+  );
+});
+
+test('ExtensionControlController.screenshotV2 rejects request when model is missing', async () => {
+  const controller = new ExtensionControlController(
+    {} as any,
+    makeInstallationSession() as any,
+    {} as any,
+  );
+
+  await assert.rejects(
+    () =>
+      controller.screenshotV2(
+        {
+          messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,abc' } }] }],
+        } as any,
+        'Bearer installation-token',
+      ),
+    (err: unknown) => {
+      assert.ok(err instanceof BadRequestException);
+      assert.match(err.message, /missing a required model id/i);
+      return true;
+    },
+  );
+});
+
+test('ExtensionControlController.multicheckV2 rejects request when model is missing', async () => {
+  const controller = new ExtensionControlController(
+    {} as any,
+    makeInstallationSession() as any,
+    {} as any,
+  );
+
+  await assert.rejects(
+    () =>
+      controller.multicheckV2(
+        {
+          messages: [{ role: 'user', content: 'Check this.' }],
+        } as any,
+        'Bearer installation-token',
+      ),
+    (err: unknown) => {
+      assert.ok(err instanceof BadRequestException);
+      assert.match(err.message, /missing a required model id/i);
+      return true;
+    },
   );
 });
