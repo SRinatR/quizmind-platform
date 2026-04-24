@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   const accessToken = await getAccessTokenFromCookies();
 
   if (!accessToken) {
-    return badRequest('Sign in to activate OpenRouter routing.', 401);
+    return badRequest('Sign in to activate RouterAI routing.', 401);
   }
 
   const body = (await request.json().catch(() => null)) as { secret?: unknown; defaultModel?: unknown } | null;
@@ -34,8 +34,6 @@ export async function POST(request: Request) {
   const defaultModel = typeof body?.defaultModel === 'string' ? body.defaultModel.trim() || null : null;
 
   const authHeader = { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' };
-
-  // Step 1: fetch governance to find the most recently updated active platform OpenRouter credential
   const governanceResponse = await fetch(`${API_URL}/admin/providers`, {
     cache: 'no-store',
     headers: authHeader,
@@ -48,41 +46,36 @@ export async function POST(request: Request) {
   const governanceEnvelope = (await governanceResponse.json().catch(() => null)) as
     | ApiEnvelope<AdminProviderGovernanceSnapshot>
     | null;
-
   const governance = governanceEnvelope?.ok ? governanceEnvelope.data : null;
 
   if (!governance) {
     return badRequest('Unable to parse provider governance response.');
   }
 
-  // Pick newest active platform OpenRouter credential
   const activePlatformCreds = governance.items
-    .filter((item) => item.provider === 'openrouter' && item.ownerType === 'platform' && !item.revokedAt)
+    .filter((item) => item.provider === 'routerai' && item.ownerType === 'platform' && !item.revokedAt)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-
   const existingCred = activePlatformCreds[0] ?? null;
   let credentialUpdatedAt = existingCred?.updatedAt;
 
   if (!secret && !existingCred) {
-    return badRequest('OpenRouter API key is required because no active platform OpenRouter credential exists.');
+    return badRequest('RouterAI API key is required because no active platform RouterAI credential exists.');
   }
 
   if (secret) {
-    // Step 2: rotate existing credential or create new one
-    const credUrl = existingCred
-      ? `${API_URL}/providers/credentials/rotate`
-      : `${API_URL}/providers/credentials`;
-
-    const credBody = existingCred
-      ? { credentialId: existingCred.id, secret }
-      : { provider: 'openrouter', ownerType: 'platform', secret };
-
-    const credResponse = await fetch(credUrl, {
-      method: 'POST',
-      cache: 'no-store',
-      headers: authHeader,
-      body: JSON.stringify(credBody),
-    });
+    const credResponse = await fetch(
+      existingCred ? `${API_URL}/providers/credentials/rotate` : `${API_URL}/providers/credentials`,
+      {
+        method: 'POST',
+        cache: 'no-store',
+        headers: authHeader,
+        body: JSON.stringify(
+          existingCred
+            ? { credentialId: existingCred.id, secret }
+            : { provider: 'routerai', ownerType: 'platform', secret },
+        ),
+      },
+    );
 
     const credEnvelope = (await credResponse.json().catch(() => null)) as
       | ApiEnvelope<ProviderCredentialMutationResult>
@@ -95,14 +88,13 @@ export async function POST(request: Request) {
           ? Array.isArray(credEnvelope.message)
             ? credEnvelope.message[0]
             : credEnvelope.message
-          : 'Unable to save OpenRouter credential.';
-      return badRequest(msg ?? 'Unable to save OpenRouter credential.', credResponse.status || 500);
+          : 'Unable to save RouterAI credential.';
+      return badRequest(msg ?? 'Unable to save RouterAI credential.', credResponse.status || 500);
     }
 
     credentialUpdatedAt = credEnvelope.data.credential.updatedAt;
   }
 
-  // Step 3: apply platform-only OpenRouter policy
   const policyResponse = await fetch(`${API_URL}/admin/providers/policy`, {
     method: 'POST',
     cache: 'no-store',
@@ -114,10 +106,10 @@ export async function POST(request: Request) {
       allowDirectProviderMode: false,
       allowWorkspaceSharedCredentials: false,
       requireAdminApproval: false,
-      providers: ['openrouter'],
-      defaultProvider: 'openrouter',
+      providers: ['routerai'],
+      defaultProvider: 'routerai',
       defaultModel,
-      reason: 'Platform-managed OpenRouter routing. BYOK and direct provider mode disabled.',
+      reason: 'Platform-managed RouterAI routing. BYOK and direct provider mode disabled.',
     }),
   });
 

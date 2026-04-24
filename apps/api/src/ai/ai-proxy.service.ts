@@ -9,7 +9,6 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
-  TooManyRequestsException,
 } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
 import {
@@ -34,10 +33,11 @@ import {
   type AiProxyQuotaCounterRecord,
 } from './ai-proxy.repository';
 import { OpenRouterCatalogService } from './openrouter-catalog.service';
+import { RouterAiCatalogService } from './routerai-catalog.service';
 import { WalletRepository } from '../wallet/wallet.repository';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
-const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'openai', 'polza']);
+const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'routerai', 'openai', 'polza']);
 const knownProviders = new Set<AiProvider>(providerRegistry.map((provider) => provider.provider));
 const supportedMessageRoles = new Set(['system', 'user', 'assistant', 'tool']);
 const openAiApiUrl = 'https://api.openai.com/v1';
@@ -48,6 +48,10 @@ type AiProxyUsage = {
   completionTokens?: number;
   totalTokens?: number;
 };
+
+function createTooManyRequestsException(message: string): HttpException {
+  return new HttpException(message, 429);
+}
 
 type NormalizedMessageContent =
   | string
@@ -414,6 +418,8 @@ export class AiProxyService {
     private readonly aiHistoryService: AiHistoryService,
     @Inject(OpenRouterCatalogService)
     private readonly openRouterCatalogService: OpenRouterCatalogService,
+    @Inject(RouterAiCatalogService)
+    private readonly routerAiCatalogService: RouterAiCatalogService,
     @Inject(WalletRepository)
     private readonly walletRepository: WalletRepository,
   ) {}
@@ -450,6 +456,14 @@ export class AiProxyService {
               temperature: invocation.request.temperature,
               maxTokens: invocation.request.maxTokens,
             })
+          : invocation.provider === 'routerai'
+            ? await this.invokeRouterAi({
+                apiKey: invocation.apiKey,
+                model: invocation.resolvedModel,
+                messages: invocation.request.messages,
+                temperature: invocation.request.temperature,
+                maxTokens: invocation.request.maxTokens,
+              })
           : invocation.provider === 'openai'
             ? await this.invokeOpenAi({
                 apiKey: invocation.apiKey,
@@ -578,6 +592,14 @@ export class AiProxyService {
               temperature: invocation.request.temperature,
               maxTokens: invocation.request.maxTokens,
             })
+          : invocation.provider === 'routerai'
+            ? await this.invokeRouterAiStream({
+                apiKey: invocation.apiKey,
+                model: invocation.resolvedModel,
+                messages: invocation.request.messages,
+                temperature: invocation.request.temperature,
+                maxTokens: invocation.request.maxTokens,
+              })
           : invocation.provider === 'openai'
             ? await this.invokeOpenAiStream({
                 apiKey: invocation.apiKey,
@@ -684,7 +706,7 @@ export class AiProxyService {
     };
     const quotaLimit: number | undefined = undefined;
 
-    if (provider !== 'openrouter' && !policy.allowDirectProviderMode) {
+    if (provider !== 'openrouter' && provider !== 'routerai' && !policy.allowDirectProviderMode) {
       throw new ForbiddenException(
         policy.reason ?? `Direct provider mode is disabled for provider "${provider}".`,
       );
@@ -717,7 +739,7 @@ export class AiProxyService {
     const keySource = keyMaterial.keySource;
     const apiKey = keyMaterial.apiKey;
 
-    if (provider !== 'openrouter' && keySource !== 'user') {
+    if (provider !== 'openrouter' && provider !== 'routerai' && keySource !== 'user') {
       throw new BadRequestException(
         `Provider "${provider}" requires useOwnKey=true because platform-managed direct routing is not configured.`,
       );
@@ -810,7 +832,7 @@ export class AiProxyService {
     model: string;
     requestedUseOwnKey?: boolean;
   }): Promise<KeyMaterialResolution> {
-    if (input.provider !== 'openrouter' && !input.policy.allowDirectProviderMode) {
+    if (input.provider !== 'openrouter' && input.provider !== 'routerai' && !input.policy.allowDirectProviderMode) {
       throw new ForbiddenException(
         input.policy.reason ?? `Direct provider mode is disabled for provider "${input.provider}".`,
       );
@@ -908,7 +930,7 @@ export class AiProxyService {
       return ['user'];
     }
 
-    if (input.provider !== 'openrouter') {
+    if (input.provider !== 'openrouter' && input.provider !== 'routerai') {
       return ['user'];
     }
 
@@ -1009,15 +1031,22 @@ export class AiProxyService {
 
     let allModels: ProviderModelCatalogEntry[];
 
-    if (isOpenRouterPlatformManaged) {
+    const isRouterAiPlatformManaged =
+      policy.providers.includes('routerai') && policy.allowPlatformManaged;
+
+    if (isOpenRouterPlatformManaged || isRouterAiPlatformManaged) {
       // Fetch the live OpenRouter catalog. Falls back to [] on failure so the
       // static fallback below keeps things working.
-      const liveOpenRouterModels = await this.openRouterCatalogService.getLiveModels();
+      const [liveOpenRouterModels, liveRouterAiModels] = await Promise.all([
+        isOpenRouterPlatformManaged ? this.openRouterCatalogService.getLiveModels() : Promise.resolve([]),
+        isRouterAiPlatformManaged ? this.routerAiCatalogService.getLiveModels() : Promise.resolve([]),
+      ]);
+      const liveModels = [...liveOpenRouterModels, ...liveRouterAiModels];
 
-      if (liveOpenRouterModels.length > 0) {
+      if (liveModels.length > 0) {
         // Ensure openrouter/auto (virtual routing entry) is always present.
         const hasAutoEntry = liveOpenRouterModels.some((m) => m.modelId === 'openrouter/auto');
-        const extraEntries: ProviderModelCatalogEntry[] = hasAutoEntry
+        const extraEntries: ProviderModelCatalogEntry[] = !isOpenRouterPlatformManaged || hasAutoEntry
           ? []
           : [
               {
@@ -1031,12 +1060,13 @@ export class AiProxyService {
               },
             ];
 
-        // Non-OpenRouter providers still come from the static catalog.
-        const staticNonOpenRouterModels = listAvailableModelsForPlan().filter(
-          (entry) => entry.provider !== 'openrouter' && policy.providers.includes(entry.provider),
+        // Providers without a live catalog response still come from the static catalog.
+        const providersWithLiveModels = new Set(liveModels.map((entry) => entry.provider));
+        const staticModels = listAvailableModelsForPlan().filter(
+          (entry) => !providersWithLiveModels.has(entry.provider) && policy.providers.includes(entry.provider),
         );
 
-        allModels = [...extraEntries, ...liveOpenRouterModels, ...staticNonOpenRouterModels];
+        allModels = [...extraEntries, ...liveModels, ...staticModels];
       } else {
         // Live fetch failed or no key configured — fall back to static catalog.
         allModels = listAvailableModelsForPlan().filter((entry) => policy.providers.includes(entry.provider));
@@ -1111,11 +1141,11 @@ export class AiProxyService {
       );
     }
 
-    if (input.provider !== 'openrouter') {
-      throw new BadRequestException(`Platform-managed key routing is not configured for provider "${input.provider}".`);
-    }
-
-    const apiKey = this.env.openRouterApiKey?.trim();
+    const apiKey = input.provider === 'routerai'
+      ? this.env.routerAiApiKey?.trim()
+      : input.provider === 'openrouter'
+        ? this.env.openRouterApiKey?.trim()
+        : undefined;
 
     if (!apiKey) {
       const persistedPlatformCredential = await this.aiProxyRepository.findLatestPlatformCredential({
@@ -1124,6 +1154,16 @@ export class AiProxyService {
 
       if (persistedPlatformCredential) {
         return this.decryptCredential(persistedPlatformCredential);
+      }
+
+      if (input.provider === 'routerai') {
+        throw new ServiceUnavailableException(
+          'Platform RouterAI credentials are not configured. Add ROUTERAI_API_KEY or store a platform credential.',
+        );
+      }
+
+      if (input.provider !== 'openrouter') {
+        throw new BadRequestException(`Platform-managed key routing is not configured for provider "${input.provider}".`);
       }
 
       throw new ServiceUnavailableException(
@@ -1209,7 +1249,7 @@ export class AiProxyService {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
       if (response.status === 429) {
-        throw new TooManyRequestsException(
+        throw createTooManyRequestsException(
           `OpenRouter provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
         );
       }
@@ -1221,6 +1261,56 @@ export class AiProxyService {
 
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
       throw new BadGatewayException('OpenRouter returned a non-object response payload.');
+    }
+
+    return payload as OpenRouterResponsePayload;
+  }
+
+  private async invokeRouterAi(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterResponsePayload> {
+    const endpoint = `${trimTrailingSlash(this.env.routerAiApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: input.model,
+      messages: input.messages,
+      stream: false,
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.routerAiTimeoutMs,
+      }),
+    });
+    const rawResponseText = await response.text();
+    const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+
+    if (!response.ok) {
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      if (response.status === 429) {
+        throw createTooManyRequestsException(
+          `RouterAI provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
+
+      throw new BadGatewayException(
+        `RouterAI request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      throw new BadGatewayException('RouterAI returned a non-object response payload.');
     }
 
     return payload as OpenRouterResponsePayload;
@@ -1259,7 +1349,7 @@ export class AiProxyService {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
       if (response.status === 429) {
-        throw new TooManyRequestsException(
+        throw createTooManyRequestsException(
           `OpenAI provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
         );
       }
@@ -1309,7 +1399,7 @@ export class AiProxyService {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
       if (response.status === 429) {
-        throw new TooManyRequestsException(
+        throw createTooManyRequestsException(
           `Polza provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
         );
       }
@@ -1366,7 +1456,7 @@ export class AiProxyService {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
       if (response.status === 429) {
-        throw new TooManyRequestsException(
+        throw createTooManyRequestsException(
           `OpenRouter provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
         );
       }
@@ -1429,7 +1519,7 @@ export class AiProxyService {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
       if (response.status === 429) {
-        throw new TooManyRequestsException(
+        throw createTooManyRequestsException(
           `OpenAI provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
         );
       }
@@ -1441,6 +1531,66 @@ export class AiProxyService {
 
     if (!response.body) {
       throw new BadGatewayException('OpenAI returned an empty streaming payload.');
+    }
+
+    return {
+      stream: response.body,
+      contentType: response.headers.get('content-type')?.trim() || 'text/event-stream; charset=utf-8',
+      abort: () => {
+        if (!abortController.signal.aborted) {
+          abortController.abort('stream-aborted');
+        }
+      },
+    };
+  }
+
+  private async invokeRouterAiStream(input: {
+    apiKey: string;
+    model: string;
+    messages: Array<{ role: 'system' | 'user' | 'assistant' | 'tool'; content: NormalizedMessageContent; name?: string }>;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<OpenRouterStreamInvocationResult> {
+    const endpoint = `${trimTrailingSlash(this.env.routerAiApiUrl)}/chat/completions`;
+    const requestBody: Record<string, unknown> = {
+      model: input.model,
+      messages: input.messages,
+      stream: true,
+      ...(typeof input.temperature === 'number' ? { temperature: input.temperature } : {}),
+      ...(typeof input.maxTokens === 'number' ? { max_tokens: input.maxTokens } : {}),
+    };
+    const abortController = new AbortController();
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+      signal: createRequestAbortSignal({
+        timeoutMs: this.env.routerAiTimeoutMs,
+        abortController,
+      }),
+    });
+
+    if (!response.ok) {
+      const rawResponseText = await response.text();
+      const payload: unknown = rawResponseText.length > 0 ? this.tryParseJson(rawResponseText) : {};
+      const responseErrorMessage = readResponseErrorMessage(payload);
+
+      if (response.status === 429) {
+        throw createTooManyRequestsException(
+          `RouterAI provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+        );
+      }
+
+      throw new BadGatewayException(
+        `RouterAI request failed with status ${response.status}${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
+      );
+    }
+
+    if (!response.body) {
+      throw new BadGatewayException('RouterAI returned an empty streaming payload.');
     }
 
     return {
@@ -1492,7 +1642,7 @@ export class AiProxyService {
       const responseErrorMessage = readResponseErrorMessage(payload);
 
       if (response.status === 429) {
-        throw new TooManyRequestsException(
+        throw createTooManyRequestsException(
           `Polza provider rate limit exceeded${responseErrorMessage ? `: ${responseErrorMessage}` : '.'}`,
         );
       }
@@ -1727,7 +1877,7 @@ export class AiProxyService {
   }
 
   private resolveProxyFailureCode(error: unknown): string {
-    if (error instanceof TooManyRequestsException) {
+    if (error instanceof HttpException && error.getStatus() === 429) {
       return 'provider_rate_limited';
     }
 

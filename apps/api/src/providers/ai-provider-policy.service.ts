@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { BadRequestException, ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { loadApiEnv } from '@quizmind/config';
 import {
   type AiAccessPolicyMode,
   type AiProvider,
@@ -80,6 +81,10 @@ function readJsonBoolean(value: unknown): boolean | undefined {
 }
 
 function createVirtualPolicy(): AiProviderPolicySnapshot {
+  const env = loadApiEnv();
+  const defaultProvider = env.platformAiProvider;
+  const defaultModel = defaultProvider === 'routerai' ? 'openai/gpt-4o-mini' : 'openrouter/auto';
+
   return {
     scopeType: 'global',
     scopeKey: 'global',
@@ -88,9 +93,9 @@ function createVirtualPolicy(): AiProviderPolicySnapshot {
     updatedAt: new Date(0).toISOString(),
     ...buildDefaultAiAccessPolicy({
       mode: 'platform_only',
-      providers: ['openrouter'],
-      defaultProvider: 'openrouter',
-      defaultModel: 'openrouter/auto',
+      providers: [defaultProvider],
+      defaultProvider,
+      defaultModel,
       reason: 'No persisted AI provider policy exists yet, so the global platform-only default applies.',
     }),
   };

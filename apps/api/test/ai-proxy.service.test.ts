@@ -8,7 +8,11 @@ import { encryptSecret } from '@quizmind/secrets';
 import { type CurrentSessionSnapshot } from '../src/auth/auth.types';
 import { AiProxyRepository } from '../src/ai/ai-proxy.repository';
 import { AiProxyService } from '../src/ai/ai-proxy.service';
+import { type OpenRouterCatalogService } from '../src/ai/openrouter-catalog.service';
+import { normalizeRouterAiCatalogPayload, type RouterAiCatalogService } from '../src/ai/routerai-catalog.service';
+import { type AiHistoryService } from '../src/history/ai-history.service';
 import { type AiProviderPolicyService } from '../src/providers/ai-provider-policy.service';
+import { type WalletRepository } from '../src/wallet/wallet.repository';
 
 function createSession(): CurrentSessionSnapshot {
   return {
@@ -96,9 +100,25 @@ function createService(
   const aiProviderPolicyService: Partial<AiProviderPolicyService> = {
     resolvePolicyForWorkspace: async () => createPolicy(policyOverrides),
   };
+  const aiHistoryService: Partial<AiHistoryService> = {
+    persistContent: async () => undefined,
+  };
+  const openRouterCatalogService: Partial<OpenRouterCatalogService> = {
+    getLiveModels: async () => [],
+  };
+  const routerAiCatalogService: Partial<RouterAiCatalogService> = {
+    getLiveModels: async () => [],
+  };
+  const walletRepository: Partial<WalletRepository> = {
+    findBalanceForUser: async () => 1000,
+  };
   const service = new AiProxyService(
     aiProviderPolicyService as AiProviderPolicyService,
     repository as AiProxyRepository,
+    aiHistoryService as AiHistoryService,
+    openRouterCatalogService as OpenRouterCatalogService,
+    routerAiCatalogService as RouterAiCatalogService,
+    walletRepository as WalletRepository,
   );
 
   (service as any).env = {
@@ -126,6 +146,10 @@ function createService(
     openRouterApiKey: 'sk-or-test_123456789',
     openRouterAppName: 'QuizMind Test',
     openRouterTimeoutMs: 30000,
+    platformAiProvider: 'openrouter',
+    routerAiApiUrl: 'https://routerai.ru/api/v1',
+    routerAiApiKey: 'routerai-test_123456789',
+    routerAiTimeoutMs: 30000,
     polzaApiUrl: 'https://api.polza.ai/v1',
     polzaApiKey: undefined,
     polzaTimeoutMs: 30000,
@@ -528,6 +552,112 @@ test('AiProxyService routes direct Polza BYOK requests and normalizes polza mode
   assert.equal(observedBody?.model, 'gpt-4o-mini');
 });
 
+test('AiProxyService routes platform-managed RouterAI requests with RouterAI-safe body and headers', async (t) => {
+  let recordInput: unknown;
+  let observedUrl = '';
+  let observedHeaders: Record<string, string> = {};
+  let observedBody: Record<string, unknown> | null = null;
+  const { service } = createService({
+    findWorkspacePlanCode: async () => 'pro',
+    recordProxyEvent: async (input: any) => {
+      recordInput = input;
+
+      return {
+        id: 'quota_1',
+        workspaceId: 'ws_1',
+        key: 'limit.requests_per_day',
+        consumed: 2,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        createdAt: input.occurredAt,
+        updatedAt: input.occurredAt,
+      } as any;
+    },
+  }, {
+    mode: 'platform_only',
+    providers: ['routerai'],
+    defaultProvider: 'routerai',
+    defaultModel: 'openai/gpt-4o-mini',
+    allowPlatformManaged: true,
+    allowBringYourOwnKey: false,
+    allowDirectProviderMode: false,
+    allowVisionOnUserKeys: true,
+  });
+  const previousFetch = globalThis.fetch;
+
+  globalThis.fetch = (async (url, init) => {
+    observedUrl = String(url);
+    observedHeaders = init?.headers as Record<string, string>;
+    observedBody = init?.body ? (JSON.parse(String(init.body)) as Record<string, unknown>) : null;
+
+    return new Response(
+      JSON.stringify({
+        id: 'chatcmpl_routerai_1',
+        model: 'openai/gpt-4o-mini',
+        usage: {
+          prompt_tokens: 11,
+          completion_tokens: 13,
+          total_tokens: 24,
+        },
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Hello from RouterAI.',
+            },
+          },
+        ],
+      }),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      },
+    );
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  const result = await service.proxyForCurrentSession(createSession(), {
+    model: 'openai/gpt-4o-mini',
+    temperature: 0.2,
+    maxTokens: 77,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Describe this.' },
+          { type: 'image_url', image_url: { url: 'https://example.test/image.png' } },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(result.provider, 'routerai');
+  assert.equal(result.keySource, 'platform');
+  assert.equal(result.usage?.totalTokens, 24);
+  assert.equal(result.quota.decremented, true);
+  assert.equal((recordInput as any).consumeQuota, true);
+  assert.match(observedUrl, /^https:\/\/routerai\.ru\/api\/v1\/chat\/completions$/);
+  assert.equal(observedHeaders.Authorization, 'Bearer routerai-test_123456789');
+  assert.equal(observedHeaders['Content-Type'], 'application/json');
+  assert.equal(observedHeaders['HTTP-Referer'], undefined);
+  assert.equal(observedHeaders['X-OpenRouter-Title'], undefined);
+  assert.equal(observedHeaders['X-Title'], undefined);
+  assert.equal(observedBody?.model, 'openai/gpt-4o-mini');
+  assert.equal(observedBody?.stream, false);
+  assert.equal(observedBody?.temperature, 0.2);
+  assert.equal(observedBody?.max_tokens, 77);
+  assert.equal(observedBody?.max_completion_tokens, undefined);
+  assert.equal(observedBody?.max_output_tokens, undefined);
+  assert.deepEqual((observedBody?.messages as any[])[0]?.content?.[1], {
+    type: 'image_url',
+    image_url: { url: 'https://example.test/image.png' },
+  });
+});
+
 test('AiProxyService rejects direct provider requests when allowDirectProviderMode is disabled', async (t) => {
   const { service } = createService(
     {
@@ -823,6 +953,43 @@ test('AiProxyService.listModelsForCurrentSession applies allowed model tag filte
   assert.equal(result.defaultModel, 'gpt-4.1-mini');
   assert.deepEqual(result.allowedModelTags, ['vision']);
   assert.deepEqual(result.models.map((entry) => entry.modelId), ['gpt-4.1-mini']);
+});
+
+test('AiProxyService.listModelsForCurrentSession returns RouterAI models when RouterAI is selected', async () => {
+  const { service } = createService(
+    {
+      findWorkspacePlanCode: async () => 'pro',
+    },
+    {
+      providers: ['routerai'],
+      defaultProvider: 'routerai',
+      defaultModel: 'openai/gpt-4o-mini',
+      allowPlatformManaged: true,
+    },
+  );
+
+  const result = await service.listModelsForCurrentSession(createSession());
+
+  assert.equal(result.defaultProvider, 'routerai');
+  assert.equal(result.defaultModel, 'openai/gpt-4o-mini');
+  assert.ok(result.providers.some((entry) => entry.provider === 'routerai'));
+  assert.ok(result.models.every((entry) => entry.provider === 'routerai'));
+  assert.ok(result.models.some((entry) => entry.modelId === 'openai/gpt-4o-mini'));
+});
+
+test('RouterAI catalog normalizer handles supported response envelopes', () => {
+  const payloads = [
+    { data: [{ id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', architecture: { input_modalities: ['text', 'image'] } }] },
+    [{ data: [{ id: 'google/gemini-2.5-flash', name: 'Gemini', supported_parameters: ['temperature'] }] }],
+    [{ id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' }],
+  ];
+
+  const normalized = payloads.map((payload) => normalizeRouterAiCatalogPayload(payload));
+
+  assert.equal(normalized[0][0]?.modelId, 'openai/gpt-4o-mini');
+  assert.deepEqual(normalized[0][0]?.capabilityTags, ['text', 'vision']);
+  assert.equal(normalized[1][0]?.modelId, 'google/gemini-2.5-flash');
+  assert.equal(normalized[2][0]?.modelId, 'anthropic/claude-3.5-sonnet');
 });
 
 test('AiProxyService streams proxy responses and records usage metadata', async (t) => {

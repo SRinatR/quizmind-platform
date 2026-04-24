@@ -19,6 +19,26 @@ test('loadApiEnv derives strict CORS and JWT defaults from app and api URLs', ()
   assert.equal(env.trustProxyHops, 0);
 });
 
+test('loadApiEnv reads RouterAI settings and platform AI provider', () => {
+  const env = loadApiEnv({
+    NODE_ENV: 'development',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    APP_URL: 'https://app.quizmind.dev',
+    API_URL: 'https://api.quizmind.dev',
+    JWT_SECRET: 'super-secret',
+    JWT_REFRESH_SECRET: 'refresh-secret',
+    PLATFORM_AI_PROVIDER: 'routerai',
+    ROUTERAI_API_URL: 'https://routerai.example/api/v1',
+    ROUTERAI_API_KEY: 'routerai-test-key',
+    ROUTERAI_TIMEOUT_MS: '12345',
+  });
+
+  assert.equal(env.platformAiProvider, 'routerai');
+  assert.equal(env.routerAiApiUrl, 'https://routerai.example/api/v1');
+  assert.equal(env.routerAiApiKey, 'routerai-test-key');
+  assert.equal(env.routerAiTimeoutMs, 12345);
+});
+
 test('loadApiEnv keeps browser extension origins in CORS allowlist', () => {
   const env = loadApiEnv({
     NODE_ENV: 'development',

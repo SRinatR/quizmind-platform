@@ -85,6 +85,10 @@ export interface ApiEnv extends PlatformEnv {
   openRouterApiKey?: string;
   openRouterAppName: string;
   openRouterTimeoutMs: number;
+  routerAiApiUrl: string;
+  routerAiApiKey?: string;
+  routerAiTimeoutMs: number;
+  platformAiProvider: 'openrouter' | 'routerai';
   polzaApiUrl: string;
   polzaApiKey?: string;
   polzaTimeoutMs: number;
@@ -217,6 +221,10 @@ function resolveBillingProvider(source: EnvSource): ApiEnv['billingProvider'] {
   return source.BILLING_PROVIDER === 'stripe' ? 'stripe' : 'mock';
 }
 
+function resolvePlatformAiProvider(source: EnvSource): ApiEnv['platformAiProvider'] {
+  return source.PLATFORM_AI_PROVIDER === 'routerai' ? 'routerai' : 'openrouter';
+}
+
 export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
   const platformEnv = loadPlatformEnv(source);
 
@@ -252,6 +260,10 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     openRouterApiKey: source.OPENROUTER_API_KEY,
     openRouterAppName: source.OPENROUTER_APP_NAME ?? 'QuizMind Platform',
     openRouterTimeoutMs: readNumberEnv(source, 'OPENROUTER_TIMEOUT_MS', 45000),
+    routerAiApiUrl: source.ROUTERAI_API_URL ?? 'https://routerai.ru/api/v1',
+    routerAiApiKey: source.ROUTERAI_API_KEY,
+    routerAiTimeoutMs: readNumberEnv(source, 'ROUTERAI_TIMEOUT_MS', 45000),
+    platformAiProvider: resolvePlatformAiProvider(source),
     polzaApiUrl: source.POLZA_API_URL ?? 'https://api.polza.ai/v1',
     polzaApiKey: source.POLZA_API_KEY,
     polzaTimeoutMs: readNumberEnv(source, 'POLZA_TIMEOUT_MS', 45000),
@@ -379,6 +391,26 @@ export function validateApiEnv(env: ApiEnv): EnvValidationIssue[] {
     issues.push({
       key: 'OPENROUTER_TIMEOUT_MS',
       message: 'OPENROUTER_TIMEOUT_MS must be an integer of at least 1000 milliseconds.',
+    });
+  }
+
+  if (isBlank(env.routerAiApiUrl)) {
+    issues.push({ key: 'ROUTERAI_API_URL', message: 'ROUTERAI_API_URL must be defined.' });
+  } else if (!isValidUrl(env.routerAiApiUrl)) {
+    issues.push({ key: 'ROUTERAI_API_URL', message: 'ROUTERAI_API_URL must be a valid absolute URL.' });
+  }
+
+  if (!Number.isInteger(env.routerAiTimeoutMs) || env.routerAiTimeoutMs < 1_000) {
+    issues.push({
+      key: 'ROUTERAI_TIMEOUT_MS',
+      message: 'ROUTERAI_TIMEOUT_MS must be an integer of at least 1000 milliseconds.',
+    });
+  }
+
+  if (env.platformAiProvider !== 'openrouter' && env.platformAiProvider !== 'routerai') {
+    issues.push({
+      key: 'PLATFORM_AI_PROVIDER',
+      message: 'PLATFORM_AI_PROVIDER must be either "openrouter" or "routerai".',
     });
   }
 
