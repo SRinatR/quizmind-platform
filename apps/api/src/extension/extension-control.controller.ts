@@ -327,14 +327,14 @@ export class ExtensionControlController {
   async refreshInstallationSession(
     @Headers('authorization') authorization?: string,
   ) {
-    return this.handleRefreshInstallationSession(authorization);
+    return this.handleRefreshInstallationSession(authorization, '/extension/session/refresh');
   }
 
   @Post('extension/installations/session/refresh')
   async refreshInstallationSessionAlias(
     @Headers('authorization') authorization?: string,
   ) {
-    return this.handleRefreshInstallationSession(authorization);
+    return this.handleRefreshInstallationSession(authorization, '/extension/installations/session/refresh');
   }
 
   @Post('extension/bootstrap/v2')
@@ -342,7 +342,7 @@ export class ExtensionControlController {
     @Body() request?: Partial<ExtensionBootstrapRequestV2>,
     @Headers('authorization') authorization?: string,
   ) {
-    const installationSession = await this.requireInstallationSession(authorization);
+    const installationSession = await this.requireInstallationSession(authorization, '/extension/bootstrap/v2');
 
     return ok(await this.extensionControlService.bootstrapInstallationSession(installationSession, request));
   }
@@ -352,7 +352,7 @@ export class ExtensionControlController {
     @Body() eventEnvelope?: Partial<UsageEventPayload> & { events?: unknown[] },
     @Headers('authorization') authorization?: string,
   ) {
-    const installationSession = await this.requireInstallationSession(authorization);
+    const installationSession = await this.requireInstallationSession(authorization, '/extension/usage-events/v2');
     const rawEvents = Array.isArray(eventEnvelope?.events) ? eventEnvelope.events : [eventEnvelope];
     const normalizedEvents = rawEvents.map((rawEvent) => normalizeIncomingUsageEvent(rawEvent));
 
@@ -383,7 +383,7 @@ export class ExtensionControlController {
     @Body() request?: ExtensionAiRuntimeRequest,
     @Headers('authorization') authorization?: string,
   ) {
-    return ok(await this.proxyExtensionAiRuntime(request, authorization));
+    return ok(await this.proxyExtensionAiRuntime(request, authorization, '/extension/ai/answer'));
   }
 
   @Post('extension/ai/chat')
@@ -391,7 +391,7 @@ export class ExtensionControlController {
     @Body() request?: ExtensionAiRuntimeRequest,
     @Headers('authorization') authorization?: string,
   ) {
-    return ok(await this.proxyExtensionAiRuntime(request, authorization));
+    return ok(await this.proxyExtensionAiRuntime(request, authorization, '/extension/ai/chat'));
   }
 
   @Post('extension/ai/screenshot')
@@ -399,7 +399,7 @@ export class ExtensionControlController {
     @Body() request?: ExtensionAiRuntimeRequest,
     @Headers('authorization') authorization?: string,
   ) {
-    return ok(await this.proxyExtensionAiRuntime(request, authorization));
+    return ok(await this.proxyExtensionAiRuntime(request, authorization, '/extension/ai/screenshot'));
   }
 
   @Post('extension/ai/multicheck')
@@ -407,7 +407,7 @@ export class ExtensionControlController {
     @Body() request?: ExtensionAiRuntimeRequest,
     @Headers('authorization') authorization?: string,
   ) {
-    return ok(await this.proxyExtensionAiRuntime(request, authorization));
+    return ok(await this.proxyExtensionAiRuntime(request, authorization, '/extension/ai/multicheck'));
   }
 
   @Get('extension/ai/models')
@@ -415,7 +415,7 @@ export class ExtensionControlController {
     @Query('type') type?: string,
     @Headers('authorization') authorization?: string,
   ) {
-    const installationSession = await this.requireInstallationSession(authorization);
+    const installationSession = await this.requireInstallationSession(authorization, '/extension/ai/models');
 
     try {
       const session = buildInstallationRuntimeSession(installationSession);
@@ -450,8 +450,8 @@ export class ExtensionControlController {
     }
   }
 
-  private async handleRefreshInstallationSession(authorization?: string) {
-    const installationSession = await this.requireInstallationSession(authorization);
+  private async handleRefreshInstallationSession(authorization: string | undefined, endpoint: string) {
+    const installationSession = await this.requireInstallationSession(authorization, endpoint);
 
     return ok(await this.extensionControlService.refreshInstallationSessionForToken(installationSession));
   }
@@ -470,18 +470,22 @@ export class ExtensionControlController {
     return this.authService.getCurrentSession(accessToken);
   }
 
-  private async requireInstallationSession(authorization?: string) {
+  private async requireInstallationSession(authorization: string | undefined, endpoint: string) {
     const accessToken = parseBearerToken(authorization);
 
     if (!accessToken) {
       throw new UnauthorizedException('Missing installation bearer token.');
     }
 
-    return this.extensionControlService.resolveInstallationSession(accessToken);
+    return this.extensionControlService.resolveInstallationSession(accessToken, { endpoint });
   }
 
-  private async proxyExtensionAiRuntime(request: ExtensionAiRuntimeRequest | undefined, authorization?: string) {
-    const installationSession = await this.requireInstallationSession(authorization);
+  private async proxyExtensionAiRuntime(
+    request: ExtensionAiRuntimeRequest | undefined,
+    authorization: string | undefined,
+    endpoint: string,
+  ) {
+    const installationSession = await this.requireInstallationSession(authorization, endpoint);
 
     try {
       const session = buildInstallationRuntimeSession(installationSession);

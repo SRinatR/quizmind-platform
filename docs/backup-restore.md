@@ -74,7 +74,7 @@ These steps require credentials and infrastructure setup on the VPS that is outs
 
 ```bash
 cd /opt/quizmind-platform
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker stop api worker
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml stop api worker
 ```
 
 ### 2. Drop and recreate the database
@@ -95,7 +95,7 @@ gunzip -c "${BACKUP_FILE}" | docker exec -i quizmind-postgres psql -U postgres q
 ### 4. Restart the app
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker up -d
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ### 5. Verify

@@ -94,7 +94,7 @@ jobs:
           script_stop: false
           script: |
             cd ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}
-            DC="docker compose -f docker-compose.yml -f docker-compose.override.yml --env-file .env.docker"
+            DC="docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml"
             echo "==> Container status"
             $DC ps
             echo "==> api logs"

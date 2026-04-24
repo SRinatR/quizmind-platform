@@ -7,10 +7,10 @@ The deploy workflow SSHes into the server and runs `scripts/deploy-server.sh`.
 
 ---
 
-## Single Source of Truth: `.env.docker`
+## Single Source of Truth: `.env.prod`
 
 All DB credentials and runtime secrets are read exclusively from
-`/opt/quizmind-platform/.env.docker` on the server. There is no fallback to
+`/opt/quizmind-platform/.env.prod` on the server. There is no fallback to
 hardcoded values.
 
 The four DB variables must be internally consistent:
@@ -22,7 +22,13 @@ POSTGRES_DB=...
 DATABASE_URL=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>
 ```
 
-**Changing `POSTGRES_PASSWORD` in `.env.docker` alone does NOT update the stored
+The production preflight also requires `REDIS_URL`, `JWT_SECRET`,
+`JWT_REFRESH_SECRET`, `EXTENSION_TOKEN_SECRET`, and
+`PROVIDER_CREDENTIAL_SECRET` to be present and non-empty. `DATABASE_URL` must
+use the Docker service host `postgres`, and its username, password, and database
+name must match the `POSTGRES_*` values in the same `.env.prod`.
+
+**Changing `POSTGRES_PASSWORD` in `.env.prod` alone does NOT update the stored
 Postgres role.** The deploy script will catch the mismatch via the DB auth
 preflight and abort before any migration runs. See *Database Credential
 Management* below for the fix procedure.
@@ -47,7 +53,7 @@ Management* below for the fix procedure.
    ```bash
    git clone git@github.com:SRinatR/quizmind-platform.git /opt/quizmind-platform
    ```
-4. **`.env.docker` present** at `/opt/quizmind-platform/.env.docker` with all required secrets.
+4. **`.env.prod` present** at `/opt/quizmind-platform/.env.prod` with all required secrets.
 5. **Deploy script executable**:
    ```bash
    chmod +x /opt/quizmind-platform/scripts/deploy-server.sh
@@ -59,12 +65,12 @@ Management* below for the fix procedure.
 
 `scripts/deploy-server.sh`:
 - Accepts `--sha` / `--ref` arguments passed from CI
-- **Validates `.env.docker`** exists and that `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and `DATABASE_URL` are all present and non-empty — exits immediately if any are missing
+- **Validates `.env.prod`** exists, then runs `scripts/check-prod-env.mjs` before containers start. The preflight exits immediately if required DB, Redis, JWT, extension-token, or provider-credential secrets are missing or inconsistent
 - `cd /opt/quizmind-platform`
 - `git fetch origin && git reset --hard origin/main` — deploys the exact commit
-- Builds images with `docker compose … --env-file .env.docker build`
+- Builds images with `docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml build`
 - Starts postgres and redis; waits for each to be healthy
-- **DB auth preflight**: runs a `pg.Client` probe (Node.js `require('pg')`) inside the built `api` image using `DATABASE_URL` exactly as provided in `.env.docker` — no bash URL parsing. Exits non-zero immediately if authentication fails, before migrations or service startup
+- **DB auth preflight**: runs a `pg.Client` probe (Node.js `require('pg')`) inside the built `api` image using `DATABASE_URL` exactly as provided in `.env.prod` — no bash URL parsing. Exits non-zero immediately if authentication fails, before migrations or service startup
 - Runs Prisma migrations (exits non-zero if migrations fail)
 - Starts api, worker, and web
 - **Waits for api and web containers to report healthy** (up to 3 minutes each; exits non-zero on timeout)
@@ -92,7 +98,8 @@ Or run the compose command directly for a given ref:
 ```bash
 cd /opt/quizmind-platform
 git fetch origin && git reset --hard origin/main
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build
+node scripts/check-prod-env.mjs .env.prod
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
 
 To verify which ref is currently deployed:
@@ -106,16 +113,16 @@ cat /opt/quizmind-platform/.deployed-sha
 
 ```bash
 # Container status
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml ps
 
 # API logs
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs -f api
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml logs -f api
 
 # Web logs
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs -f web
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml logs -f web
 
 # Worker logs
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker logs -f worker
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml logs -f worker
 ```
 
 ---
@@ -135,7 +142,7 @@ The workflow resolves the ref from the explicit input (for `workflow_dispatch`) 
 
 ## Database Credential Management
 
-Production DB credentials are sourced exclusively from `.env.docker` on the server.
+Production DB credentials are sourced exclusively from `.env.prod` on the server.
 The four variables that must be consistent with each other are:
 
 ```
@@ -145,28 +152,28 @@ POSTGRES_DB=...
 DATABASE_URL=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>
 ```
 
-**Important:** `POSTGRES_PASSWORD` in `docker-compose.yml` / `.env.docker` is only used
+**Important:** `POSTGRES_PASSWORD` in `docker-compose.yml` / `.env.prod` is only used
 by Postgres during **initial volume initialisation**. If the data volume already exists,
 changing this variable does **not** update the stored role password — the deploy will
 fail the auth preflight check.
 
 ### If credentials have already drifted
 
-The deploy script validates `.env.docker` for required vars, then runs a
+The deploy script validates `.env.prod` for required vars, then runs a
 fail-fast auth preflight using `pg.Client` (Node.js) with the exact
-`DATABASE_URL` string from `.env.docker` — no bash URL parsing.
+`DATABASE_URL` string from `.env.prod` — no bash URL parsing.
 If it fails with `ERROR: DB authentication preflight FAILED`, choose one:
 
-**Option A — update the Postgres role to match `.env.docker`:**
+**Option A — update the Postgres role to match `.env.prod`:**
 ```bash
 # Connect using the password that the volume was originally initialised with:
 docker exec -it quizmind-postgres psql -U <current_user>
-ALTER USER <user> WITH PASSWORD '<new_password_from_env_docker>';
+ALTER USER <user> WITH PASSWORD '<new_password_from_env_prod>';
 \q
 ```
 
-**Option B — update `.env.docker` to match the stored password:**
-Edit `/opt/quizmind-platform/.env.docker` and set `POSTGRES_PASSWORD` and `DATABASE_URL`
+**Option B — update `.env.prod` to match the stored password:**
+Edit `/opt/quizmind-platform/.env.prod` and set `POSTGRES_PASSWORD` and `DATABASE_URL`
 to reflect the password that was used when the volume was first created.
 
 After either fix, re-run the deploy script.
@@ -179,7 +186,7 @@ Run these from the server to confirm a healthy state:
 
 ```bash
 # Container health status
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml ps
 
 # API liveness / readiness
 curl -sf http://127.0.0.1:4000/health && echo " OK /health"
@@ -231,7 +238,7 @@ All images except cAdvisor originate from Docker Hub and can be overridden:
 Docker Hub mirrors only proxy Docker Hub — they cannot resolve `gcr.io` images.
 Do not set `CADVISOR_IMAGE` to a Docker Hub mirror path.
 
-### GitVerse mirror — `.env.docker` block
+### GitVerse mirror — `.env.prod` block
 
 ```dotenv
 # Observability images via dh-mirror.gitverse.ru
@@ -248,7 +255,7 @@ BLACKBOX_EXPORTER_IMAGE=dh-mirror.gitverse.ru/prom/blackbox-exporter:v0.25.0
 CADVISOR_IMAGE=gcr.io/cadvisor/cadvisor:v0.49.1
 ```
 
-### Timeweb mirror — `.env.docker` block
+### Timeweb mirror — `.env.prod` block
 
 ```dotenv
 # Observability images via dockerhub.timeweb.cloud
@@ -268,7 +275,7 @@ CADVISOR_IMAGE=gcr.io/cadvisor/cadvisor:v0.49.1
 ### Required: `POSTGRES_EXPORTER_DSN`
 
 `docker-compose.observability.yml` requires `POSTGRES_EXPORTER_DSN` to be set
-in `.env.docker` — there is no hardcoded fallback. Example:
+in `.env.prod` — there is no hardcoded fallback. Example:
 
 ```dotenv
 POSTGRES_EXPORTER_DSN=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:5432/<POSTGRES_DB>?sslmode=disable
@@ -276,11 +283,11 @@ POSTGRES_EXPORTER_DSN=postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@postgres:
 
 ### Launching the observability stack
 
-After setting the image variables (and `POSTGRES_EXPORTER_DSN`) in `.env.docker`, start the stack:
+After setting the image variables (and `POSTGRES_EXPORTER_DSN`) in `.env.prod`, start the stack:
 
 ```bash
 cd /opt/quizmind-platform
-docker compose -f docker-compose.observability.yml --env-file .env.docker up -d
+docker compose --env-file .env.prod -f docker-compose.observability.yml up -d
 ```
 
 No manual `docker pull` or `docker tag` steps are required. Compose resolves the image names at startup.

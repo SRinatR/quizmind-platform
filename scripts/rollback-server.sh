@@ -15,6 +15,7 @@ set -euo pipefail
 
 DEPLOY_DIR="/opt/quizmind-platform"
 DEPLOYED_SHA_FILE="${DEPLOY_DIR}/.deployed-sha"
+ENV_FILE=".env.prod"
 TARGET_SHA=""
 
 while [[ $# -gt 0 ]]; do
@@ -50,11 +51,26 @@ git reset --hard "${TARGET_SHA}"
 CURRENT_SHA="$(git rev-parse HEAD)"
 echo "==> Now at: ${CURRENT_SHA}"
 
+echo "==> Validating ${ENV_FILE}"
+if [[ ! -f "${ENV_FILE}" ]]; then
+  echo "ERROR: ${ENV_FILE} not found at $(pwd)/${ENV_FILE}"
+  exit 1
+fi
+if command -v node >/dev/null 2>&1; then
+  node scripts/check-prod-env.mjs "${ENV_FILE}"
+else
+  docker run --rm \
+    -v "${PWD}:/work:ro" \
+    -w /work \
+    public.ecr.aws/docker/library/node:22-bookworm-slim \
+    node scripts/check-prod-env.mjs "${ENV_FILE}"
+fi
+
 echo "==> Restarting containers"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker up -d --build
+docker compose --env-file "${ENV_FILE}" -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 echo "==> Container status"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker ps
+docker compose --env-file "${ENV_FILE}" -f docker-compose.yml -f docker-compose.prod.yml ps
 
 echo "==> Pruning dangling images"
 docker image prune -f

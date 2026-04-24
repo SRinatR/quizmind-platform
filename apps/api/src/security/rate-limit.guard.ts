@@ -23,6 +23,8 @@ interface RateLimitPolicy {
   windowMs: number;
 }
 
+const extensionAuthRuntimeWindowMs = 60_000;
+
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   private readonly env = loadApiEnv();
@@ -82,6 +84,34 @@ export class RateLimitGuard implements CanActivate {
         key: `auth:${method}:${path}`,
         maxRequests: this.env.authRateLimitMaxRequests,
         windowMs: this.env.authRateLimitWindowMs,
+      };
+    }
+
+    if (
+      path === '/extension/bootstrap/v2' ||
+      path === '/extension/session/refresh' ||
+      path === '/extension/installations/session/refresh'
+    ) {
+      return {
+        key: `extension-auth:${method}:${path}`,
+        maxRequests: 30,
+        windowMs: extensionAuthRuntimeWindowMs,
+      };
+    }
+
+    if (path === '/extension/ai/models') {
+      return {
+        key: `extension-runtime:${method}:${path}`,
+        maxRequests: 30,
+        windowMs: extensionAuthRuntimeWindowMs,
+      };
+    }
+
+    if (path === '/extension/usage-events/v2' || path.startsWith('/extension/ai/')) {
+      return {
+        key: `extension-runtime:${method}:${path}`,
+        maxRequests: 60,
+        windowMs: extensionAuthRuntimeWindowMs,
       };
     }
 
