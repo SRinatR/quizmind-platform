@@ -72,7 +72,7 @@ test('loadApiEnv ignores non-extension URLs in ALLOWED_EXTENSION_ORIGINS', () =>
   ]);
 });
 
-test('validateApiEnv rejects wildcard CORS and prod placeholder providers', () => {
+test('validateApiEnv rejects wildcard CORS and production placeholder settings', () => {
   const env = loadApiEnv({
     NODE_ENV: 'production',
     QUIZMIND_RUNTIME_MODE: 'connected',
@@ -89,8 +89,9 @@ test('validateApiEnv rejects wildcard CORS and prod placeholder providers', () =
   const issues = validateApiEnv(env);
 
   assert.ok(issues.some((issue) => issue.key === 'CORS_ALLOWED_ORIGINS'));
-  assert.ok(issues.some((issue) => issue.key === 'EMAIL_PROVIDER'));
   assert.ok(issues.some((issue) => issue.key === 'BILLING_PROVIDER'));
+  assert.ok(issues.some((issue) => issue.key === 'EXTENSION_TOKEN_SECRET'));
+  assert.ok(issues.some((issue) => issue.key === 'PROVIDER_CREDENTIAL_SECRET'));
 });
 
 test('validateApiEnv rejects negative trust proxy hops', () => {
@@ -173,6 +174,32 @@ test('validateApiEnv rejects insecure production URL and runtime settings', () =
   assert.ok(issues.some((issue) => issue.key === 'CORS_ALLOWED_ORIGINS' && issue.message.includes('https://')));
   assert.ok(issues.some((issue) => issue.key === 'API_URL' && issue.message.includes('localhost')));
   assert.ok(issues.some((issue) => issue.key === 'APP_URL' && issue.message.includes('localhost')));
+});
+
+test('loadApiEnv does not invent production DB URLs or extension secrets', () => {
+  const env = loadApiEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    APP_URL: 'https://app.quizmind.dev',
+    API_URL: 'https://api.quizmind.dev',
+    CORS_ALLOWED_ORIGINS: 'https://app.quizmind.dev',
+    JWT_SECRET: 'super-secret',
+    JWT_REFRESH_SECRET: 'refresh-secret',
+    EMAIL_PROVIDER: 'noop',
+    BILLING_PROVIDER: 'manual',
+    EMAIL_FROM: 'noreply@quizmind.dev',
+  });
+
+  assert.equal(env.databaseUrl, '');
+  assert.equal(env.redisUrl, '');
+  assert.equal(env.extensionTokenSecret, '');
+  assert.equal(env.providerCredentialSecret, '');
+
+  const issues = validateApiEnv(env);
+  assert.ok(issues.some((issue) => issue.key === 'DATABASE_URL'));
+  assert.ok(issues.some((issue) => issue.key === 'REDIS_URL'));
+  assert.ok(issues.some((issue) => issue.key === 'EXTENSION_TOKEN_SECRET'));
+  assert.ok(issues.some((issue) => issue.key === 'PROVIDER_CREDENTIAL_SECRET'));
 });
 
 test('validateWebEnv rejects insecure production URLs', () => {

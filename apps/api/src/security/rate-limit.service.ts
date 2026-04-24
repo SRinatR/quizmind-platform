@@ -31,6 +31,9 @@ end
 return { current, ttl }
 `;
 
+const inMemoryRateLimitPruneIntervalMs = 60_000;
+const maxInMemoryRateLimitBuckets = 50_000;
+
 function parseRedisNumber(value: unknown, fallback: number): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -50,8 +53,11 @@ function parseRedisNumber(value: unknown, fallback: number): number {
 @Injectable()
 export class InMemoryRateLimitService implements RateLimitStore {
   private readonly buckets = new Map<string, RateLimitBucket>();
+  private lastPrunedAt = 0;
 
   consume(key: string, limit: number, windowMs: number, now = Date.now()): RateLimitDecision {
+    this.pruneExpiredBuckets(now);
+
     const existingBucket = this.buckets.get(key);
     const activeBucket =
       existingBucket && existingBucket.resetAt > now
@@ -74,6 +80,33 @@ export class InMemoryRateLimitService implements RateLimitStore {
       remaining,
       retryAfterSeconds,
     };
+  }
+
+  private pruneExpiredBuckets(now: number): void {
+    if (
+      this.buckets.size <= maxInMemoryRateLimitBuckets &&
+      now - this.lastPrunedAt < inMemoryRateLimitPruneIntervalMs
+    ) {
+      return;
+    }
+
+    this.lastPrunedAt = now;
+
+    for (const [key, bucket] of this.buckets.entries()) {
+      if (bucket.resetAt <= now) {
+        this.buckets.delete(key);
+      }
+    }
+
+    while (this.buckets.size > maxInMemoryRateLimitBuckets) {
+      const oldestKey = this.buckets.keys().next().value;
+
+      if (!oldestKey) {
+        return;
+      }
+
+      this.buckets.delete(oldestKey);
+    }
   }
 }
 

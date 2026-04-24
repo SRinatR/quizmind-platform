@@ -14,6 +14,7 @@
     "build": "corepack pnpm -r --if-present run build",
     "lint": "corepack pnpm -r --workspace-concurrency=1 --if-present run lint",
     "typecheck": "corepack pnpm -r --if-present run typecheck",
+    "check:prod-env": "node scripts/check-prod-env.mjs .env.prod",
     "test": "node --import tsx --test \"packages/*/test/**/*.test.ts\" \"apps/*/test/**/*.test.ts\""
   }
 }

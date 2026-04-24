@@ -3,7 +3,21 @@ set -euo pipefail
 
 DEPLOY_DIR="/opt/quizmind-platform"
 DEPLOYED_SHA_FILE="${DEPLOY_DIR}/.deployed-sha"
-DC="docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.docker"
+ENV_FILE=".env.prod"
+DC="docker compose --env-file ${ENV_FILE} -f docker-compose.yml -f docker-compose.prod.yml"
+
+run_prod_env_preflight() {
+  if command -v node >/dev/null 2>&1; then
+    node scripts/check-prod-env.mjs "${ENV_FILE}"
+    return
+  fi
+
+  docker run --rm \
+    -v "${PWD}:/work:ro" \
+    -w /work \
+    public.ecr.aws/docker/library/node:22-bookworm-slim \
+    node scripts/check-prod-env.mjs "${ENV_FILE}"
+}
 
 # Parse optional --sha and --ref arguments passed from CI
 DEPLOYED_SHA=""
@@ -19,24 +33,12 @@ done
 echo "==> Deploying QuizMind Platform"
 cd "$DEPLOY_DIR"
 
-echo "==> Validating .env.docker"
-if [[ ! -f .env.docker ]]; then
-  echo "ERROR: .env.docker not found at $(pwd)/.env.docker"
-  echo "  Copy .env.docker.example to .env.docker and fill in production values."
+echo "==> Checking ${ENV_FILE}"
+if [[ ! -f "${ENV_FILE}" ]]; then
+  echo "ERROR: ${ENV_FILE} not found at $(pwd)/${ENV_FILE}"
+  echo "  Copy .env.prod.example to ${ENV_FILE} and fill in production values."
   exit 1
 fi
-for _var in POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB DATABASE_URL; do
-  # xargs: trims whitespace and strips surrounding quotes (handles blank/quoted-empty).
-  # || true: suppresses grep's exit-1-on-no-match so set -e doesn't fire before
-  # the error message can print; -z check below handles the missing-var case.
-  _val="$(grep -E "^${_var}=" .env.docker | head -1 | cut -d= -f2- | xargs || true)"
-  if [[ -z "$_val" ]]; then
-    echo "ERROR: required variable ${_var} is missing or empty in .env.docker"
-    exit 1
-  fi
-done
-unset _var _val
-echo "  .env.docker OK"
 
 echo "==> Updating code from origin/main"
 git fetch origin
@@ -44,6 +46,9 @@ git reset --hard origin/main
 
 CURRENT_SHA="$(git rev-parse HEAD)"
 echo "==> Commit: ${CURRENT_SHA}"
+
+echo "==> Validating ${ENV_FILE}"
+run_prod_env_preflight
 
 echo "==> Building images"
 $DC build
@@ -85,7 +90,7 @@ PG_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{e
 
 echo "==> Preflight: verifying DB credentials against running Postgres"
 # Uses pg.Client (require('pg'), available via shamefully-hoist=true) inside the
-# built api image.  DATABASE_URL is passed as-is from .env.docker — no bash URL
+# built api image.  DATABASE_URL is passed as-is from .env.prod — no bash URL
 # parsing.  Same hostname-to-IP rewrite used by migration and runtime containers.
 if ! $DC run --rm \
     -e HOME=/tmp \
@@ -103,14 +108,14 @@ if ! $DC run --rm \
     ' 2>&1; then
   echo ""
   echo "ERROR: DB authentication preflight FAILED."
-  echo "  DATABASE_URL in .env.docker cannot authenticate to the running Postgres."
-  echo "  The persisted Postgres role password does not match .env.docker credentials."
+  echo "  DATABASE_URL in ${ENV_FILE} cannot authenticate to the running Postgres."
+  echo "  The persisted Postgres role password does not match ${ENV_FILE} credentials."
   echo ""
   echo "  To fix — choose one option:"
-  echo "    A) Update the Postgres role password to match DATABASE_URL in .env.docker:"
+  echo "    A) Update the Postgres role password to match DATABASE_URL in ${ENV_FILE}:"
   echo "         docker exec -it quizmind-postgres psql -U <current_user> \\"
   echo "           -c \"ALTER USER <user> WITH PASSWORD '<password_from_env_docker>';\""
-  echo "    B) Update DATABASE_URL (and POSTGRES_PASSWORD) in .env.docker to match"
+  echo "    B) Update DATABASE_URL (and POSTGRES_PASSWORD) in ${ENV_FILE} to match"
   echo "       the actual password stored in the persisted Postgres volume."
   echo ""
   echo "  See docs/deployment.md — 'Database Credential Management' for details."
@@ -171,14 +176,14 @@ for i in $(seq 1 60); do
 done
 
 echo "==> Post-deploy smoke checks"
-API_HOST_PORT="$(grep -E "^API_HOST_PORT=" .env.docker | head -1 | cut -d= -f2- | xargs || true)"
-WEB_HOST_PORT="$(grep -E "^WEB_HOST_PORT=" .env.docker | head -1 | cut -d= -f2- | xargs || true)"
+API_HOST_PORT="$(grep -E "^API_HOST_PORT=" "${ENV_FILE}" | head -1 | cut -d= -f2- | xargs || true)"
+WEB_HOST_PORT="$(grep -E "^WEB_HOST_PORT=" "${ENV_FILE}" | head -1 | cut -d= -f2- | xargs || true)"
 if [[ -z "$API_HOST_PORT" ]]; then
-  echo "ERROR: API_HOST_PORT is missing or empty in .env.docker"
+  echo "ERROR: API_HOST_PORT is missing or empty in ${ENV_FILE}"
   exit 1
 fi
 if [[ -z "$WEB_HOST_PORT" ]]; then
-  echo "ERROR: WEB_HOST_PORT is missing or empty in .env.docker"
+  echo "ERROR: WEB_HOST_PORT is missing or empty in ${ENV_FILE}"
   exit 1
 fi
 _smoke_fail=0

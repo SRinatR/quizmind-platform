@@ -44,12 +44,16 @@ function resolveRuntimeMode(source: EnvSource): PlatformEnv['runtimeMode'] {
 }
 
 export function loadPlatformEnv(source: EnvSource = process.env): PlatformEnv {
+  const nodeEnv = resolveNodeEnv(source);
+
   return {
-    nodeEnv: resolveNodeEnv(source),
+    nodeEnv,
     appUrl: source.APP_URL ?? source.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
     apiUrl: source.API_URL ?? source.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',
-    databaseUrl: source.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/quizmind',
-    redisUrl: source.REDIS_URL ?? 'redis://localhost:6379',
+    databaseUrl:
+      source.DATABASE_URL ??
+      (nodeEnv === 'production' ? '' : 'postgresql://postgres:postgres@localhost:5432/quizmind'),
+    redisUrl: source.REDIS_URL ?? (nodeEnv === 'production' ? '' : 'redis://localhost:6379'),
     runtimeMode: resolveRuntimeMode(source),
   };
 }
@@ -223,9 +227,13 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     corsAllowedOrigins: loadCorsAllowedOrigins(source, platformEnv.appUrl),
     jwtSecret: source.JWT_SECRET ?? 'replace-me',
     jwtRefreshSecret: source.JWT_REFRESH_SECRET ?? 'replace-me-refresh',
-    extensionTokenSecret: source.EXTENSION_TOKEN_SECRET ?? source.JWT_REFRESH_SECRET ?? 'replace-me-extension',
+    extensionTokenSecret:
+      source.EXTENSION_TOKEN_SECRET ??
+      (platformEnv.nodeEnv === 'production' ? '' : source.JWT_REFRESH_SECRET ?? 'replace-me-extension'),
     extensionSessionTtlMinutes: readNumberEnv(source, 'EXTENSION_SESSION_TTL_MINUTES', 30),
-    providerCredentialSecret: source.PROVIDER_CREDENTIAL_SECRET ?? source.JWT_REFRESH_SECRET ?? 'replace-me-provider',
+    providerCredentialSecret:
+      source.PROVIDER_CREDENTIAL_SECRET ??
+      (platformEnv.nodeEnv === 'production' ? '' : source.JWT_REFRESH_SECRET ?? 'replace-me-provider'),
     jwtIssuer: source.JWT_ISSUER ?? platformEnv.apiUrl,
     jwtAudience: source.JWT_AUDIENCE ?? platformEnv.appUrl,
     emailProvider: resolveEmailProvider(source),
@@ -605,8 +613,18 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
       issues.push({ key: 'API_URL', message: 'API_URL must not target localhost in production.' });
     }
 
-    if (env.emailProvider !== 'noop' && (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local')) {
-      issues.push({ key: 'EMAIL_FROM', message: 'EMAIL_FROM must be set to a real sender address in production when email is enabled.' });
+    if (env.emailProvider === 'noop') {
+      issues.push({
+        key: 'EMAIL_PROVIDER',
+        message: 'EMAIL_PROVIDER must be set to "resend" in production for worker queue delivery.',
+      });
+    }
+
+    if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
+      issues.push({
+        key: 'EMAIL_FROM',
+        message: 'EMAIL_FROM must be set to a real sender address in production for worker queue delivery.',
+      });
     }
   }
 

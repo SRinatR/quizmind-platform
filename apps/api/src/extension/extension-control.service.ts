@@ -155,9 +155,18 @@ const usageLifecycleEventMappings: Record<string, UsageLifecycleEventMapping> = 
   },
 };
 
+const invalidInstallationTokenLogWindowMs = 10 * 60 * 1000;
+const maxInvalidInstallationTokenLogKeys = 10_000;
+
+interface InvalidInstallationTokenLogState {
+  nextLogAt: number;
+  suppressed: number;
+}
+
 @Injectable()
 export class ExtensionControlService {
   private readonly env = loadApiEnv();
+  private readonly invalidInstallationTokenLogState = new Map<string, InvalidInstallationTokenLogState>();
 
   constructor(
     @Inject(ExtensionInstallationRepository)
@@ -269,28 +278,17 @@ export class ExtensionControlService {
     return result;
   }
 
-  async resolveInstallationSession(accessToken: string): Promise<ExtensionInstallationSessionRecord> {
+  async resolveInstallationSession(
+    accessToken: string,
+    context?: { endpoint?: string },
+  ): Promise<ExtensionInstallationSessionRecord> {
     const tokenHash = hashOpaqueToken(accessToken, this.env.extensionTokenSecret);
     const tokenRecord = await this.extensionInstallationSessionRepository.findActiveByTokenHash(tokenHash);
 
     if (!tokenRecord) {
-      await this.recordLifecycleEventSafely({
-        targetType: 'extension_installation_session',
-        targetId: tokenHash.slice(0, 16),
-        auditEventType: 'extension.installation_session_auth_failed',
-        securityEventType: 'extension.installation_session_auth_failed',
-        securitySeverity: 'warn',
-        status: 'failure',
-        summary: 'extension installation session authentication failed due to invalid or expired token',
-        metadata: {
-          reason: 'invalid_or_expired_token',
-          tokenHashPrefix: tokenHash.slice(0, 16),
-        },
-        domainEventType: 'extension.installation_session_auth_failed',
-        domainPayload: {
-          reason: 'invalid_or_expired_token',
-          tokenHashPrefix: tokenHash.slice(0, 16),
-        },
+      this.logInvalidInstallationToken({
+        tokenHash,
+        endpoint: context?.endpoint,
       });
       throw new UnauthorizedException('Installation session is invalid or expired.');
     }
@@ -972,6 +970,65 @@ export class ExtensionControlService {
       },
       occurredAt,
     });
+  }
+
+  private logInvalidInstallationToken(input: {
+    tokenHash: string;
+    endpoint?: string;
+  }): void {
+    const now = Date.now();
+    const tokenHashPrefix = input.tokenHash.slice(0, 16);
+    const endpoint = input.endpoint?.trim() || 'unknown';
+    const key = `${tokenHashPrefix}:${endpoint}`;
+    const state = this.invalidInstallationTokenLogState.get(key);
+
+    if (state && state.nextLogAt > now) {
+      state.suppressed += 1;
+      return;
+    }
+
+    const suppressedSinceLastLog = state?.suppressed ?? 0;
+    this.invalidInstallationTokenLogState.set(key, {
+      nextLogAt: now + invalidInstallationTokenLogWindowMs,
+      suppressed: 0,
+    });
+    this.pruneInvalidInstallationTokenLogState(now);
+
+    console.warn(
+      JSON.stringify({
+        eventType: 'extension.installation_session_auth_failed_sampled',
+        status: 'failure',
+        severity: 'warn',
+        reason: 'invalid_or_expired_token',
+        endpoint,
+        tokenHashPrefix,
+        suppressedSinceLastLog,
+        dedupeWindowSeconds: invalidInstallationTokenLogWindowMs / 1000,
+        occurredAt: new Date(now).toISOString(),
+      }),
+    );
+  }
+
+  private pruneInvalidInstallationTokenLogState(now: number): void {
+    if (this.invalidInstallationTokenLogState.size <= maxInvalidInstallationTokenLogKeys) {
+      return;
+    }
+
+    for (const [key, state] of this.invalidInstallationTokenLogState.entries()) {
+      if (state.nextLogAt <= now) {
+        this.invalidInstallationTokenLogState.delete(key);
+      }
+    }
+
+    while (this.invalidInstallationTokenLogState.size > maxInvalidInstallationTokenLogKeys) {
+      const oldestKey = this.invalidInstallationTokenLogState.keys().next().value;
+
+      if (!oldestKey) {
+        return;
+      }
+
+      this.invalidInstallationTokenLogState.delete(oldestKey);
+    }
   }
 
   private async recordLifecycleEventSafely(input: {

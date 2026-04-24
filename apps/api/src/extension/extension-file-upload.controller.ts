@@ -264,7 +264,9 @@ export class ExtensionFileUploadController {
       throw new UnauthorizedException('Missing installation bearer token.');
     }
 
-    const installationSession = await this.extensionControlService.resolveInstallationSession(accessToken);
+    const installationSession = await this.extensionControlService.resolveInstallationSession(accessToken, {
+      endpoint: '/extension/ai/upload',
+    });
     const mime = resolveMimeFromFilename(file.originalname, file.mimetype);
 
     if (!ALLOWED_MIME_TYPES.has(mime)) {

@@ -26,6 +26,15 @@ test('InMemoryRateLimitService blocks requests after the configured limit until 
   assert.equal(reset.remaining, 1);
 });
 
+test('InMemoryRateLimitService prunes expired buckets during later consumes', () => {
+  const service = new InMemoryRateLimitService();
+  service.consume('extension:stale:127.0.0.1', 1, 1_000, 1_000);
+  service.consume('extension:fresh:127.0.0.1', 1, 1_000, 62_000);
+
+  assert.equal((service as any).buckets.has('extension:stale:127.0.0.1'), false);
+  assert.equal((service as any).buckets.has('extension:fresh:127.0.0.1'), true);
+});
+
 test('RateLimitGuard resolves its rate limit service through Nest DI', async () => {
   @Module({
     providers: [RateLimitGuard, InMemoryRateLimitService, DistributedRateLimitService],
@@ -88,4 +97,20 @@ test('RateLimitGuard.resolvePolicy excludes health and readiness probes from thr
   assert.equal(healthPolicy, null);
   assert.equal(readyPolicy, null);
   assert.equal(authPolicy?.key?.startsWith('auth:POST:/auth/login'), true);
+});
+
+test('RateLimitGuard.resolvePolicy applies stricter buckets to extension runtime auth endpoints', () => {
+  const fallback = new InMemoryRateLimitService();
+  const distributed = new DistributedRateLimitService(fallback);
+  const guard = new RateLimitGuard(distributed);
+  const refreshPolicy = (guard as any).resolvePolicy('POST', '/extension/session/refresh');
+  const usagePolicy = (guard as any).resolvePolicy('POST', '/extension/usage-events/v2');
+  const aiPolicy = (guard as any).resolvePolicy('POST', '/extension/ai/answer');
+
+  assert.equal(refreshPolicy?.key, 'extension-auth:POST:/extension/session/refresh');
+  assert.equal(refreshPolicy?.maxRequests, 30);
+  assert.equal(usagePolicy?.key, 'extension-runtime:POST:/extension/usage-events/v2');
+  assert.equal(usagePolicy?.maxRequests, 60);
+  assert.equal(aiPolicy?.key, 'extension-runtime:POST:/extension/ai/answer');
+  assert.equal(aiPolicy?.maxRequests, 60);
 });

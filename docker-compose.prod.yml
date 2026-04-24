@@ -1,11 +1,12 @@
 # Production compose override for VPS deployment behind nginx.
 #
 # Usage:
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d
 #
-# Required env file (.env.prod or exported vars):
+# Required env file:
 #   APP_URL, API_URL, NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_API_URL,
-#   API_INTERNAL_URL, DATABASE_URL, REDIS_URL,
+#   API_INTERNAL_URL, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD,
+#   DATABASE_URL, REDIS_URL,
 #   JWT_SECRET, JWT_REFRESH_SECRET, EXTENSION_TOKEN_SECRET, PROVIDER_CREDENTIAL_SECRET,
 #   BILLING_PROVIDER, EMAIL_PROVIDER (optional, defaults to noop),
 #   CORS_ALLOWED_ORIGINS (comma-separated, e.g. https://ods.uz,chrome-extension://...)
@@ -19,6 +20,12 @@ services:
   postgres:
     image: public.ecr.aws/docker/library/postgres:16-alpine
     pull_policy: missing
+    env_file:
+      - .env.prod
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB is required in .env.prod}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env.prod}"
+      POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER is required in .env.prod}"
 
   redis:
     image: public.ecr.aws/docker/library/redis:7-alpine
@@ -28,6 +35,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env.prod
     command:
       [
         "sh",
@@ -40,12 +49,12 @@ services:
       API_PORT: "4000"
       API_URL: "${API_URL:-https://ods.uz/api}"
       APP_URL: "${APP_URL:-https://ods.uz}"
-      DATABASE_URL: "${DATABASE_URL}"
-      REDIS_URL: "${REDIS_URL}"
-      JWT_SECRET: "${JWT_SECRET}"
-      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET}"
-      EXTENSION_TOKEN_SECRET: "${EXTENSION_TOKEN_SECRET:-${JWT_REFRESH_SECRET}}"
-      PROVIDER_CREDENTIAL_SECRET: "${PROVIDER_CREDENTIAL_SECRET:-${JWT_REFRESH_SECRET}}"
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required in .env.prod}"
+      REDIS_URL: "${REDIS_URL:?REDIS_URL is required in .env.prod}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required in .env.prod}"
+      JWT_REFRESH_SECRET: "${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required in .env.prod}"
+      EXTENSION_TOKEN_SECRET: "${EXTENSION_TOKEN_SECRET:?EXTENSION_TOKEN_SECRET is required in .env.prod}"
+      PROVIDER_CREDENTIAL_SECRET: "${PROVIDER_CREDENTIAL_SECRET:?PROVIDER_CREDENTIAL_SECRET is required in .env.prod}"
       JWT_ISSUER: "${JWT_ISSUER:-${API_URL:-https://ods.uz/api}}"
       JWT_AUDIENCE: "${JWT_AUDIENCE:-${APP_URL:-https://ods.uz}}"
       TRUST_PROXY_HOPS: "${TRUST_PROXY_HOPS:-1}"
@@ -72,6 +81,8 @@ services:
       args:
         NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-https://ods.uz}"
         NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-https://ods.uz/api}"
+    env_file:
+      - .env.prod
     working_dir: /app/apps/web
     command:
       [
@@ -92,7 +103,7 @@ services:
       NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-https://ods.uz}"
       APP_URL: "${APP_URL:-https://ods.uz}"
       API_URL: "${API_URL:-https://ods.uz/api}"
-      REDIS_URL: "${REDIS_URL}"
+      REDIS_URL: "${REDIS_URL:?REDIS_URL is required in .env.prod}"
       DEFAULT_PERSONA: "${DEFAULT_PERSONA:-platform-admin}"
       QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE: "${QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE:-optional}"
 
@@ -100,6 +111,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env.prod
     command:
       [
         "sh",
@@ -110,8 +123,8 @@ services:
       NODE_ENV: production
       QUIZMIND_RUNTIME_MODE: connected
       API_URL: "${API_INTERNAL_URL:-http://api:4000}"
-      DATABASE_URL: "${DATABASE_URL}"
-      REDIS_URL: "${REDIS_URL}"
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required in .env.prod}"
+      REDIS_URL: "${REDIS_URL:?REDIS_URL is required in .env.prod}"
       WORKER_HEARTBEAT_MS: "${WORKER_HEARTBEAT_MS:-30000}"
       EMAIL_PROVIDER: "${EMAIL_PROVIDER:-noop}"
       EMAIL_FROM: "${EMAIL_FROM:-noreply@quizmind.local}"

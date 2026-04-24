@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { buildDefaultAiAccessPolicy } from '@quizmind/providers';
 
 import { ExtensionControlService } from '../src/extension/extension-control.service';
@@ -13,8 +13,6 @@ import { type ExtensionInstallationSessionRepository } from '../src/extension/ex
 import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.repository';
 import { type AiProviderPolicyService } from '../src/providers/ai-provider-policy.service';
 import { type RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
-import { type SubscriptionRepository } from '../src/billing/subscription.repository';
-import { type UsageRepository } from '../src/usage/usage.repository';
 import { type QueueDispatchService } from '../src/queue/queue-dispatch.service';
 
 function createConnectedSession(): CurrentSessionSnapshot {
@@ -98,8 +96,8 @@ function createService() {
       }),
     }),
   } as AiProviderPolicyService;
-  const subscriptionRepository = {} as SubscriptionRepository;
-  const usageRepository = {} as UsageRepository;
+  const subscriptionRepository = {} as any;
+  const usageRepository = {} as any;
   const queueDispatchService = {} as QueueDispatchService;
   const service = new ExtensionControlService(
     extensionInstallationRepository,
@@ -109,8 +107,6 @@ function createService() {
     featureFlagRepository,
     remoteConfigRepository,
     aiProviderPolicyService,
-    subscriptionRepository,
-    usageRepository,
     queueDispatchService,
   );
 
@@ -251,8 +247,8 @@ test('ExtensionControlService.bindInstallationForCurrentSession issues an instal
   assert.ok(result.session.token.length > 20);
   assert.equal(result.bootstrap.installationId, 'inst_local_browser');
   assert.equal(result.bootstrap.featureFlags[0], 'alpha');
-  assert.equal(result.bootstrap.entitlements[1]?.key, 'limit.requests_per_day');
-  assert.equal(result.bootstrap.quotaHints[0]?.key, 'limit.requests_per_day');
+  assert.deepEqual(result.bootstrap.entitlements, []);
+  assert.deepEqual(result.bootstrap.quotaHints, []);
   assert.equal(result.bootstrap.aiAccessPolicy.mode, 'platform_only');
 });
 
@@ -385,8 +381,15 @@ test('ExtensionControlService.bindInstallationForCurrentSession rejects invalid 
   assert.equal(upsertCalled, false);
 });
 
-test('ExtensionControlService.bindInstallationForCurrentSession requires workspace membership context', async () => {
-  const { service } = createService();
+test('ExtensionControlService.bindInstallationForCurrentSession does not require workspace membership context', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+    extensionCompatibilityRepository,
+    featureFlagRepository,
+    remoteConfigRepository,
+  } = createService();
   const baseSession = createConnectedSession();
   const sessionWithoutWorkspace: CurrentSessionSnapshot = {
     ...baseSession,
@@ -397,20 +400,58 @@ test('ExtensionControlService.bindInstallationForCurrentSession requires workspa
     workspaces: [],
   };
 
-  await assert.rejects(
-    () =>
-      service.bindInstallationForCurrentSession(sessionWithoutWorkspace, {
+  extensionInstallationRepository.findByInstallationId = async () => null as any;
+  extensionInstallationRepository.upsertBoundInstallation = async (input) =>
+    ({
+      id: 'inst_record_1',
+      userId: input.userId,
+      workspaceId: null,
+      installationId: input.installationId,
+      browser: input.browser,
+      extensionVersion: input.extensionVersion,
+      schemaVersion: input.schemaVersion,
+      capabilitiesJson: input.capabilities,
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+      lastSeenAt: input.lastSeenAt,
+    }) as any;
+  extensionInstallationSessionRepository.create = async (input) =>
+    ({
+      id: 'inst_session_1',
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      revokedAt: null,
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        workspaceId: null,
         installationId: 'inst_local_browser',
-        environment: 'development',
-        handshake: {
-          extensionVersion: '1.6.1',
-          schemaVersion: '2',
-          capabilities: ['quiz-capture'],
-          browser: 'chrome',
-        },
-      }),
-    /workspaceId is required for extension bind/i,
-  );
+        browser: 'chrome',
+        extensionVersion: '1.6.1',
+        schemaVersion: '2',
+        capabilitiesJson: ['quiz-capture'],
+        createdAt: new Date('2026-03-24T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+      },
+    }) as any;
+  extensionCompatibilityRepository.findLatest = async () => null;
+  featureFlagRepository.findAll = async () => [] as any;
+  remoteConfigRepository.findActiveLayers = async () => [] as any;
+
+  const result = await service.bindInstallationForCurrentSession(sessionWithoutWorkspace, {
+    installationId: 'inst_local_browser',
+    environment: 'development',
+    handshake: {
+      extensionVersion: '1.6.1',
+      schemaVersion: '2',
+      capabilities: ['quiz-capture'],
+      browser: 'chrome',
+    },
+  });
+
+  assert.equal(result.installation.installationId, 'inst_local_browser');
 });
 
 test('ExtensionControlService.bootstrapInstallationSession refreshes bootstrap for a valid installation session', async () => {
@@ -695,7 +736,7 @@ test('ExtensionControlService.ingestUsageEventForInstallationSession queues work
   );
 
   assert.equal(result.queue, 'usage-events');
-  assert.equal(capturedPayload.workspaceId, 'ws_1');
+  assert.equal(capturedPayload.installationId, 'inst_local_browser');
   assert.equal(capturedPayload.payload.browser, 'chrome');
   assert.equal(capturedPayload.payload.questionType, 'multiple_choice');
 });
@@ -830,28 +871,53 @@ test('ExtensionControlService.ingestUsageEventForInstallationSession returns deg
   assert.equal(result.logEvent.status, 'failure');
 });
 
-test('ExtensionControlService.resolveInstallationSession records refresh failure lifecycle events for invalid tokens', async () => {
+test('ExtensionControlService.resolveInstallationSession samples invalid-token logs without lifecycle DB writes', async () => {
   const {
     service,
     extensionInstallationSessionRepository,
     extensionEventRepository,
   } = createService();
-  let capturedEventType: string | null = null;
+  let lifecycleWriteCount = 0;
+  const capturedWarnings: string[] = [];
+  const originalWarn = console.warn;
 
   extensionInstallationSessionRepository.findActiveByTokenHash = async () => null as any;
-  extensionEventRepository.recordLifecycleEvent = async (input) => {
-    capturedEventType = input.securityLog.eventType;
+  extensionEventRepository.recordLifecycleEvent = async () => {
+    lifecycleWriteCount += 1;
+  };
+  console.warn = (message?: unknown) => {
+    capturedWarnings.push(String(message));
   };
 
-  await assert.rejects(
-    () => service.resolveInstallationSession('invalid_installation_token'),
-    (error: unknown) => {
-      assert.ok(error instanceof UnauthorizedException);
-      return true;
-    },
-  );
+  try {
+    await assert.rejects(
+      () =>
+        service.resolveInstallationSession('invalid_installation_token', {
+          endpoint: '/extension/bootstrap/v2',
+        }),
+      (error: unknown) => {
+        assert.ok(error instanceof UnauthorizedException);
+        return true;
+      },
+    );
 
-  assert.equal(capturedEventType, 'extension.installation_session_refresh_failed');
+    await assert.rejects(
+      () =>
+        service.resolveInstallationSession('invalid_installation_token', {
+          endpoint: '/extension/bootstrap/v2',
+        }),
+      UnauthorizedException,
+    );
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.equal(lifecycleWriteCount, 0);
+  assert.equal(capturedWarnings.length, 1);
+  const sampledLog = JSON.parse(capturedWarnings[0] ?? '{}') as Record<string, unknown>;
+  assert.equal(sampledLog.eventType, 'extension.installation_session_auth_failed_sampled');
+  assert.equal(sampledLog.endpoint, '/extension/bootstrap/v2');
+  assert.equal(sampledLog.reason, 'invalid_or_expired_token');
 });
 
 test('ExtensionControlService.listInstallationsForCurrentSession returns compatibility and active session inventory', async () => {
@@ -862,7 +928,7 @@ test('ExtensionControlService.listInstallationsForCurrentSession returns compati
     extensionCompatibilityRepository,
   } = createService();
 
-  extensionInstallationRepository.listByWorkspaceId = async () =>
+  extensionInstallationRepository.listByUserId = async () =>
     [
       {
         id: 'inst_record_1',
@@ -912,9 +978,8 @@ test('ExtensionControlService.listInstallationsForCurrentSession returns compati
       createdAt: new Date('2026-03-24T09:00:00.000Z'),
     }) as any;
 
-  const result = await service.listInstallationsForCurrentSession(createInstallationManagerSession(), 'ws_1');
+  const result = await service.listInstallationsForCurrentSession(createInstallationManagerSession());
 
-  assert.equal(result.workspace.id, 'ws_1');
   assert.equal(result.accessDecision.allowed, true);
   assert.equal(result.disconnectDecision.allowed, true);
   assert.equal(result.items.length, 2);
@@ -969,7 +1034,6 @@ test('ExtensionControlService.disconnectInstallationForCurrentSession revokes ac
 
   assert.equal(capturedInstallationRecordId, 'inst_record_1');
   assert.equal(result.installationId, 'inst_primary');
-  assert.equal(result.workspaceId, 'ws_1');
   assert.equal(result.revokedSessionCount, 2);
   assert.equal(result.requiresReconnect, true);
   assert.equal((capturedLifecycleEvent?.auditLog?.metadata as any)?.reason, 'Investigating suspicious extension behavior reported by support.');
@@ -1038,7 +1102,6 @@ test('ExtensionControlService.rotateInstallationSessionForCurrentSession revokes
 
   assert.equal(capturedInstallationRecordId, 'inst_record_1');
   assert.equal(result.installationId, 'inst_primary');
-  assert.equal(result.workspaceId, 'ws_1');
   assert.equal(result.revokedSessionCount, 2);
   assert.ok(result.session.token.length > 20);
   assert.equal(result.session.refreshAfterSeconds, 900);
@@ -1046,18 +1109,34 @@ test('ExtensionControlService.rotateInstallationSessionForCurrentSession revokes
   assert.equal((capturedLifecycleEvent?.domainPayload as any)?.reason, 'Rotating a potentially leaked installation token.');
 });
 
-test('ExtensionControlService.disconnectInstallationForCurrentSession denies users without installation write permission', async () => {
-  const { service } = createService();
+test('ExtensionControlService.disconnectInstallationForCurrentSession denies installations owned by another user', async () => {
+  const { service, extensionInstallationRepository } = createService();
+
+  extensionInstallationRepository.findByInstallationId = async () =>
+    ({
+      id: 'inst_record_1',
+      userId: 'user_2',
+      workspaceId: 'ws_1',
+      installationId: 'inst_primary',
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture'],
+      createdAt: new Date('2026-03-24T10:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+      lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
 
   await assert.rejects(
     () =>
-      service.disconnectInstallationForCurrentSession(createInstallationViewerSession(), {
+      service.disconnectInstallationForCurrentSession(createInstallationManagerSession(), {
         installationId: 'inst_primary',
         workspaceId: 'ws_1',
+        reason: 'Operator requested disconnect.',
       }),
     (error: unknown) => {
-      assert.ok(error instanceof ForbiddenException);
-      assert.match((error as Error).message, /Missing permission: installations:write/);
+      assert.ok(error instanceof NotFoundException);
+      assert.match((error as Error).message, /Extension installation not found/);
       return true;
     },
   );
@@ -1099,18 +1178,34 @@ test('ExtensionControlService.disconnectInstallationForCurrentSession requires a
   );
 });
 
-test('ExtensionControlService.rotateInstallationSessionForCurrentSession denies users without installation write permission', async () => {
-  const { service } = createService();
+test('ExtensionControlService.rotateInstallationSessionForCurrentSession denies installations owned by another user', async () => {
+  const { service, extensionInstallationRepository } = createService();
+
+  extensionInstallationRepository.findByInstallationId = async () =>
+    ({
+      id: 'inst_record_1',
+      userId: 'user_2',
+      workspaceId: 'ws_1',
+      installationId: 'inst_primary',
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture'],
+      createdAt: new Date('2026-03-24T10:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+      lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
 
   await assert.rejects(
     () =>
-      service.rotateInstallationSessionForCurrentSession(createInstallationViewerSession(), {
+      service.rotateInstallationSessionForCurrentSession(createInstallationManagerSession(), {
         installationId: 'inst_primary',
         workspaceId: 'ws_1',
+        reason: 'Operator requested rotation.',
       }),
     (error: unknown) => {
-      assert.ok(error instanceof ForbiddenException);
-      assert.match((error as Error).message, /Missing permission: installations:write/);
+      assert.ok(error instanceof NotFoundException);
+      assert.match((error as Error).message, /Extension installation not found/);
       return true;
     },
   );
