@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   fallbackModelDisplayName,
@@ -61,6 +61,8 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
   const { t } = usePreferences();
   const tu = t.usagePage;
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const [isModelFilterOpen, setIsModelFilterOpen] = useState(false);
+  const modelFilterRef = useRef<HTMLDivElement | null>(null);
 
   const modelRows = useMemo(() => {
     return (analytics?.byModel ?? []).map((row) => ({
@@ -80,6 +82,29 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
   const modelOptions = useMemo(() => {
     return [...modelRows].sort((a, b) => b.requestCount - a.requestCount);
   }, [modelRows]);
+
+  useEffect(() => {
+    if (!isModelFilterOpen) {
+      return;
+    }
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!modelFilterRef.current?.contains(event.target as Node)) {
+        setIsModelFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isModelFilterOpen]);
+
+  const modelFilterLabel = selectedModels.length === 0
+    ? 'All models'
+    : selectedModels.length === 1
+      ? '1 model selected'
+      : `${selectedModels.length} models selected`;
 
   const filteredRows = useMemo(() => {
     if (selectedModels.length === 0) {
@@ -150,32 +175,6 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
               {formatDate(analytics.from)} &ndash; {formatDate(analytics.to)}
             </span>
           </div>
-
-          {hasModels ? (
-            <label className="filter-field" style={{ marginBottom: '14px', maxWidth: '460px' }}>
-              <span className="filter-field__label">Models</span>
-              <select
-                multiple
-                value={selectedModels}
-                onChange={(event) => {
-                  const values = Array.from(event.target.selectedOptions, (option) => option.value);
-                  setSelectedModels(values);
-                }}
-                style={{ minHeight: '108px', padding: '8px', border: '1px solid var(--border, #e5e7eb)', borderRadius: '8px', background: 'var(--surface, #fff)' }}
-              >
-                {modelOptions.map((row) => (
-                  <option key={row.model} value={row.model}>
-                    {row.displayName}
-                  </option>
-                ))}
-              </select>
-              <span style={{ marginTop: '6px', fontSize: '0.75rem', opacity: 0.68, display: 'block' }}>
-                {selectedModels.length === 0
-                  ? 'All models selected by default.'
-                  : `${selectedModels.length} model${selectedModels.length === 1 ? '' : 's'} selected.`}
-              </span>
-            </label>
-          ) : null}
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
             {statCard('Total requests', String(filteredTotals.totalRequests))}
@@ -249,6 +248,109 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
               })}
             </div>
             <form method="get" style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              {hasModels ? (
+                <div ref={modelFilterRef} style={{ position: 'relative', minWidth: '210px' }}>
+                  <label className="filter-field" style={{ margin: 0 }}>
+                    <span className="filter-field__label">Models</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsModelFilterOpen((open) => !open)}
+                      aria-haspopup="dialog"
+                      aria-expanded={isModelFilterOpen}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border, #e5e7eb)',
+                        background: 'var(--surface, #fff)',
+                        color: 'inherit',
+                        font: 'inherit',
+                        cursor: 'pointer',
+                        minHeight: '34px',
+                      }}
+                    >
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{modelFilterLabel}</span>
+                      <span aria-hidden="true" style={{ opacity: 0.65 }}>{isModelFilterOpen ? '▲' : '▼'}</span>
+                    </button>
+                  </label>
+                  {isModelFilterOpen ? (
+                    <div
+                      role="dialog"
+                      aria-label="Model filters"
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        left: 0,
+                        right: 0,
+                        zIndex: 20,
+                        border: '1px solid var(--border, #e5e7eb)',
+                        borderRadius: '10px',
+                        background: 'var(--surface, #fff)',
+                        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
+                        padding: '10px',
+                      }}
+                    >
+                      <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'grid', gap: '7px', marginBottom: '8px' }}>
+                        {modelOptions.map((row) => {
+                          const checked = selectedModels.includes(row.model);
+                          return (
+                            <label
+                              key={row.model}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontSize: '0.86rem',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(event) => {
+                                  setSelectedModels((current) => {
+                                    if (event.target.checked) {
+                                      return [...current, row.model];
+                                    }
+
+                                    return current.filter((model) => model !== row.model);
+                                  });
+                                }}
+                              />
+                              <span>{row.displayName}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', opacity: 0.68 }}>
+                          {selectedModels.length === 0 ? 'All models included' : `${selectedModels.length} selected`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedModels([])}
+                          disabled={selectedModels.length === 0}
+                          style={{
+                            border: '1px solid var(--border, #e5e7eb)',
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            background: 'var(--surface, #fff)',
+                            fontSize: '0.76rem',
+                            cursor: selectedModels.length === 0 ? 'not-allowed' : 'pointer',
+                            opacity: selectedModels.length === 0 ? 0.5 : 1,
+                          }}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <label className="filter-field" style={{ margin: 0 }}>
                 <span className="filter-field__label">From</span>
                 <input type="date" name="from" defaultValue={fromDate} style={{ padding: '4px 8px' }} />
