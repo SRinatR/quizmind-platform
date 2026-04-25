@@ -61,6 +61,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
   const { t } = usePreferences();
   const tu = t.usagePage;
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const [modelSearchText, setModelSearchText] = useState('');
   const [isModelFilterOpen, setIsModelFilterOpen] = useState(false);
   const modelFilterRef = useRef<HTMLDivElement | null>(null);
 
@@ -82,6 +83,15 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
   const modelOptions = useMemo(() => {
     return [...modelRows].sort((a, b) => b.requestCount - a.requestCount);
   }, [modelRows]);
+
+  const filteredModelOptions = useMemo(() => {
+    const query = modelSearchText.trim().toLowerCase();
+    if (!query) {
+      return modelOptions;
+    }
+
+    return modelOptions.filter((row) => row.displayName.toLowerCase().includes(query));
+  }, [modelOptions, modelSearchText]);
 
   useEffect(() => {
     if (!isModelFilterOpen) {
@@ -249,7 +259,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
             </div>
             <form method="get" style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
               {hasModels ? (
-                <div ref={modelFilterRef} style={{ position: 'relative', minWidth: '210px' }}>
+                <div ref={modelFilterRef} style={{ position: 'relative', minWidth: '210px', overflow: 'visible' }}>
                   <label className="filter-field" style={{ margin: 0 }}>
                     <span className="filter-field__label">Models</span>
                     <button
@@ -283,19 +293,40 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
                       aria-label="Model filters"
                       style={{
                         position: 'absolute',
-                        top: 'calc(100% + 6px)',
+                        bottom: 'calc(100% + 6px)',
                         left: 0,
                         right: 0,
-                        zIndex: 20,
+                        zIndex: 50,
                         border: '1px solid var(--border, #e5e7eb)',
                         borderRadius: '10px',
                         background: 'var(--surface, #fff)',
                         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
                         padding: '10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
                       }}
                     >
-                      <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'grid', gap: '7px', marginBottom: '8px' }}>
-                        {modelOptions.map((row) => {
+                      <input
+                        type="search"
+                        value={modelSearchText}
+                        onChange={(event) => setModelSearchText(event.target.value)}
+                        placeholder="Search models..."
+                        style={{
+                          width: '100%',
+                          border: '1px solid var(--border, #e5e7eb)',
+                          borderRadius: '7px',
+                          padding: '6px 8px',
+                          fontSize: '0.84rem',
+                          background: 'var(--surface, #fff)',
+                          color: 'inherit',
+                        }}
+                      />
+                      <div style={{ maxHeight: '270px', overflowY: 'auto', display: 'grid', gap: '7px', paddingRight: '2px' }}>
+                        {filteredModelOptions.length === 0 ? (
+                          <span style={{ fontSize: '0.82rem', opacity: 0.65, padding: '2px 0' }}>No models found</span>
+                        ) : null}
+                        {filteredModelOptions.map((row) => {
                           const checked = selectedModels.includes(row.model);
                           return (
                             <label
@@ -328,20 +359,27 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '0.75rem', opacity: 0.68 }}>
-                          {selectedModels.length === 0 ? 'All models included' : `${selectedModels.length} selected`}
+                          {selectedModels.length === 0
+                            ? 'All models included'
+                            : selectedModels.length === 1
+                              ? '1 model selected'
+                              : `${selectedModels.length} models selected`}
                         </span>
                         <button
                           type="button"
-                          onClick={() => setSelectedModels([])}
-                          disabled={selectedModels.length === 0}
+                          onClick={() => {
+                            setSelectedModels([]);
+                            setModelSearchText('');
+                          }}
+                          disabled={selectedModels.length === 0 && modelSearchText.length === 0}
                           style={{
                             border: '1px solid var(--border, #e5e7eb)',
                             borderRadius: '6px',
                             padding: '4px 8px',
                             background: 'var(--surface, #fff)',
                             fontSize: '0.76rem',
-                            cursor: selectedModels.length === 0 ? 'not-allowed' : 'pointer',
-                            opacity: selectedModels.length === 0 ? 0.5 : 1,
+                            cursor: selectedModels.length === 0 && modelSearchText.length === 0 ? 'not-allowed' : 'pointer',
+                            opacity: selectedModels.length === 0 && modelSearchText.length === 0 ? 0.5 : 1,
                           }}
                         >
                           Clear
