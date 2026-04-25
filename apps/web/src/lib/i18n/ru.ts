@@ -265,8 +265,8 @@ export const ru: Translations = {
     widgetError: 'Ошибка виджета:',
   },
   installs: {
-    noInstallations: 'Установок расширения в вашем аккаунте пока нет.',
-    noInstallationsDesc: 'Откройте расширение и используйте site bridge для подключения первой установки.',
+    noInstallations: 'Нет активных сессий расширения.',
+    noInstallationsDesc: 'Подключите расширение в браузере, чтобы начать новую активную сессию.',
     openUsage: 'Использование',
     openSettings: 'Настройки',
     fleet: 'Парк',

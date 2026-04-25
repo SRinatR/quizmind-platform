@@ -588,10 +588,18 @@ export class ExtensionControlService {
       });
     }
 
+    const inventoryItems = installations
+      .map((installation) => this.mapInstallationInventoryItem(installation, compatibilityPolicy, sessionStats))
+      .filter((installation) =>
+        installation.activeSessionCount > 0
+        && installation.connectionStatus !== 'reconnect_required'
+        && installation.requiresReconnect !== true,
+      );
+
     return {
       accessDecision,
       disconnectDecision: canWriteExtensionInstallations(session.principal),
-      items: installations.map((installation) => this.mapInstallationInventoryItem(installation, compatibilityPolicy, sessionStats)),
+      items: inventoryItems,
       permissions: session.permissions,
     };
   }

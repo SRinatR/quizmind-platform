@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   type ExtensionConnectionStatus,
   type ExtensionInstallationDisconnectResult,
+  type ExtensionInstallationInventoryItem,
   type ExtensionInstallationInventorySnapshot,
 } from '@quizmind/contracts';
 import { useState, useTransition } from 'react';
@@ -56,6 +57,14 @@ function ConnectionStatusBadge({ status }: { status: ExtensionConnectionStatus }
   return <span className="tag-soft tag-soft--orange">Reconnect required</span>;
 }
 
+function isActiveInstallation(installation: ExtensionInstallationInventoryItem): boolean {
+  return (
+    installation.activeSessionCount > 0
+    && installation.connectionStatus !== 'reconnect_required'
+    && installation.requiresReconnect !== true
+  );
+}
+
 export function InstallationsPageClient({ snapshot }: InstallationsPageClientProps) {
   const router = useRouter();
   const { t } = usePreferences();
@@ -64,9 +73,9 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   const [cardMessages, setCardMessages] = useState<Record<string, { type: 'info' | 'error'; text: string }>>({});
   const [, startTransition] = useTransition();
 
-  const connectedCount = snapshot.items.filter((i) => i.connectionStatus === 'connected' || i.connectionStatus === 'expiring_soon').length;
-  const reconnectRequiredCount = snapshot.items.filter((i) => i.connectionStatus === 'reconnect_required').length;
-  const compatibilityWarningCount = snapshot.items.filter((i) => i.compatibility.status !== 'supported').length;
+  const activeItems = snapshot.items.filter(isActiveInstallation);
+  const activeSessionCount = activeItems.reduce((sum, installation) => sum + installation.activeSessionCount, 0);
+  const compatibilityWarningCount = activeItems.filter((i) => i.compatibility.status !== 'supported').length;
 
   function setCardMessage(installationId: string, type: 'info' | 'error', text: string) {
     setCardMessages((prev) => ({ ...prev, [installationId]: { type, text } }));
@@ -105,7 +114,6 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
       }
 
       setPendingInstallationId(null);
-      setCardMessage(installationId, 'info', `${ti.loggedOut}. ${payload.data.revokedSessionCount} ${ti.activeSessions.toLowerCase()} revoked.`);
       startTransition(() => { router.refresh(); });
     } catch {
       setPendingInstallationId(null);
@@ -113,7 +121,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     }
   }
 
-  if (snapshot.items.length === 0) {
+  if (activeItems.length === 0) {
     return (
       <section className="empty-state">
         <span className="micro-label">{ti.devicesLabel}</span>
@@ -132,18 +140,13 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
       <section className="metrics-grid">
         <article className="stat-card">
           <span className="micro-label">{ti.devicesLabel}</span>
-          <p className="stat-value">{snapshot.items.length}</p>
+          <p className="stat-value">{activeItems.length}</p>
           <p className="metric-copy">{ti.managedInstallations}</p>
         </article>
         <article className="stat-card">
           <span className="micro-label">{ti.connectedDevices}</span>
-          <p className="stat-value">{connectedCount}</p>
+          <p className="stat-value">{activeSessionCount}</p>
           <p className="metric-copy">{ti.connectedDevicesDesc}</p>
-        </article>
-        <article className="stat-card">
-          <span className="micro-label">{ti.reconnectRequired}</span>
-          <p className="stat-value">{reconnectRequiredCount}</p>
-          <p className="metric-copy">{ti.reconnectRequiredDesc}</p>
         </article>
         <article className="stat-card">
           <span className="micro-label">{ti.compatibilityWarnings}</span>
@@ -158,10 +161,9 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         <p>{ti.devicesDesc}</p>
 
         <div className="installation-list" style={{ marginTop: '16px' }}>
-          {snapshot.items.map((installation) => {
+          {activeItems.map((installation) => {
             const cardMessage = cardMessages[installation.installationId];
             const isDisconnecting = pendingInstallationId === installation.installationId;
-            const disconnectDisabled = installation.activeSessionCount === 0 || isDisconnecting;
 
             return (
               <div className="installation-row" key={installation.installationId}>
@@ -183,12 +185,10 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     <span className="kv-row__key">{ti.lastSeen}</span>
                     <span className="kv-row__value">{formatRelativeTime(installation.lastSeenAt)}</span>
                   </div>
-                  {installation.connectionStatus !== 'reconnect_required' ? (
-                    <div className="kv-row">
-                      <span className="kv-row__key">{ti.tokenExpires}</span>
-                      <span className="kv-row__value">{formatDateTime(installation.lastSessionExpiresAt)}</span>
-                    </div>
-                  ) : null}
+                  <div className="kv-row">
+                    <span className="kv-row__key">{ti.tokenExpires}</span>
+                    <span className="kv-row__value">{formatDateTime(installation.lastSessionExpiresAt)}</span>
+                  </div>
                   {installation.compatibility.reason ? (
                     <div className="kv-row">
                       <span className="kv-row__key">Compatibility</span>
@@ -196,12 +196,6 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     </div>
                   ) : null}
                 </div>
-
-                {installation.connectionStatus === 'reconnect_required' ? (
-                  <p className="list-muted" style={{ fontSize: '0.84rem', margin: '8px 0 0' }}>
-                    {ti.reconnectGuidance}
-                  </p>
-                ) : null}
 
                 {cardMessage ? (
                   <div className={`banner ${cardMessage.type === 'error' ? 'banner-error' : 'banner-info'}`} style={{ marginTop: '8px' }}>
@@ -211,16 +205,12 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
                 <div className="link-row" style={{ marginTop: '10px' }}>
                   <button
-                    className={disconnectDisabled ? 'btn-ghost' : 'btn-danger'}
-                    disabled={disconnectDisabled}
+                    className={isDisconnecting ? 'btn-ghost' : 'btn-danger'}
+                    disabled={isDisconnecting}
                     onClick={() => void handleDisconnect(installation.installationId)}
                     type="button"
                   >
-                    {isDisconnecting
-                      ? ti.loggingOut
-                      : installation.activeSessionCount === 0
-                        ? ti.loggedOut
-                        : ti.logout}
+                    {isDisconnecting ? ti.loggingOut : ti.logout}
                   </button>
                 </div>
               </div>
