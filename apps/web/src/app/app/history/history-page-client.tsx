@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { type AiHistoryListResponse } from '@quizmind/contracts';
+import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
 import { usePreferences } from '../../../lib/preferences';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { AiRequestDetailModal } from './ai-request-detail-modal';
@@ -41,6 +42,7 @@ export interface HistoryPageClientProps {
   actorId?: string;
   hasSession: boolean;
   clearHref: string;
+  exchangeRates: ExchangeRateSnapshot | null;
 }
 
 function statusBadgeClass(status: string): string {
@@ -69,7 +71,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
     source, aiHistory, legacyHistory, effectivePage, pageSize,
     requestType, requestStatus, modelFilter, providerFilter,
     fromFilter, toFilter, eventType, installationId, actorId,
-    hasSession, clearHref,
+    hasSession, clearHref, exchangeRates,
   } = props;
 
   if (!hasSession) {
@@ -258,7 +260,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
         </section>
 
         {selectedId && (
-          <AiRequestDetailModal id={selectedId} onClose={() => setSelectedId(null)} />
+          <AiRequestDetailModal id={selectedId} onClose={() => setSelectedId(null)} exchangeRates={exchangeRates} />
         )}
       </>
     );

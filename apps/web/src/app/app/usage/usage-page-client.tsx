@@ -9,6 +9,8 @@ import {
   type AiAnalyticsSnapshot,
 } from '@quizmind/contracts';
 import type { SessionSnapshot } from '../../../lib/api';
+import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
+import { formatUsdAmountByPreference } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
 
 interface UsagePageClientProps {
@@ -16,6 +18,7 @@ interface UsagePageClientProps {
   analytics: AiAnalyticsSnapshot | null;
   fromDate: string;
   toDate: string;
+  exchangeRates: ExchangeRateSnapshot | null;
 }
 
 function formatDate(value?: string | null) {
@@ -57,8 +60,8 @@ function statCard(label: string, value: string, sub?: string) {
   );
 }
 
-export function UsagePageClient({ session, analytics, fromDate, toDate }: UsagePageClientProps) {
-  const { t } = usePreferences();
+export function UsagePageClient({ session, analytics, fromDate, toDate, exchangeRates }: UsagePageClientProps) {
+  const { t, prefs } = usePreferences();
   const tu = t.usagePage;
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [modelSearchText, setModelSearchText] = useState('');
@@ -190,10 +193,10 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
             {statCard('Total requests', String(filteredTotals.totalRequests))}
             {statCard('Successful', String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} failed`)}
             {statCard('Total tokens', formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} prompt · ${formatTokens(filteredTotals.totalCompletionTokens)} completion`)}
-            {statCard('Est. cost', `$${filteredTotals.estimatedCostUsd.toFixed(4)}`)}
+            {statCard('Est. cost', formatUsdAmountByPreference(filteredTotals.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
             {filteredTotals.avgDurationMs !== null ? statCard('Avg latency', `${Math.round(filteredTotals.avgDurationMs)}ms`) : null}
             {mostUsedModel ? statCard('Most used model', mostUsedModel.displayName, `${mostUsedModel.requestCount} requests`) : null}
-            {highestCostModel ? statCard('Highest cost model', highestCostModel.displayName, `$${highestCostModel.estimatedCostUsd.toFixed(4)}`) : null}
+            {highestCostModel ? statCard('Highest cost model', highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
           </div>
 
           {filteredRows.length > 0 ? (
@@ -224,7 +227,9 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{row.failedCount}</td>
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatPercent(successRate)}</td>
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatTokens(row.totalTokens)}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>${row.estimatedCostUsd.toFixed(4)}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
+                            {formatUsdAmountByPreference(row.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}
+                          </td>
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{row.avgDurationMs !== null ? `${Math.round(row.avgDurationMs)}ms` : '—'}</td>
                         </tr>
                       );
