@@ -6,7 +6,6 @@ import {
   type ExtensionConnectionStatus,
   type ExtensionInstallationDisconnectResult,
   type ExtensionInstallationInventorySnapshot,
-  type ExtensionInstallationRotateSessionResult,
 } from '@quizmind/contracts';
 import { useState, useTransition } from 'react';
 
@@ -19,12 +18,6 @@ interface InstallationsPageClientProps {
 interface DisconnectRouteResponse {
   ok: boolean;
   data?: ExtensionInstallationDisconnectResult;
-  error?: { message?: string };
-}
-
-interface RotateSessionRouteResponse {
-  ok: boolean;
-  data?: ExtensionInstallationRotateSessionResult;
   error?: { message?: string };
 }
 
@@ -67,26 +60,13 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   const router = useRouter();
   const { t } = usePreferences();
   const ti = t.installs;
-  const [expandedAdminCard, setExpandedAdminCard] = useState<string | null>(null);
-  const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
   const [pendingInstallationId, setPendingInstallationId] = useState<string | null>(null);
-  const [pendingRotationInstallationId, setPendingRotationInstallationId] = useState<string | null>(null);
-  const [rotatedSessions, setRotatedSessions] = useState<Record<string, ExtensionInstallationRotateSessionResult>>({});
-  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
   const [cardMessages, setCardMessages] = useState<Record<string, { type: 'info' | 'error'; text: string }>>({});
   const [, startTransition] = useTransition();
 
   const connectedCount = snapshot.items.filter((i) => i.connectionStatus === 'connected' || i.connectionStatus === 'expiring_soon').length;
   const reconnectRequiredCount = snapshot.items.filter((i) => i.connectionStatus === 'reconnect_required').length;
   const compatibilityWarningCount = snapshot.items.filter((i) => i.compatibility.status !== 'supported').length;
-
-  function getActionReason(installationId: string) {
-    return actionReasons[installationId] ?? '';
-  }
-
-  function setActionReason(installationId: string, value: string) {
-    setActionReasons((prev) => ({ ...prev, [installationId]: value }));
-  }
 
   function setCardMessage(installationId: string, type: 'info' | 'error', text: string) {
     setCardMessages((prev) => ({ ...prev, [installationId]: { type, text } }));
@@ -101,10 +81,9 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   }
 
   async function handleDisconnect(installationId: string) {
-    const reason = getActionReason(installationId).trim();
+    const shouldDisconnect = window.confirm(ti.logoutConfirm);
 
-    if (!reason) {
-      setCardMessage(installationId, 'error', ti.provideReasonError);
+    if (!shouldDisconnect) {
       return;
     }
 
@@ -112,10 +91,10 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     clearCardMessage(installationId);
 
     try {
-      const response = await fetch('/bff/extension/installations/disconnect', {
+      const response = await fetch('/bff/extension/installations/self-disconnect', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ installationId, reason }),
+        body: JSON.stringify({ installationId }),
       });
       const payload = (await response.json().catch(() => null)) as DisconnectRouteResponse | null;
 
@@ -126,64 +105,11 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
       }
 
       setPendingInstallationId(null);
-      setCardMessage(installationId, 'info', `${ti.disconnect.toLowerCase()}. ${payload.data.revokedSessionCount} ${ti.activeSessions.toLowerCase()} revoked.`);
+      setCardMessage(installationId, 'info', `${ti.loggedOut}. ${payload.data.revokedSessionCount} ${ti.activeSessions.toLowerCase()} revoked.`);
       startTransition(() => { router.refresh(); });
     } catch {
       setPendingInstallationId(null);
       setCardMessage(installationId, 'error', ti.disconnectError);
-    }
-  }
-
-  async function handleRotateSession(installationId: string) {
-    const reason = getActionReason(installationId).trim();
-
-    if (!reason) {
-      setCardMessage(installationId, 'error', ti.provideReasonError);
-      return;
-    }
-
-    setPendingRotationInstallationId(installationId);
-    clearCardMessage(installationId);
-    setRotatedSessions((prev) => {
-      const next = { ...prev };
-      delete next[installationId];
-      return next;
-    });
-
-    try {
-      const response = await fetch('/bff/extension/installations/rotate-session', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ installationId, reason }),
-      });
-      const payload = (await response.json().catch(() => null)) as RotateSessionRouteResponse | null;
-
-      if (!response.ok || !payload?.ok || !payload.data) {
-        setPendingRotationInstallationId(null);
-        setCardMessage(installationId, 'error', payload?.error?.message ?? ti.rotateError);
-        return;
-      }
-
-      setPendingRotationInstallationId(null);
-      setRotatedSessions((prev) => ({ ...prev, [installationId]: payload.data! }));
-      setCardMessage(installationId, 'info', `${ti.rotateToken.toLowerCase()} — new token issued.`);
-      startTransition(() => { router.refresh(); });
-    } catch {
-      setPendingRotationInstallationId(null);
-      setCardMessage(installationId, 'error', ti.rotateError);
-    }
-  }
-
-  async function handleCopyToken(installationId: string) {
-    const token = rotatedSessions[installationId]?.session.token;
-
-    if (!token) return;
-
-    try {
-      await navigator.clipboard.writeText(token);
-      setCopiedTokenId(installationId);
-    } catch {
-      setCardMessage(installationId, 'error', ti.copyTokenError);
     }
   }
 
@@ -234,15 +160,8 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         <div className="installation-list" style={{ marginTop: '16px' }}>
           {snapshot.items.map((installation) => {
             const cardMessage = cardMessages[installation.installationId];
-            const rotatedSession = rotatedSessions[installation.installationId];
-            const actionReason = getActionReason(installation.installationId);
-            const isAdminExpanded = expandedAdminCard === installation.installationId;
-            const canWrite = snapshot.disconnectDecision.allowed;
             const isDisconnecting = pendingInstallationId === installation.installationId;
-            const isRotating = pendingRotationInstallationId === installation.installationId;
-            const reasonTrimmed = actionReason.trim();
-            const disconnectDisabled = !canWrite || !reasonTrimmed || installation.activeSessionCount === 0 || isDisconnecting;
-            const rotateDisabled = !canWrite || !reasonTrimmed || isRotating;
+            const disconnectDisabled = installation.activeSessionCount === 0 || isDisconnecting;
 
             return (
               <div className="installation-row" key={installation.installationId}>
@@ -290,108 +209,20 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                   </div>
                 ) : null}
 
-                {rotatedSession ? (
-                  <div className="connect-success" style={{ marginTop: '10px' }}>
-                    <span className="micro-label">{ti.rotatedToken}</span>
-                    <div className="connect-code-block">
-                      <code>{rotatedSession.session.token}</code>
-                      <button
-                        className="connect-code-block__copy"
-                        onClick={() => void handleCopyToken(installation.installationId)}
-                        type="button"
-                      >
-                        {copiedTokenId === installation.installationId ? ti.copied : ti.copy}
-                      </button>
-                    </div>
-                    <div className="kv-list" style={{ marginTop: '6px' }}>
-                      <div className="kv-row">
-                        <span className="kv-row__key">{ti.expires}</span>
-                        <span className="kv-row__value">{formatDateTime(rotatedSession.session.expiresAt)}</span>
-                      </div>
-                      <div className="kv-row">
-                        <span className="kv-row__key">{ti.refreshAfter}</span>
-                        <span className="kv-row__value">{rotatedSession.session.refreshAfterSeconds}s</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
                 <div className="link-row" style={{ marginTop: '10px' }}>
-                  <Link className="btn-ghost" href="/app/usage">{ti.usage}</Link>
-                  {canWrite ? (
-                    <button
-                      className="btn-ghost"
-                      onClick={() => setExpandedAdminCard(isAdminExpanded ? null : installation.installationId)}
-                      type="button"
-                    >
-                      {ti.adminActionsToggle}
-                    </button>
-                  ) : null}
+                  <button
+                    className={disconnectDisabled ? 'btn-ghost' : 'btn-danger'}
+                    disabled={disconnectDisabled}
+                    onClick={() => void handleDisconnect(installation.installationId)}
+                    type="button"
+                  >
+                    {isDisconnecting
+                      ? ti.loggingOut
+                      : installation.activeSessionCount === 0
+                        ? ti.loggedOut
+                        : ti.logout}
+                  </button>
                 </div>
-
-                {isAdminExpanded && canWrite ? (
-                  <div className="admin-actions-panel" style={{ marginTop: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '12px' }}>
-                    <details>
-                      <summary style={{ cursor: 'pointer', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                        {ti.sessionDetails}
-                      </summary>
-                      <div className="kv-list" style={{ marginTop: '6px' }}>
-                        <div className="kv-row">
-                          <span className="kv-row__key">{ti.installationsLabel}</span>
-                          <span className="kv-row__value" style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}>{installation.installationId}</span>
-                        </div>
-                        <div className="kv-row">
-                          <span className="kv-row__key">{ti.bound}</span>
-                          <span className="kv-row__value">{formatDateTime(installation.boundAt)}</span>
-                        </div>
-                        <div className="kv-row">
-                          <span className="kv-row__key">{ti.schema}</span>
-                          <span className="kv-row__value">{installation.schemaVersion}</span>
-                        </div>
-                        <div className="kv-row">
-                          <span className="kv-row__key">{ti.activeSessions}</span>
-                          <span className="kv-row__value">{installation.activeSessionCount}</span>
-                        </div>
-                      </div>
-                    </details>
-
-                    <label className="form-field" style={{ marginTop: '10px' }}>
-                      <span className="form-field__label">
-                        {ti.operatorReason} <span className="list-muted">{ti.operatorReasonHint}</span>
-                      </span>
-                      <textarea
-                        maxLength={500}
-                        onChange={(event) => setActionReason(installation.installationId, event.target.value)}
-                        placeholder={ti.operatorReasonPlaceholder}
-                        rows={2}
-                        value={actionReason}
-                      />
-                    </label>
-
-                    <div className="link-row" style={{ marginTop: '8px' }}>
-                      <button
-                        className="btn-ghost"
-                        disabled={rotateDisabled}
-                        onClick={() => void handleRotateSession(installation.installationId)}
-                        type="button"
-                      >
-                        {isRotating ? ti.rotating : ti.rotateToken}
-                      </button>
-                      <button
-                        className={disconnectDisabled ? 'btn-ghost' : 'btn-danger'}
-                        disabled={disconnectDisabled}
-                        onClick={() => void handleDisconnect(installation.installationId)}
-                        type="button"
-                      >
-                        {isDisconnecting
-                          ? ti.disconnecting
-                          : installation.activeSessionCount === 0
-                            ? ti.noActiveSessions
-                            : ti.disconnect}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
               </div>
             );
           })}

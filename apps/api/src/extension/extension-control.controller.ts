@@ -116,6 +116,10 @@ interface ExtensionAiRuntimeRequest {
   maxTokens?: number;
 }
 
+interface ExtensionInstallationSelfDisconnectRequest {
+  installationId?: string;
+}
+
 type InstallationSessionSnapshot = Awaited<ReturnType<ExtensionControlService['resolveInstallationSession']>>;
 
 function readFiniteNumber(value: unknown): number | undefined {
@@ -304,6 +308,19 @@ export class ExtensionControlController {
   ) {
     return ok(
       await this.extensionControlService.disconnectInstallationForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        request,
+      ),
+    );
+  }
+
+  @Post('extension/installations/self-disconnect')
+  async selfDisconnectInstallation(
+    @Body() request?: ExtensionInstallationSelfDisconnectRequest,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.extensionControlService.selfDisconnectInstallationForCurrentSession(
         await this.requireConnectedSession(authorization),
         request,
       ),
