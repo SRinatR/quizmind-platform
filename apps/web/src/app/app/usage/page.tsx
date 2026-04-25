@@ -1,6 +1,6 @@
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
-import { getAiAnalytics, getSession, getUsageSummary, getUserProfile, resolvePersona } from '../../../lib/api';
+import { getAiAnalytics, getSession, getUserProfile, resolvePersona } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
 import { UsagePageClient } from './usage-page-client';
 
@@ -33,16 +33,13 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
     ? new Date(fromParam)
     : new Date(toDate.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const [usage, analytics] = await Promise.all([
-    getUsageSummary(persona, accessToken),
-    getAiAnalytics(
-      {
-        from: fromDate.toISOString(),
-        to: toDate.toISOString(),
-      },
-      accessToken,
-    ),
-  ]);
+  const analytics = await getAiAnalytics(
+    {
+      from: fromDate.toISOString(),
+      to: toDate.toISOString(),
+    },
+    accessToken,
+  );
 
   return (
     <SiteShell
@@ -60,7 +57,6 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
     >
       <UsagePageClient
         session={session}
-        usage={usage}
         analytics={analytics}
         fromDate={fromDate.toISOString().slice(0, 10)}
         toDate={toDate.toISOString().slice(0, 10)}
