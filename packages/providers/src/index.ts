@@ -24,6 +24,13 @@ export const providerRegistry: ProviderRegistryEntry[] = [
     supportsBringYourOwnKey: true,
   },
   {
+    provider: 'routerai',
+    displayName: 'RouterAI',
+    availability: 'beta',
+    supportsProxy: true,
+    supportsBringYourOwnKey: false,
+  },
+  {
     provider: 'anthropic',
     displayName: 'Anthropic',
     availability: 'beta',
@@ -62,6 +69,42 @@ export const providerModelCatalog: ProviderModelCatalogEntry[] = [
     displayName: 'GPT-4.1 Mini',
     capabilityTags: ['text', 'vision'],
     availability: 'active',
+    latencyClass: 'standard',
+    planAvailability: ['pro', 'business'],
+  },
+  {
+    provider: 'routerai',
+    modelId: 'openai/gpt-4o-mini',
+    displayName: 'GPT-4o Mini',
+    capabilityTags: ['text', 'vision'],
+    availability: 'beta',
+    latencyClass: 'standard',
+    planAvailability: ['free', 'pro', 'business'],
+  },
+  {
+    provider: 'routerai',
+    modelId: 'openai/gpt-4o',
+    displayName: 'GPT-4o',
+    capabilityTags: ['text', 'vision'],
+    availability: 'beta',
+    latencyClass: 'standard',
+    planAvailability: ['pro', 'business'],
+  },
+  {
+    provider: 'routerai',
+    modelId: 'google/gemini-2.5-flash',
+    displayName: 'Gemini 2.5 Flash',
+    capabilityTags: ['text', 'vision'],
+    availability: 'beta',
+    latencyClass: 'standard',
+    planAvailability: ['free', 'pro', 'business'],
+  },
+  {
+    provider: 'routerai',
+    modelId: 'anthropic/claude-3.5-sonnet',
+    displayName: 'Claude 3.5 Sonnet',
+    capabilityTags: ['text', 'vision'],
+    availability: 'beta',
     latencyClass: 'standard',
     planAvailability: ['pro', 'business'],
   },
@@ -191,6 +234,14 @@ export function validateProviderSecretShape(
     return {
       valid: false,
       reason: 'OpenRouter keys usually start with "sk-or-".',
+    };
+  }
+
+  // RouterAI keys do not have one documented prefix; keep validation shape-only.
+  if (provider === 'routerai' && normalizedSecret.length < 16) {
+    return {
+      valid: false,
+      reason: 'RouterAI keys usually have at least 16 characters.',
     };
   }
 

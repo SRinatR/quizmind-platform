@@ -281,6 +281,54 @@ test('ExtensionControlController.listExtensionModels returns extension-friendly 
   );
 });
 
+test('ExtensionControlController.listExtensionModels returns RouterAI models when selected upstream', async () => {
+  const extensionControlService = {
+    async resolveInstallationSession() {
+      return {
+        installation: {
+          installationId: 'inst_1',
+          userId: 'user_1',
+          workspaceId: 'ws_1',
+        },
+      };
+    },
+  };
+  const aiProxyService = {
+    async listModelsForCurrentSession() {
+      return {
+        providers: [{ provider: 'routerai', displayName: 'RouterAI', availability: 'beta', supportsProxy: true, supportsBringYourOwnKey: false }],
+        defaultProvider: 'routerai',
+        defaultModel: 'openai/gpt-4o-mini',
+        models: [
+          {
+            provider: 'routerai',
+            modelId: 'openai/gpt-4o-mini',
+            displayName: 'GPT-4o Mini',
+            capabilityTags: ['text', 'vision'],
+            availability: 'active',
+          },
+        ],
+      };
+    },
+  };
+  const controller = new ExtensionControlController(
+    {} as any,
+    extensionControlService as any,
+    aiProxyService as any,
+  );
+
+  const response = await controller.listExtensionModels('chat', 'Bearer installation-token');
+
+  assert.equal(response.ok, true);
+  assert.deepEqual(
+    (response.data as any).models.map((entry: Record<string, unknown>) => ({
+      id: entry.id,
+      provider: entry.provider,
+    })),
+    [{ id: 'openai/gpt-4o-mini', provider: 'routerai' }],
+  );
+});
+
 function makeInstallationSession() {
   return {
     async resolveInstallationSession() {

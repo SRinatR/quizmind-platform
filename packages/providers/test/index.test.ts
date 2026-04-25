@@ -13,6 +13,7 @@ import {
 
 test('provider registry exposes starter providers', () => {
   assert.ok(providerRegistry.some((entry) => entry.provider === 'openrouter'));
+  assert.ok(providerRegistry.some((entry) => entry.provider === 'routerai'));
   assert.ok(providerRegistry.some((entry) => entry.provider === 'internal'));
 });
 
@@ -54,6 +55,7 @@ test('provider secret validation enforces provider-specific key shapes', () => {
   assert.equal(validateProviderSecretShape('openai', 'sk-test_123456789').valid, true);
   assert.equal(validateProviderSecretShape('anthropic', 'sk-ant-test_123456789').valid, true);
   assert.equal(validateProviderSecretShape('openrouter', 'sk-or-test_123456789').valid, true);
+  assert.equal(validateProviderSecretShape('routerai', 'routerai-test_123456789').valid, true);
   assert.equal(validateProviderSecretShape('internal', 'gateway-secret-123456').valid, false);
   assert.equal(validateProviderSecretShape('openrouter', 'sk-test_123').valid, false);
 });

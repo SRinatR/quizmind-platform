@@ -49,12 +49,13 @@ function createPolicyState(governance: AdminProviderGovernanceStateSnapshot) {
 
 function deriveStatus(governance: AdminProviderGovernanceStateSnapshot): { label: string; ok: boolean } {
   const { policy, items } = governance;
+  const activeProvider = policy.defaultProvider === 'routerai' ? 'routerai' : 'openrouter';
   const hasKey = items.some(
-    (item) => item.provider === 'openrouter' && item.ownerType === 'platform' && !item.revokedAt,
+    (item) => item.provider === activeProvider && item.ownerType === 'platform' && !item.revokedAt,
   );
 
   if (!hasKey) {
-    return { label: 'OpenRouter key missing', ok: false };
+    return { label: `${activeProvider === 'routerai' ? 'RouterAI' : 'OpenRouter'} key missing`, ok: false };
   }
 
   const policyOk =
@@ -65,27 +66,29 @@ function deriveStatus(governance: AdminProviderGovernanceStateSnapshot): { label
     (policy.allowWorkspaceSharedCredentials ?? false) === false &&
     (policy.requireAdminApproval ?? false) === false &&
     policy.providers.length === 1 &&
-    policy.providers[0] === 'openrouter' &&
-    policy.defaultProvider === 'openrouter';
+    policy.providers[0] === activeProvider &&
+    policy.defaultProvider === activeProvider;
 
   if (!policyOk) {
     return { label: 'Policy not locked to platform-only', ok: false };
   }
 
-  return { label: 'OpenRouter routing active', ok: true };
+  return { label: `${activeProvider === 'routerai' ? 'RouterAI' : 'OpenRouter'} routing active`, ok: true };
 }
 
 export function AdminAiProvidersClient({ governance, isConnectedSession }: Props) {
   const router = useRouter();
+  const initialPlatformProvider = governance.policy.defaultProvider === 'routerai' ? 'routerai' : 'openrouter';
 
   // Primary action state
+  const [quickProvider, setQuickProvider] = useState<Extract<AiProvider, 'openrouter' | 'routerai'>>(initialPlatformProvider);
   const [quickSecret, setQuickSecret] = useState('');
   const [quickModel, setQuickModel] = useState(() => {
-    const openrouterModels = governance.models.filter((m) => m.provider === 'openrouter');
+    const activeModels = governance.models.filter((m) => m.provider === initialPlatformProvider);
     return (
       governance.policy.defaultModel ??
-      openrouterModels.find((m) => m.capabilityTags.includes('text'))?.modelId ??
-      openrouterModels[0]?.modelId ??
+      activeModels.find((m) => m.capabilityTags.includes('text'))?.modelId ??
+      activeModels[0]?.modelId ??
       ''
     );
   });
@@ -107,43 +110,54 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
   const canManagePlatform = governance.accessDecision.allowed;
   const canRotate = governance.rotateDecision.allowed || canManagePlatform;
   const workspaceOverrideActive = governance.policy.scopeType === 'workspace';
-  const openrouterModels = governance.models.filter((m) => m.provider === 'openrouter');
+  const quickProviderLabel = quickProvider === 'routerai' ? 'RouterAI' : 'OpenRouter';
+  const quickProviderModels = governance.models.filter((m) => m.provider === quickProvider);
+  const activePolicyProvider = governance.policy.defaultProvider === 'routerai' ? 'routerai' : 'openrouter';
+  const platformQuickProviderCred = governance.items
+    .filter((item) => item.provider === quickProvider && item.ownerType === 'platform' && !item.revokedAt)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0] ?? null;
+  const platformActiveProviderCred = governance.items
+    .filter((item) => item.provider === activePolicyProvider && item.ownerType === 'platform' && !item.revokedAt)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0] ?? null;
   const platformOpenRouterCred = governance.items
     .filter((item) => item.provider === 'openrouter' && item.ownerType === 'platform' && !item.revokedAt)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0] ?? null;
+  const platformRouterAiCred = governance.items
+    .filter((item) => item.provider === 'routerai' && item.ownerType === 'platform' && !item.revokedAt)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0] ?? null;
   const status = deriveStatus(governance);
   const lastPolicyChange = governance.policyHistory[0] ?? null;
 
   async function saveAndActivate() {
-    if (!quickSecret.trim()) {
-      setErrorMessage('OpenRouter API key is required.');
+    if (!quickSecret.trim() && !platformQuickProviderCred) {
+      setErrorMessage(`${quickProviderLabel} API key is required.`);
       setStatusMessage(null);
       return;
     }
 
     setIsSavingAndActivating(true);
     setErrorMessage(null);
-    setStatusMessage('Saving and activating OpenRouter routing...');
+    setStatusMessage(`Saving and activating ${quickProviderLabel} routing...`);
 
     try {
-      const response = await fetch('/bff/admin/ai-routing/openrouter/activate', {
+      const response = await fetch(`/bff/admin/ai-routing/${quickProvider}/activate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ secret: quickSecret.trim(), defaultModel: quickModel || null }),
       });
 
-      const payload = (await response.json().catch(() => null)) as MutationRouteResponse<{ credentialUpdatedAt: string; policyUpdatedAt: string }> | null;
+      const payload = (await response.json().catch(() => null)) as MutationRouteResponse<{ credentialUpdatedAt?: string; policyUpdatedAt: string }> | null;
 
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSavingAndActivating(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to activate OpenRouter routing.');
+        setErrorMessage(payload?.error?.message ?? `Unable to activate ${quickProviderLabel} routing.`);
         return;
       }
 
       setQuickSecret('');
       setIsSavingAndActivating(false);
-      setStatusMessage(`Activated at ${formatUtcDateTime(payload.data.policyUpdatedAt)}.`);
+      setStatusMessage(`Activated ${quickProviderLabel} at ${formatUtcDateTime(payload.data.policyUpdatedAt)}.`);
       router.refresh();
     } catch {
       setIsSavingAndActivating(false);
@@ -330,35 +344,46 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       {statusMessage ? <p className="admin-inline-status">{statusMessage}</p> : null}
       {errorMessage ? <p className="admin-inline-error">{errorMessage}</p> : null}
 
-      {/* A. Primary: OpenRouter Platform Key */}
+      {/* A. Primary: Platform AI routing */}
       <section className="panel">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-          <span className="micro-label">OpenRouter Platform Key</span>
+          <span className="micro-label">Platform AI Routing</span>
           <span className={status.ok ? 'tag' : 'tag warn'}>{status.label}</span>
         </div>
-        <p style={{ marginTop: 0 }}>Paste your OpenRouter key here. The platform will use it for all users.</p>
+        <p style={{ marginTop: 0 }}>Choose whether platform-managed extension traffic uses OpenRouter or RouterAI.</p>
         {isConnectedSession ? (
           <>
             <div className="admin-ticket-editor">
               <label className="admin-ticket-field">
                 <span className="micro-label">Provider</span>
-                <input disabled value="OpenRouter (platform-managed)" readOnly />
+                <select
+                  value={quickProvider}
+                  onChange={(event) => {
+                    const provider = event.target.value === 'routerai' ? 'routerai' : 'openrouter';
+                    const providerModels = governance.models.filter((m) => m.provider === provider);
+                    setQuickProvider(provider);
+                    setQuickModel(providerModels.find((m) => m.capabilityTags.includes('text'))?.modelId ?? providerModels[0]?.modelId ?? '');
+                  }}
+                >
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="routerai">RouterAI</option>
+                </select>
               </label>
               <label className="admin-ticket-field">
                 <span className="micro-label">API Key</span>
                 <input
                   type="password"
-                  placeholder={platformOpenRouterCred ? 'Enter new key to rotate…' : 'sk-or-…'}
+                  placeholder={platformQuickProviderCred ? 'Enter new key to rotate…' : quickProvider === 'openrouter' ? 'sk-or-…' : 'RouterAI API key'}
                   value={quickSecret}
                   onChange={(event) => setQuickSecret(event.target.value)}
                 />
               </label>
-              {openrouterModels.length > 0 ? (
+              {quickProviderModels.length > 0 ? (
                 <label className="admin-ticket-field">
                   <span className="micro-label">Default model (optional)</span>
                   <select value={quickModel} onChange={(event) => setQuickModel(event.target.value)}>
                     <option value="">platform-selected</option>
-                    {openrouterModels.map((m) => (
+                    {quickProviderModels.map((m) => (
                       <option key={m.modelId} value={m.modelId}>{m.displayName}</option>
                     ))}
                   </select>
@@ -368,16 +393,16 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
             <div className="admin-user-actions">
               <button
                 className="btn-primary"
-                disabled={isSavingAndActivating || !canManagePlatform || !quickSecret.trim()}
+                disabled={isSavingAndActivating || !canManagePlatform || (!platformQuickProviderCred && !quickSecret.trim())}
                 onClick={() => void saveAndActivate()}
                 type="button"
               >
-                {isSavingAndActivating ? 'Saving…' : platformOpenRouterCred ? 'Rotate and Activate' : 'Save and Activate'}
+                {isSavingAndActivating ? 'Saving…' : platformQuickProviderCred ? (quickSecret.trim() ? 'Rotate and Activate' : 'Activate') : 'Save and Activate'}
               </button>
             </div>
           </>
         ) : (
-          <p>Sign in with a connected admin session to configure OpenRouter routing.</p>
+          <p>Sign in with a connected admin session to configure platform AI routing.</p>
         )}
       </section>
 
@@ -407,7 +432,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           </div>
           <div className="list-item">
             <strong>Platform key</strong>
-            <p>{platformOpenRouterCred ? (platformOpenRouterCred.secretPreview ?? 'configured') : 'not configured'}</p>
+            <p>{platformActiveProviderCred ? (platformActiveProviderCred.secretPreview ?? 'configured') : 'not configured'}</p>
           </div>
           <div className="list-item">
             <strong>Last updated</strong>
@@ -439,7 +464,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
             <article className="panel">
               <span className="micro-label">Emergency override</span>
               <h2>Manual policy editor</h2>
-              <p className="list-muted">Use only if the normal OpenRouter setup is not sufficient. Changes here override the active routing configuration.</p>
+              <p className="list-muted">Use only if the normal provider setup is not sufficient. Changes here override the active routing configuration.</p>
               {isConnectedSession ? (
                 <>
                   <div className="admin-ticket-editor">
@@ -468,29 +493,22 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
               ) : <p>Sign in with a connected admin session to override policy.</p>}
             </article>
 
-            {/* Advanced block 2: Platform OpenRouter credential maintenance */}
+            {/* Advanced block 2: Platform credential maintenance */}
             <article className="panel">
               <span className="micro-label">Credential maintenance</span>
-              <h2>Platform OpenRouter key</h2>
-              {platformOpenRouterCred ? (
+              <h2>Platform keys</h2>
+              {platformOpenRouterCred || platformRouterAiCred ? (
                 <>
                   <div className="mini-list">
-                    <div className="list-item">
-                      <strong>Provider</strong>
-                      <p>openrouter</p>
-                    </div>
-                    <div className="list-item">
-                      <strong>Key preview</strong>
-                      <p>{platformOpenRouterCred.secretPreview ?? '—'}</p>
-                    </div>
-                    <div className="list-item">
-                      <strong>Status</strong>
-                      <p>{platformOpenRouterCred.validationStatus}{platformOpenRouterCred.validationMessage ? ` — ${platformOpenRouterCred.validationMessage}` : ''}</p>
-                    </div>
-                    <div className="list-item">
-                      <strong>Updated</strong>
-                      <p>{formatUtcDateTime(platformOpenRouterCred.updatedAt)}</p>
-                    </div>
+                    {[platformOpenRouterCred, platformRouterAiCred].filter(Boolean).map((credential) => credential ? (
+                      <div className="list-item" key={credential.id}>
+                        <strong>{credential.provider}</strong>
+                        <p>
+                          {credential.secretPreview ?? 'configured'} · {credential.validationStatus}
+                          {credential.validationMessage ? ` — ${credential.validationMessage}` : ''} · {formatUtcDateTime(credential.updatedAt)}
+                        </p>
+                      </div>
+                    ) : null)}
                   </div>
                   {isConnectedSession ? (
                     <>
@@ -499,7 +517,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                           <span className="micro-label">New secret (to rotate only)</span>
                           <input
                             type="password"
-                            placeholder="sk-or-… leave blank to skip rotation"
+                            placeholder="New OpenRouter key"
                             value={advancedRotateSecret}
                             onChange={(event) => setAdvancedRotateSecret(event.target.value)}
                           />
@@ -527,7 +545,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                   ) : null}
                 </>
               ) : (
-                <p className="list-muted">No active platform OpenRouter credential. Use Save and Activate above to add one.</p>
+                <p className="list-muted">No active platform credentials. Use Save and Activate above to add one.</p>
               )}
             </article>
           </div>
