@@ -931,7 +931,7 @@ test('ExtensionControlService.resolveInstallationSession samples invalid-token l
   assert.equal(sampledLog.reason, 'invalid_or_expired_token');
 });
 
-test('ExtensionControlService.listInstallationsForCurrentSession returns compatibility and active session inventory', async () => {
+test('ExtensionControlService.listInstallationsForCurrentSession returns only active installation inventory items', async () => {
   const {
     service,
     extensionInstallationRepository,
@@ -993,15 +993,11 @@ test('ExtensionControlService.listInstallationsForCurrentSession returns compati
 
   assert.equal(result.accessDecision.allowed, true);
   assert.equal(result.disconnectDecision.allowed, true);
-  assert.equal(result.items.length, 2);
+  assert.equal(result.items.length, 1);
   assert.equal(result.items[0]?.installationId, 'inst_primary');
   assert.equal(result.items[0]?.activeSessionCount, 1);
   assert.equal(result.items[0]?.requiresReconnect, false);
   assert.equal(result.items[0]?.compatibility.status, 'supported');
-  assert.equal(result.items[1]?.installationId, 'inst_stale');
-  assert.equal(result.items[1]?.activeSessionCount, 0);
-  assert.equal(result.items[1]?.requiresReconnect, true);
-  assert.equal(result.items[1]?.compatibility.status, 'unsupported');
 });
 
 test('ExtensionControlService.disconnectInstallationForCurrentSession revokes active installation sessions', async () => {
@@ -1094,6 +1090,71 @@ test('ExtensionControlService.selfDisconnectInstallationForCurrentSession revoke
   assert.equal(result.requiresReconnect, true);
   assert.equal((capturedLifecycleEvent?.auditLog?.metadata as any)?.initiatedBy, 'user');
   assert.equal((capturedLifecycleEvent?.auditLog?.metadata as any)?.reason, undefined);
+});
+
+
+test('ExtensionControlService.listInstallationsForCurrentSession excludes self-disconnected installations after active sessions are revoked', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+    extensionCompatibilityRepository,
+  } = createService();
+
+  const installationRecord = {
+    id: 'inst_record_1',
+    userId: 'user_1',
+    workspaceId: 'ws_1',
+    installationId: 'inst_primary',
+    browser: 'chrome',
+    extensionVersion: '1.7.0',
+    schemaVersion: '2',
+    capabilitiesJson: ['quiz-capture'],
+    createdAt: new Date('2026-03-24T10:00:00.000Z'),
+    updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+    lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+  } as any;
+  let activeSessionRevoked = false;
+
+  extensionInstallationRepository.findByInstallationId = async () => installationRecord;
+  extensionInstallationRepository.listByUserId = async () => [installationRecord];
+  extensionInstallationSessionRepository.revokeActiveByInstallationId = async () => {
+    activeSessionRevoked = true;
+    return 1;
+  };
+  extensionInstallationSessionRepository.listActiveByInstallationIds = async () =>
+    activeSessionRevoked
+      ? ([] as any)
+      : ([
+          {
+            id: 'inst_session_1',
+            extensionInstallationId: 'inst_record_1',
+            createdAt: new Date('2026-03-24T12:05:00.000Z'),
+            expiresAt: new Date('2026-03-24T12:35:00.000Z'),
+          },
+        ] as any);
+  extensionCompatibilityRepository.findLatest = async () =>
+    ({
+      id: 'rule_1',
+      minimumVersion: '1.6.0',
+      recommendedVersion: '1.7.0',
+      supportedSchemaVersions: ['2'],
+      requiredCapabilities: ['quiz-capture'],
+      resultStatus: 'supported',
+      reason: null,
+      createdAt: new Date('2026-03-24T09:00:00.000Z'),
+    }) as any;
+
+  const beforeDisconnect = await service.listInstallationsForCurrentSession(createInstallationViewerSession());
+  assert.equal(beforeDisconnect.items.length, 1);
+  assert.equal(beforeDisconnect.items[0]?.installationId, 'inst_primary');
+
+  await service.selfDisconnectInstallationForCurrentSession(createInstallationViewerSession(), {
+    installationId: 'inst_primary',
+  });
+
+  const afterDisconnect = await service.listInstallationsForCurrentSession(createInstallationViewerSession());
+  assert.equal(afterDisconnect.items.length, 0);
 });
 
 test('ExtensionControlService.rotateInstallationSessionForCurrentSession revokes active sessions and issues a fresh token', async () => {

@@ -263,8 +263,8 @@ export const en = {
     widgetError: 'Widget error:',
   },
   installs: {
-    noInstallations: 'No extension installations connected to your account yet.',
-    noInstallationsDesc: 'Open the extension and use the site bridge to connect the first installation.',
+    noInstallations: 'No active extension sessions.',
+    noInstallationsDesc: 'Connect the extension in your browser to start a new active session.',
     openUsage: 'Open usage',
     openSettings: 'Open settings',
     fleet: 'Fleet',
