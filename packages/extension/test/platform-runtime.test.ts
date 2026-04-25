@@ -1035,11 +1035,9 @@ test('PlatformRuntimeClient refreshes bootstrap and falls back to cache on auth 
   assert.equal((await state.getInstallationSession())?.token, undefined);
   const bufferedEvents = await state.getBufferedEvents();
 
-  assert.equal(bufferedEvents.length, 2);
-  assert.equal(bufferedEvents[0]?.eventType, 'extension.bootstrap_refresh_failed');
-  assert.equal((bufferedEvents[0]?.payload as { status?: number }).status, 401);
-  assert.equal(bufferedEvents[1]?.eventType, 'extension.installation_reconnect_requested');
-  assert.equal((bufferedEvents[1]?.payload as { reason?: string }).reason, 'installation_session_invalid');
+  assert.equal(bufferedEvents.length, 1);
+  assert.equal(bufferedEvents[0]?.eventType, 'extension.installation_reconnect_requested');
+  assert.equal((bufferedEvents[0]?.payload as { reason?: string }).reason, 'installation_session_expired');
 });
 
 test('PlatformRuntimeClient refreshBootstrap buffers one reconnect request when session is already missing', async () => {
@@ -1080,7 +1078,7 @@ test('PlatformRuntimeClient refreshBootstrap buffers one reconnect request when 
   assert.equal((bufferedEvents[0]?.payload as { reason?: string } | undefined)?.reason, 'installation_session_missing');
 });
 
-test('PlatformRuntimeClient refreshBootstrap treats expired session as reconnect-required before network call', async () => {
+test('PlatformRuntimeClient refreshBootstrap treats expired session as reconnect-required when refresh rejects', async () => {
   const state = new PlatformStateManager(
     createInMemoryPlatformStateStore({
       'quizmind.platform.installation_id': 'inst_demo',
@@ -1104,9 +1102,13 @@ test('PlatformRuntimeClient refreshBootstrap treats expired session as reconnect
     targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
     state,
     openBridge: async () => createBindResult(),
-    fetcher: (async () => {
-      throw new Error('fetch should not be called with locally expired installation session');
-    }) as typeof fetch,
+    fetcher: (async () =>
+      new Response(JSON.stringify({ ok: false, error: { message: 'expired token' } }), {
+        status: 401,
+        headers: {
+          'content-type': 'application/json',
+        },
+      })) as typeof fetch,
   });
 
   const refreshed = await runtime.refreshBootstrap();
@@ -1165,6 +1167,162 @@ test('PlatformRuntimeClient buffers bootstrap refresh failure telemetry for retr
   assert.equal((bufferedEvents[0]?.payload as { retryable?: boolean }).retryable, true);
 });
 
+test('PlatformRuntimeClient refreshes near-expiry session before bootstrap request', async () => {
+  const state = new PlatformStateManager(
+    createInMemoryPlatformStateStore({
+      'quizmind.platform.installation_id': 'inst_demo',
+      'quizmind.platform.workspace_id': 'ws_1',
+    }),
+  );
+
+  await state.saveInstallationSession({
+    token: 'tok_expiring',
+    expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+    refreshAfterSeconds: 60,
+  });
+
+  const observedAuthHeaders: string[] = [];
+  let refreshCallCount = 0;
+
+  const runtime = new PlatformRuntimeClient({
+    apiUrl: 'http://localhost:4000',
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake: createHandshake(),
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    state,
+    openBridge: async () => createBindResult(),
+    fetcher: (async (input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const authHeader = (init?.headers as Record<string, string> | undefined)?.authorization;
+
+      if (url.endsWith('/extension/session/refresh')) {
+        refreshCallCount += 1;
+        assert.equal(authHeader, 'Bearer tok_expiring');
+        assert.equal((await state.getInstallationSession())?.token, 'tok_expiring');
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            data: {
+              installationToken: 'tok_refreshed',
+              tokenExpiresAt: '2036-03-27T13:00:00.000Z',
+              refreshAfterSeconds: 900,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      observedAuthHeaders.push(authHeader ?? '');
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: createBootstrap(),
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  const result = await runtime.refreshBootstrap();
+
+  assert.equal(result.source, 'live');
+  assert.equal(refreshCallCount, 1);
+  assert.deepEqual(observedAuthHeaders, ['Bearer tok_refreshed']);
+  assert.equal((await state.getInstallationSession())?.token, 'tok_refreshed');
+});
+
+test('PlatformRuntimeClient deduplicates concurrent installation session refreshes', async () => {
+  const state = new PlatformStateManager(
+    createInMemoryPlatformStateStore({
+      'quizmind.platform.installation_id': 'inst_demo',
+      'quizmind.platform.workspace_id': 'ws_1',
+    }),
+  );
+
+  await state.saveInstallationSession({
+    token: 'tok_expiring',
+    expiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+    refreshAfterSeconds: 60,
+  });
+
+  let refreshCallCount = 0;
+
+  const runtime = new PlatformRuntimeClient({
+    apiUrl: 'http://localhost:4000',
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake: createHandshake(),
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    state,
+    openBridge: async () => createBindResult(),
+    fetcher: (async (input) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/extension/session/refresh')) {
+        refreshCallCount += 1;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            data: {
+              installationToken: 'tok_refreshed_once',
+              tokenExpiresAt: '2036-03-27T13:00:00.000Z',
+              refreshAfterSeconds: 900,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          data: { accepted: true },
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      );
+    }) as typeof fetch,
+  });
+
+  await Promise.all([
+    runtime.sendUsageEvent({
+      eventType: 'extension.quiz_answer_requested',
+      payload: { surface: 'popup' },
+    }),
+    runtime.sendUsageEvent({
+      eventType: 'extension.quiz_answer_requested',
+      payload: { surface: 'popup' },
+    }),
+  ]);
+
+  assert.equal(refreshCallCount, 1);
+  assert.equal((await state.getInstallationSession())?.token, 'tok_refreshed_once');
+});
+
 test('PlatformRuntimeClient sends usage events and clears session when auth becomes invalid', async () => {
   const store = createInMemoryPlatformStateStore({
     'quizmind.platform.installation_id': 'inst_demo',
@@ -1219,6 +1377,92 @@ test('PlatformRuntimeClient sends usage events and clears session when auth beco
     (bufferedEvents[1]?.payload as { sourceEventType?: string } | undefined)?.sourceEventType,
     'extension.quiz_answer_requested',
   );
+});
+
+test('PlatformRuntimeClient retries usage event once after silent refresh on 401', async () => {
+  const state = new PlatformStateManager(
+    createInMemoryPlatformStateStore({
+      'quizmind.platform.installation_id': 'inst_demo',
+      'quizmind.platform.workspace_id': 'ws_1',
+    }),
+  );
+
+  await state.saveInstallationSession({
+    token: 'tok_old',
+    expiresAt: '2036-03-27T13:00:00.000Z',
+    refreshAfterSeconds: 900,
+  });
+
+  let usageAttempts = 0;
+  let refreshAttempts = 0;
+
+  const runtime = new PlatformRuntimeClient({
+    apiUrl: 'http://localhost:4000',
+    siteUrl: 'http://localhost:3000',
+    environment: 'development',
+    handshake: createHandshake(),
+    targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
+    state,
+    openBridge: async () => createBindResult(),
+    fetcher: (async (input, init) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      const authHeader = (init?.headers as Record<string, string> | undefined)?.authorization;
+
+      if (url.endsWith('/extension/session/refresh')) {
+        refreshAttempts += 1;
+        assert.equal(authHeader, 'Bearer tok_old');
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            data: {
+              installationToken: 'tok_new',
+              tokenExpiresAt: '2036-03-27T14:00:00.000Z',
+              refreshAfterSeconds: 900,
+            },
+          }),
+          {
+            status: 200,
+            headers: {
+              'content-type': 'application/json',
+            },
+          },
+        );
+      }
+
+      usageAttempts += 1;
+
+      if (usageAttempts === 1) {
+        return new Response(JSON.stringify({ ok: false, error: { message: 'expired token' } }), {
+          status: 401,
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
+      assert.equal(authHeader, 'Bearer tok_new');
+
+      return new Response(JSON.stringify({ ok: true, data: { accepted: true } }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }) as typeof fetch,
+  });
+
+  const result = await runtime.sendUsageEvent({
+    eventType: 'extension.quiz_answer_requested',
+    payload: {
+      surface: 'popup',
+    },
+  });
+
+  assert.equal(result.accepted, true);
+  assert.equal(usageAttempts, 2);
+  assert.equal(refreshAttempts, 1);
+  assert.equal((await state.getInstallationSession())?.token, 'tok_new');
 });
 
 test('PlatformRuntimeClient buffers reconnect lifecycle telemetry when runtime error auth becomes invalid', async () => {
@@ -1391,7 +1635,7 @@ test('PlatformRuntimeClient.sendUsageEvent buffers event and deduplicates reconn
   assert.equal(reconnectEventCount, 1);
 });
 
-test('PlatformRuntimeClient.sendUsageEvent buffers telemetry when session is expired locally', async () => {
+test('PlatformRuntimeClient.sendUsageEvent buffers telemetry when refresh fails for expired local session', async () => {
   const state = new PlatformStateManager(
     createInMemoryPlatformStateStore({
       'quizmind.platform.installation_id': 'inst_demo',
@@ -1413,9 +1657,13 @@ test('PlatformRuntimeClient.sendUsageEvent buffers telemetry when session is exp
     targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
     state,
     openBridge: async () => createBindResult(),
-    fetcher: (async () => {
-      throw new Error('fetch should not be called with locally expired installation session');
-    }) as typeof fetch,
+    fetcher: (async () =>
+      new Response(JSON.stringify({ ok: false, error: { message: 'expired token' } }), {
+        status: 401,
+        headers: {
+          'content-type': 'application/json',
+        },
+      })) as typeof fetch,
   });
 
   await assert.rejects(
@@ -1485,7 +1733,7 @@ test('PlatformRuntimeClient.sendRuntimeError buffers telemetry when session is m
   assert.equal((bufferedEvents[1]?.payload as { reason?: string } | undefined)?.reason, 'installation_session_missing');
 });
 
-test('PlatformRuntimeClient.flushBufferedEvents rejects locally expired session before network call', async () => {
+test('PlatformRuntimeClient.flushBufferedEvents requires reconnect when refresh fails for expired local session', async () => {
   const state = new PlatformStateManager(
     createInMemoryPlatformStateStore({
       'quizmind.platform.installation_id': 'inst_demo',
@@ -1507,9 +1755,13 @@ test('PlatformRuntimeClient.flushBufferedEvents rejects locally expired session 
     targetOrigin: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop',
     state,
     openBridge: async () => createBindResult(),
-    fetcher: (async () => {
-      throw new Error('fetch should not be called when flushing with locally expired installation session');
-    }) as typeof fetch,
+    fetcher: (async () =>
+      new Response(JSON.stringify({ ok: false, error: { message: 'expired token' } }), {
+        status: 401,
+        headers: {
+          'content-type': 'application/json',
+        },
+      })) as typeof fetch,
   });
 
   await assert.rejects(

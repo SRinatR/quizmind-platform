@@ -17,6 +17,7 @@ test('loadApiEnv derives strict CORS and JWT defaults from app and api URLs', ()
   assert.equal(env.jwtIssuer, 'https://api.quizmind.dev');
   assert.equal(env.jwtAudience, 'https://app.quizmind.dev');
   assert.equal(env.trustProxyHops, 0);
+  assert.equal(env.extensionSessionTtlMinutes, 129_600);
 });
 
 test('loadApiEnv reads RouterAI settings and platform AI provider', () => {
