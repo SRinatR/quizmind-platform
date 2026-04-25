@@ -259,10 +259,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
               <Link className="btn-ghost" href={buildUrl({ page: effectivePage + 1 })}>Next</Link>
             ) : null}
           </div>
-          <div className="link-row" style={{ marginTop: '8px' }}>
-            <Link className="btn-ghost" href="/app/usage">Usage summary</Link>
-            <Link className="btn-ghost" href="/app/installations">Installations</Link>
-          </div>
         </section>
 
         {selectedId && (
@@ -428,8 +424,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
           {hasNext ? <Link className="btn-ghost" href={legacyPageUrl(effectivePage + 1)}>{th.next}</Link> : null}
         </div>
         <div className="link-row" style={{ marginTop: '8px' }}>
-          <Link className="btn-ghost" href="/app/usage">{th.usageSummary}</Link>
-          <Link className="btn-ghost" href="/app/installations">{th.installationsLink}</Link>
           <Link className="btn-ghost" href="/app/billing">{th.billing}</Link>
         </div>
       </section>

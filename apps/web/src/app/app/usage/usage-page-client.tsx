@@ -248,10 +248,6 @@ export function UsagePageClient({ session, usage, analytics, fromDate, toDate }:
                 </div>
               ))}
             </div>
-            <div className="link-row">
-              <Link className="btn-ghost" href="/app/history">{tu.fullHistory}</Link>
-              <Link className="btn-ghost" href="/app/installations">{tu.installationsLink}</Link>
-            </div>
           </article>
         ) : null}
       </>
