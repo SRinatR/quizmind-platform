@@ -20,8 +20,8 @@ export function SettingsPageClient({
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
 
   const tabs: { key: SettingsTab; label: string }[] = [
-    { key: 'security',   label: s.tabs.security },
     { key: 'appearance', label: s.tabs.appearance },
+    { key: 'security',   label: s.tabs.security },
   ];
 
   return (

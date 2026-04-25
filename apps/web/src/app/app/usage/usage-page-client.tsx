@@ -3,36 +3,19 @@
 import Link from 'next/link';
 
 import type { AiAnalyticsSnapshot } from '@quizmind/contracts';
-import type { SessionSnapshot, UsageSummarySnapshot } from '../../../lib/api';
+import type { SessionSnapshot } from '../../../lib/api';
 import { usePreferences } from '../../../lib/preferences';
 
 interface UsagePageClientProps {
   session: SessionSnapshot | null;
-  usage: UsageSummarySnapshot | null;
   analytics: AiAnalyticsSnapshot | null;
   fromDate: string;
   toDate: string;
 }
 
-function formatDateTime(value?: string | null, unavailableLabel = 'Unavailable') {
-  if (!value) return unavailableLabel;
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
 function formatDate(value?: string | null) {
   if (!value) return '—';
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
-}
-
-function quotaTone(pct: number): 'ok' | 'warn' | 'critical' {
-  if (pct >= 90) return 'critical';
-  if (pct >= 70) return 'warn';
-  return 'ok';
 }
 
 function formatTokens(n: number): string {
@@ -56,16 +39,11 @@ function statCard(label: string, value: string, sub?: string) {
   );
 }
 
-export function UsagePageClient({ session, usage, analytics, fromDate, toDate }: UsagePageClientProps) {
+export function UsagePageClient({ session, analytics, fromDate, toDate }: UsagePageClientProps) {
   const { t } = usePreferences();
   const tu = t.usagePage;
 
-  function formatWindow(start?: string, end?: string) {
-    if (!start || !end) return tu.windowUnavailable;
-    return `${formatDateTime(start, tu.unavailable)} \u2013 ${formatDateTime(end, tu.unavailable)}`;
-  }
-
-  if (session && (usage || analytics)) {
+  if (session && analytics) {
     return (
       <>
         {/* ── AI Analytics ── */}
@@ -138,52 +116,7 @@ export function UsagePageClient({ session, usage, analytics, fromDate, toDate }:
                 </label>
                 <button className="btn-primary" type="submit">Refresh</button>
               </form>
-              <Link className="btn-ghost" href="/app/history?source=ai_requests">View full history</Link>
             </div>
-          </section>
-        ) : null}
-
-        {/* ── Quotas ── */}
-        {usage ? (
-          <section>
-            <article className="panel">
-              <span className="micro-label">{tu.quotas}</span>
-              <h2>{tu.consumptionWindow}</h2>
-              {usage.quotas.length > 0 ? (
-                <div className="list-stack">
-                  {usage.quotas.map((quota) => {
-                    const pct =
-                      quota.limit && quota.limit > 0
-                        ? Math.min(100, Math.round((quota.consumed / quota.limit) * 100))
-                        : -1;
-                    const tone = pct >= 0 ? quotaTone(pct) : 'unknown';
-                    return (
-                      <div className="quota-row" key={quota.key}>
-                        <div className="quota-row__header">
-                          <span className="quota-row__label">{quota.label}</span>
-                          <span className="quota-row__value">
-                            {quota.consumed}
-                            {typeof quota.limit === 'number' ? ` / ${quota.limit}` : ''}
-                            {pct >= 0 ? ` \u00B7 ${pct}%` : ''}
-                          </span>
-                        </div>
-                        <div className="quota-bar">
-                          <div
-                            className={`quota-bar__fill quota-bar__fill--${tone}`}
-                            style={{ width: pct >= 0 ? `${pct}%` : '0%' }}
-                          />
-                        </div>
-                        <span className="quota-row__period">
-                          {formatWindow(quota.periodStart, quota.periodEnd)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty-state"><p>{tu.noQuotaData}</p></div>
-              )}
-            </article>
           </section>
         ) : null}
       </>
