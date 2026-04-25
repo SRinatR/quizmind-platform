@@ -166,10 +166,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                 <input defaultValue={modelFilter ?? ''} name="model" placeholder="e.g. gpt-4o" type="text" />
               </label>
               <label className="filter-field">
-                <span className="filter-field__label">Provider</span>
-                <input defaultValue={providerFilter ?? ''} name="provider" placeholder="openrouter" type="text" />
-              </label>
-              <label className="filter-field">
                 <span className="filter-field__label">From</span>
                 <input defaultValue={fromFilter ?? ''} name="from" placeholder="2024-01-01" type="text" />
               </label>

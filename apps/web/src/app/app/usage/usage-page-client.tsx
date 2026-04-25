@@ -75,7 +75,6 @@ export function UsagePageClient({ session, analytics, fromDate, toDate }: UsageP
                     <div key={`${row.provider}:${row.model}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 0', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
                       <div>
                         <span style={{ fontWeight: 600 }}>{row.model}</span>
-                        <span style={{ opacity: 0.5, marginLeft: '6px', fontSize: '0.82rem' }}>{row.provider}</span>
                       </div>
                       <div className="tag-row" style={{ gap: '6px' }}>
                         <span className="tag-soft tag-soft--gray">{row.requestCount} req</span>
