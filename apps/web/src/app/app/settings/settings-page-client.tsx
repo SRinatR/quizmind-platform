@@ -115,7 +115,6 @@ export function SettingsPageClient({
           </div>
 
           <section className="settings-layout">
-            {/* Left column: session controls + change password */}
             <div style={{ display: 'grid', gap: '16px' }}>
               <article className="panel settings-card">
                 <div className="settings-card-copy">
@@ -174,42 +173,6 @@ export function SettingsPageClient({
                 </div>
               </article>
             </div>
-
-            {/* Right column: active sessions list */}
-            <article className="panel settings-card">
-              <span className="micro-label">{s.security.activeSessions}</span>
-              <h2>{s.security.browserSessions}</h2>
-              {sessionItems.length > 0 ? (
-                <div className="session-list">
-                  {sessionItems.map((item) => (
-                    <div className="session-row" key={item.id}>
-                      <div className="session-row__info">
-                        <span className="session-row__name">
-                          {item.deviceName || item.browser || s.security.unnamedSession}
-                        </span>
-                        <span className="session-row__detail">
-                          {item.ipAddress ?? s.security.unknownIP} &middot; {s.security.expires}{' '}
-                          {formatUtcDateTime(item.expiresAt)}
-                        </span>
-                      </div>
-                      <div className="session-row__right">
-                        {item.current ? (
-                          <span className="tag-soft tag-soft--green">{s.security.current}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state" style={{ padding: '20px 0 0' }}>
-                  <p>
-                    {isConnectedSession
-                      ? s.security.noSessions
-                      : s.security.signInToViewSessions}
-                  </p>
-                </div>
-              )}
-            </article>
           </section>
         </div>
       ) : null}

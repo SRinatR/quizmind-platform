@@ -35,12 +35,6 @@ function quotaTone(pct: number): 'ok' | 'warn' | 'critical' {
   return 'ok';
 }
 
-function eventDotClass(source: string): string {
-  if (source === 'ai') return 'event-dot event-dot--ai';
-  if (source === 'activity') return 'event-dot event-dot--activity';
-  return 'event-dot event-dot--info';
-}
-
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
@@ -149,9 +143,9 @@ export function UsagePageClient({ session, usage, analytics, fromDate, toDate }:
           </section>
         ) : null}
 
-        {/* ── Quotas + Fleet ── */}
+        {/* ── Quotas ── */}
         {usage ? (
-          <section className="split-grid">
+          <section>
             <article className="panel">
               <span className="micro-label">{tu.quotas}</span>
               <h2>{tu.consumptionWindow}</h2>
@@ -190,65 +184,7 @@ export function UsagePageClient({ session, usage, analytics, fromDate, toDate }:
                 <div className="empty-state"><p>{tu.noQuotaData}</p></div>
               )}
             </article>
-
-            <article className="panel">
-              <span className="micro-label">{tu.installations}</span>
-              <h2>{tu.extensionFleet}</h2>
-              {usage.installations.length > 0 ? (
-                <div className="installation-list">
-                  {usage.installations.map((inst) => (
-                    <div className="installation-row" key={inst.installationId}>
-                      <div className="installation-row__header">
-                        <span className="installation-row__id">{inst.installationId}</span>
-                        <div className="installation-row__badges">
-                          <span className="tag-soft">{inst.browser}</span>
-                          <span className="tag-soft tag-soft--gray">v{inst.extensionVersion}</span>
-                        </div>
-                      </div>
-                      {inst.capabilities.length > 0 ? (
-                        <div className="tag-row">
-                          {inst.capabilities.map((cap) => (
-                            <span className="tag" key={cap}>{cap}</span>
-                          ))}
-                        </div>
-                      ) : null}
-                      <span className="installation-row__detail">
-                        {tu.schema} {inst.schemaVersion} &middot; {tu.lastSeen} {formatDateTime(inst.lastSeenAt, tu.unavailable)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <p>{tu.noInstallationsYet}</p>
-                  <Link className="btn-ghost" href="/app/extension/connect">{tu.connectExtension}</Link>
-                </div>
-              )}
-            </article>
           </section>
-        ) : null}
-
-        {/* ── Recent Activity ── */}
-        {usage && usage.recentEvents.length > 0 ? (
-          <article className="panel">
-            <span className="micro-label">{tu.activity}</span>
-            <h2>{tu.recentTelemetry}</h2>
-            <div className="event-list">
-              {usage.recentEvents.map((event) => (
-                <div className="event-row" key={event.id}>
-                  <span className={eventDotClass(event.source)} />
-                  <div className="event-row__body">
-                    <span className="event-row__type">{event.eventType}</span>
-                    {event.summary ? <p className="event-row__summary">{event.summary}</p> : null}
-                  </div>
-                  <span className="event-row__meta">
-                    {formatDateTime(event.occurredAt, tu.unavailable)}
-                    {event.severity ? <><br />{event.severity}</> : null}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </article>
         ) : null}
       </>
     );
