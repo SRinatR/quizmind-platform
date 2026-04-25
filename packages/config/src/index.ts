@@ -238,7 +238,7 @@ export function loadApiEnv(source: EnvSource = process.env): ApiEnv {
     extensionTokenSecret:
       source.EXTENSION_TOKEN_SECRET ??
       (platformEnv.nodeEnv === 'production' ? '' : source.JWT_REFRESH_SECRET ?? 'replace-me-extension'),
-    extensionSessionTtlMinutes: readNumberEnv(source, 'EXTENSION_SESSION_TTL_MINUTES', 30),
+    extensionSessionTtlMinutes: readNumberEnv(source, 'EXTENSION_SESSION_TTL_MINUTES', 129_600),
     providerCredentialSecret:
       source.PROVIDER_CREDENTIAL_SECRET ??
       (platformEnv.nodeEnv === 'production' ? '' : source.JWT_REFRESH_SECRET ?? 'replace-me-provider'),

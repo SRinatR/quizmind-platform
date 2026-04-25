@@ -216,7 +216,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                         <span className="kv-row__value">{formatRelativeTime(installation.lastSeenAt)}</span>
                       </div>
                       <div className="kv-row">
-                        <span className="kv-row__key">{ti.tokenExpires}</span>
+                        <span className="kv-row__key">Session valid until</span>
                         <span className="kv-row__value">{formatDateTime(installation.lastSessionExpiresAt)}</span>
                       </div>
                       {installation.compatibility.reason ? (
