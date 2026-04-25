@@ -136,6 +136,45 @@ test('ExtensionControlController.ingestUsageEventV2 requires installation bearer
   );
 });
 
+test('ExtensionControlController.selfDisconnectInstallation forwards installationId without operator reason', async () => {
+  let capturedRequest: Record<string, unknown> | null = null;
+  const extensionControlService = {
+    async selfDisconnectInstallationForCurrentSession(_session: unknown, request?: Record<string, unknown>) {
+      capturedRequest = request ?? null;
+      return {
+        installationId: 'inst_1',
+        revokedSessionCount: 1,
+        disconnectedAt: '2026-04-20T10:00:00.000Z',
+        requiresReconnect: true,
+      };
+    },
+  };
+  const authService = {
+    async getCurrentSession() {
+      return {
+        user: { id: 'user_1', email: 'user@example.com' },
+        principal: { userId: 'user_1', email: 'user@example.com', systemRoles: [], entitlements: [], featureFlags: [] },
+        permissions: [],
+      };
+    },
+  };
+  const controller = new ExtensionControlController(authService as any, extensionControlService as any, {} as any);
+  controller['env'] = {
+    runtimeMode: 'connected',
+  } as any;
+
+  const response = await controller.selfDisconnectInstallation(
+    {
+      installationId: 'inst_1',
+    },
+    'Bearer access-token',
+  );
+
+  assert.equal(response.ok, true);
+  assert.equal((response.data as any).installationId, 'inst_1');
+  assert.equal(capturedRequest?.installationId, 'inst_1');
+});
+
 test('ExtensionControlController.answerV2 proxies extension runtime AI payload through installation session context', async () => {
   let capturedSession: unknown;
   let capturedRequest: Record<string, unknown> | null = null;

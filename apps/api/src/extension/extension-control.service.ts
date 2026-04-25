@@ -654,6 +654,61 @@ export class ExtensionControlService {
     };
   }
 
+  async selfDisconnectInstallationForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: { installationId?: string },
+  ): Promise<ExtensionInstallationDisconnectResult> {
+    const installationId = readRequiredString(request?.installationId, 'installationId');
+    const accessDecision = canReadExtensionInstallations(session.principal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const installation = await this.extensionInstallationRepository.findByInstallationId(installationId);
+
+    if (!installation || installation.userId !== session.user.id) {
+      throw new NotFoundException('Extension installation not found.');
+    }
+
+    const disconnectedAt = new Date();
+    const revokedSessionCount = await this.extensionInstallationSessionRepository.revokeActiveByInstallationId(
+      installation.id,
+      disconnectedAt,
+    );
+
+    await this.recordLifecycleEventSafely({
+      actorId: session.user.id,
+      targetType: 'extension_installation',
+      targetId: installation.installationId,
+      auditEventType: 'extension.installation_self_disconnected',
+      securityEventType: 'extension.installation_session_revoked',
+      securitySeverity: 'info',
+      status: 'success',
+      summary: 'self-disconnected an extension installation and revoked active sessions',
+      metadata: {
+        installationId: installation.installationId,
+        revokedSessionCount,
+        initiatedBy: 'user',
+        requiresReconnect: true,
+      },
+      domainEventType: 'extension.installation_self_disconnected',
+      domainPayload: {
+        installationId: installation.installationId,
+        actorId: session.user.id,
+        revokedSessionCount,
+      },
+      occurredAt: disconnectedAt,
+    });
+
+    return {
+      installationId: installation.installationId,
+      revokedSessionCount,
+      disconnectedAt: disconnectedAt.toISOString(),
+      requiresReconnect: true,
+    };
+  }
+
   async rotateInstallationSessionForCurrentSession(
     session: CurrentSessionSnapshot,
     request?: Partial<ExtensionInstallationRotateSessionRequest>,

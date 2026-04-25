@@ -125,6 +125,12 @@ export const apiRoutes: ApiRouteDefinition[] = [
   },
   {
     method: 'POST',
+    path: '/extension/installations/self-disconnect',
+    summary: 'Allow an authenticated user to revoke sessions for their own installation without operator/admin reason.',
+    permission: 'installations:read',
+  },
+  {
+    method: 'POST',
     path: '/extension/installations/rotate-session',
     summary: 'Rotate the active installation session token for a workspace installation and revoke previous sessions (operator reason required).',
     permission: 'installations:write',

@@ -1051,6 +1051,51 @@ test('ExtensionControlService.disconnectInstallationForCurrentSession revokes ac
   assert.equal((capturedLifecycleEvent?.domainPayload as any)?.reason, 'Investigating suspicious extension behavior reported by support.');
 });
 
+test('ExtensionControlService.selfDisconnectInstallationForCurrentSession revokes active installation sessions without reason', async () => {
+  const {
+    service,
+    extensionInstallationRepository,
+    extensionInstallationSessionRepository,
+    extensionEventRepository,
+  } = createService();
+  let capturedInstallationRecordId: string | null = null;
+  let capturedLifecycleEvent: any = null;
+
+  extensionInstallationRepository.findByInstallationId = async () =>
+    ({
+      id: 'inst_record_1',
+      userId: 'user_1',
+      workspaceId: 'ws_1',
+      installationId: 'inst_primary',
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture', 'history-sync'],
+      createdAt: new Date('2026-03-24T10:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+      lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
+  extensionInstallationSessionRepository.revokeActiveByInstallationId = async (installationRecordId) => {
+    capturedInstallationRecordId = installationRecordId;
+
+    return 3;
+  };
+  extensionEventRepository.recordLifecycleEvent = async (input) => {
+    capturedLifecycleEvent = input;
+  };
+
+  const result = await service.selfDisconnectInstallationForCurrentSession(createInstallationViewerSession(), {
+    installationId: 'inst_primary',
+  });
+
+  assert.equal(capturedInstallationRecordId, 'inst_record_1');
+  assert.equal(result.installationId, 'inst_primary');
+  assert.equal(result.revokedSessionCount, 3);
+  assert.equal(result.requiresReconnect, true);
+  assert.equal((capturedLifecycleEvent?.auditLog?.metadata as any)?.initiatedBy, 'user');
+  assert.equal((capturedLifecycleEvent?.auditLog?.metadata as any)?.reason, undefined);
+});
+
 test('ExtensionControlService.rotateInstallationSessionForCurrentSession revokes active sessions and issues a fresh token', async () => {
   const {
     service,
@@ -1144,6 +1189,37 @@ test('ExtensionControlService.disconnectInstallationForCurrentSession denies ins
         installationId: 'inst_primary',
         workspaceId: 'ws_1',
         reason: 'Operator requested disconnect.',
+      }),
+    (error: unknown) => {
+      assert.ok(error instanceof NotFoundException);
+      assert.match((error as Error).message, /Extension installation not found/);
+      return true;
+    },
+  );
+});
+
+test('ExtensionControlService.selfDisconnectInstallationForCurrentSession denies installations owned by another user', async () => {
+  const { service, extensionInstallationRepository } = createService();
+
+  extensionInstallationRepository.findByInstallationId = async () =>
+    ({
+      id: 'inst_record_1',
+      userId: 'user_2',
+      workspaceId: 'ws_1',
+      installationId: 'inst_primary',
+      browser: 'chrome',
+      extensionVersion: '1.7.0',
+      schemaVersion: '2',
+      capabilitiesJson: ['quiz-capture'],
+      createdAt: new Date('2026-03-24T10:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T10:00:00.000Z'),
+      lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+    }) as any;
+
+  await assert.rejects(
+    () =>
+      service.selfDisconnectInstallationForCurrentSession(createInstallationViewerSession(), {
+        installationId: 'inst_primary',
       }),
     (error: unknown) => {
       assert.ok(error instanceof NotFoundException);
