@@ -222,7 +222,6 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
             <div className="tag-row" style={{ marginBottom: '12px', flexWrap: 'wrap', gap: '6px' }}>
               <span className={statusBadgeClass(detail.status)}>{detail.status}</span>
               <span className="tag-soft tag-soft--gray">{detail.requestType}</span>
-              <span className="tag-soft tag-soft--gray">{detail.provider}</span>
               {detail.totalTokens > 0 && (
                 <span className="tag-soft tag-soft--gray">{detail.totalTokens} tokens</span>
               )}
