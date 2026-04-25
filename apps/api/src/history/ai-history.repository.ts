@@ -71,6 +71,7 @@ export interface AiAnalyticsRow {
   model: string;
   requestCount: number;
   successCount: number;
+  failedCount: number;
   totalPromptTokens: number;
   totalCompletionTokens: number;
   totalTokens: number;
@@ -175,7 +176,7 @@ export class AiHistoryRepository {
     ]);
 
     // Collapse model groups across success/error for the breakdown.
-    const byModelMap = new Map<string, AiAnalyticsRow>();
+    const byModelMap = new Map<string, AiAnalyticsRow & { durationSampleCount: number; durationTotalMs: number }>();
     for (const row of modelGroups) {
       const key = `${row.provider}::${row.model}`;
       const existing = byModelMap.get(key) ?? {
@@ -183,18 +184,27 @@ export class AiHistoryRepository {
         model: row.model,
         requestCount: 0,
         successCount: 0,
+        failedCount: 0,
         totalPromptTokens: 0,
         totalCompletionTokens: 0,
         totalTokens: 0,
         totalCostUsd: 0,
         avgDurationMs: null,
+        durationSampleCount: 0,
+        durationTotalMs: 0,
       };
       existing.requestCount += row._count.id;
       if (row.status === 'success') existing.successCount += row._count.id;
+      else existing.failedCount += row._count.id;
       existing.totalPromptTokens += row._sum.promptTokens ?? 0;
       existing.totalCompletionTokens += row._sum.completionTokens ?? 0;
       existing.totalTokens += row._sum.totalTokens ?? 0;
       existing.totalCostUsd += row._sum.estimatedCostUsd ?? 0;
+      if (typeof row._avg.durationMs === 'number' && Number.isFinite(row._avg.durationMs)) {
+        existing.durationSampleCount += row._count.id;
+        existing.durationTotalMs += row._avg.durationMs * row._count.id;
+        existing.avgDurationMs = existing.durationTotalMs / existing.durationSampleCount;
+      }
       byModelMap.set(key, existing);
     }
 
@@ -208,7 +218,10 @@ export class AiHistoryRepository {
       totalTokens: aggregates._sum.totalTokens ?? 0,
       totalCostUsd: aggregates._sum.estimatedCostUsd ?? 0,
       avgDurationMs: aggregates._avg.durationMs ?? null,
-      byModel: [...byModelMap.values()].sort((a, b) => b.requestCount - a.requestCount).slice(0, 20),
+      byModel: [...byModelMap.values()]
+        .map(({ durationSampleCount: _durationSampleCount, durationTotalMs: _durationTotalMs, ...row }) => row)
+        .sort((a, b) => b.requestCount - a.requestCount)
+        .slice(0, 20),
     };
   }
 
