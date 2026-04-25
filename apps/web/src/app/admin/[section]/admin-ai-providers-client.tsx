@@ -83,15 +83,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
   // Primary action state
   const [quickProvider, setQuickProvider] = useState<Extract<AiProvider, 'openrouter' | 'routerai'>>(initialPlatformProvider);
   const [quickSecret, setQuickSecret] = useState('');
-  const [quickModel, setQuickModel] = useState(() => {
-    const activeModels = governance.models.filter((m) => m.provider === initialPlatformProvider);
-    return (
-      governance.policy.defaultModel ??
-      activeModels.find((m) => m.capabilityTags.includes('text'))?.modelId ??
-      activeModels[0]?.modelId ??
-      ''
-    );
-  });
   const [isSavingAndActivating, setIsSavingAndActivating] = useState(false);
 
   // Shared status
@@ -111,7 +102,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
   const canRotate = governance.rotateDecision.allowed || canManagePlatform;
   const workspaceOverrideActive = governance.policy.scopeType === 'workspace';
   const quickProviderLabel = quickProvider === 'routerai' ? 'RouterAI' : 'OpenRouter';
-  const quickProviderModels = governance.models.filter((m) => m.provider === quickProvider);
   const activePolicyProvider = governance.policy.defaultProvider === 'routerai' ? 'routerai' : 'openrouter';
   const platformQuickProviderCred = governance.items
     .filter((item) => item.provider === quickProvider && item.ownerType === 'platform' && !item.revokedAt)
@@ -143,7 +133,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       const response = await fetch(`/bff/admin/ai-routing/${quickProvider}/activate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ secret: quickSecret.trim(), defaultModel: quickModel || null }),
+        body: JSON.stringify({ secret: quickSecret.trim(), defaultModel: null }),
       });
 
       const payload = (await response.json().catch(() => null)) as MutationRouteResponse<{ credentialUpdatedAt?: string; policyUpdatedAt: string }> | null;
@@ -360,9 +350,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                   value={quickProvider}
                   onChange={(event) => {
                     const provider = event.target.value === 'routerai' ? 'routerai' : 'openrouter';
-                    const providerModels = governance.models.filter((m) => m.provider === provider);
                     setQuickProvider(provider);
-                    setQuickModel(providerModels.find((m) => m.capabilityTags.includes('text'))?.modelId ?? providerModels[0]?.modelId ?? '');
                   }}
                 >
                   <option value="openrouter">OpenRouter</option>
@@ -378,17 +366,6 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                   onChange={(event) => setQuickSecret(event.target.value)}
                 />
               </label>
-              {quickProviderModels.length > 0 ? (
-                <label className="admin-ticket-field">
-                  <span className="micro-label">Default model (optional)</span>
-                  <select value={quickModel} onChange={(event) => setQuickModel(event.target.value)}>
-                    <option value="">platform-selected</option>
-                    {quickProviderModels.map((m) => (
-                      <option key={m.modelId} value={m.modelId}>{m.displayName}</option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
             </div>
             <div className="admin-user-actions">
               <button
