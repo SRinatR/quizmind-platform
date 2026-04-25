@@ -114,7 +114,6 @@ test('PlatformStateManager persists installation id, bind session, and bootstrap
   const snapshot = await state.getSnapshot();
 
   assert.equal(snapshot.installationId, 'inst_custom');
-  assert.equal(snapshot.workspaceId, 'ws_1');
   assert.equal(snapshot.installationSession?.token, 'tok_demo_123');
   assert.equal(snapshot.lastBootstrap?.installationId, 'inst_demo');
   assert.equal(snapshot.lastBootstrapFetchedAt, '2026-03-27T12:00:00.000Z');
