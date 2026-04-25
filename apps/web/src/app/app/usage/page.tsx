@@ -2,6 +2,8 @@ import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { getAiAnalytics, getSession, getUserProfile, resolvePersona } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
+import { getExchangeRates } from '../../../lib/exchange-rates';
+import { ServerPrefsSync } from '../../../lib/preferences';
 import { UsagePageClient } from './usage-page-client';
 
 interface UsagePageProps {
@@ -17,9 +19,10 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
-  const [session, userProfile] = await Promise.all([
+  const [session, userProfile, exchangeRates] = await Promise.all([
     getSession(persona, accessToken),
     getUserProfile(accessToken),
+    getExchangeRates(),
   ]);
   const sessionLabel = session?.user.displayName || session?.user.email;
   const isAdmin = session ? isAdminSession(session) : false;
@@ -55,11 +58,13 @@ export default async function UsagePage({ searchParams }: UsagePageProps) {
       userDisplayName={session?.user.displayName ?? undefined}
       userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
+      <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
       <UsagePageClient
         session={session}
         analytics={analytics}
         fromDate={fromDate.toISOString().slice(0, 10)}
         toDate={toDate.toISOString().slice(0, 10)}
+        exchangeRates={exchangeRates}
       />
     </SiteShell>
   );

@@ -8,6 +8,7 @@ import { type WalletBalanceSnapshot, type WalletTopUpCreateResult } from '@quizm
 
 import type { SessionSnapshot, UserProfileSnapshot } from '../../lib/api';
 import type { ExchangeRateSnapshot } from '../../lib/exchange-rates';
+import { formatBalanceFromKopecks } from '../../lib/money';
 import { usePreferences } from '../../lib/preferences';
 import { useShellProfile } from '../../lib/shell-profile-context';
 
@@ -49,19 +50,6 @@ function makeEmojiAvatarUrl(emoji: string): string {
 
 function isEmojiAvatarUrl(url: string): boolean {
   return url.startsWith('data:image/svg+xml');
-}
-
-function formatBalance(
-  kopecks: number,
-  currency: 'RUB' | 'USD' | 'EUR' = 'RUB',
-  rates: ExchangeRateSnapshot | null = null,
-): string {
-  const rub = kopecks / 100;
-  if (currency === 'RUB' || !rates) {
-    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 0 }).format(rub);
-  }
-  const converted = rub / rates[currency];
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(converted);
 }
 
 function resizeAvatarFile(file: File): Promise<string> {
@@ -576,7 +564,7 @@ export function ProfilePageClient({
           </div>
 
           <div className="wallet-balance-amount">
-            {formatBalance(balance?.balanceKopecks ?? 0, prefs.balanceDisplayCurrency, exchangeRates)}
+            {formatBalanceFromKopecks(balance?.balanceKopecks ?? 0, prefs.balanceDisplayCurrency, exchangeRates)}
           </div>
           <p className="wallet-balance-currency">{tp.balanceHint}</p>
 
@@ -649,7 +637,7 @@ export function ProfilePageClient({
                           setSelectedKopecks(amount);
                         }}
                       >
-                        {formatBalance(amount)}
+                        {formatBalanceFromKopecks(amount)}
                       </button>
                     ))}
                     <button
@@ -689,7 +677,7 @@ export function ProfilePageClient({
 
                 <div className="wallet-pay-summary">
                   <span>{tb.total}</span>
-                  <strong>{customAmountValid ? formatBalance(effectiveKopecks) : '\u2014'}</strong>
+                  <strong>{customAmountValid ? formatBalanceFromKopecks(effectiveKopecks) : '\u2014'}</strong>
                 </div>
 
                 <button

@@ -11,6 +11,8 @@ import {
   resolvePersona,
 } from '../../../lib/api';
 import { isAdminSession } from '../../../lib/admin-guard';
+import { getExchangeRates } from '../../../lib/exchange-rates';
+import { ServerPrefsSync } from '../../../lib/preferences';
 import { HistoryPageClient } from './history-page-client';
 
 interface HistoryPageProps {
@@ -63,9 +65,10 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const resolvedSearchParams = await searchParams;
   const persona = resolvePersona(resolvedSearchParams);
   const accessToken = await getAccessTokenFromCookies();
-  const [session, userProfile] = await Promise.all([
+  const [session, userProfile, exchangeRates] = await Promise.all([
     getSession(persona, accessToken),
     getUserProfile(accessToken),
+    getExchangeRates(),
   ]);
   const sessionLabel = session?.user.displayName || session?.user.email;
   const source = normalizeHistorySource(readSearchParam(resolvedSearchParams?.source));
@@ -128,6 +131,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
       userDisplayName={session?.user.displayName ?? undefined}
       userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
+      <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
       <HistoryPageClient
         source={source}
         aiHistory={aiHistory}
@@ -145,6 +149,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         actorId={actorId}
         hasSession={Boolean(session)}
         clearHref="/app/history"
+        exchangeRates={exchangeRates}
       />
     </SiteShell>
   );

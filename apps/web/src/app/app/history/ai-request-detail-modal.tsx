@@ -3,10 +3,14 @@
 import { useEffect, useState } from 'react';
 import { type AiHistoryDetail } from '@quizmind/contracts';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
+import { formatUsdAmountByPreference } from '../../../lib/money';
+import { usePreferences } from '../../../lib/preferences';
 
 interface Props {
   id: string;
   onClose: () => void;
+  exchangeRates: ExchangeRateSnapshot | null;
 }
 
 type FetchPayload =
@@ -115,7 +119,8 @@ function ExpandableSection({ label, content }: { label: string; content: string 
   );
 }
 
-export function AiRequestDetailModal({ id, onClose }: Props) {
+export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
+  const { prefs } = usePreferences();
   const [detail, setDetail] = useState<AiHistoryDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -226,7 +231,9 @@ export function AiRequestDetailModal({ id, onClose }: Props) {
                 <span className="tag-soft tag-soft--gray">{detail.totalTokens} tokens</span>
               )}
               {detail.estimatedCostUsd > 0 && (
-                <span className="tag-soft tag-soft--gray">${detail.estimatedCostUsd.toFixed(6)}</span>
+                <span className="tag-soft tag-soft--gray">
+                  {formatUsdAmountByPreference(detail.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}
+                </span>
               )}
               {detail.durationMs != null && (
                 <span className="tag-soft tag-soft--gray">{detail.durationMs} ms</span>
