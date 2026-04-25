@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   type ExtensionConnectionStatus,
@@ -127,10 +126,6 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         <span className="micro-label">{ti.devicesLabel}</span>
         <h2>{ti.noInstallations}</h2>
         <p>{ti.noInstallationsDesc}</p>
-        <div className="link-row">
-          <Link className="btn-ghost" href="/app/usage">{ti.openUsage}</Link>
-          <Link className="btn-ghost" href="/app/settings">{ti.openSettings}</Link>
-        </div>
       </section>
     );
   }
