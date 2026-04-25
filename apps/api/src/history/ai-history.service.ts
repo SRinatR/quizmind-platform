@@ -10,7 +10,9 @@ import {
   type AiHistoryListResponse,
   type AiRequestStatus,
   type AiRequestType,
+  resolveModelDisplayName,
 } from '@quizmind/contracts';
+import { providerModelCatalog } from '@quizmind/providers';
 
 import { HistoryBlobService } from './history-blob.service';
 import { AiHistoryRepository, type AiHistoryListRecord } from './ai-history.repository';
@@ -260,9 +262,15 @@ export class AiHistoryService {
     const byModel: AiAnalyticsModelBreakdown[] = data.byModel.map((row) => ({
       model: row.model,
       provider: row.provider,
+      displayName: resolveModelDisplayName(row.model, providerModelCatalog),
       requestCount: row.requestCount,
+      successCount: row.successCount,
+      failedCount: row.failedCount,
+      totalPromptTokens: row.totalPromptTokens,
+      totalCompletionTokens: row.totalCompletionTokens,
       totalTokens: row.totalTokens,
       estimatedCostUsd: Math.round(row.totalCostUsd * 1_000_000) / 1_000_000,
+      avgDurationMs: row.avgDurationMs,
     }));
 
     return {

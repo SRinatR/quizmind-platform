@@ -1748,9 +1748,15 @@ export interface AiHistoryListResponse {
 export interface AiAnalyticsModelBreakdown {
   model: string;
   provider: string;
+  displayName?: string;
   requestCount: number;
+  successCount?: number;
+  failedCount?: number;
+  totalPromptTokens?: number;
+  totalCompletionTokens?: number;
   totalTokens: number;
   estimatedCostUsd: number;
+  avgDurationMs?: number | null;
 }
 
 export interface AiAnalyticsSnapshot {
@@ -1768,6 +1774,83 @@ export interface AiAnalyticsSnapshot {
   estimatedCostUsd: number;
   avgDurationMs: number | null;
   byModel: AiAnalyticsModelBreakdown[];
+}
+
+export interface ModelCatalogDisplayNameEntry {
+  modelId: string;
+  displayName: string;
+}
+
+const MODEL_TOKEN_DISPLAY_OVERRIDES: Record<string, string> = {
+  gpt: 'GPT',
+  llm: 'LLM',
+  llava: 'LLaVA',
+  deepseek: 'DeepSeek',
+  gemini: 'Gemini',
+  gemma: 'Gemma',
+  claude: 'Claude',
+  llama: 'Llama',
+  mistral: 'Mistral',
+  mixtral: 'Mixtral',
+  qwen: 'Qwen',
+  nemotron: 'Nemotron',
+};
+
+function toModelTokenDisplayName(token: string): string {
+  const normalized = token.trim().toLowerCase();
+  if (!normalized) return '';
+
+  const override = MODEL_TOKEN_DISPLAY_OVERRIDES[normalized];
+  if (override) return override;
+
+  if (/^[a-z]*\d+[a-z\d]*$/i.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+
+  if (/^[a-z]{1,3}$/i.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+/** Strip route/provider/variant details and format model IDs for user-facing display. */
+export function fallbackModelDisplayName(modelId: string): string {
+  const trimmed = modelId.trim();
+  if (!trimmed) {
+    return 'Unknown model';
+  }
+
+  const withoutTier = trimmed.split(':')[0] ?? trimmed;
+  const segments = withoutTier.split('/').filter(Boolean);
+  const modelSegment = segments.length > 1 ? segments.slice(1).join('/') : withoutTier;
+  const tokens = modelSegment
+    .split(/[-_/.\s]+/)
+    .map((token) => toModelTokenDisplayName(token))
+    .filter(Boolean);
+
+  return tokens.length > 0 ? tokens.join(' ') : trimmed;
+}
+
+/** Resolve displayName from catalog first, then fallback to a readable formatter. */
+export function resolveModelDisplayName(
+  modelId: string,
+  catalog: ModelCatalogDisplayNameEntry[] = [],
+): string {
+  const normalized = modelId.trim().toLowerCase();
+  const normalizedBase = (normalized.split(':')[0] ?? normalized).trim();
+
+  const catalogMatch = catalog.find((entry) => {
+    const entryNorm = entry.modelId.trim().toLowerCase();
+    const entryBase = (entryNorm.split(':')[0] ?? entryNorm).trim();
+    return entryNorm === normalized || entryBase === normalizedBase;
+  });
+
+  if (catalogMatch?.displayName?.trim()) {
+    return catalogMatch.displayName.trim();
+  }
+
+  return fallbackModelDisplayName(modelId);
 }
 
 export interface HistoryCleanupJobPayload {
