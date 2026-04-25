@@ -1,7 +1,6 @@
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
-  getAuthSessions,
   getSession,
   getUserProfile,
   resolvePersona,
@@ -22,7 +21,6 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const isConnectedSession = session?.personaKey === 'connected-user';
   const sessionLabel = session?.user.displayName || session?.user.email;
   const userProfile = await getUserProfile(accessToken);
-  const authSessions = await getAuthSessions(accessToken);
   const isAdmin = session ? isAdminSession(session) : false;
 
   return (
@@ -44,9 +42,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
       {session ? (
         <SettingsPageClient
-          authSessions={authSessions}
           isConnectedSession={isConnectedSession}
-          session={session}
         />
       ) : (
         <section className="empty-state">
