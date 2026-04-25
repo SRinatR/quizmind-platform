@@ -251,29 +251,31 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         </>
       )}
 
-      <section className="panel">
-        <span className="micro-label">{ti.sessionControls}</span>
-        <h2>{ti.signOutEverywhere}</h2>
-        <p>{ti.signOutEverywhereDesc}</p>
+      {activeItems.length > 0 ? (
+        <section className="panel">
+          <span className="micro-label">{ti.sessionControls}</span>
+          <h2>{ti.signOutEverywhere}</h2>
+          <p>{ti.signOutEverywhereDesc}</p>
 
-        {logoutAllStatusMessage ? (
-          <div className="banner banner-info" style={{ marginTop: '12px' }}>{logoutAllStatusMessage}</div>
-        ) : null}
-        {logoutAllErrorMessage ? (
-          <div className="banner banner-error" style={{ marginTop: '12px' }}>{logoutAllErrorMessage}</div>
-        ) : null}
+          {logoutAllStatusMessage ? (
+            <div className="banner banner-info" style={{ marginTop: '12px' }}>{logoutAllStatusMessage}</div>
+          ) : null}
+          {logoutAllErrorMessage ? (
+            <div className="banner banner-error" style={{ marginTop: '12px' }}>{logoutAllErrorMessage}</div>
+          ) : null}
 
-        <div className="link-row" style={{ marginTop: '12px' }}>
-          <button
-            className="btn-danger"
-            disabled={isRevokingEverywhere}
-            onClick={() => void handleLogoutAll()}
-            type="button"
-          >
-            {isRevokingEverywhere ? s.security.signingOut : ti.signOutEverywhere}
-          </button>
-        </div>
-      </section>
+          <div className="link-row" style={{ marginTop: '12px' }}>
+            <button
+              className="btn-danger"
+              disabled={isRevokingEverywhere}
+              onClick={() => void handleLogoutAll()}
+              type="button"
+            >
+              {isRevokingEverywhere ? s.security.signingOut : ti.signOutEverywhere}
+            </button>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }
