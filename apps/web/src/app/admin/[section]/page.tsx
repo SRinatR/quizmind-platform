@@ -15,9 +15,11 @@ import {
   getCompatibilityRules,
   getFeatureFlags,
   getRemoteConfigState,
+  getUserProfile,
   getSession,
   resolvePersona,
 } from '../../../lib/api';
+import { ServerPrefsSync } from '../../../lib/preferences';
 import { getVisibleAdminSections, buildVisibleAdminNavGroups } from '../../../features/navigation/visibility';
 import { type AdminSection } from '../../../features/admin/sections';
 import { AdminAiProvidersClient } from './admin-ai-providers-client';
@@ -183,6 +185,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   }
 
   const sec = resolvedParams.section;
+  const userProfile = sec === 'settings' ? await getUserProfile(accessToken) : null;
 
   // ── Section-specific filter objects ──────────────────────────────────────────
   const adminLogFilters: Partial<AdminLogFilters> = {
@@ -265,6 +268,9 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       showPersonaSwitcher={false}
       title={sec === 'settings' ? 'Settings' : (section?.title ?? sec)}
     >
+      {sec === 'settings' ? (
+        <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
+      ) : null}
       {section && session ? (
         // ── People: Users ─────────────────────────────────────────────────
         section.id === 'users' ? (

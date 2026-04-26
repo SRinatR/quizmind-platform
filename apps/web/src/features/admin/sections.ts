@@ -67,7 +67,7 @@ export const adminSections: AdminSection[] = [
     navLabel: 'Settings',
     href: '/admin/settings',
     description: 'Appearance preferences for your admin workspace.',
-    requirement: { permission: 'users:read' },
+    requirement: { permission: 'installations:read' },
     group: 'control-plane',
     groupLabel: 'Control Plane',
   },
