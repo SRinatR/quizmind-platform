@@ -29,6 +29,9 @@ const DEFAULT_LIST_LIMIT = 25;
 const MAX_LIST_LIMIT = 200;
 const EXCERPT_MAX = 300;
 const CONTENT_EXPIRED_MESSAGE = 'Full content expired after the retention window.';
+const MAX_PROMPT_IMAGE_ATTACHMENTS = 8;
+const MAX_PROMPT_IMAGE_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const ALLOWED_PROMPT_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 interface TokenPrice {
   inputPerM: number;
@@ -164,6 +167,15 @@ function parseDataUrl(input: string): { mimeType: string; buffer: Buffer } | nul
   } catch {
     return null;
   }
+}
+
+function estimateDataUrlDecodedBytes(dataUrl: string): number {
+  const comma = dataUrl.indexOf(',');
+  if (comma < 0) return 0;
+  const base64Payload = dataUrl.slice(comma + 1).trim();
+  const sanitized = base64Payload.replace(/[\r\n\s]/g, '');
+  const padding = sanitized.endsWith('==') ? 2 : sanitized.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((sanitized.length * 3) / 4) - padding);
 }
 
 function extensionForMimeType(mimeType: string): string {
@@ -466,6 +478,8 @@ export class AiHistoryService {
     const cost = extractProviderCostUsd(input.responseContent)
       ?? estimateRequestCostUsd(input.model, input.promptTokens ?? 0, input.completionTokens ?? 0);
 
+    const previousPromptAttachments = await this.repository.listPromptAttachmentsForEvent(eventId);
+
     await this.repository.upsertEventContentAndRollup({
       eventId,
       userId: input.userId,
@@ -493,6 +507,13 @@ export class AiHistoryService {
       promptAttachments,
       ...(input.fileMetadata ? { fileMetadataJson: input.fileMetadata as Prisma.InputJsonValue } : {}),
     });
+
+    await Promise.all(
+      previousPromptAttachments
+        .map((attachment) => attachment.blobKey)
+        .filter((blobKey) => !promptAttachments.some((nextAttachment) => nextAttachment.blobKey === blobKey))
+        .map((blobKey) => this.blobs.deleteByKey(blobKey)),
+    );
   }
 
   private async extractPromptAttachments(
@@ -514,9 +535,58 @@ export class AiHistoryService {
           ? (block.image_url as Record<string, unknown>)
           : null;
         if (!imageUrlObj || typeof imageUrlObj.url !== 'string') continue;
+        if (!imageUrlObj.url.startsWith('data:')) continue;
+
+        const dataUrlMimeType = this.extractDataUrlMimeType(imageUrlObj.url) ?? 'unknown';
+        const estimatedDecodedBytes = estimateDataUrlDecodedBytes(imageUrlObj.url);
+        if (estimatedDecodedBytes > MAX_PROMPT_IMAGE_ATTACHMENT_BYTES) {
+          this.replaceWithOmittedMarker(block, {
+            reason: 'attachment_too_large',
+            mimeType: dataUrlMimeType,
+            sizeBytes: estimatedDecodedBytes,
+          });
+          continue;
+        }
 
         const parsed = parseDataUrl(imageUrlObj.url);
-        if (!parsed || !parsed.mimeType.startsWith('image/')) continue;
+        const mimeType = parsed?.mimeType ?? dataUrlMimeType;
+        const sizeBytes = parsed?.buffer.byteLength ?? estimateDataUrlDecodedBytes(imageUrlObj.url);
+
+        if (!parsed) {
+          this.replaceWithOmittedMarker(block, {
+            reason: 'invalid_data_url',
+            mimeType,
+            sizeBytes,
+          });
+          continue;
+        }
+
+        if (!ALLOWED_PROMPT_IMAGE_MIME_TYPES.has(parsed.mimeType)) {
+          this.replaceWithOmittedMarker(block, {
+            reason: 'unsupported_mime_type',
+            mimeType: parsed.mimeType,
+            sizeBytes: parsed.buffer.byteLength,
+          });
+          continue;
+        }
+
+        if (parsed.buffer.byteLength > MAX_PROMPT_IMAGE_ATTACHMENT_BYTES) {
+          this.replaceWithOmittedMarker(block, {
+            reason: 'attachment_too_large',
+            mimeType: parsed.mimeType,
+            sizeBytes: parsed.buffer.byteLength,
+          });
+          continue;
+        }
+
+        if (output.length >= MAX_PROMPT_IMAGE_ATTACHMENTS) {
+          this.replaceWithOmittedMarker(block, {
+            reason: 'attachment_limit_exceeded',
+            mimeType: parsed.mimeType,
+            sizeBytes: parsed.buffer.byteLength,
+          });
+          continue;
+        }
 
         const attachmentId = randomUUID();
         const blobKey = await this.blobs.writeAttachmentContent(requestId, attachmentId, parsed.buffer);
@@ -541,5 +611,21 @@ export class AiHistoryService {
     }
 
     return cloned;
+  }
+
+  private extractDataUrlMimeType(dataUrl: string): string | null {
+    const match = /^data:([^;,]+)/.exec(dataUrl);
+    return match?.[1]?.trim().toLowerCase() ?? null;
+  }
+
+  private replaceWithOmittedMarker(
+    block: Record<string, unknown>,
+    details: { reason: string; mimeType: string; sizeBytes: number },
+  ): void {
+    delete block.image_url;
+    block.type = 'image_omitted';
+    block.reason = details.reason;
+    block.mimeType = details.mimeType;
+    block.sizeBytes = details.sizeBytes;
   }
 }

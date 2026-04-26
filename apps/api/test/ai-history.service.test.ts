@@ -4,6 +4,7 @@ import test from 'node:test';
 import { AiHistoryService } from '../src/history/ai-history.service';
 import { AiHistoryRepository } from '../src/history/ai-history.repository';
 import { type AiHistoryRepository } from '../src/history/ai-history.repository';
+import { sanitizeAttachmentFilename } from '../src/history/ai-history.controller';
 import { type HistoryBlobService } from '../src/history/history-blob.service';
 
 function createService(overrides?: {
@@ -18,6 +19,7 @@ function createService(overrides?: {
     getEventDetailForUser: async () => null,
     getLegacyDetailForUser: async () => null,
     getAttachmentForUser: async () => null,
+    listPromptAttachmentsForEvent: async () => [],
     upsertEventContentAndRollup: async () => undefined,
     getAnalytics: async () => ({
       totalRequests: 0,
@@ -41,6 +43,7 @@ function createService(overrides?: {
     readJson: async () => null,
     readBinary: async () => null,
     writeAttachmentContent: async () => 'requests/id/attachments/att_1.bin',
+    deleteByKey: async () => undefined,
     ...overrides?.blobs,
   };
 
@@ -126,6 +129,135 @@ test('AiHistoryService.persistContent extracts data URL image into attachment an
   assert.match(serialized, /image_attachment/);
   assert.equal(Array.isArray(upsertInput.promptAttachments), true);
   assert.equal(upsertInput.promptAttachments.length, 1);
+});
+
+test('AiHistoryService.persistContent omits unsupported image mime without storing raw base64', async () => {
+  let persistedPrompt: unknown;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async () => undefined,
+    },
+    blobs: {
+      writePrompt: async (_id: string, payload: unknown) => {
+        persistedPrompt = payload;
+        return 'requests/req_img/prompt.json';
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_img',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/gif;base64,aGVsbG8=' } }] }],
+  });
+
+  const serialized = JSON.stringify(persistedPrompt);
+  assert.equal(serialized.includes('data:image/gif;base64'), false);
+  assert.match(serialized, /image_omitted/);
+  assert.match(serialized, /unsupported_mime_type/);
+});
+
+test('AiHistoryService.persistContent omits oversized image without storing raw base64', async () => {
+  let persistedPrompt: unknown;
+  const over10Mb = Buffer.alloc(10 * 1024 * 1024 + 1, 1).toString('base64');
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async () => undefined,
+    },
+    blobs: {
+      writePrompt: async (_id: string, payload: unknown) => {
+        persistedPrompt = payload;
+        return 'requests/req_large/prompt.json';
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_large',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: `data:image/jpeg;base64,${over10Mb}` } }] }],
+  });
+
+  const serialized = JSON.stringify(persistedPrompt);
+  assert.equal(serialized.includes('data:image/jpeg;base64'), false);
+  assert.match(serialized, /image_omitted/);
+  assert.match(serialized, /attachment_too_large/);
+});
+
+test('AiHistoryService.persistContent caps prompt image attachments at 8', async () => {
+  let persistedPrompt: unknown;
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+    blobs: {
+      writePrompt: async (_id: string, payload: unknown) => {
+        persistedPrompt = payload;
+        return 'requests/r/prompt.json';
+      },
+      writeAttachmentContent: async (_requestId: string, attachmentId: string) => `requests/r/attachments/${attachmentId}.bin`,
+    },
+  });
+
+  const blocks = Array.from({ length: 9 }, () => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,aGVsbG8=' } }));
+  await service.persistContent({
+    requestId: 'req_cap',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [{ role: 'user', content: blocks }],
+  });
+
+  assert.equal(upsertInput.promptAttachments.length, 8);
+  const serialized = JSON.stringify(persistedPrompt);
+  assert.equal(serialized.includes('data:image/jpeg;base64'), false);
+  assert.match(serialized, /attachment_limit_exceeded/);
+});
+
+test('AiHistoryService.persistContent deletes prior prompt attachment blobs after successful upsert', async () => {
+  const deletedBlobKeys: string[] = [];
+  const { service } = createService({
+    repository: {
+      listPromptAttachmentsForEvent: async () => [{ id: 'old_1', blobKey: 'requests/req_1/attachments/old_1.bin' }],
+      upsertEventContentAndRollup: async () => undefined,
+    },
+    blobs: {
+      deleteByKey: async (key: string) => {
+        deletedBlobKeys.push(key);
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_1',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'text',
+    promptContent: [{ role: 'user', content: 'hello' }],
+  });
+
+  assert.deepEqual(deletedBlobKeys, ['requests/req_1/attachments/old_1.bin']);
+});
+
+test('sanitizeAttachmentFilename strips unsafe chars and enforces mime extension', () => {
+  const name = sanitizeAttachmentFilename('..\\evil\"\\r\\n/path?.txt', 'image/png');
+  assert.equal(name.endsWith('.png'), true);
+  assert.equal(name.includes('\r'), false);
+  assert.equal(name.includes('\n'), false);
+  assert.equal(name.includes('/'), false);
+  assert.equal(name.includes('\\'), false);
+  assert.equal(name.includes('"'), false);
 });
 
 test('AiHistoryService.listHistory uses DB excerpts for new events without blob reads', async () => {
@@ -500,6 +632,63 @@ test('AiHistoryRepository.upsertEventContentAndRollup moves buckets when status/
   assert.equal(oldBucket?.requestCount, 0);
   assert.equal(newBucket?.requestCount, 1);
   assert.equal(newBucket?.successCount, 1);
+});
+
+test('AiHistoryRepository.upsertEventContentAndRollup clears prior prompt attachments before insert', async () => {
+  let deleteManyCalled = 0;
+  let createManyRows = 0;
+  const prisma: any = {
+    $transaction: async (fn: any) => fn(prisma),
+    aiRequestEvent: {
+      findUnique: async () => null,
+      upsert: async () => undefined,
+    },
+    aiRequestContent: {
+      upsert: async () => undefined,
+    },
+    aiRequestAttachment: {
+      deleteMany: async ({ where }: any) => {
+        assert.equal(where.role, 'prompt');
+        deleteManyCalled += 1;
+      },
+      createMany: async ({ data }: any) => {
+        createManyRows += data.length;
+      },
+    },
+    aiUsageDailyRollup: {
+      findUnique: async () => null,
+      create: async () => undefined,
+      update: async () => undefined,
+    },
+  };
+
+  const repository = new AiHistoryRepository(prisma);
+  await repository.upsertEventContentAndRollup({
+    eventId: 'evt_1',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    keySource: 'platform',
+    status: 'success',
+    promptTokens: 1,
+    completionTokens: 1,
+    totalTokens: 2,
+    estimatedCostUsd: 0,
+    occurredAt: new Date('2026-04-20T10:00:00.000Z'),
+    expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+    promptAttachments: [{
+      id: 'att_1',
+      role: 'prompt',
+      kind: 'image',
+      mimeType: 'image/jpeg',
+      sizeBytes: 10,
+      blobKey: 'requests/evt_1/attachments/att_1.bin',
+      expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+    }],
+  });
+  assert.equal(deleteManyCalled, 1);
+  assert.equal(createManyRows, 1);
 });
 
 test('AiHistoryRepository.getAnalytics falls back to events when rollup coverage is partial', async () => {

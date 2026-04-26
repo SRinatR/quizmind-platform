@@ -160,6 +160,11 @@ export interface AiHistoryAttachmentAccessRecord {
   };
 }
 
+export interface AiHistoryPromptAttachmentBlobRecord {
+  id: string;
+  blobKey: string;
+}
+
 interface RollupBucketKey {
   userId: string;
   date: Date;
@@ -462,6 +467,19 @@ export class AiHistoryRepository {
             userId: true,
           },
         },
+      },
+    });
+  }
+
+  listPromptAttachmentsForEvent(aiRequestEventId: string): Promise<AiHistoryPromptAttachmentBlobRecord[]> {
+    return this.prisma.aiRequestAttachment.findMany({
+      where: {
+        aiRequestEventId,
+        role: 'prompt',
+      },
+      select: {
+        id: true,
+        blobKey: true,
       },
     });
   }
