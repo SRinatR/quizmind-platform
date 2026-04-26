@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 
   const query = request.nextUrl.searchParams;
   const upstreamParams = new URLSearchParams();
-  for (const key of ['stream', 'severity', 'search', 'limit', 'category', 'source', 'status', 'eventType', 'from', 'to', 'page'] as const) {
+  for (const key of ['stream', 'severity', 'search', 'limit', 'category', 'source', 'status', 'eventType', 'from', 'to', 'page', 'cursor'] as const) {
     const value = query.get(key);
     if (value && value.trim()) upstreamParams.set(key, value);
   }

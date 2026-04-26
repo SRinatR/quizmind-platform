@@ -113,6 +113,7 @@ function buildNextSearchParams(
   if ('from' in next) set('logFrom', next.from);
   if ('to' in next) set('logTo', next.to);
   if ('page' in next) set('logPage', next.page, '1');
+  if ('cursor' in next) set('logCursor', next.cursor);
 
   return params;
 }
@@ -321,6 +322,7 @@ export function LogsExplorerClient({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<AdminLogEntry | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [cursorHistory, setCursorHistory] = useState<string[]>([]);
   const listRequestSeqRef = useRef(0);
   const detailRequestSeqRef = useRef(0);
 
@@ -361,6 +363,7 @@ export function LogsExplorerClient({
       logFrom: 'from',
       logTo: 'to',
       logPage: 'page',
+      logCursor: 'cursor',
     };
     Object.entries(map).forEach(([urlKey, apiKey]) => {
       const value = searchParams.get(urlKey);
@@ -398,6 +401,7 @@ export function LogsExplorerClient({
       to: toDraft ? toIsoUtc(toDraft) : undefined,
       eventType: eventTypeDraft || undefined,
       page: 1,
+      cursor: undefined,
     });
   }
 
@@ -415,6 +419,7 @@ export function LogsExplorerClient({
       severity: 'all',
       stream: 'all',
       page: 1,
+      cursor: undefined,
       ...preset.filters,
     });
   }
@@ -437,7 +442,9 @@ export function LogsExplorerClient({
       from: undefined,
       to: undefined,
       page: 1,
+      cursor: undefined,
     });
+    setCursorHistory([]);
   }
 
   async function exportLogs() {
@@ -813,24 +820,37 @@ export function LogsExplorerClient({
       </section>
 
       {/* ── Pagination ── */}
-      {(effectiveSnapshot.items.length > 0 || (filters.page ?? 1) > 1) ? (
+      {(effectiveSnapshot.items.length > 0 || cursorHistory.length > 0) ? (
         <div className="tag-row" style={{ padding: '4px 0' }}>
           <button
             className="btn-ghost"
-            disabled={(filters.page ?? 1) <= 1}
-            onClick={() => pushFilters({ page: (filters.page ?? 1) - 1 })}
+            disabled={cursorHistory.length === 0}
+            onClick={() => {
+              const previousCursor = cursorHistory[cursorHistory.length - 1];
+              setCursorHistory((prev) => prev.slice(0, -1));
+              pushFilters({ cursor: previousCursor, page: Math.max((filters.page ?? 1) - 1, 1) });
+            }}
             type="button"
             style={{ fontSize: '0.8rem', padding: '4px 12px' }}
           >
             ← Prev
           </button>
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-            Page {filters.page ?? 1} · {effectiveSnapshot.total} total
+            Page {filters.page ?? 1}{typeof effectiveSnapshot.total === 'number' ? ` · ${effectiveSnapshot.total} total` : ''}
           </span>
           <button
             className="btn-ghost"
             disabled={!effectiveSnapshot.hasNext}
-            onClick={() => pushFilters({ page: (filters.page ?? 1) + 1 })}
+            onClick={() => {
+              if (!effectiveSnapshot.nextCursor) return;
+              const currentCursor = filters.cursor;
+              if (currentCursor) {
+                setCursorHistory((prev) => [...prev, currentCursor]);
+              } else {
+                setCursorHistory((prev) => [...prev, '']);
+              }
+              pushFilters({ cursor: effectiveSnapshot.nextCursor, page: (filters.page ?? 1) + 1 });
+            }}
             type="button"
             style={{ fontSize: '0.8rem', padding: '4px 12px' }}
           >

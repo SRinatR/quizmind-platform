@@ -154,6 +154,7 @@ export class PlatformController {
     @Query('from') from?: string,
     @Query('to') to?: string,
     @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Headers('authorization') authorization?: string,
   ) {
     const filters: Partial<AdminLogFilters> = {
@@ -168,6 +169,7 @@ export class PlatformController {
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
       ...(page ? { page: Number(page) } : {}),
+      ...(cursor ? { cursor } : {}),
     };
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
