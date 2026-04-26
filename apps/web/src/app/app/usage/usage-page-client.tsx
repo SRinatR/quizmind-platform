@@ -91,6 +91,10 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
     pauseWhenHidden: true,
   });
 
+  useEffect(() => {
+    setLiveAnalytics(analytics);
+  }, [analytics]);
+
   const modelRows = useMemo(() => {
     return (liveAnalytics?.byModel ?? []).map((row) => ({
       ...row,

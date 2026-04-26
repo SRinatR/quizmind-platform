@@ -7,7 +7,7 @@ import {
   type ExtensionInstallationInventoryItem,
   type ExtensionInstallationInventorySnapshot,
 } from '@quizmind/contracts';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePreferences } from '../../../lib/preferences';
 import { useAutoRefresh } from '../../../lib/use-auto-refresh';
@@ -97,6 +97,10 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     refresh: refreshInstallations,
     pauseWhenHidden: true,
   });
+
+  useEffect(() => {
+    setLiveSnapshot(snapshot);
+  }, [snapshot]);
 
   const activeItems = liveSnapshot.items.filter(isActiveInstallation);
   const activeSessionCount = activeItems.reduce((sum, installation) => sum + installation.activeSessionCount, 0);

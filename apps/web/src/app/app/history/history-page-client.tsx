@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { type AiHistoryAttachment, type AiHistoryListResponse } from '@quizmind/contracts';
@@ -59,6 +59,10 @@ function formatTokens(n: number): string {
 export function HistoryPageClient(props: HistoryPageClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [liveHistory, setLiveHistory] = useState<AiHistoryListResponse | null>(props.aiHistory);
+
+  useEffect(() => {
+    setLiveHistory(props.aiHistory);
+  }, [props.aiHistory]);
 
   const {
     effectivePage, pageSize,

@@ -160,6 +160,27 @@ export function ProfilePageClient({
   const avatarUrl = profileState?.avatarUrl ?? userProfile?.avatarUrl;
   const initials = currentDisplayName ? getInitials(currentDisplayName) : '?';
 
+  useEffect(() => {
+    setProfileState(userProfile);
+
+    if (!isEditingProfile || !displayNameTouched) {
+      setDisplayNameDraft(userProfile?.displayName ?? session.user.displayName ?? '');
+    }
+
+    if (!isEditingProfile || !avatarTouched) {
+      setAvatarDraft(userProfile?.avatarUrl ?? '');
+    }
+
+    if (!isEditingProfile) {
+      setDisplayNameTouched(false);
+      setAvatarTouched(false);
+    }
+  }, [avatarTouched, displayNameTouched, isEditingProfile, session.user.displayName, userProfile]);
+
+  useEffect(() => {
+    setBalance(initialBalance);
+  }, [initialBalance]);
+
   // ── YooKassa widget mount ──
   useEffect(() => {
     if (!widgetToken || !scriptLoaded) return;
