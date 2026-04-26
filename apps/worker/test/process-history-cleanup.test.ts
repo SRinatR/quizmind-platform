@@ -66,3 +66,35 @@ test('processHistoryCleanupJob deletes only legacy ai_requests without matching 
   assert.equal(result.deletedRows, 1);
   assert.deepEqual(deletedIds, ['req_delete']);
 });
+
+test('processHistoryCleanupJob does not hang when a full legacy batch is entirely protected by events', async () => {
+  const BATCH = 200;
+  let calls = 0;
+  let deleted = 0;
+  const protectedRows = Array.from({ length: BATCH }, (_, i) => ({ id: `req_${String(i).padStart(3, '0')}` }));
+  const prisma = {
+    aiRequestContent: {
+      findMany: async () => [],
+      updateMany: async () => ({ count: 0 }),
+    },
+    aiRequestEvent: {
+      findMany: async () => protectedRows,
+    },
+    aiRequest: {
+      findMany: async () => {
+        calls += 1;
+        if (calls === 1) return protectedRows;
+        return [];
+      },
+      deleteMany: async ({ where }: any) => {
+        deleted += where.id.in.length;
+        return { count: where.id.in.length };
+      },
+    },
+  } as any;
+
+  const result = await processHistoryCleanupJob({ triggeredAt: '2026-04-26T00:00:00.000Z' }, prisma);
+  assert.equal(result.deletedRows, 0);
+  assert.equal(deleted, 0);
+  assert.equal(calls, 2);
+});

@@ -60,14 +60,17 @@ export async function processHistoryCleanupJob(
   }
 
   // Legacy cleanup path remains only for old ai_requests rows.
+  let legacyCursorId: string | null = null;
   while (true) {
     const legacy = await prisma.aiRequest.findMany({
+      ...(legacyCursorId ? { cursor: { id: legacyCursorId }, skip: 1 } : {}),
       where: { expiresAt: { lt: new Date() } },
       select: { id: true },
       take: BATCH,
-      orderBy: { expiresAt: 'asc' },
+      orderBy: { id: 'asc' },
     });
     if (legacy.length === 0) break;
+    legacyCursorId = legacy[legacy.length - 1]?.id ?? null;
     const legacyIds = legacy.map((row) => row.id);
     const matchingEventRows = await prisma.aiRequestEvent.findMany({
       where: { id: { in: legacyIds } },
@@ -75,22 +78,19 @@ export async function processHistoryCleanupJob(
     });
     const matchingEventIds = new Set(matchingEventRows.map((row) => row.id));
     const legacyOnlyIds = legacyIds.filter((id) => !matchingEventIds.has(id));
-    if (legacyOnlyIds.length === 0) {
-      if (legacy.length < BATCH) break;
-      continue;
+    if (legacyOnlyIds.length > 0) {
+      await Promise.all(legacyOnlyIds.flatMap((id) => [
+        tryUnlink(path.join(blobDir, `requests/${id}/prompt.json`)),
+        tryUnlink(path.join(blobDir, `requests/${id}/response.json`)),
+        tryUnlink(path.join(blobDir, `requests/${id}/file.bin`)),
+        tryUnlink(path.join(blobDir, `${id}.prompt.json`)),
+        tryUnlink(path.join(blobDir, `${id}.response.json`)),
+        tryUnlink(path.join(blobDir, `${id}.file.bin`)),
+      ]));
+
+      const removed = await prisma.aiRequest.deleteMany({ where: { id: { in: legacyOnlyIds } } });
+      deletedRows += removed.count;
     }
-
-    await Promise.all(legacyOnlyIds.flatMap((id) => [
-      tryUnlink(path.join(blobDir, `requests/${id}/prompt.json`)),
-      tryUnlink(path.join(blobDir, `requests/${id}/response.json`)),
-      tryUnlink(path.join(blobDir, `requests/${id}/file.bin`)),
-      tryUnlink(path.join(blobDir, `${id}.prompt.json`)),
-      tryUnlink(path.join(blobDir, `${id}.response.json`)),
-      tryUnlink(path.join(blobDir, `${id}.file.bin`)),
-    ]));
-
-    const removed = await prisma.aiRequest.deleteMany({ where: { id: { in: legacyOnlyIds } } });
-    deletedRows += removed.count;
     if (legacy.length < BATCH) break;
   }
 

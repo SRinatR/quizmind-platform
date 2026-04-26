@@ -363,6 +363,9 @@ model AiRequestEvent {
   content          AiRequestContent?
 
   @@index([userId, occurredAt])
+  @@index([userId, status, occurredAt])
+  @@index([userId, requestType, occurredAt])
+  @@index([userId, model, occurredAt])
   @@index([workspaceId, occurredAt])
   @@index([occurredAt])
   @@map("ai_request_events")

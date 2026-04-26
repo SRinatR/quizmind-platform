@@ -396,17 +396,22 @@ export class AiHistoryRepository {
       },
     });
 
-    const eventDays = await this.prisma.aiRequestEvent.findMany({
-      where: {
-        userId: input.userId,
-        occurredAt: { gte: input.from, lte: input.to },
-      },
-      select: { occurredAt: true },
-    });
+    const eventWhere: Prisma.AiRequestEventWhereInput = {
+      userId: input.userId,
+      occurredAt: { gte: input.from, lte: input.to },
+    };
+    const [eventDays, eventCount] = await Promise.all([
+      this.prisma.aiRequestEvent.findMany({
+        where: eventWhere,
+        select: { occurredAt: true },
+      }),
+      this.prisma.aiRequestEvent.count({ where: eventWhere }),
+    ]);
     const rollupDayKeys = new Set(rollups.map((row) => row.date.toISOString().slice(0, 10)));
+    const rollupRequestCount = rollups.reduce((acc, row) => acc + row.requestCount, 0);
     const coverageComplete = rollups.length > 0 && eventDays.every(
       (row) => rollupDayKeys.has(row.occurredAt.toISOString().slice(0, 10)),
-    );
+    ) && rollupRequestCount === eventCount;
 
     if (coverageComplete) {
       const byModelMap = new Map<string, AiAnalyticsRow & { durationMsTotal: number }>();

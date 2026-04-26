@@ -396,14 +396,34 @@ test('AiHistoryRepository.getAnalytics uses rollups when coverage is full', asyn
     },
     aiRequestEvent: {
       findMany: async () => [{ occurredAt: new Date('2026-04-20T12:00:00.000Z') }],
+      count: async () => 2,
       aggregate: async () => ({ _count: { id: 99 }, _sum: { promptTokens: 99, completionTokens: 99, totalTokens: 99, estimatedCostUsd: 99, durationMs: 99 } }),
       groupBy: async () => [],
-      count: async () => 0,
     },
   };
   const repository = new AiHistoryRepository(prisma);
   const snapshot = await repository.getAnalytics({ userId: 'user_1', from: new Date('2026-04-20T00:00:00.000Z'), to: new Date('2026-04-20T23:59:59.000Z') });
   assert.equal(snapshot.totalRequests, 2);
+});
+
+test('AiHistoryRepository.getAnalytics falls back to events when rollup requestCount sum mismatches event count', async () => {
+  const prisma: any = {
+    aiUsageDailyRollup: {
+      findMany: async () => [{
+        model: 'm1', status: 'success', requestCount: 1, successCount: 1, failedCount: 0, promptTokens: 2, completionTokens: 2, totalTokens: 4, estimatedCostUsd: 2, totalDurationMs: 20, date: new Date('2026-04-20T00:00:00.000Z'),
+      }],
+    },
+    aiRequestEvent: {
+      findMany: async () => [{ occurredAt: new Date('2026-04-20T12:00:00.000Z') }, { occurredAt: new Date('2026-04-20T13:00:00.000Z') }],
+      count: async () => 2,
+      aggregate: async () => ({ _count: { id: 2 }, _sum: { promptTokens: 5, completionTokens: 5, totalTokens: 10, estimatedCostUsd: 4, durationMs: 30 } }),
+      groupBy: async () => [{ model: 'm1', status: 'success', _count: { id: 2 }, _sum: { promptTokens: 5, completionTokens: 5, totalTokens: 10, estimatedCostUsd: 4, durationMs: 30 } }],
+    },
+  };
+  const repository = new AiHistoryRepository(prisma);
+  const snapshot = await repository.getAnalytics({ userId: 'user_1', from: new Date('2026-04-20T00:00:00.000Z'), to: new Date('2026-04-20T23:59:59.000Z') });
+  assert.equal(snapshot.totalRequests, 2);
+  assert.equal(snapshot.totalTokens, 10);
 });
 
 test('AiHistoryService.listHistory falls back to legacy list when no events exist', async () => {
