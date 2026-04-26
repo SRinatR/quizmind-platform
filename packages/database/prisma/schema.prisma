@@ -127,6 +127,8 @@ model User {
   extensionInstallationSessions ExtensionInstallationSession[]
   providerCredentials    ProviderCredential[]
   aiRequests             AiRequest[]
+  aiRequestEvents        AiRequestEvent[]
+  aiUsageDailyRollups    AiUsageDailyRollup[]
   aiProviderPoliciesUpdated AiProviderPolicy[]  @relation("AiProviderPolicyUpdatedBy")
   supportTickets         SupportTicket[]         @relation("SupportTicketRequester")
   assignedSupportTickets SupportTicket[]         @relation("SupportTicketAssignee")
@@ -193,6 +195,7 @@ model Workspace {
   featureFlagOverrides   FeatureFlagOverride[]
   supportTickets         SupportTicket[]
   aiRequests             AiRequest[]
+  aiRequestEvents        AiRequestEvent[]
 }
 
 model Wallet {
@@ -332,6 +335,81 @@ model AiRequest {
   @@index([occurredAt])
   @@index([expiresAt])
   @@map("ai_requests")
+}
+
+model AiRequestEvent {
+  id               String            @id
+  userId           String
+  workspaceId      String?
+  installationId   String?
+  provider         String
+  model            String
+  modelDisplayName String?
+  requestType      String
+  keySource        String            @default("platform")
+  status           String            @default("success")
+  errorCode        String?
+  promptTokens     Int               @default(0)
+  completionTokens Int               @default(0)
+  totalTokens      Int               @default(0)
+  estimatedCostUsd Float?
+  durationMs       Int?
+  promptExcerpt    String?
+  responseExcerpt  String?
+  occurredAt       DateTime          @default(now())
+  createdAt        DateTime          @default(now())
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  content          AiRequestContent?
+
+  @@index([userId, occurredAt])
+  @@index([userId, status, occurredAt])
+  @@index([userId, requestType, occurredAt])
+  @@index([userId, model, occurredAt])
+  @@index([workspaceId, occurredAt])
+  @@index([occurredAt])
+  @@map("ai_request_events")
+}
+
+model AiRequestContent {
+  id               String         @id @default(cuid())
+  aiRequestEventId String         @unique
+  promptBlobKey    String?
+  responseBlobKey  String?
+  fileBlobKey      String?
+  fileMetadataJson Json?
+  expiresAt        DateTime
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  event            AiRequestEvent @relation(fields: [aiRequestEventId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt, deletedAt])
+  @@map("ai_request_contents")
+}
+
+model AiUsageDailyRollup {
+  id               String   @id @default(cuid())
+  userId           String
+  date             DateTime
+  requestType      String?
+  model            String
+  modelDisplayName String?
+  status           String
+  requestCount     Int      @default(0)
+  successCount     Int      @default(0)
+  failedCount      Int      @default(0)
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  estimatedCostUsd Float    @default(0)
+  totalDurationMs  Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, model, requestType, status])
+  @@index([userId, date])
+  @@map("ai_usage_daily_rollups")
 }
 
 model FeatureFlag {

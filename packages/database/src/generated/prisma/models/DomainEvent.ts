@@ -26,21 +26,18 @@ export type AggregateDomainEvent = {
 
 export type DomainEventMinAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   eventType: string | null
   createdAt: Date | null
 }
 
 export type DomainEventMaxAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   eventType: string | null
   createdAt: Date | null
 }
 
 export type DomainEventCountAggregateOutputType = {
   id: number
-  workspaceId: number
   eventType: number
   payloadJson: number
   createdAt: number
@@ -50,21 +47,18 @@ export type DomainEventCountAggregateOutputType = {
 
 export type DomainEventMinAggregateInputType = {
   id?: true
-  workspaceId?: true
   eventType?: true
   createdAt?: true
 }
 
 export type DomainEventMaxAggregateInputType = {
   id?: true
-  workspaceId?: true
   eventType?: true
   createdAt?: true
 }
 
 export type DomainEventCountAggregateInputType = {
   id?: true
-  workspaceId?: true
   eventType?: true
   payloadJson?: true
   createdAt?: true
@@ -145,7 +139,6 @@ export type DomainEventGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type DomainEventGroupByOutputType = {
   id: string
-  workspaceId: string | null
   eventType: string
   payloadJson: runtime.JsonValue | null
   createdAt: Date
@@ -174,20 +167,16 @@ export type DomainEventWhereInput = {
   OR?: Prisma.DomainEventWhereInput[]
   NOT?: Prisma.DomainEventWhereInput | Prisma.DomainEventWhereInput[]
   id?: Prisma.StringFilter<"DomainEvent"> | string
-  workspaceId?: Prisma.StringNullableFilter<"DomainEvent"> | string | null
   eventType?: Prisma.StringFilter<"DomainEvent"> | string
   payloadJson?: Prisma.JsonNullableFilter<"DomainEvent">
   createdAt?: Prisma.DateTimeFilter<"DomainEvent"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }
 
 export type DomainEventOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   eventType?: Prisma.SortOrder
   payloadJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
 }
 
 export type DomainEventWhereUniqueInput = Prisma.AtLeast<{
@@ -195,16 +184,13 @@ export type DomainEventWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.DomainEventWhereInput | Prisma.DomainEventWhereInput[]
   OR?: Prisma.DomainEventWhereInput[]
   NOT?: Prisma.DomainEventWhereInput | Prisma.DomainEventWhereInput[]
-  workspaceId?: Prisma.StringNullableFilter<"DomainEvent"> | string | null
   eventType?: Prisma.StringFilter<"DomainEvent"> | string
   payloadJson?: Prisma.JsonNullableFilter<"DomainEvent">
   createdAt?: Prisma.DateTimeFilter<"DomainEvent"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }, "id">
 
 export type DomainEventOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   eventType?: Prisma.SortOrder
   payloadJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -218,7 +204,6 @@ export type DomainEventScalarWhereWithAggregatesInput = {
   OR?: Prisma.DomainEventScalarWhereWithAggregatesInput[]
   NOT?: Prisma.DomainEventScalarWhereWithAggregatesInput | Prisma.DomainEventScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"DomainEvent"> | string
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"DomainEvent"> | string | null
   eventType?: Prisma.StringWithAggregatesFilter<"DomainEvent"> | string
   payloadJson?: Prisma.JsonNullableWithAggregatesFilter<"DomainEvent">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"DomainEvent"> | Date | string
@@ -229,12 +214,10 @@ export type DomainEventCreateInput = {
   eventType: string
   payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutDomainEventsInput
 }
 
 export type DomainEventUncheckedCreateInput = {
   id?: string
-  workspaceId?: string | null
   eventType: string
   payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
@@ -245,12 +228,10 @@ export type DomainEventUpdateInput = {
   eventType?: Prisma.StringFieldUpdateOperationsInput | string
   payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutDomainEventsNestedInput
 }
 
 export type DomainEventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   eventType?: Prisma.StringFieldUpdateOperationsInput | string
   payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -258,7 +239,6 @@ export type DomainEventUncheckedUpdateInput = {
 
 export type DomainEventCreateManyInput = {
   id?: string
-  workspaceId?: string | null
   eventType: string
   payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
@@ -273,25 +253,13 @@ export type DomainEventUpdateManyMutationInput = {
 
 export type DomainEventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   eventType?: Prisma.StringFieldUpdateOperationsInput | string
   payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type DomainEventListRelationFilter = {
-  every?: Prisma.DomainEventWhereInput
-  some?: Prisma.DomainEventWhereInput
-  none?: Prisma.DomainEventWhereInput
-}
-
-export type DomainEventOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
-}
-
 export type DomainEventCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   eventType?: Prisma.SortOrder
   payloadJson?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -299,195 +267,53 @@ export type DomainEventCountOrderByAggregateInput = {
 
 export type DomainEventMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   eventType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
 export type DomainEventMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   eventType?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-}
-
-export type DomainEventCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.DomainEventCreateWithoutWorkspaceInput, Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput> | Prisma.DomainEventCreateWithoutWorkspaceInput[] | Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput | Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.DomainEventCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-}
-
-export type DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.DomainEventCreateWithoutWorkspaceInput, Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput> | Prisma.DomainEventCreateWithoutWorkspaceInput[] | Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput | Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.DomainEventCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-}
-
-export type DomainEventUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.DomainEventCreateWithoutWorkspaceInput, Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput> | Prisma.DomainEventCreateWithoutWorkspaceInput[] | Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput | Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.DomainEventUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.DomainEventUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.DomainEventCreateManyWorkspaceInputEnvelope
-  set?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  disconnect?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  delete?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  connect?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  update?: Prisma.DomainEventUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.DomainEventUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.DomainEventUpdateManyWithWhereWithoutWorkspaceInput | Prisma.DomainEventUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.DomainEventScalarWhereInput | Prisma.DomainEventScalarWhereInput[]
-}
-
-export type DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.DomainEventCreateWithoutWorkspaceInput, Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput> | Prisma.DomainEventCreateWithoutWorkspaceInput[] | Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput | Prisma.DomainEventCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.DomainEventUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.DomainEventUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.DomainEventCreateManyWorkspaceInputEnvelope
-  set?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  disconnect?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  delete?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  connect?: Prisma.DomainEventWhereUniqueInput | Prisma.DomainEventWhereUniqueInput[]
-  update?: Prisma.DomainEventUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.DomainEventUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.DomainEventUpdateManyWithWhereWithoutWorkspaceInput | Prisma.DomainEventUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.DomainEventScalarWhereInput | Prisma.DomainEventScalarWhereInput[]
-}
-
-export type DomainEventCreateWithoutWorkspaceInput = {
-  id?: string
-  eventType: string
-  payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-}
-
-export type DomainEventUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  eventType: string
-  payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-}
-
-export type DomainEventCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.DomainEventWhereUniqueInput
-  create: Prisma.XOR<Prisma.DomainEventCreateWithoutWorkspaceInput, Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type DomainEventCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.DomainEventCreateManyWorkspaceInput | Prisma.DomainEventCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type DomainEventUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.DomainEventWhereUniqueInput
-  update: Prisma.XOR<Prisma.DomainEventUpdateWithoutWorkspaceInput, Prisma.DomainEventUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.DomainEventCreateWithoutWorkspaceInput, Prisma.DomainEventUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type DomainEventUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.DomainEventWhereUniqueInput
-  data: Prisma.XOR<Prisma.DomainEventUpdateWithoutWorkspaceInput, Prisma.DomainEventUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type DomainEventUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.DomainEventScalarWhereInput
-  data: Prisma.XOR<Prisma.DomainEventUpdateManyMutationInput, Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceInput>
-}
-
-export type DomainEventScalarWhereInput = {
-  AND?: Prisma.DomainEventScalarWhereInput | Prisma.DomainEventScalarWhereInput[]
-  OR?: Prisma.DomainEventScalarWhereInput[]
-  NOT?: Prisma.DomainEventScalarWhereInput | Prisma.DomainEventScalarWhereInput[]
-  id?: Prisma.StringFilter<"DomainEvent"> | string
-  workspaceId?: Prisma.StringNullableFilter<"DomainEvent"> | string | null
-  eventType?: Prisma.StringFilter<"DomainEvent"> | string
-  payloadJson?: Prisma.JsonNullableFilter<"DomainEvent">
-  createdAt?: Prisma.DateTimeFilter<"DomainEvent"> | Date | string
-}
-
-export type DomainEventCreateManyWorkspaceInput = {
-  id?: string
-  eventType: string
-  payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-}
-
-export type DomainEventUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  eventType?: Prisma.StringFieldUpdateOperationsInput | string
-  payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type DomainEventUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  eventType?: Prisma.StringFieldUpdateOperationsInput | string
-  payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type DomainEventUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  eventType?: Prisma.StringFieldUpdateOperationsInput | string
-  payloadJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
 
 export type DomainEventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   eventType?: boolean
   payloadJson?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.DomainEvent$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["domainEvent"]>
 
 export type DomainEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   eventType?: boolean
   payloadJson?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.DomainEvent$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["domainEvent"]>
 
 export type DomainEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   eventType?: boolean
   payloadJson?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.DomainEvent$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["domainEvent"]>
 
 export type DomainEventSelectScalar = {
   id?: boolean
-  workspaceId?: boolean
   eventType?: boolean
   payloadJson?: boolean
   createdAt?: boolean
 }
 
-export type DomainEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "eventType" | "payloadJson" | "createdAt", ExtArgs["result"]["domainEvent"]>
-export type DomainEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.DomainEvent$workspaceArgs<ExtArgs>
-}
-export type DomainEventIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.DomainEvent$workspaceArgs<ExtArgs>
-}
-export type DomainEventIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.DomainEvent$workspaceArgs<ExtArgs>
-}
+export type DomainEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "eventType" | "payloadJson" | "createdAt", ExtArgs["result"]["domainEvent"]>
 
 export type $DomainEventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "DomainEvent"
-  objects: {
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
-  }
+  objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    workspaceId: string | null
     eventType: string
     payloadJson: runtime.JsonValue | null
     createdAt: Date
@@ -885,7 +711,6 @@ readonly fields: DomainEventFieldRefs;
  */
 export interface Prisma__DomainEventClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  workspace<T extends Prisma.DomainEvent$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.DomainEvent$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -916,7 +741,6 @@ export interface Prisma__DomainEventClient<T, Null = never, ExtArgs extends runt
  */
 export interface DomainEventFieldRefs {
   readonly id: Prisma.FieldRef<"DomainEvent", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"DomainEvent", 'String'>
   readonly eventType: Prisma.FieldRef<"DomainEvent", 'String'>
   readonly payloadJson: Prisma.FieldRef<"DomainEvent", 'Json'>
   readonly createdAt: Prisma.FieldRef<"DomainEvent", 'DateTime'>
@@ -937,10 +761,6 @@ export type DomainEventFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
-  /**
    * Filter, which DomainEvent to fetch.
    */
   where: Prisma.DomainEventWhereUniqueInput
@@ -959,10 +779,6 @@ export type DomainEventFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Exten
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
-  /**
    * Filter, which DomainEvent to fetch.
    */
   where: Prisma.DomainEventWhereUniqueInput
@@ -980,10 +796,6 @@ export type DomainEventFindFirstArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the DomainEvent
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
   /**
    * Filter, which DomainEvent to fetch.
    */
@@ -1033,10 +845,6 @@ export type DomainEventFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extens
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
-  /**
    * Filter, which DomainEvent to fetch.
    */
   where?: Prisma.DomainEventWhereInput
@@ -1084,10 +892,6 @@ export type DomainEventFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the DomainEvent
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
   /**
    * Filter, which DomainEvents to fetch.
    */
@@ -1137,10 +941,6 @@ export type DomainEventCreateArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
-  /**
    * The data needed to create a DomainEvent.
    */
   data: Prisma.XOR<Prisma.DomainEventCreateInput, Prisma.DomainEventUncheckedCreateInput>
@@ -1174,10 +974,6 @@ export type DomainEventCreateManyAndReturnArgs<ExtArgs extends runtime.Types.Ext
    */
   data: Prisma.DomainEventCreateManyInput | Prisma.DomainEventCreateManyInput[]
   skipDuplicates?: boolean
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1192,10 +988,6 @@ export type DomainEventUpdateArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the DomainEvent
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
   /**
    * The data needed to update a DomainEvent.
    */
@@ -1248,10 +1040,6 @@ export type DomainEventUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.Ext
    * Limit how many DomainEvents to update.
    */
   limit?: number
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1266,10 +1054,6 @@ export type DomainEventUpsertArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Omit specific fields from the DomainEvent
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
   /**
    * The filter to search for the DomainEvent to update in case it exists.
    */
@@ -1297,10 +1081,6 @@ export type DomainEventDeleteArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
-  /**
    * Filter which DomainEvent to delete.
    */
   where: Prisma.DomainEventWhereUniqueInput
@@ -1321,25 +1101,6 @@ export type DomainEventDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
 }
 
 /**
- * DomainEvent.workspace
- */
-export type DomainEvent$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
-}
-
-/**
  * DomainEvent without action
  */
 export type DomainEventDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1351,8 +1112,4 @@ export type DomainEventDefaultArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Omit specific fields from the DomainEvent
    */
   omit?: Prisma.DomainEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
 }

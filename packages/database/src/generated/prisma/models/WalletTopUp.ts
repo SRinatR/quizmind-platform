@@ -37,7 +37,6 @@ export type WalletTopUpSumAggregateOutputType = {
 export type WalletTopUpMinAggregateOutputType = {
   id: string | null
   walletId: string | null
-  workspaceId: string | null
   createdByUserId: string | null
   amountKopecks: number | null
   currency: string | null
@@ -54,7 +53,6 @@ export type WalletTopUpMinAggregateOutputType = {
 export type WalletTopUpMaxAggregateOutputType = {
   id: string | null
   walletId: string | null
-  workspaceId: string | null
   createdByUserId: string | null
   amountKopecks: number | null
   currency: string | null
@@ -71,7 +69,6 @@ export type WalletTopUpMaxAggregateOutputType = {
 export type WalletTopUpCountAggregateOutputType = {
   id: number
   walletId: number
-  workspaceId: number
   createdByUserId: number
   amountKopecks: number
   currency: number
@@ -99,7 +96,6 @@ export type WalletTopUpSumAggregateInputType = {
 export type WalletTopUpMinAggregateInputType = {
   id?: true
   walletId?: true
-  workspaceId?: true
   createdByUserId?: true
   amountKopecks?: true
   currency?: true
@@ -116,7 +112,6 @@ export type WalletTopUpMinAggregateInputType = {
 export type WalletTopUpMaxAggregateInputType = {
   id?: true
   walletId?: true
-  workspaceId?: true
   createdByUserId?: true
   amountKopecks?: true
   currency?: true
@@ -133,7 +128,6 @@ export type WalletTopUpMaxAggregateInputType = {
 export type WalletTopUpCountAggregateInputType = {
   id?: true
   walletId?: true
-  workspaceId?: true
   createdByUserId?: true
   amountKopecks?: true
   currency?: true
@@ -238,7 +232,6 @@ export type WalletTopUpGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 export type WalletTopUpGroupByOutputType = {
   id: string
   walletId: string
-  workspaceId: string
   createdByUserId: string
   amountKopecks: number
   currency: string
@@ -279,7 +272,6 @@ export type WalletTopUpWhereInput = {
   NOT?: Prisma.WalletTopUpWhereInput | Prisma.WalletTopUpWhereInput[]
   id?: Prisma.StringFilter<"WalletTopUp"> | string
   walletId?: Prisma.StringFilter<"WalletTopUp"> | string
-  workspaceId?: Prisma.StringFilter<"WalletTopUp"> | string
   createdByUserId?: Prisma.StringFilter<"WalletTopUp"> | string
   amountKopecks?: Prisma.IntFilter<"WalletTopUp"> | number
   currency?: Prisma.StringFilter<"WalletTopUp"> | string
@@ -293,14 +285,12 @@ export type WalletTopUpWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
-  workspace?: Prisma.XOR<Prisma.WorkspaceScalarRelationFilter, Prisma.WorkspaceWhereInput>
   ledgerEntries?: Prisma.WalletLedgerEntryListRelationFilter
 }
 
 export type WalletTopUpOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   createdByUserId?: Prisma.SortOrder
   amountKopecks?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -314,7 +304,6 @@ export type WalletTopUpOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   wallet?: Prisma.WalletOrderByWithRelationInput
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   ledgerEntries?: Prisma.WalletLedgerEntryOrderByRelationAggregateInput
 }
 
@@ -326,7 +315,6 @@ export type WalletTopUpWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.WalletTopUpWhereInput[]
   NOT?: Prisma.WalletTopUpWhereInput | Prisma.WalletTopUpWhereInput[]
   walletId?: Prisma.StringFilter<"WalletTopUp"> | string
-  workspaceId?: Prisma.StringFilter<"WalletTopUp"> | string
   createdByUserId?: Prisma.StringFilter<"WalletTopUp"> | string
   amountKopecks?: Prisma.IntFilter<"WalletTopUp"> | number
   currency?: Prisma.StringFilter<"WalletTopUp"> | string
@@ -338,14 +326,12 @@ export type WalletTopUpWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
-  workspace?: Prisma.XOR<Prisma.WorkspaceScalarRelationFilter, Prisma.WorkspaceWhereInput>
   ledgerEntries?: Prisma.WalletLedgerEntryListRelationFilter
 }, "id" | "providerPaymentId" | "idempotenceKey">
 
 export type WalletTopUpOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   createdByUserId?: Prisma.SortOrder
   amountKopecks?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -371,7 +357,6 @@ export type WalletTopUpScalarWhereWithAggregatesInput = {
   NOT?: Prisma.WalletTopUpScalarWhereWithAggregatesInput | Prisma.WalletTopUpScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"WalletTopUp"> | string
   walletId?: Prisma.StringWithAggregatesFilter<"WalletTopUp"> | string
-  workspaceId?: Prisma.StringWithAggregatesFilter<"WalletTopUp"> | string
   createdByUserId?: Prisma.StringWithAggregatesFilter<"WalletTopUp"> | string
   amountKopecks?: Prisma.IntWithAggregatesFilter<"WalletTopUp"> | number
   currency?: Prisma.StringWithAggregatesFilter<"WalletTopUp"> | string
@@ -401,14 +386,12 @@ export type WalletTopUpCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutTopUpsInput
-  workspace: Prisma.WorkspaceCreateNestedOneWithoutWalletTopUpsInput
   ledgerEntries?: Prisma.WalletLedgerEntryCreateNestedManyWithoutTopUpInput
 }
 
 export type WalletTopUpUncheckedCreateInput = {
   id?: string
   walletId: string
-  workspaceId: string
   createdByUserId: string
   amountKopecks: number
   currency?: string
@@ -439,14 +422,12 @@ export type WalletTopUpUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutTopUpsNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneRequiredWithoutWalletTopUpsNestedInput
   ledgerEntries?: Prisma.WalletLedgerEntryUpdateManyWithoutTopUpNestedInput
 }
 
 export type WalletTopUpUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -465,7 +446,6 @@ export type WalletTopUpUncheckedUpdateInput = {
 export type WalletTopUpCreateManyInput = {
   id?: string
   walletId: string
-  workspaceId: string
   createdByUserId: string
   amountKopecks: number
   currency?: string
@@ -499,7 +479,6 @@ export type WalletTopUpUpdateManyMutationInput = {
 export type WalletTopUpUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -527,7 +506,6 @@ export type WalletTopUpOrderByRelationAggregateInput = {
 export type WalletTopUpCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   createdByUserId?: Prisma.SortOrder
   amountKopecks?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -549,7 +527,6 @@ export type WalletTopUpAvgOrderByAggregateInput = {
 export type WalletTopUpMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   createdByUserId?: Prisma.SortOrder
   amountKopecks?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -566,7 +543,6 @@ export type WalletTopUpMaxOrderByAggregateInput = {
 export type WalletTopUpMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   createdByUserId?: Prisma.SortOrder
   amountKopecks?: Prisma.SortOrder
   currency?: Prisma.SortOrder
@@ -587,48 +563,6 @@ export type WalletTopUpSumOrderByAggregateInput = {
 export type WalletTopUpNullableScalarRelationFilter = {
   is?: Prisma.WalletTopUpWhereInput | null
   isNot?: Prisma.WalletTopUpWhereInput | null
-}
-
-export type WalletTopUpCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.WalletTopUpCreateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput> | Prisma.WalletTopUpCreateWithoutWorkspaceInput[] | Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput | Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.WalletTopUpCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-}
-
-export type WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.WalletTopUpCreateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput> | Prisma.WalletTopUpCreateWithoutWorkspaceInput[] | Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput | Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.WalletTopUpCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-}
-
-export type WalletTopUpUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.WalletTopUpCreateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput> | Prisma.WalletTopUpCreateWithoutWorkspaceInput[] | Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput | Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.WalletTopUpUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.WalletTopUpUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.WalletTopUpCreateManyWorkspaceInputEnvelope
-  set?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  disconnect?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  delete?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  connect?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  update?: Prisma.WalletTopUpUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.WalletTopUpUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.WalletTopUpUpdateManyWithWhereWithoutWorkspaceInput | Prisma.WalletTopUpUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.WalletTopUpScalarWhereInput | Prisma.WalletTopUpScalarWhereInput[]
-}
-
-export type WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.WalletTopUpCreateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput> | Prisma.WalletTopUpCreateWithoutWorkspaceInput[] | Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput | Prisma.WalletTopUpCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.WalletTopUpUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.WalletTopUpUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.WalletTopUpCreateManyWorkspaceInputEnvelope
-  set?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  disconnect?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  delete?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  connect?: Prisma.WalletTopUpWhereUniqueInput | Prisma.WalletTopUpWhereUniqueInput[]
-  update?: Prisma.WalletTopUpUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.WalletTopUpUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.WalletTopUpUpdateManyWithWhereWithoutWorkspaceInput | Prisma.WalletTopUpUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.WalletTopUpScalarWhereInput | Prisma.WalletTopUpScalarWhereInput[]
 }
 
 export type WalletTopUpCreateNestedManyWithoutWalletInput = {
@@ -693,89 +627,6 @@ export type WalletTopUpUpdateOneWithoutLedgerEntriesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WalletTopUpUpdateToOneWithWhereWithoutLedgerEntriesInput, Prisma.WalletTopUpUpdateWithoutLedgerEntriesInput>, Prisma.WalletTopUpUncheckedUpdateWithoutLedgerEntriesInput>
 }
 
-export type WalletTopUpCreateWithoutWorkspaceInput = {
-  id?: string
-  createdByUserId: string
-  amountKopecks: number
-  currency?: string
-  status?: $Enums.WalletTopUpStatus
-  provider?: string
-  providerPaymentId?: string | null
-  idempotenceKey: string
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  confirmationToken?: string | null
-  paidAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  wallet: Prisma.WalletCreateNestedOneWithoutTopUpsInput
-  ledgerEntries?: Prisma.WalletLedgerEntryCreateNestedManyWithoutTopUpInput
-}
-
-export type WalletTopUpUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  walletId: string
-  createdByUserId: string
-  amountKopecks: number
-  currency?: string
-  status?: $Enums.WalletTopUpStatus
-  provider?: string
-  providerPaymentId?: string | null
-  idempotenceKey: string
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  confirmationToken?: string | null
-  paidAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  ledgerEntries?: Prisma.WalletLedgerEntryUncheckedCreateNestedManyWithoutTopUpInput
-}
-
-export type WalletTopUpCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.WalletTopUpWhereUniqueInput
-  create: Prisma.XOR<Prisma.WalletTopUpCreateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type WalletTopUpCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.WalletTopUpCreateManyWorkspaceInput | Prisma.WalletTopUpCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type WalletTopUpUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.WalletTopUpWhereUniqueInput
-  update: Prisma.XOR<Prisma.WalletTopUpUpdateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.WalletTopUpCreateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type WalletTopUpUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.WalletTopUpWhereUniqueInput
-  data: Prisma.XOR<Prisma.WalletTopUpUpdateWithoutWorkspaceInput, Prisma.WalletTopUpUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type WalletTopUpUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.WalletTopUpScalarWhereInput
-  data: Prisma.XOR<Prisma.WalletTopUpUpdateManyMutationInput, Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceInput>
-}
-
-export type WalletTopUpScalarWhereInput = {
-  AND?: Prisma.WalletTopUpScalarWhereInput | Prisma.WalletTopUpScalarWhereInput[]
-  OR?: Prisma.WalletTopUpScalarWhereInput[]
-  NOT?: Prisma.WalletTopUpScalarWhereInput | Prisma.WalletTopUpScalarWhereInput[]
-  id?: Prisma.StringFilter<"WalletTopUp"> | string
-  walletId?: Prisma.StringFilter<"WalletTopUp"> | string
-  workspaceId?: Prisma.StringFilter<"WalletTopUp"> | string
-  createdByUserId?: Prisma.StringFilter<"WalletTopUp"> | string
-  amountKopecks?: Prisma.IntFilter<"WalletTopUp"> | number
-  currency?: Prisma.StringFilter<"WalletTopUp"> | string
-  status?: Prisma.EnumWalletTopUpStatusFilter<"WalletTopUp"> | $Enums.WalletTopUpStatus
-  provider?: Prisma.StringFilter<"WalletTopUp"> | string
-  providerPaymentId?: Prisma.StringNullableFilter<"WalletTopUp"> | string | null
-  idempotenceKey?: Prisma.StringFilter<"WalletTopUp"> | string
-  metadataJson?: Prisma.JsonNullableFilter<"WalletTopUp">
-  confirmationToken?: Prisma.StringNullableFilter<"WalletTopUp"> | string | null
-  paidAt?: Prisma.DateTimeNullableFilter<"WalletTopUp"> | Date | string | null
-  createdAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
-}
-
 export type WalletTopUpCreateWithoutWalletInput = {
   id?: string
   createdByUserId: string
@@ -790,13 +641,11 @@ export type WalletTopUpCreateWithoutWalletInput = {
   paidAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  workspace: Prisma.WorkspaceCreateNestedOneWithoutWalletTopUpsInput
   ledgerEntries?: Prisma.WalletLedgerEntryCreateNestedManyWithoutTopUpInput
 }
 
 export type WalletTopUpUncheckedCreateWithoutWalletInput = {
   id?: string
-  workspaceId: string
   createdByUserId: string
   amountKopecks: number
   currency?: string
@@ -838,6 +687,26 @@ export type WalletTopUpUpdateManyWithWhereWithoutWalletInput = {
   data: Prisma.XOR<Prisma.WalletTopUpUpdateManyMutationInput, Prisma.WalletTopUpUncheckedUpdateManyWithoutWalletInput>
 }
 
+export type WalletTopUpScalarWhereInput = {
+  AND?: Prisma.WalletTopUpScalarWhereInput | Prisma.WalletTopUpScalarWhereInput[]
+  OR?: Prisma.WalletTopUpScalarWhereInput[]
+  NOT?: Prisma.WalletTopUpScalarWhereInput | Prisma.WalletTopUpScalarWhereInput[]
+  id?: Prisma.StringFilter<"WalletTopUp"> | string
+  walletId?: Prisma.StringFilter<"WalletTopUp"> | string
+  createdByUserId?: Prisma.StringFilter<"WalletTopUp"> | string
+  amountKopecks?: Prisma.IntFilter<"WalletTopUp"> | number
+  currency?: Prisma.StringFilter<"WalletTopUp"> | string
+  status?: Prisma.EnumWalletTopUpStatusFilter<"WalletTopUp"> | $Enums.WalletTopUpStatus
+  provider?: Prisma.StringFilter<"WalletTopUp"> | string
+  providerPaymentId?: Prisma.StringNullableFilter<"WalletTopUp"> | string | null
+  idempotenceKey?: Prisma.StringFilter<"WalletTopUp"> | string
+  metadataJson?: Prisma.JsonNullableFilter<"WalletTopUp">
+  confirmationToken?: Prisma.StringNullableFilter<"WalletTopUp"> | string | null
+  paidAt?: Prisma.DateTimeNullableFilter<"WalletTopUp"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"WalletTopUp"> | Date | string
+}
+
 export type WalletTopUpCreateWithoutLedgerEntriesInput = {
   id?: string
   createdByUserId: string
@@ -853,13 +722,11 @@ export type WalletTopUpCreateWithoutLedgerEntriesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutTopUpsInput
-  workspace: Prisma.WorkspaceCreateNestedOneWithoutWalletTopUpsInput
 }
 
 export type WalletTopUpUncheckedCreateWithoutLedgerEntriesInput = {
   id?: string
   walletId: string
-  workspaceId: string
   createdByUserId: string
   amountKopecks: number
   currency?: string
@@ -905,81 +772,9 @@ export type WalletTopUpUpdateWithoutLedgerEntriesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutTopUpsNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneRequiredWithoutWalletTopUpsNestedInput
 }
 
 export type WalletTopUpUncheckedUpdateWithoutLedgerEntriesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  walletId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
-  currency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumWalletTopUpStatusFieldUpdateOperationsInput | $Enums.WalletTopUpStatus
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idempotenceKey?: Prisma.StringFieldUpdateOperationsInput | string
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  confirmationToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type WalletTopUpCreateManyWorkspaceInput = {
-  id?: string
-  walletId: string
-  createdByUserId: string
-  amountKopecks: number
-  currency?: string
-  status?: $Enums.WalletTopUpStatus
-  provider?: string
-  providerPaymentId?: string | null
-  idempotenceKey: string
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  confirmationToken?: string | null
-  paidAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type WalletTopUpUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
-  currency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumWalletTopUpStatusFieldUpdateOperationsInput | $Enums.WalletTopUpStatus
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idempotenceKey?: Prisma.StringFieldUpdateOperationsInput | string
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  confirmationToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  wallet?: Prisma.WalletUpdateOneRequiredWithoutTopUpsNestedInput
-  ledgerEntries?: Prisma.WalletLedgerEntryUpdateManyWithoutTopUpNestedInput
-}
-
-export type WalletTopUpUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  walletId?: Prisma.StringFieldUpdateOperationsInput | string
-  createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
-  currency?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumWalletTopUpStatusFieldUpdateOperationsInput | $Enums.WalletTopUpStatus
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  providerPaymentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  idempotenceKey?: Prisma.StringFieldUpdateOperationsInput | string
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  confirmationToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  ledgerEntries?: Prisma.WalletLedgerEntryUncheckedUpdateManyWithoutTopUpNestedInput
-}
-
-export type WalletTopUpUncheckedUpdateManyWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
@@ -998,7 +793,6 @@ export type WalletTopUpUncheckedUpdateManyWithoutWorkspaceInput = {
 
 export type WalletTopUpCreateManyWalletInput = {
   id?: string
-  workspaceId: string
   createdByUserId: string
   amountKopecks: number
   currency?: string
@@ -1027,13 +821,11 @@ export type WalletTopUpUpdateWithoutWalletInput = {
   paidAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneRequiredWithoutWalletTopUpsNestedInput
   ledgerEntries?: Prisma.WalletLedgerEntryUpdateManyWithoutTopUpNestedInput
 }
 
 export type WalletTopUpUncheckedUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1051,7 +843,6 @@ export type WalletTopUpUncheckedUpdateWithoutWalletInput = {
 
 export type WalletTopUpUncheckedUpdateManyWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   createdByUserId?: Prisma.StringFieldUpdateOperationsInput | string
   amountKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   currency?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1100,7 +891,6 @@ export type WalletTopUpCountOutputTypeCountLedgerEntriesArgs<ExtArgs extends run
 export type WalletTopUpSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   walletId?: boolean
-  workspaceId?: boolean
   createdByUserId?: boolean
   amountKopecks?: boolean
   currency?: boolean
@@ -1114,7 +904,6 @@ export type WalletTopUpSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   createdAt?: boolean
   updatedAt?: boolean
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
   ledgerEntries?: boolean | Prisma.WalletTopUp$ledgerEntriesArgs<ExtArgs>
   _count?: boolean | Prisma.WalletTopUpCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["walletTopUp"]>
@@ -1122,7 +911,6 @@ export type WalletTopUpSelect<ExtArgs extends runtime.Types.Extensions.InternalA
 export type WalletTopUpSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   walletId?: boolean
-  workspaceId?: boolean
   createdByUserId?: boolean
   amountKopecks?: boolean
   currency?: boolean
@@ -1136,13 +924,11 @@ export type WalletTopUpSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   createdAt?: boolean
   updatedAt?: boolean
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["walletTopUp"]>
 
 export type WalletTopUpSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   walletId?: boolean
-  workspaceId?: boolean
   createdByUserId?: boolean
   amountKopecks?: boolean
   currency?: boolean
@@ -1156,13 +942,11 @@ export type WalletTopUpSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   createdAt?: boolean
   updatedAt?: boolean
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["walletTopUp"]>
 
 export type WalletTopUpSelectScalar = {
   id?: boolean
   walletId?: boolean
-  workspaceId?: boolean
   createdByUserId?: boolean
   amountKopecks?: boolean
   currency?: boolean
@@ -1177,33 +961,28 @@ export type WalletTopUpSelectScalar = {
   updatedAt?: boolean
 }
 
-export type WalletTopUpOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "walletId" | "workspaceId" | "createdByUserId" | "amountKopecks" | "currency" | "status" | "provider" | "providerPaymentId" | "idempotenceKey" | "metadataJson" | "confirmationToken" | "paidAt" | "createdAt" | "updatedAt", ExtArgs["result"]["walletTopUp"]>
+export type WalletTopUpOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "walletId" | "createdByUserId" | "amountKopecks" | "currency" | "status" | "provider" | "providerPaymentId" | "idempotenceKey" | "metadataJson" | "confirmationToken" | "paidAt" | "createdAt" | "updatedAt", ExtArgs["result"]["walletTopUp"]>
 export type WalletTopUpInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
   ledgerEntries?: boolean | Prisma.WalletTopUp$ledgerEntriesArgs<ExtArgs>
   _count?: boolean | Prisma.WalletTopUpCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WalletTopUpIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
 }
 export type WalletTopUpIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
 }
 
 export type $WalletTopUpPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "WalletTopUp"
   objects: {
     wallet: Prisma.$WalletPayload<ExtArgs>
-    workspace: Prisma.$WorkspacePayload<ExtArgs>
     ledgerEntries: Prisma.$WalletLedgerEntryPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     walletId: string
-    workspaceId: string
     createdByUserId: string
     amountKopecks: number
     currency: string
@@ -1611,7 +1390,6 @@ readonly fields: WalletTopUpFieldRefs;
 export interface Prisma__WalletTopUpClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   wallet<T extends Prisma.WalletDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletDefaultArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  workspace<T extends Prisma.WorkspaceDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WorkspaceDefaultArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   ledgerEntries<T extends Prisma.WalletTopUp$ledgerEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WalletTopUp$ledgerEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletLedgerEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1644,7 +1422,6 @@ export interface Prisma__WalletTopUpClient<T, Null = never, ExtArgs extends runt
 export interface WalletTopUpFieldRefs {
   readonly id: Prisma.FieldRef<"WalletTopUp", 'String'>
   readonly walletId: Prisma.FieldRef<"WalletTopUp", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"WalletTopUp", 'String'>
   readonly createdByUserId: Prisma.FieldRef<"WalletTopUp", 'String'>
   readonly amountKopecks: Prisma.FieldRef<"WalletTopUp", 'Int'>
   readonly currency: Prisma.FieldRef<"WalletTopUp", 'String'>

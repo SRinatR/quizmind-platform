@@ -28,7 +28,6 @@ export type SupportImpersonationSessionMinAggregateOutputType = {
   id: string | null
   supportActorId: string | null
   targetUserId: string | null
-  workspaceId: string | null
   supportTicketId: string | null
   reason: string | null
   operatorNote: string | null
@@ -41,7 +40,6 @@ export type SupportImpersonationSessionMaxAggregateOutputType = {
   id: string | null
   supportActorId: string | null
   targetUserId: string | null
-  workspaceId: string | null
   supportTicketId: string | null
   reason: string | null
   operatorNote: string | null
@@ -54,7 +52,6 @@ export type SupportImpersonationSessionCountAggregateOutputType = {
   id: number
   supportActorId: number
   targetUserId: number
-  workspaceId: number
   supportTicketId: number
   reason: number
   operatorNote: number
@@ -69,7 +66,6 @@ export type SupportImpersonationSessionMinAggregateInputType = {
   id?: true
   supportActorId?: true
   targetUserId?: true
-  workspaceId?: true
   supportTicketId?: true
   reason?: true
   operatorNote?: true
@@ -82,7 +78,6 @@ export type SupportImpersonationSessionMaxAggregateInputType = {
   id?: true
   supportActorId?: true
   targetUserId?: true
-  workspaceId?: true
   supportTicketId?: true
   reason?: true
   operatorNote?: true
@@ -95,7 +90,6 @@ export type SupportImpersonationSessionCountAggregateInputType = {
   id?: true
   supportActorId?: true
   targetUserId?: true
-  workspaceId?: true
   supportTicketId?: true
   reason?: true
   operatorNote?: true
@@ -181,7 +175,6 @@ export type SupportImpersonationSessionGroupByOutputType = {
   id: string
   supportActorId: string
   targetUserId: string
-  workspaceId: string | null
   supportTicketId: string | null
   reason: string
   operatorNote: string | null
@@ -215,7 +208,6 @@ export type SupportImpersonationSessionWhereInput = {
   id?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   supportActorId?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   targetUserId?: Prisma.StringFilter<"SupportImpersonationSession"> | string
-  workspaceId?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
   supportTicketId?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
   reason?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   operatorNote?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
@@ -225,14 +217,12 @@ export type SupportImpersonationSessionWhereInput = {
   supportTicket?: Prisma.XOR<Prisma.SupportTicketNullableScalarRelationFilter, Prisma.SupportTicketWhereInput> | null
   supportActor?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   targetUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }
 
 export type SupportImpersonationSessionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   supportActorId?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   supportTicketId?: Prisma.SortOrderInput | Prisma.SortOrder
   reason?: Prisma.SortOrder
   operatorNote?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -242,7 +232,6 @@ export type SupportImpersonationSessionOrderByWithRelationInput = {
   supportTicket?: Prisma.SupportTicketOrderByWithRelationInput
   supportActor?: Prisma.UserOrderByWithRelationInput
   targetUser?: Prisma.UserOrderByWithRelationInput
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
 }
 
 export type SupportImpersonationSessionWhereUniqueInput = Prisma.AtLeast<{
@@ -252,7 +241,6 @@ export type SupportImpersonationSessionWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.SupportImpersonationSessionWhereInput | Prisma.SupportImpersonationSessionWhereInput[]
   supportActorId?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   targetUserId?: Prisma.StringFilter<"SupportImpersonationSession"> | string
-  workspaceId?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
   supportTicketId?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
   reason?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   operatorNote?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
@@ -262,14 +250,12 @@ export type SupportImpersonationSessionWhereUniqueInput = Prisma.AtLeast<{
   supportTicket?: Prisma.XOR<Prisma.SupportTicketNullableScalarRelationFilter, Prisma.SupportTicketWhereInput> | null
   supportActor?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   targetUser?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }, "id">
 
 export type SupportImpersonationSessionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   supportActorId?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   supportTicketId?: Prisma.SortOrderInput | Prisma.SortOrder
   reason?: Prisma.SortOrder
   operatorNote?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -288,7 +274,6 @@ export type SupportImpersonationSessionScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"SupportImpersonationSession"> | string
   supportActorId?: Prisma.StringWithAggregatesFilter<"SupportImpersonationSession"> | string
   targetUserId?: Prisma.StringWithAggregatesFilter<"SupportImpersonationSession"> | string
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"SupportImpersonationSession"> | string | null
   supportTicketId?: Prisma.StringNullableWithAggregatesFilter<"SupportImpersonationSession"> | string | null
   reason?: Prisma.StringWithAggregatesFilter<"SupportImpersonationSession"> | string
   operatorNote?: Prisma.StringNullableWithAggregatesFilter<"SupportImpersonationSession"> | string | null
@@ -307,14 +292,12 @@ export type SupportImpersonationSessionCreateInput = {
   supportTicket?: Prisma.SupportTicketCreateNestedOneWithoutImpersonationSessionsInput
   supportActor: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsStartedInput
   targetUser: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsTargetedInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutSupportImpersonationSessionsInput
 }
 
 export type SupportImpersonationSessionUncheckedCreateInput = {
   id?: string
   supportActorId: string
   targetUserId: string
-  workspaceId?: string | null
   supportTicketId?: string | null
   reason: string
   operatorNote?: string | null
@@ -333,14 +316,12 @@ export type SupportImpersonationSessionUpdateInput = {
   supportTicket?: Prisma.SupportTicketUpdateOneWithoutImpersonationSessionsNestedInput
   supportActor?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsStartedNestedInput
   targetUser?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsTargetedNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutSupportImpersonationSessionsNestedInput
 }
 
 export type SupportImpersonationSessionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -353,7 +334,6 @@ export type SupportImpersonationSessionCreateManyInput = {
   id?: string
   supportActorId: string
   targetUserId: string
-  workspaceId?: string | null
   supportTicketId?: string | null
   reason: string
   operatorNote?: string | null
@@ -375,7 +355,6 @@ export type SupportImpersonationSessionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -398,7 +377,6 @@ export type SupportImpersonationSessionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   supportActorId?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   supportTicketId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   operatorNote?: Prisma.SortOrder
@@ -411,7 +389,6 @@ export type SupportImpersonationSessionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   supportActorId?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   supportTicketId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   operatorNote?: Prisma.SortOrder
@@ -424,7 +401,6 @@ export type SupportImpersonationSessionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   supportActorId?: Prisma.SortOrder
   targetUserId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   supportTicketId?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   operatorNote?: Prisma.SortOrder
@@ -517,48 +493,6 @@ export type SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNeste
   deleteMany?: Prisma.SupportImpersonationSessionScalarWhereInput | Prisma.SupportImpersonationSessionScalarWhereInput[]
 }
 
-export type SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput> | Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput[] | Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput | Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.SupportImpersonationSessionCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-}
-
-export type SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput> | Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput[] | Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput | Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.SupportImpersonationSessionCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-}
-
-export type SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput> | Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput[] | Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput | Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.SupportImpersonationSessionUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.SupportImpersonationSessionUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.SupportImpersonationSessionCreateManyWorkspaceInputEnvelope
-  set?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  disconnect?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  delete?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  connect?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  update?: Prisma.SupportImpersonationSessionUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.SupportImpersonationSessionUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.SupportImpersonationSessionUpdateManyWithWhereWithoutWorkspaceInput | Prisma.SupportImpersonationSessionUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.SupportImpersonationSessionScalarWhereInput | Prisma.SupportImpersonationSessionScalarWhereInput[]
-}
-
-export type SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput> | Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput[] | Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput | Prisma.SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.SupportImpersonationSessionUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.SupportImpersonationSessionUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.SupportImpersonationSessionCreateManyWorkspaceInputEnvelope
-  set?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  disconnect?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  delete?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  connect?: Prisma.SupportImpersonationSessionWhereUniqueInput | Prisma.SupportImpersonationSessionWhereUniqueInput[]
-  update?: Prisma.SupportImpersonationSessionUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.SupportImpersonationSessionUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.SupportImpersonationSessionUpdateManyWithWhereWithoutWorkspaceInput | Prisma.SupportImpersonationSessionUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.SupportImpersonationSessionScalarWhereInput | Prisma.SupportImpersonationSessionScalarWhereInput[]
-}
-
 export type SupportImpersonationSessionCreateNestedManyWithoutSupportTicketInput = {
   create?: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutSupportTicketInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutSupportTicketInput> | Prisma.SupportImpersonationSessionCreateWithoutSupportTicketInput[] | Prisma.SupportImpersonationSessionUncheckedCreateWithoutSupportTicketInput[]
   connectOrCreate?: Prisma.SupportImpersonationSessionCreateOrConnectWithoutSupportTicketInput | Prisma.SupportImpersonationSessionCreateOrConnectWithoutSupportTicketInput[]
@@ -610,13 +544,11 @@ export type SupportImpersonationSessionCreateWithoutSupportActorInput = {
   endedAt?: Date | string | null
   supportTicket?: Prisma.SupportTicketCreateNestedOneWithoutImpersonationSessionsInput
   targetUser: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsTargetedInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutSupportImpersonationSessionsInput
 }
 
 export type SupportImpersonationSessionUncheckedCreateWithoutSupportActorInput = {
   id?: string
   targetUserId: string
-  workspaceId?: string | null
   supportTicketId?: string | null
   reason: string
   operatorNote?: string | null
@@ -644,13 +576,11 @@ export type SupportImpersonationSessionCreateWithoutTargetUserInput = {
   endedAt?: Date | string | null
   supportTicket?: Prisma.SupportTicketCreateNestedOneWithoutImpersonationSessionsInput
   supportActor: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsStartedInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutSupportImpersonationSessionsInput
 }
 
 export type SupportImpersonationSessionUncheckedCreateWithoutTargetUserInput = {
   id?: string
   supportActorId: string
-  workspaceId?: string | null
   supportTicketId?: string | null
   reason: string
   operatorNote?: string | null
@@ -692,7 +622,6 @@ export type SupportImpersonationSessionScalarWhereInput = {
   id?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   supportActorId?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   targetUserId?: Prisma.StringFilter<"SupportImpersonationSession"> | string
-  workspaceId?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
   supportTicketId?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
   reason?: Prisma.StringFilter<"SupportImpersonationSession"> | string
   operatorNote?: Prisma.StringNullableFilter<"SupportImpersonationSession"> | string | null
@@ -717,56 +646,6 @@ export type SupportImpersonationSessionUpdateManyWithWhereWithoutTargetUserInput
   data: Prisma.XOR<Prisma.SupportImpersonationSessionUpdateManyMutationInput, Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserInput>
 }
 
-export type SupportImpersonationSessionCreateWithoutWorkspaceInput = {
-  id?: string
-  reason: string
-  operatorNote?: string | null
-  closeReason?: string | null
-  createdAt?: Date | string
-  endedAt?: Date | string | null
-  supportTicket?: Prisma.SupportTicketCreateNestedOneWithoutImpersonationSessionsInput
-  supportActor: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsStartedInput
-  targetUser: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsTargetedInput
-}
-
-export type SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  supportActorId: string
-  targetUserId: string
-  supportTicketId?: string | null
-  reason: string
-  operatorNote?: string | null
-  closeReason?: string | null
-  createdAt?: Date | string
-  endedAt?: Date | string | null
-}
-
-export type SupportImpersonationSessionCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.SupportImpersonationSessionWhereUniqueInput
-  create: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type SupportImpersonationSessionCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.SupportImpersonationSessionCreateManyWorkspaceInput | Prisma.SupportImpersonationSessionCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type SupportImpersonationSessionUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.SupportImpersonationSessionWhereUniqueInput
-  update: Prisma.XOR<Prisma.SupportImpersonationSessionUpdateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.SupportImpersonationSessionCreateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type SupportImpersonationSessionUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.SupportImpersonationSessionWhereUniqueInput
-  data: Prisma.XOR<Prisma.SupportImpersonationSessionUpdateWithoutWorkspaceInput, Prisma.SupportImpersonationSessionUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type SupportImpersonationSessionUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.SupportImpersonationSessionScalarWhereInput
-  data: Prisma.XOR<Prisma.SupportImpersonationSessionUpdateManyMutationInput, Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceInput>
-}
-
 export type SupportImpersonationSessionCreateWithoutSupportTicketInput = {
   id?: string
   reason: string
@@ -776,14 +655,12 @@ export type SupportImpersonationSessionCreateWithoutSupportTicketInput = {
   endedAt?: Date | string | null
   supportActor: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsStartedInput
   targetUser: Prisma.UserCreateNestedOneWithoutSupportImpersonationSessionsTargetedInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutSupportImpersonationSessionsInput
 }
 
 export type SupportImpersonationSessionUncheckedCreateWithoutSupportTicketInput = {
   id?: string
   supportActorId: string
   targetUserId: string
-  workspaceId?: string | null
   reason: string
   operatorNote?: string | null
   closeReason?: string | null
@@ -820,7 +697,6 @@ export type SupportImpersonationSessionUpdateManyWithWhereWithoutSupportTicketIn
 export type SupportImpersonationSessionCreateManySupportActorInput = {
   id?: string
   targetUserId: string
-  workspaceId?: string | null
   supportTicketId?: string | null
   reason: string
   operatorNote?: string | null
@@ -832,7 +708,6 @@ export type SupportImpersonationSessionCreateManySupportActorInput = {
 export type SupportImpersonationSessionCreateManyTargetUserInput = {
   id?: string
   supportActorId: string
-  workspaceId?: string | null
   supportTicketId?: string | null
   reason: string
   operatorNote?: string | null
@@ -850,13 +725,11 @@ export type SupportImpersonationSessionUpdateWithoutSupportActorInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   supportTicket?: Prisma.SupportTicketUpdateOneWithoutImpersonationSessionsNestedInput
   targetUser?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsTargetedNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutSupportImpersonationSessionsNestedInput
 }
 
 export type SupportImpersonationSessionUncheckedUpdateWithoutSupportActorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -868,7 +741,6 @@ export type SupportImpersonationSessionUncheckedUpdateWithoutSupportActorInput =
 export type SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -886,13 +758,11 @@ export type SupportImpersonationSessionUpdateWithoutTargetUserInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   supportTicket?: Prisma.SupportTicketUpdateOneWithoutImpersonationSessionsNestedInput
   supportActor?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsStartedNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutSupportImpersonationSessionsNestedInput
 }
 
 export type SupportImpersonationSessionUncheckedUpdateWithoutTargetUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -904,55 +774,6 @@ export type SupportImpersonationSessionUncheckedUpdateWithoutTargetUserInput = {
 export type SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  reason?: Prisma.StringFieldUpdateOperationsInput | string
-  operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type SupportImpersonationSessionCreateManyWorkspaceInput = {
-  id?: string
-  supportActorId: string
-  targetUserId: string
-  supportTicketId?: string | null
-  reason: string
-  operatorNote?: string | null
-  closeReason?: string | null
-  createdAt?: Date | string
-  endedAt?: Date | string | null
-}
-
-export type SupportImpersonationSessionUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  reason?: Prisma.StringFieldUpdateOperationsInput | string
-  operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  supportTicket?: Prisma.SupportTicketUpdateOneWithoutImpersonationSessionsNestedInput
-  supportActor?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsStartedNestedInput
-  targetUser?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsTargetedNestedInput
-}
-
-export type SupportImpersonationSessionUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  reason?: Prisma.StringFieldUpdateOperationsInput | string
-  operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
-  targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
   supportTicketId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -965,7 +786,6 @@ export type SupportImpersonationSessionCreateManySupportTicketInput = {
   id?: string
   supportActorId: string
   targetUserId: string
-  workspaceId?: string | null
   reason: string
   operatorNote?: string | null
   closeReason?: string | null
@@ -982,14 +802,12 @@ export type SupportImpersonationSessionUpdateWithoutSupportTicketInput = {
   endedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   supportActor?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsStartedNestedInput
   targetUser?: Prisma.UserUpdateOneRequiredWithoutSupportImpersonationSessionsTargetedNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutSupportImpersonationSessionsNestedInput
 }
 
 export type SupportImpersonationSessionUncheckedUpdateWithoutSupportTicketInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1001,7 +819,6 @@ export type SupportImpersonationSessionUncheckedUpdateManyWithoutSupportTicketIn
   id?: Prisma.StringFieldUpdateOperationsInput | string
   supportActorId?: Prisma.StringFieldUpdateOperationsInput | string
   targetUserId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   operatorNote?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   closeReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1015,7 +832,6 @@ export type SupportImpersonationSessionSelect<ExtArgs extends runtime.Types.Exte
   id?: boolean
   supportActorId?: boolean
   targetUserId?: boolean
-  workspaceId?: boolean
   supportTicketId?: boolean
   reason?: boolean
   operatorNote?: boolean
@@ -1025,14 +841,12 @@ export type SupportImpersonationSessionSelect<ExtArgs extends runtime.Types.Exte
   supportTicket?: boolean | Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>
   supportActor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   targetUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["supportImpersonationSession"]>
 
 export type SupportImpersonationSessionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   supportActorId?: boolean
   targetUserId?: boolean
-  workspaceId?: boolean
   supportTicketId?: boolean
   reason?: boolean
   operatorNote?: boolean
@@ -1042,14 +856,12 @@ export type SupportImpersonationSessionSelectCreateManyAndReturn<ExtArgs extends
   supportTicket?: boolean | Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>
   supportActor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   targetUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["supportImpersonationSession"]>
 
 export type SupportImpersonationSessionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   supportActorId?: boolean
   targetUserId?: boolean
-  workspaceId?: boolean
   supportTicketId?: boolean
   reason?: boolean
   operatorNote?: boolean
@@ -1059,14 +871,12 @@ export type SupportImpersonationSessionSelectUpdateManyAndReturn<ExtArgs extends
   supportTicket?: boolean | Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>
   supportActor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   targetUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["supportImpersonationSession"]>
 
 export type SupportImpersonationSessionSelectScalar = {
   id?: boolean
   supportActorId?: boolean
   targetUserId?: boolean
-  workspaceId?: boolean
   supportTicketId?: boolean
   reason?: boolean
   operatorNote?: boolean
@@ -1075,24 +885,21 @@ export type SupportImpersonationSessionSelectScalar = {
   endedAt?: boolean
 }
 
-export type SupportImpersonationSessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "supportActorId" | "targetUserId" | "workspaceId" | "supportTicketId" | "reason" | "operatorNote" | "closeReason" | "createdAt" | "endedAt", ExtArgs["result"]["supportImpersonationSession"]>
+export type SupportImpersonationSessionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "supportActorId" | "targetUserId" | "supportTicketId" | "reason" | "operatorNote" | "closeReason" | "createdAt" | "endedAt", ExtArgs["result"]["supportImpersonationSession"]>
 export type SupportImpersonationSessionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   supportTicket?: boolean | Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>
   supportActor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   targetUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>
 }
 export type SupportImpersonationSessionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   supportTicket?: boolean | Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>
   supportActor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   targetUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>
 }
 export type SupportImpersonationSessionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   supportTicket?: boolean | Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>
   supportActor?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   targetUser?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>
 }
 
 export type $SupportImpersonationSessionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1101,13 +908,11 @@ export type $SupportImpersonationSessionPayload<ExtArgs extends runtime.Types.Ex
     supportTicket: Prisma.$SupportTicketPayload<ExtArgs> | null
     supportActor: Prisma.$UserPayload<ExtArgs>
     targetUser: Prisma.$UserPayload<ExtArgs>
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     supportActorId: string
     targetUserId: string
-    workspaceId: string | null
     supportTicketId: string | null
     reason: string
     operatorNote: string | null
@@ -1511,7 +1316,6 @@ export interface Prisma__SupportImpersonationSessionClient<T, Null = never, ExtA
   supportTicket<T extends Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SupportImpersonationSession$supportTicketArgs<ExtArgs>>): Prisma.Prisma__SupportTicketClient<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   supportActor<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   targetUser<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  workspace<T extends Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SupportImpersonationSession$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1544,7 +1348,6 @@ export interface SupportImpersonationSessionFieldRefs {
   readonly id: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
   readonly supportActorId: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
   readonly targetUserId: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
   readonly supportTicketId: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
   readonly reason: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
   readonly operatorNote: Prisma.FieldRef<"SupportImpersonationSession", 'String'>
@@ -1968,25 +1771,6 @@ export type SupportImpersonationSession$supportTicketArgs<ExtArgs extends runtim
    */
   include?: Prisma.SupportTicketInclude<ExtArgs> | null
   where?: Prisma.SupportTicketWhereInput
-}
-
-/**
- * SupportImpersonationSession.workspace
- */
-export type SupportImpersonationSession$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

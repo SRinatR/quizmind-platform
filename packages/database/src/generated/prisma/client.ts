@@ -117,6 +117,21 @@ export type QuotaCounter = Prisma.QuotaCounterModel
  */
 export type AiRequest = Prisma.AiRequestModel
 /**
+ * Model AiRequestEvent
+ * 
+ */
+export type AiRequestEvent = Prisma.AiRequestEventModel
+/**
+ * Model AiRequestContent
+ * 
+ */
+export type AiRequestContent = Prisma.AiRequestContentModel
+/**
+ * Model AiUsageDailyRollup
+ * 
+ */
+export type AiUsageDailyRollup = Prisma.AiUsageDailyRollupModel
+/**
  * Model FeatureFlag
  * 
  */

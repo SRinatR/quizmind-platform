@@ -30,7 +30,6 @@ export type ProviderCredentialMinAggregateOutputType = {
   ownerType: $Enums.CredentialOwnerType | null
   ownerId: string | null
   userId: string | null
-  workspaceId: string | null
   validationStatus: $Enums.CredentialValidationStatus | null
   lastValidatedAt: Date | null
   disabledAt: Date | null
@@ -45,7 +44,6 @@ export type ProviderCredentialMaxAggregateOutputType = {
   ownerType: $Enums.CredentialOwnerType | null
   ownerId: string | null
   userId: string | null
-  workspaceId: string | null
   validationStatus: $Enums.CredentialValidationStatus | null
   lastValidatedAt: Date | null
   disabledAt: Date | null
@@ -60,7 +58,6 @@ export type ProviderCredentialCountAggregateOutputType = {
   ownerType: number
   ownerId: number
   userId: number
-  workspaceId: number
   encryptedSecretJson: number
   validationStatus: number
   scopesJson: number
@@ -80,7 +77,6 @@ export type ProviderCredentialMinAggregateInputType = {
   ownerType?: true
   ownerId?: true
   userId?: true
-  workspaceId?: true
   validationStatus?: true
   lastValidatedAt?: true
   disabledAt?: true
@@ -95,7 +91,6 @@ export type ProviderCredentialMaxAggregateInputType = {
   ownerType?: true
   ownerId?: true
   userId?: true
-  workspaceId?: true
   validationStatus?: true
   lastValidatedAt?: true
   disabledAt?: true
@@ -110,7 +105,6 @@ export type ProviderCredentialCountAggregateInputType = {
   ownerType?: true
   ownerId?: true
   userId?: true
-  workspaceId?: true
   encryptedSecretJson?: true
   validationStatus?: true
   scopesJson?: true
@@ -201,7 +195,6 @@ export type ProviderCredentialGroupByOutputType = {
   ownerType: $Enums.CredentialOwnerType
   ownerId: string | null
   userId: string | null
-  workspaceId: string | null
   encryptedSecretJson: runtime.JsonValue
   validationStatus: $Enums.CredentialValidationStatus
   scopesJson: runtime.JsonValue | null
@@ -240,7 +233,6 @@ export type ProviderCredentialWhereInput = {
   ownerType?: Prisma.EnumCredentialOwnerTypeFilter<"ProviderCredential"> | $Enums.CredentialOwnerType
   ownerId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
   userId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
-  workspaceId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
   encryptedSecretJson?: Prisma.JsonFilter<"ProviderCredential">
   validationStatus?: Prisma.EnumCredentialValidationStatusFilter<"ProviderCredential"> | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.JsonNullableFilter<"ProviderCredential">
@@ -251,7 +243,6 @@ export type ProviderCredentialWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"ProviderCredential"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProviderCredential"> | Date | string
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }
 
 export type ProviderCredentialOrderByWithRelationInput = {
@@ -260,7 +251,6 @@ export type ProviderCredentialOrderByWithRelationInput = {
   ownerType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   encryptedSecretJson?: Prisma.SortOrder
   validationStatus?: Prisma.SortOrder
   scopesJson?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -271,7 +261,6 @@ export type ProviderCredentialOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
 }
 
 export type ProviderCredentialWhereUniqueInput = Prisma.AtLeast<{
@@ -283,7 +272,6 @@ export type ProviderCredentialWhereUniqueInput = Prisma.AtLeast<{
   ownerType?: Prisma.EnumCredentialOwnerTypeFilter<"ProviderCredential"> | $Enums.CredentialOwnerType
   ownerId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
   userId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
-  workspaceId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
   encryptedSecretJson?: Prisma.JsonFilter<"ProviderCredential">
   validationStatus?: Prisma.EnumCredentialValidationStatusFilter<"ProviderCredential"> | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.JsonNullableFilter<"ProviderCredential">
@@ -294,7 +282,6 @@ export type ProviderCredentialWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"ProviderCredential"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ProviderCredential"> | Date | string
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }, "id">
 
 export type ProviderCredentialOrderByWithAggregationInput = {
@@ -303,7 +290,6 @@ export type ProviderCredentialOrderByWithAggregationInput = {
   ownerType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrderInput | Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   encryptedSecretJson?: Prisma.SortOrder
   validationStatus?: Prisma.SortOrder
   scopesJson?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -327,7 +313,6 @@ export type ProviderCredentialScalarWhereWithAggregatesInput = {
   ownerType?: Prisma.EnumCredentialOwnerTypeWithAggregatesFilter<"ProviderCredential"> | $Enums.CredentialOwnerType
   ownerId?: Prisma.StringNullableWithAggregatesFilter<"ProviderCredential"> | string | null
   userId?: Prisma.StringNullableWithAggregatesFilter<"ProviderCredential"> | string | null
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"ProviderCredential"> | string | null
   encryptedSecretJson?: Prisma.JsonWithAggregatesFilter<"ProviderCredential">
   validationStatus?: Prisma.EnumCredentialValidationStatusWithAggregatesFilter<"ProviderCredential"> | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.JsonNullableWithAggregatesFilter<"ProviderCredential">
@@ -354,7 +339,6 @@ export type ProviderCredentialCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   user?: Prisma.UserCreateNestedOneWithoutProviderCredentialsInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutProviderCredentialsInput
 }
 
 export type ProviderCredentialUncheckedCreateInput = {
@@ -363,7 +347,6 @@ export type ProviderCredentialUncheckedCreateInput = {
   ownerType: $Enums.CredentialOwnerType
   ownerId?: string | null
   userId?: string | null
-  workspaceId?: string | null
   encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -390,7 +373,6 @@ export type ProviderCredentialUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneWithoutProviderCredentialsNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutProviderCredentialsNestedInput
 }
 
 export type ProviderCredentialUncheckedUpdateInput = {
@@ -399,7 +381,6 @@ export type ProviderCredentialUncheckedUpdateInput = {
   ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -417,7 +398,6 @@ export type ProviderCredentialCreateManyInput = {
   ownerType: $Enums.CredentialOwnerType
   ownerId?: string | null
   userId?: string | null
-  workspaceId?: string | null
   encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -451,7 +431,6 @@ export type ProviderCredentialUncheckedUpdateManyInput = {
   ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -479,7 +458,6 @@ export type ProviderCredentialCountOrderByAggregateInput = {
   ownerType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   encryptedSecretJson?: Prisma.SortOrder
   validationStatus?: Prisma.SortOrder
   scopesJson?: Prisma.SortOrder
@@ -497,7 +475,6 @@ export type ProviderCredentialMaxOrderByAggregateInput = {
   ownerType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   validationStatus?: Prisma.SortOrder
   lastValidatedAt?: Prisma.SortOrder
   disabledAt?: Prisma.SortOrder
@@ -512,7 +489,6 @@ export type ProviderCredentialMinOrderByAggregateInput = {
   ownerType?: Prisma.SortOrder
   ownerId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   validationStatus?: Prisma.SortOrder
   lastValidatedAt?: Prisma.SortOrder
   disabledAt?: Prisma.SortOrder
@@ -563,48 +539,6 @@ export type ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.ProviderCredentialScalarWhereInput | Prisma.ProviderCredentialScalarWhereInput[]
 }
 
-export type ProviderCredentialCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.ProviderCredentialCreateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput> | Prisma.ProviderCredentialCreateWithoutWorkspaceInput[] | Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput | Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.ProviderCredentialCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-}
-
-export type ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.ProviderCredentialCreateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput> | Prisma.ProviderCredentialCreateWithoutWorkspaceInput[] | Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput | Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.ProviderCredentialCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-}
-
-export type ProviderCredentialUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.ProviderCredentialCreateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput> | Prisma.ProviderCredentialCreateWithoutWorkspaceInput[] | Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput | Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.ProviderCredentialUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.ProviderCredentialUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.ProviderCredentialCreateManyWorkspaceInputEnvelope
-  set?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  disconnect?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  delete?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  connect?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  update?: Prisma.ProviderCredentialUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.ProviderCredentialUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.ProviderCredentialUpdateManyWithWhereWithoutWorkspaceInput | Prisma.ProviderCredentialUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.ProviderCredentialScalarWhereInput | Prisma.ProviderCredentialScalarWhereInput[]
-}
-
-export type ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.ProviderCredentialCreateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput> | Prisma.ProviderCredentialCreateWithoutWorkspaceInput[] | Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput | Prisma.ProviderCredentialCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.ProviderCredentialUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.ProviderCredentialUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.ProviderCredentialCreateManyWorkspaceInputEnvelope
-  set?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  disconnect?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  delete?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  connect?: Prisma.ProviderCredentialWhereUniqueInput | Prisma.ProviderCredentialWhereUniqueInput[]
-  update?: Prisma.ProviderCredentialUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.ProviderCredentialUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.ProviderCredentialUpdateManyWithWhereWithoutWorkspaceInput | Prisma.ProviderCredentialUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.ProviderCredentialScalarWhereInput | Prisma.ProviderCredentialScalarWhereInput[]
-}
-
 export type EnumCredentialOwnerTypeFieldUpdateOperationsInput = {
   set?: $Enums.CredentialOwnerType
 }
@@ -627,7 +561,6 @@ export type ProviderCredentialCreateWithoutUserInput = {
   revokedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutProviderCredentialsInput
 }
 
 export type ProviderCredentialUncheckedCreateWithoutUserInput = {
@@ -635,7 +568,6 @@ export type ProviderCredentialUncheckedCreateWithoutUserInput = {
   provider: string
   ownerType: $Enums.CredentialOwnerType
   ownerId?: string | null
-  workspaceId?: string | null
   encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -682,7 +614,6 @@ export type ProviderCredentialScalarWhereInput = {
   ownerType?: Prisma.EnumCredentialOwnerTypeFilter<"ProviderCredential"> | $Enums.CredentialOwnerType
   ownerId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
   userId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
-  workspaceId?: Prisma.StringNullableFilter<"ProviderCredential"> | string | null
   encryptedSecretJson?: Prisma.JsonFilter<"ProviderCredential">
   validationStatus?: Prisma.EnumCredentialValidationStatusFilter<"ProviderCredential"> | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.JsonNullableFilter<"ProviderCredential">
@@ -694,72 +625,11 @@ export type ProviderCredentialScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ProviderCredential"> | Date | string
 }
 
-export type ProviderCredentialCreateWithoutWorkspaceInput = {
-  id?: string
-  provider: string
-  ownerType: $Enums.CredentialOwnerType
-  ownerId?: string | null
-  encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  validationStatus?: $Enums.CredentialValidationStatus
-  scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastValidatedAt?: Date | string | null
-  disabledAt?: Date | string | null
-  revokedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  user?: Prisma.UserCreateNestedOneWithoutProviderCredentialsInput
-}
-
-export type ProviderCredentialUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  provider: string
-  ownerType: $Enums.CredentialOwnerType
-  ownerId?: string | null
-  userId?: string | null
-  encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  validationStatus?: $Enums.CredentialValidationStatus
-  scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastValidatedAt?: Date | string | null
-  disabledAt?: Date | string | null
-  revokedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type ProviderCredentialCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.ProviderCredentialWhereUniqueInput
-  create: Prisma.XOR<Prisma.ProviderCredentialCreateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type ProviderCredentialCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.ProviderCredentialCreateManyWorkspaceInput | Prisma.ProviderCredentialCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type ProviderCredentialUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.ProviderCredentialWhereUniqueInput
-  update: Prisma.XOR<Prisma.ProviderCredentialUpdateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.ProviderCredentialCreateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type ProviderCredentialUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.ProviderCredentialWhereUniqueInput
-  data: Prisma.XOR<Prisma.ProviderCredentialUpdateWithoutWorkspaceInput, Prisma.ProviderCredentialUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type ProviderCredentialUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.ProviderCredentialScalarWhereInput
-  data: Prisma.XOR<Prisma.ProviderCredentialUpdateManyMutationInput, Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceInput>
-}
-
 export type ProviderCredentialCreateManyUserInput = {
   id?: string
   provider: string
   ownerType: $Enums.CredentialOwnerType
   ownerId?: string | null
-  workspaceId?: string | null
   encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -785,7 +655,6 @@ export type ProviderCredentialUpdateWithoutUserInput = {
   revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutProviderCredentialsNestedInput
 }
 
 export type ProviderCredentialUncheckedUpdateWithoutUserInput = {
@@ -793,7 +662,6 @@ export type ProviderCredentialUncheckedUpdateWithoutUserInput = {
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -810,75 +678,6 @@ export type ProviderCredentialUncheckedUpdateManyWithoutUserInput = {
   provider?: Prisma.StringFieldUpdateOperationsInput | string
   ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
   ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
-  scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastValidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  disabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type ProviderCredentialCreateManyWorkspaceInput = {
-  id?: string
-  provider: string
-  ownerType: $Enums.CredentialOwnerType
-  ownerId?: string | null
-  userId?: string | null
-  encryptedSecretJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  validationStatus?: $Enums.CredentialValidationStatus
-  scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastValidatedAt?: Date | string | null
-  disabledAt?: Date | string | null
-  revokedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type ProviderCredentialUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
-  ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
-  scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastValidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  disabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneWithoutProviderCredentialsNestedInput
-}
-
-export type ProviderCredentialUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
-  ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
-  scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  lastValidatedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  disabledAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  revokedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type ProviderCredentialUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  provider?: Prisma.StringFieldUpdateOperationsInput | string
-  ownerType?: Prisma.EnumCredentialOwnerTypeFieldUpdateOperationsInput | $Enums.CredentialOwnerType
-  ownerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   encryptedSecretJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   validationStatus?: Prisma.EnumCredentialValidationStatusFieldUpdateOperationsInput | $Enums.CredentialValidationStatus
   scopesJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
@@ -898,7 +697,6 @@ export type ProviderCredentialSelect<ExtArgs extends runtime.Types.Extensions.In
   ownerType?: boolean
   ownerId?: boolean
   userId?: boolean
-  workspaceId?: boolean
   encryptedSecretJson?: boolean
   validationStatus?: boolean
   scopesJson?: boolean
@@ -909,7 +707,6 @@ export type ProviderCredentialSelect<ExtArgs extends runtime.Types.Extensions.In
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.ProviderCredential$userArgs<ExtArgs>
-  workspace?: boolean | Prisma.ProviderCredential$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["providerCredential"]>
 
 export type ProviderCredentialSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -918,7 +715,6 @@ export type ProviderCredentialSelectCreateManyAndReturn<ExtArgs extends runtime.
   ownerType?: boolean
   ownerId?: boolean
   userId?: boolean
-  workspaceId?: boolean
   encryptedSecretJson?: boolean
   validationStatus?: boolean
   scopesJson?: boolean
@@ -929,7 +725,6 @@ export type ProviderCredentialSelectCreateManyAndReturn<ExtArgs extends runtime.
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.ProviderCredential$userArgs<ExtArgs>
-  workspace?: boolean | Prisma.ProviderCredential$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["providerCredential"]>
 
 export type ProviderCredentialSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -938,7 +733,6 @@ export type ProviderCredentialSelectUpdateManyAndReturn<ExtArgs extends runtime.
   ownerType?: boolean
   ownerId?: boolean
   userId?: boolean
-  workspaceId?: boolean
   encryptedSecretJson?: boolean
   validationStatus?: boolean
   scopesJson?: boolean
@@ -949,7 +743,6 @@ export type ProviderCredentialSelectUpdateManyAndReturn<ExtArgs extends runtime.
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.ProviderCredential$userArgs<ExtArgs>
-  workspace?: boolean | Prisma.ProviderCredential$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["providerCredential"]>
 
 export type ProviderCredentialSelectScalar = {
@@ -958,7 +751,6 @@ export type ProviderCredentialSelectScalar = {
   ownerType?: boolean
   ownerId?: boolean
   userId?: boolean
-  workspaceId?: boolean
   encryptedSecretJson?: boolean
   validationStatus?: boolean
   scopesJson?: boolean
@@ -970,25 +762,21 @@ export type ProviderCredentialSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ProviderCredentialOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "ownerType" | "ownerId" | "userId" | "workspaceId" | "encryptedSecretJson" | "validationStatus" | "scopesJson" | "metadataJson" | "lastValidatedAt" | "disabledAt" | "revokedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["providerCredential"]>
+export type ProviderCredentialOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "provider" | "ownerType" | "ownerId" | "userId" | "encryptedSecretJson" | "validationStatus" | "scopesJson" | "metadataJson" | "lastValidatedAt" | "disabledAt" | "revokedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["providerCredential"]>
 export type ProviderCredentialInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.ProviderCredential$userArgs<ExtArgs>
-  workspace?: boolean | Prisma.ProviderCredential$workspaceArgs<ExtArgs>
 }
 export type ProviderCredentialIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.ProviderCredential$userArgs<ExtArgs>
-  workspace?: boolean | Prisma.ProviderCredential$workspaceArgs<ExtArgs>
 }
 export type ProviderCredentialIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.ProviderCredential$userArgs<ExtArgs>
-  workspace?: boolean | Prisma.ProviderCredential$workspaceArgs<ExtArgs>
 }
 
 export type $ProviderCredentialPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ProviderCredential"
   objects: {
     user: Prisma.$UserPayload<ExtArgs> | null
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -996,7 +784,6 @@ export type $ProviderCredentialPayload<ExtArgs extends runtime.Types.Extensions.
     ownerType: $Enums.CredentialOwnerType
     ownerId: string | null
     userId: string | null
-    workspaceId: string | null
     encryptedSecretJson: runtime.JsonValue
     validationStatus: $Enums.CredentialValidationStatus
     scopesJson: runtime.JsonValue | null
@@ -1401,7 +1188,6 @@ readonly fields: ProviderCredentialFieldRefs;
 export interface Prisma__ProviderCredentialClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.ProviderCredential$userArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProviderCredential$userArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  workspace<T extends Prisma.ProviderCredential$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProviderCredential$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1436,7 +1222,6 @@ export interface ProviderCredentialFieldRefs {
   readonly ownerType: Prisma.FieldRef<"ProviderCredential", 'CredentialOwnerType'>
   readonly ownerId: Prisma.FieldRef<"ProviderCredential", 'String'>
   readonly userId: Prisma.FieldRef<"ProviderCredential", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"ProviderCredential", 'String'>
   readonly encryptedSecretJson: Prisma.FieldRef<"ProviderCredential", 'Json'>
   readonly validationStatus: Prisma.FieldRef<"ProviderCredential", 'CredentialValidationStatus'>
   readonly scopesJson: Prisma.FieldRef<"ProviderCredential", 'Json'>
@@ -1863,25 +1648,6 @@ export type ProviderCredential$userArgs<ExtArgs extends runtime.Types.Extensions
    */
   include?: Prisma.UserInclude<ExtArgs> | null
   where?: Prisma.UserWhereInput
-}
-
-/**
- * ProviderCredential.workspace
- */
-export type ProviderCredential$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

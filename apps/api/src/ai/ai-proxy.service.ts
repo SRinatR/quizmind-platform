@@ -1844,6 +1844,8 @@ export class AiProxyService {
     this.persistHistoryContentSafely({
       invocation: input.invocation,
       messages: input.invocation.request.messages,
+      status: input.status,
+      errorCode: input.errorCode,
     });
   }
 
@@ -1852,8 +1854,10 @@ export class AiProxyService {
     messages: NormalizedProxyRequest['messages'];
     upstreamResponse?: Record<string, unknown>;
     usage?: AiProxyUsage;
+    status?: 'success' | 'error' | 'quota_exceeded';
+    errorCode?: string;
   }): void {
-    const { invocation, messages, upstreamResponse, usage } = input;
+    const { invocation, messages, upstreamResponse, usage, status, errorCode } = input;
     const hasImage = messages.some(
       (m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image_url'),
     );
@@ -1866,6 +1870,11 @@ export class AiProxyService {
         provider: invocation.provider,
         model: invocation.resolvedModel,
         requestType,
+        keySource: invocation.keySource,
+        status: status ?? 'success',
+        errorCode,
+        occurredAt: invocation.occurredAt,
+        durationMs: this.resolveDurationMs(invocation.occurredAt),
         promptContent: messages,
         responseContent: upstreamResponse,
         promptTokens: usage?.promptTokens,

@@ -66,6 +66,9 @@ export const ModelName = {
   WebhookEvent: 'WebhookEvent',
   QuotaCounter: 'QuotaCounter',
   AiRequest: 'AiRequest',
+  AiRequestEvent: 'AiRequestEvent',
+  AiRequestContent: 'AiRequestContent',
+  AiUsageDailyRollup: 'AiUsageDailyRollup',
   FeatureFlag: 'FeatureFlag',
   FeatureFlagOverride: 'FeatureFlagOverride',
   RemoteConfigVersion: 'RemoteConfigVersion',
@@ -186,7 +189,7 @@ export type WorkspaceScalarFieldEnum = (typeof WorkspaceScalarFieldEnum)[keyof t
 
 export const WalletScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
+  userId: 'userId',
   currency: 'currency',
   balanceKopecks: 'balanceKopecks',
   createdAt: 'createdAt',
@@ -199,7 +202,6 @@ export type WalletScalarFieldEnum = (typeof WalletScalarFieldEnum)[keyof typeof 
 export const WalletTopUpScalarFieldEnum = {
   id: 'id',
   walletId: 'walletId',
-  workspaceId: 'workspaceId',
   createdByUserId: 'createdByUserId',
   amountKopecks: 'amountKopecks',
   currency: 'currency',
@@ -286,7 +288,6 @@ export type WebhookEventScalarFieldEnum = (typeof WebhookEventScalarFieldEnum)[k
 
 export const QuotaCounterScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   key: 'key',
   consumed: 'consumed',
   periodStart: 'periodStart',
@@ -324,6 +325,70 @@ export const AiRequestScalarFieldEnum = {
 export type AiRequestScalarFieldEnum = (typeof AiRequestScalarFieldEnum)[keyof typeof AiRequestScalarFieldEnum]
 
 
+export const AiRequestEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  installationId: 'installationId',
+  provider: 'provider',
+  model: 'model',
+  modelDisplayName: 'modelDisplayName',
+  requestType: 'requestType',
+  keySource: 'keySource',
+  status: 'status',
+  errorCode: 'errorCode',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostUsd: 'estimatedCostUsd',
+  durationMs: 'durationMs',
+  promptExcerpt: 'promptExcerpt',
+  responseExcerpt: 'responseExcerpt',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestEventScalarFieldEnum = (typeof AiRequestEventScalarFieldEnum)[keyof typeof AiRequestEventScalarFieldEnum]
+
+
+export const AiRequestContentScalarFieldEnum = {
+  id: 'id',
+  aiRequestEventId: 'aiRequestEventId',
+  promptBlobKey: 'promptBlobKey',
+  responseBlobKey: 'responseBlobKey',
+  fileBlobKey: 'fileBlobKey',
+  fileMetadataJson: 'fileMetadataJson',
+  expiresAt: 'expiresAt',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestContentScalarFieldEnum = (typeof AiRequestContentScalarFieldEnum)[keyof typeof AiRequestContentScalarFieldEnum]
+
+
+export const AiUsageDailyRollupScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  requestType: 'requestType',
+  model: 'model',
+  modelDisplayName: 'modelDisplayName',
+  status: 'status',
+  requestCount: 'requestCount',
+  successCount: 'successCount',
+  failedCount: 'failedCount',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostUsd: 'estimatedCostUsd',
+  totalDurationMs: 'totalDurationMs',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AiUsageDailyRollupScalarFieldEnum = (typeof AiUsageDailyRollupScalarFieldEnum)[keyof typeof AiUsageDailyRollupScalarFieldEnum]
+
+
 export const FeatureFlagScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -354,7 +419,6 @@ export type FeatureFlagOverrideScalarFieldEnum = (typeof FeatureFlagOverrideScal
 
 export const RemoteConfigVersionScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   publishedById: 'publishedById',
   versionLabel: 'versionLabel',
   isActive: 'isActive',
@@ -394,7 +458,6 @@ export type ExtensionCompatibilityRuleScalarFieldEnum = (typeof ExtensionCompati
 export const ExtensionInstallationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  workspaceId: 'workspaceId',
   installationId: 'installationId',
   browser: 'browser',
   extensionVersion: 'extensionVersion',
@@ -427,7 +490,6 @@ export const ProviderCredentialScalarFieldEnum = {
   ownerType: 'ownerType',
   ownerId: 'ownerId',
   userId: 'userId',
-  workspaceId: 'workspaceId',
   encryptedSecretJson: 'encryptedSecretJson',
   validationStatus: 'validationStatus',
   scopesJson: 'scopesJson',
@@ -446,7 +508,6 @@ export const AiProviderPolicyScalarFieldEnum = {
   id: 'id',
   scopeKey: 'scopeKey',
   scopeType: 'scopeType',
-  workspaceId: 'workspaceId',
   mode: 'mode',
   allowPlatformManaged: 'allowPlatformManaged',
   allowBringYourOwnKey: 'allowBringYourOwnKey',
@@ -481,7 +542,6 @@ export type ExtensionTelemetryScalarFieldEnum = (typeof ExtensionTelemetryScalar
 
 export const AuditLogScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   actorId: 'actorId',
   action: 'action',
   targetType: 'targetType',
@@ -495,7 +555,6 @@ export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typ
 
 export const ActivityLogScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   actorId: 'actorId',
   eventType: 'eventType',
   metadataJson: 'metadataJson',
@@ -507,7 +566,6 @@ export type ActivityLogScalarFieldEnum = (typeof ActivityLogScalarFieldEnum)[key
 
 export const SecurityEventScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   actorId: 'actorId',
   eventType: 'eventType',
   severity: 'severity',
@@ -520,7 +578,6 @@ export type SecurityEventScalarFieldEnum = (typeof SecurityEventScalarFieldEnum)
 
 export const DomainEventScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   eventType: 'eventType',
   payloadJson: 'payloadJson',
   createdAt: 'createdAt'
@@ -559,7 +616,6 @@ export const SupportImpersonationSessionScalarFieldEnum = {
   id: 'id',
   supportActorId: 'supportActorId',
   targetUserId: 'targetUserId',
-  workspaceId: 'workspaceId',
   supportTicketId: 'supportTicketId',
   reason: 'reason',
   operatorNote: 'operatorNote',

@@ -185,19 +185,9 @@ export type WorkspaceWhereInput = {
   memberships?: Prisma.WorkspaceMembershipListRelationFilter
   invitations?: Prisma.WorkspaceInviteListRelationFilter
   featureFlagOverrides?: Prisma.FeatureFlagOverrideListRelationFilter
-  remoteConfigVersions?: Prisma.RemoteConfigVersionListRelationFilter
-  extensionInstallations?: Prisma.ExtensionInstallationListRelationFilter
-  auditLogs?: Prisma.AuditLogListRelationFilter
-  activityLogs?: Prisma.ActivityLogListRelationFilter
-  securityEvents?: Prisma.SecurityEventListRelationFilter
-  domainEvents?: Prisma.DomainEventListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionListRelationFilter
-  providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
-  aiProviderPolicies?: Prisma.AiProviderPolicyListRelationFilter
-  wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
-  walletTopUps?: Prisma.WalletTopUpListRelationFilter
+  aiRequestEvents?: Prisma.AiRequestEventListRelationFilter
 }
 
 export type WorkspaceOrderByWithRelationInput = {
@@ -209,19 +199,9 @@ export type WorkspaceOrderByWithRelationInput = {
   memberships?: Prisma.WorkspaceMembershipOrderByRelationAggregateInput
   invitations?: Prisma.WorkspaceInviteOrderByRelationAggregateInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideOrderByRelationAggregateInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionOrderByRelationAggregateInput
-  extensionInstallations?: Prisma.ExtensionInstallationOrderByRelationAggregateInput
-  auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
-  activityLogs?: Prisma.ActivityLogOrderByRelationAggregateInput
-  securityEvents?: Prisma.SecurityEventOrderByRelationAggregateInput
-  domainEvents?: Prisma.DomainEventOrderByRelationAggregateInput
   supportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionOrderByRelationAggregateInput
-  providerCredentials?: Prisma.ProviderCredentialOrderByRelationAggregateInput
   aiRequests?: Prisma.AiRequestOrderByRelationAggregateInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyOrderByRelationAggregateInput
-  wallet?: Prisma.WalletOrderByWithRelationInput
-  walletTopUps?: Prisma.WalletTopUpOrderByRelationAggregateInput
+  aiRequestEvents?: Prisma.AiRequestEventOrderByRelationAggregateInput
 }
 
 export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
@@ -236,19 +216,9 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   memberships?: Prisma.WorkspaceMembershipListRelationFilter
   invitations?: Prisma.WorkspaceInviteListRelationFilter
   featureFlagOverrides?: Prisma.FeatureFlagOverrideListRelationFilter
-  remoteConfigVersions?: Prisma.RemoteConfigVersionListRelationFilter
-  extensionInstallations?: Prisma.ExtensionInstallationListRelationFilter
-  auditLogs?: Prisma.AuditLogListRelationFilter
-  activityLogs?: Prisma.ActivityLogListRelationFilter
-  securityEvents?: Prisma.SecurityEventListRelationFilter
-  domainEvents?: Prisma.DomainEventListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionListRelationFilter
-  providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
-  aiProviderPolicies?: Prisma.AiProviderPolicyListRelationFilter
-  wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
-  walletTopUps?: Prisma.WalletTopUpListRelationFilter
+  aiRequestEvents?: Prisma.AiRequestEventListRelationFilter
 }, "id" | "slug">
 
 export type WorkspaceOrderByWithAggregationInput = {
@@ -282,19 +252,9 @@ export type WorkspaceCreateInput = {
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateInput = {
@@ -306,19 +266,9 @@ export type WorkspaceUncheckedCreateInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUpdateInput = {
@@ -330,19 +280,9 @@ export type WorkspaceUpdateInput = {
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateInput = {
@@ -354,19 +294,9 @@ export type WorkspaceUncheckedUpdateInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateManyInput = {
@@ -427,34 +357,6 @@ export type WorkspaceNullableScalarRelationFilter = {
   isNot?: Prisma.WorkspaceWhereInput | null
 }
 
-export type WorkspaceCreateNestedOneWithoutWalletInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneRequiredWithoutWalletNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletInput
-  upsert?: Prisma.WorkspaceUpsertWithoutWalletInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutWalletInput, Prisma.WorkspaceUpdateWithoutWalletInput>, Prisma.WorkspaceUncheckedUpdateWithoutWalletInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutWalletTopUpsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletTopUpsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneRequiredWithoutWalletTopUpsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutWalletTopUpsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutWalletTopUpsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutWalletTopUpsInput, Prisma.WorkspaceUpdateWithoutWalletTopUpsInput>, Prisma.WorkspaceUncheckedUpdateWithoutWalletTopUpsInput>
-}
-
 export type WorkspaceCreateNestedOneWithoutMembershipsInput = {
   create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutMembershipsInput, Prisma.WorkspaceUncheckedCreateWithoutMembershipsInput>
   connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutMembershipsInput
@@ -499,6 +401,22 @@ export type WorkspaceUpdateOneWithoutAiRequestsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAiRequestsInput, Prisma.WorkspaceUpdateWithoutAiRequestsInput>, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestsInput>
 }
 
+export type WorkspaceCreateNestedOneWithoutAiRequestEventsInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestEventsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestEventsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiRequestEventsInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneWithoutAiRequestEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestEventsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestEventsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiRequestEventsInput
+  upsert?: Prisma.WorkspaceUpsertWithoutAiRequestEventsInput
+  disconnect?: Prisma.WorkspaceWhereInput | boolean
+  delete?: Prisma.WorkspaceWhereInput | boolean
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAiRequestEventsInput, Prisma.WorkspaceUpdateWithoutAiRequestEventsInput>, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestEventsInput>
+}
+
 export type WorkspaceCreateNestedOneWithoutFeatureFlagOverridesInput = {
   create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutFeatureFlagOverridesInput, Prisma.WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput>
   connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput
@@ -513,134 +431,6 @@ export type WorkspaceUpdateOneWithoutFeatureFlagOverridesNestedInput = {
   delete?: Prisma.WorkspaceWhereInput | boolean
   connect?: Prisma.WorkspaceWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutFeatureFlagOverridesInput, Prisma.WorkspaceUpdateWithoutFeatureFlagOverridesInput>, Prisma.WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutRemoteConfigVersionsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutRemoteConfigVersionsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutRemoteConfigVersionsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutRemoteConfigVersionsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutRemoteConfigVersionsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUpdateWithoutRemoteConfigVersionsInput>, Prisma.WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutExtensionInstallationsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutExtensionInstallationsInput, Prisma.WorkspaceUncheckedCreateWithoutExtensionInstallationsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutExtensionInstallationsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutExtensionInstallationsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutExtensionInstallationsInput, Prisma.WorkspaceUncheckedCreateWithoutExtensionInstallationsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutExtensionInstallationsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutExtensionInstallationsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutExtensionInstallationsInput, Prisma.WorkspaceUpdateWithoutExtensionInstallationsInput>, Prisma.WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutProviderCredentialsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutProviderCredentialsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutProviderCredentialsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutProviderCredentialsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutProviderCredentialsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutProviderCredentialsInput, Prisma.WorkspaceUpdateWithoutProviderCredentialsInput>, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutAiProviderPoliciesInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutAiProviderPoliciesNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput
-  upsert?: Prisma.WorkspaceUpsertWithoutAiProviderPoliciesInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAiProviderPoliciesInput, Prisma.WorkspaceUpdateWithoutAiProviderPoliciesInput>, Prisma.WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutAuditLogsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedCreateWithoutAuditLogsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAuditLogsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutAuditLogsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedCreateWithoutAuditLogsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAuditLogsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutAuditLogsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAuditLogsInput, Prisma.WorkspaceUpdateWithoutAuditLogsInput>, Prisma.WorkspaceUncheckedUpdateWithoutAuditLogsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutActivityLogsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutActivityLogsInput, Prisma.WorkspaceUncheckedCreateWithoutActivityLogsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutActivityLogsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutActivityLogsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutActivityLogsInput, Prisma.WorkspaceUncheckedCreateWithoutActivityLogsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutActivityLogsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutActivityLogsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutActivityLogsInput, Prisma.WorkspaceUpdateWithoutActivityLogsInput>, Prisma.WorkspaceUncheckedUpdateWithoutActivityLogsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutSecurityEventsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutSecurityEventsInput, Prisma.WorkspaceUncheckedCreateWithoutSecurityEventsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutSecurityEventsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutSecurityEventsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutSecurityEventsInput, Prisma.WorkspaceUncheckedCreateWithoutSecurityEventsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutSecurityEventsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutSecurityEventsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutSecurityEventsInput, Prisma.WorkspaceUpdateWithoutSecurityEventsInput>, Prisma.WorkspaceUncheckedUpdateWithoutSecurityEventsInput>
-}
-
-export type WorkspaceCreateNestedOneWithoutDomainEventsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutDomainEventsInput, Prisma.WorkspaceUncheckedCreateWithoutDomainEventsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutDomainEventsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutDomainEventsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutDomainEventsInput, Prisma.WorkspaceUncheckedCreateWithoutDomainEventsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutDomainEventsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutDomainEventsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutDomainEventsInput, Prisma.WorkspaceUpdateWithoutDomainEventsInput>, Prisma.WorkspaceUncheckedUpdateWithoutDomainEventsInput>
 }
 
 export type WorkspaceCreateNestedOneWithoutSupportTicketsInput = {
@@ -659,238 +449,6 @@ export type WorkspaceUpdateOneWithoutSupportTicketsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutSupportTicketsInput, Prisma.WorkspaceUpdateWithoutSupportTicketsInput>, Prisma.WorkspaceUncheckedUpdateWithoutSupportTicketsInput>
 }
 
-export type WorkspaceCreateNestedOneWithoutSupportImpersonationSessionsInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutSupportImpersonationSessionsInput
-  connect?: Prisma.WorkspaceWhereUniqueInput
-}
-
-export type WorkspaceUpdateOneWithoutSupportImpersonationSessionsNestedInput = {
-  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput>
-  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutSupportImpersonationSessionsInput
-  upsert?: Prisma.WorkspaceUpsertWithoutSupportImpersonationSessionsInput
-  disconnect?: Prisma.WorkspaceWhereInput | boolean
-  delete?: Prisma.WorkspaceWhereInput | boolean
-  connect?: Prisma.WorkspaceWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUpdateWithoutSupportImpersonationSessionsInput>, Prisma.WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput>
-}
-
-export type WorkspaceCreateWithoutWalletInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutWalletInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutWalletInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
-}
-
-export type WorkspaceUpsertWithoutWalletInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletInput, Prisma.WorkspaceUncheckedCreateWithoutWalletInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutWalletInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletInput>
-}
-
-export type WorkspaceUpdateWithoutWalletInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutWalletInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutWalletTopUpsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutWalletTopUpsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutWalletTopUpsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
-}
-
-export type WorkspaceUpsertWithoutWalletTopUpsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletTopUpsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedCreateWithoutWalletTopUpsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutWalletTopUpsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutWalletTopUpsInput, Prisma.WorkspaceUncheckedUpdateWithoutWalletTopUpsInput>
-}
-
-export type WorkspaceUpdateWithoutWalletTopUpsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutWalletTopUpsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-}
-
 export type WorkspaceCreateWithoutMembershipsInput = {
   id?: string
   slug: string
@@ -899,19 +457,9 @@ export type WorkspaceCreateWithoutMembershipsInput = {
   updatedAt?: Date | string
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
@@ -922,19 +470,9 @@ export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
   updatedAt?: Date | string
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutMembershipsInput = {
@@ -961,19 +499,9 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
@@ -984,19 +512,9 @@ export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutInvitationsInput = {
@@ -1007,19 +525,9 @@ export type WorkspaceCreateWithoutInvitationsInput = {
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
@@ -1030,19 +538,9 @@ export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutInvitationsInput = {
@@ -1069,19 +567,9 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
@@ -1092,19 +580,9 @@ export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAiRequestsInput = {
@@ -1116,18 +594,8 @@ export type WorkspaceCreateWithoutAiRequestsInput = {
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAiRequestsInput = {
@@ -1139,18 +607,8 @@ export type WorkspaceUncheckedCreateWithoutAiRequestsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAiRequestsInput = {
@@ -1178,18 +636,8 @@ export type WorkspaceUpdateWithoutAiRequestsInput = {
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAiRequestsInput = {
@@ -1201,18 +649,76 @@ export type WorkspaceUncheckedUpdateWithoutAiRequestsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutAiRequestEventsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutAiRequestEventsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutAiRequestEventsInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestEventsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestEventsInput>
+}
+
+export type WorkspaceUpsertWithoutAiRequestEventsInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiRequestEventsInput, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestEventsInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestEventsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestEventsInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutAiRequestEventsInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiRequestEventsInput, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestEventsInput>
+}
+
+export type WorkspaceUpdateWithoutAiRequestEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutAiRequestEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
@@ -1223,19 +729,9 @@ export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
@@ -1246,19 +742,9 @@ export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   updatedAt?: Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput = {
@@ -1285,19 +771,9 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
@@ -1308,883 +784,9 @@ export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutRemoteConfigVersionsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutRemoteConfigVersionsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput>
-}
-
-export type WorkspaceUpsertWithoutRemoteConfigVersionsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUncheckedCreateWithoutRemoteConfigVersionsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutRemoteConfigVersionsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutRemoteConfigVersionsInput, Prisma.WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput>
-}
-
-export type WorkspaceUpdateWithoutRemoteConfigVersionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutRemoteConfigVersionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutExtensionInstallationsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutExtensionInstallationsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutExtensionInstallationsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutExtensionInstallationsInput, Prisma.WorkspaceUncheckedCreateWithoutExtensionInstallationsInput>
-}
-
-export type WorkspaceUpsertWithoutExtensionInstallationsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutExtensionInstallationsInput, Prisma.WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutExtensionInstallationsInput, Prisma.WorkspaceUncheckedCreateWithoutExtensionInstallationsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutExtensionInstallationsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutExtensionInstallationsInput, Prisma.WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput>
-}
-
-export type WorkspaceUpdateWithoutExtensionInstallationsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutExtensionInstallationsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutProviderCredentialsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutProviderCredentialsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutProviderCredentialsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
-}
-
-export type WorkspaceUpsertWithoutProviderCredentialsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedCreateWithoutProviderCredentialsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutProviderCredentialsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutProviderCredentialsInput, Prisma.WorkspaceUncheckedUpdateWithoutProviderCredentialsInput>
-}
-
-export type WorkspaceUpdateWithoutProviderCredentialsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutProviderCredentialsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutAiProviderPoliciesInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutAiProviderPoliciesInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
-}
-
-export type WorkspaceUpsertWithoutAiProviderPoliciesInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedCreateWithoutAiProviderPoliciesInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutAiProviderPoliciesInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiProviderPoliciesInput, Prisma.WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput>
-}
-
-export type WorkspaceUpdateWithoutAiProviderPoliciesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutAiProviderPoliciesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutAuditLogsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutAuditLogsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutAuditLogsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedCreateWithoutAuditLogsInput>
-}
-
-export type WorkspaceUpsertWithoutAuditLogsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedUpdateWithoutAuditLogsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedCreateWithoutAuditLogsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutAuditLogsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAuditLogsInput, Prisma.WorkspaceUncheckedUpdateWithoutAuditLogsInput>
-}
-
-export type WorkspaceUpdateWithoutAuditLogsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutAuditLogsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutActivityLogsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutActivityLogsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutActivityLogsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutActivityLogsInput, Prisma.WorkspaceUncheckedCreateWithoutActivityLogsInput>
-}
-
-export type WorkspaceUpsertWithoutActivityLogsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutActivityLogsInput, Prisma.WorkspaceUncheckedUpdateWithoutActivityLogsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutActivityLogsInput, Prisma.WorkspaceUncheckedCreateWithoutActivityLogsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutActivityLogsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutActivityLogsInput, Prisma.WorkspaceUncheckedUpdateWithoutActivityLogsInput>
-}
-
-export type WorkspaceUpdateWithoutActivityLogsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutActivityLogsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutSecurityEventsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutSecurityEventsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutSecurityEventsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutSecurityEventsInput, Prisma.WorkspaceUncheckedCreateWithoutSecurityEventsInput>
-}
-
-export type WorkspaceUpsertWithoutSecurityEventsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutSecurityEventsInput, Prisma.WorkspaceUncheckedUpdateWithoutSecurityEventsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutSecurityEventsInput, Prisma.WorkspaceUncheckedCreateWithoutSecurityEventsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutSecurityEventsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutSecurityEventsInput, Prisma.WorkspaceUncheckedUpdateWithoutSecurityEventsInput>
-}
-
-export type WorkspaceUpdateWithoutSecurityEventsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutSecurityEventsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutDomainEventsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutDomainEventsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutDomainEventsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutDomainEventsInput, Prisma.WorkspaceUncheckedCreateWithoutDomainEventsInput>
-}
-
-export type WorkspaceUpsertWithoutDomainEventsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutDomainEventsInput, Prisma.WorkspaceUncheckedUpdateWithoutDomainEventsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutDomainEventsInput, Prisma.WorkspaceUncheckedCreateWithoutDomainEventsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutDomainEventsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutDomainEventsInput, Prisma.WorkspaceUncheckedUpdateWithoutDomainEventsInput>
-}
-
-export type WorkspaceUpdateWithoutDomainEventsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutDomainEventsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportTicketsInput = {
@@ -2196,18 +798,8 @@ export type WorkspaceCreateWithoutSupportTicketsInput = {
   memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
@@ -2219,18 +811,8 @@ export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
   invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportTicketsInput = {
@@ -2258,18 +840,8 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
@@ -2281,126 +853,8 @@ export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
   invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportImpersonationSessions?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceCreateWithoutSupportImpersonationSessionsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput = {
-  id?: string
-  slug: string
-  name: string
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
-  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  activityLogs?: Prisma.ActivityLogUncheckedCreateNestedManyWithoutWorkspaceInput
-  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  domainEvents?: Prisma.DomainEventUncheckedCreateNestedManyWithoutWorkspaceInput
-  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput
-  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutWorkspaceInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedCreateNestedManyWithoutWorkspaceInput
-}
-
-export type WorkspaceCreateOrConnectWithoutSupportImpersonationSessionsInput = {
-  where: Prisma.WorkspaceWhereUniqueInput
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput>
-}
-
-export type WorkspaceUpsertWithoutSupportImpersonationSessionsInput = {
-  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput>
-  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUncheckedCreateWithoutSupportImpersonationSessionsInput>
-  where?: Prisma.WorkspaceWhereInput
-}
-
-export type WorkspaceUpdateToOneWithWhereWithoutSupportImpersonationSessionsInput = {
-  where?: Prisma.WorkspaceWhereInput
-  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutSupportImpersonationSessionsInput, Prisma.WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput>
-}
-
-export type WorkspaceUpdateWithoutSupportImpersonationSessionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUpdateManyWithoutWorkspaceNestedInput
-}
-
-export type WorkspaceUncheckedUpdateWithoutSupportImpersonationSessionsInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  slug?: Prisma.StringFieldUpdateOperationsInput | string
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
-  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
-  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
-  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput
-  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  activityLogs?: Prisma.ActivityLogUncheckedUpdateManyWithoutWorkspaceNestedInput
-  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  domainEvents?: Prisma.DomainEventUncheckedUpdateManyWithoutWorkspaceNestedInput
-  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
-  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
-  aiProviderPolicies?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput
-  wallet?: Prisma.WalletUncheckedUpdateOneWithoutWorkspaceNestedInput
-  walletTopUps?: Prisma.WalletTopUpUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 
@@ -2412,36 +866,18 @@ export type WorkspaceCountOutputType = {
   memberships: number
   invitations: number
   featureFlagOverrides: number
-  remoteConfigVersions: number
-  extensionInstallations: number
-  auditLogs: number
-  activityLogs: number
-  securityEvents: number
-  domainEvents: number
   supportTickets: number
-  supportImpersonationSessions: number
-  providerCredentials: number
   aiRequests: number
-  aiProviderPolicies: number
-  walletTopUps: number
+  aiRequestEvents: number
 }
 
 export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | WorkspaceCountOutputTypeCountMembershipsArgs
   invitations?: boolean | WorkspaceCountOutputTypeCountInvitationsArgs
   featureFlagOverrides?: boolean | WorkspaceCountOutputTypeCountFeatureFlagOverridesArgs
-  remoteConfigVersions?: boolean | WorkspaceCountOutputTypeCountRemoteConfigVersionsArgs
-  extensionInstallations?: boolean | WorkspaceCountOutputTypeCountExtensionInstallationsArgs
-  auditLogs?: boolean | WorkspaceCountOutputTypeCountAuditLogsArgs
-  activityLogs?: boolean | WorkspaceCountOutputTypeCountActivityLogsArgs
-  securityEvents?: boolean | WorkspaceCountOutputTypeCountSecurityEventsArgs
-  domainEvents?: boolean | WorkspaceCountOutputTypeCountDomainEventsArgs
   supportTickets?: boolean | WorkspaceCountOutputTypeCountSupportTicketsArgs
-  supportImpersonationSessions?: boolean | WorkspaceCountOutputTypeCountSupportImpersonationSessionsArgs
-  providerCredentials?: boolean | WorkspaceCountOutputTypeCountProviderCredentialsArgs
   aiRequests?: boolean | WorkspaceCountOutputTypeCountAiRequestsArgs
-  aiProviderPolicies?: boolean | WorkspaceCountOutputTypeCountAiProviderPoliciesArgs
-  walletTopUps?: boolean | WorkspaceCountOutputTypeCountWalletTopUpsArgs
+  aiRequestEvents?: boolean | WorkspaceCountOutputTypeCountAiRequestEventsArgs
 }
 
 /**
@@ -2478,64 +914,8 @@ export type WorkspaceCountOutputTypeCountFeatureFlagOverridesArgs<ExtArgs extend
 /**
  * WorkspaceCountOutputType without action
  */
-export type WorkspaceCountOutputTypeCountRemoteConfigVersionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.RemoteConfigVersionWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountExtensionInstallationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ExtensionInstallationWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountAuditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AuditLogWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountActivityLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ActivityLogWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountSecurityEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SecurityEventWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountDomainEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.DomainEventWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
 export type WorkspaceCountOutputTypeCountSupportTicketsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.SupportTicketWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountSupportImpersonationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SupportImpersonationSessionWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountProviderCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ProviderCredentialWhereInput
 }
 
 /**
@@ -2548,15 +928,8 @@ export type WorkspaceCountOutputTypeCountAiRequestsArgs<ExtArgs extends runtime.
 /**
  * WorkspaceCountOutputType without action
  */
-export type WorkspaceCountOutputTypeCountAiProviderPoliciesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.AiProviderPolicyWhereInput
-}
-
-/**
- * WorkspaceCountOutputType without action
- */
-export type WorkspaceCountOutputTypeCountWalletTopUpsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.WalletTopUpWhereInput
+export type WorkspaceCountOutputTypeCountAiRequestEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AiRequestEventWhereInput
 }
 
 
@@ -2569,19 +942,9 @@ export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   memberships?: boolean | Prisma.Workspace$membershipsArgs<ExtArgs>
   invitations?: boolean | Prisma.Workspace$invitationsArgs<ExtArgs>
   featureFlagOverrides?: boolean | Prisma.Workspace$featureFlagOverridesArgs<ExtArgs>
-  remoteConfigVersions?: boolean | Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs>
-  extensionInstallations?: boolean | Prisma.Workspace$extensionInstallationsArgs<ExtArgs>
-  auditLogs?: boolean | Prisma.Workspace$auditLogsArgs<ExtArgs>
-  activityLogs?: boolean | Prisma.Workspace$activityLogsArgs<ExtArgs>
-  securityEvents?: boolean | Prisma.Workspace$securityEventsArgs<ExtArgs>
-  domainEvents?: boolean | Prisma.Workspace$domainEventsArgs<ExtArgs>
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
-  supportImpersonationSessions?: boolean | Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>
-  providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.Workspace$aiRequestsArgs<ExtArgs>
-  aiProviderPolicies?: boolean | Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>
-  wallet?: boolean | Prisma.Workspace$walletArgs<ExtArgs>
-  walletTopUps?: boolean | Prisma.Workspace$walletTopUpsArgs<ExtArgs>
+  aiRequestEvents?: boolean | Prisma.Workspace$aiRequestEventsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["workspace"]>
 
@@ -2614,19 +977,9 @@ export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   memberships?: boolean | Prisma.Workspace$membershipsArgs<ExtArgs>
   invitations?: boolean | Prisma.Workspace$invitationsArgs<ExtArgs>
   featureFlagOverrides?: boolean | Prisma.Workspace$featureFlagOverridesArgs<ExtArgs>
-  remoteConfigVersions?: boolean | Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs>
-  extensionInstallations?: boolean | Prisma.Workspace$extensionInstallationsArgs<ExtArgs>
-  auditLogs?: boolean | Prisma.Workspace$auditLogsArgs<ExtArgs>
-  activityLogs?: boolean | Prisma.Workspace$activityLogsArgs<ExtArgs>
-  securityEvents?: boolean | Prisma.Workspace$securityEventsArgs<ExtArgs>
-  domainEvents?: boolean | Prisma.Workspace$domainEventsArgs<ExtArgs>
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
-  supportImpersonationSessions?: boolean | Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>
-  providerCredentials?: boolean | Prisma.Workspace$providerCredentialsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.Workspace$aiRequestsArgs<ExtArgs>
-  aiProviderPolicies?: boolean | Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>
-  wallet?: boolean | Prisma.Workspace$walletArgs<ExtArgs>
-  walletTopUps?: boolean | Prisma.Workspace$walletTopUpsArgs<ExtArgs>
+  aiRequestEvents?: boolean | Prisma.Workspace$aiRequestEventsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WorkspaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -2638,19 +991,9 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     memberships: Prisma.$WorkspaceMembershipPayload<ExtArgs>[]
     invitations: Prisma.$WorkspaceInvitePayload<ExtArgs>[]
     featureFlagOverrides: Prisma.$FeatureFlagOverridePayload<ExtArgs>[]
-    remoteConfigVersions: Prisma.$RemoteConfigVersionPayload<ExtArgs>[]
-    extensionInstallations: Prisma.$ExtensionInstallationPayload<ExtArgs>[]
-    auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
-    activityLogs: Prisma.$ActivityLogPayload<ExtArgs>[]
-    securityEvents: Prisma.$SecurityEventPayload<ExtArgs>[]
-    domainEvents: Prisma.$DomainEventPayload<ExtArgs>[]
     supportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
-    supportImpersonationSessions: Prisma.$SupportImpersonationSessionPayload<ExtArgs>[]
-    providerCredentials: Prisma.$ProviderCredentialPayload<ExtArgs>[]
     aiRequests: Prisma.$AiRequestPayload<ExtArgs>[]
-    aiProviderPolicies: Prisma.$AiProviderPolicyPayload<ExtArgs>[]
-    wallet: Prisma.$WalletPayload<ExtArgs> | null
-    walletTopUps: Prisma.$WalletTopUpPayload<ExtArgs>[]
+    aiRequestEvents: Prisma.$AiRequestEventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3055,19 +1398,9 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   memberships<T extends Prisma.Workspace$membershipsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$membershipsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WorkspaceMembershipPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   invitations<T extends Prisma.Workspace$invitationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$invitationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WorkspaceInvitePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   featureFlagOverrides<T extends Prisma.Workspace$featureFlagOverridesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$featureFlagOverridesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FeatureFlagOverridePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  remoteConfigVersions<T extends Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$remoteConfigVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RemoteConfigVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  extensionInstallations<T extends Prisma.Workspace$extensionInstallationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$extensionInstallationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtensionInstallationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  auditLogs<T extends Prisma.Workspace$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  activityLogs<T extends Prisma.Workspace$activityLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$activityLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ActivityLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  securityEvents<T extends Prisma.Workspace$securityEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$securityEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SecurityEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  domainEvents<T extends Prisma.Workspace$domainEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$domainEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DomainEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportTickets<T extends Prisma.Workspace$supportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  supportImpersonationSessions<T extends Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportImpersonationSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportImpersonationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  providerCredentials<T extends Prisma.Workspace$providerCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$providerCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRequests<T extends Prisma.Workspace$aiRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  aiProviderPolicies<T extends Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiProviderPoliciesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiProviderPolicyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  wallet<T extends Prisma.Workspace$walletArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$walletArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  walletTopUps<T extends Prisma.Workspace$walletTopUpsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$walletTopUpsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WalletTopUpPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  aiRequestEvents<T extends Prisma.Workspace$aiRequestEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiRequestEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3567,150 +1900,6 @@ export type Workspace$featureFlagOverridesArgs<ExtArgs extends runtime.Types.Ext
 }
 
 /**
- * Workspace.remoteConfigVersions
- */
-export type Workspace$remoteConfigVersionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the RemoteConfigVersion
-   */
-  select?: Prisma.RemoteConfigVersionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the RemoteConfigVersion
-   */
-  omit?: Prisma.RemoteConfigVersionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.RemoteConfigVersionInclude<ExtArgs> | null
-  where?: Prisma.RemoteConfigVersionWhereInput
-  orderBy?: Prisma.RemoteConfigVersionOrderByWithRelationInput | Prisma.RemoteConfigVersionOrderByWithRelationInput[]
-  cursor?: Prisma.RemoteConfigVersionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.RemoteConfigVersionScalarFieldEnum | Prisma.RemoteConfigVersionScalarFieldEnum[]
-}
-
-/**
- * Workspace.extensionInstallations
- */
-export type Workspace$extensionInstallationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ExtensionInstallation
-   */
-  select?: Prisma.ExtensionInstallationSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ExtensionInstallation
-   */
-  omit?: Prisma.ExtensionInstallationOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ExtensionInstallationInclude<ExtArgs> | null
-  where?: Prisma.ExtensionInstallationWhereInput
-  orderBy?: Prisma.ExtensionInstallationOrderByWithRelationInput | Prisma.ExtensionInstallationOrderByWithRelationInput[]
-  cursor?: Prisma.ExtensionInstallationWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ExtensionInstallationScalarFieldEnum | Prisma.ExtensionInstallationScalarFieldEnum[]
-}
-
-/**
- * Workspace.auditLogs
- */
-export type Workspace$auditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the AuditLog
-   */
-  select?: Prisma.AuditLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the AuditLog
-   */
-  omit?: Prisma.AuditLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.AuditLogInclude<ExtArgs> | null
-  where?: Prisma.AuditLogWhereInput
-  orderBy?: Prisma.AuditLogOrderByWithRelationInput | Prisma.AuditLogOrderByWithRelationInput[]
-  cursor?: Prisma.AuditLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.AuditLogScalarFieldEnum | Prisma.AuditLogScalarFieldEnum[]
-}
-
-/**
- * Workspace.activityLogs
- */
-export type Workspace$activityLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ActivityLog
-   */
-  select?: Prisma.ActivityLogSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ActivityLog
-   */
-  omit?: Prisma.ActivityLogOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ActivityLogInclude<ExtArgs> | null
-  where?: Prisma.ActivityLogWhereInput
-  orderBy?: Prisma.ActivityLogOrderByWithRelationInput | Prisma.ActivityLogOrderByWithRelationInput[]
-  cursor?: Prisma.ActivityLogWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ActivityLogScalarFieldEnum | Prisma.ActivityLogScalarFieldEnum[]
-}
-
-/**
- * Workspace.securityEvents
- */
-export type Workspace$securityEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SecurityEvent
-   */
-  select?: Prisma.SecurityEventSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SecurityEvent
-   */
-  omit?: Prisma.SecurityEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
-  where?: Prisma.SecurityEventWhereInput
-  orderBy?: Prisma.SecurityEventOrderByWithRelationInput | Prisma.SecurityEventOrderByWithRelationInput[]
-  cursor?: Prisma.SecurityEventWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SecurityEventScalarFieldEnum | Prisma.SecurityEventScalarFieldEnum[]
-}
-
-/**
- * Workspace.domainEvents
- */
-export type Workspace$domainEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the DomainEvent
-   */
-  select?: Prisma.DomainEventSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the DomainEvent
-   */
-  omit?: Prisma.DomainEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.DomainEventInclude<ExtArgs> | null
-  where?: Prisma.DomainEventWhereInput
-  orderBy?: Prisma.DomainEventOrderByWithRelationInput | Prisma.DomainEventOrderByWithRelationInput[]
-  cursor?: Prisma.DomainEventWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.DomainEventScalarFieldEnum | Prisma.DomainEventScalarFieldEnum[]
-}
-
-/**
  * Workspace.supportTickets
  */
 export type Workspace$supportTicketsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3732,54 +1921,6 @@ export type Workspace$supportTicketsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.SupportTicketScalarFieldEnum | Prisma.SupportTicketScalarFieldEnum[]
-}
-
-/**
- * Workspace.supportImpersonationSessions
- */
-export type Workspace$supportImpersonationSessionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the SupportImpersonationSession
-   */
-  select?: Prisma.SupportImpersonationSessionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the SupportImpersonationSession
-   */
-  omit?: Prisma.SupportImpersonationSessionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SupportImpersonationSessionInclude<ExtArgs> | null
-  where?: Prisma.SupportImpersonationSessionWhereInput
-  orderBy?: Prisma.SupportImpersonationSessionOrderByWithRelationInput | Prisma.SupportImpersonationSessionOrderByWithRelationInput[]
-  cursor?: Prisma.SupportImpersonationSessionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SupportImpersonationSessionScalarFieldEnum | Prisma.SupportImpersonationSessionScalarFieldEnum[]
-}
-
-/**
- * Workspace.providerCredentials
- */
-export type Workspace$providerCredentialsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ProviderCredential
-   */
-  select?: Prisma.ProviderCredentialSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ProviderCredential
-   */
-  omit?: Prisma.ProviderCredentialOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ProviderCredentialInclude<ExtArgs> | null
-  where?: Prisma.ProviderCredentialWhereInput
-  orderBy?: Prisma.ProviderCredentialOrderByWithRelationInput | Prisma.ProviderCredentialOrderByWithRelationInput[]
-  cursor?: Prisma.ProviderCredentialWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ProviderCredentialScalarFieldEnum | Prisma.ProviderCredentialScalarFieldEnum[]
 }
 
 /**
@@ -3807,70 +1948,27 @@ export type Workspace$aiRequestsArgs<ExtArgs extends runtime.Types.Extensions.In
 }
 
 /**
- * Workspace.aiProviderPolicies
+ * Workspace.aiRequestEvents
  */
-export type Workspace$aiProviderPoliciesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type Workspace$aiRequestEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the AiProviderPolicy
+   * Select specific fields to fetch from the AiRequestEvent
    */
-  select?: Prisma.AiProviderPolicySelect<ExtArgs> | null
+  select?: Prisma.AiRequestEventSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the AiProviderPolicy
+   * Omit specific fields from the AiRequestEvent
    */
-  omit?: Prisma.AiProviderPolicyOmit<ExtArgs> | null
+  omit?: Prisma.AiRequestEventOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.AiProviderPolicyInclude<ExtArgs> | null
-  where?: Prisma.AiProviderPolicyWhereInput
-  orderBy?: Prisma.AiProviderPolicyOrderByWithRelationInput | Prisma.AiProviderPolicyOrderByWithRelationInput[]
-  cursor?: Prisma.AiProviderPolicyWhereUniqueInput
+  include?: Prisma.AiRequestEventInclude<ExtArgs> | null
+  where?: Prisma.AiRequestEventWhereInput
+  orderBy?: Prisma.AiRequestEventOrderByWithRelationInput | Prisma.AiRequestEventOrderByWithRelationInput[]
+  cursor?: Prisma.AiRequestEventWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.AiProviderPolicyScalarFieldEnum | Prisma.AiProviderPolicyScalarFieldEnum[]
-}
-
-/**
- * Workspace.wallet
- */
-export type Workspace$walletArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Wallet
-   */
-  select?: Prisma.WalletSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Wallet
-   */
-  omit?: Prisma.WalletOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WalletInclude<ExtArgs> | null
-  where?: Prisma.WalletWhereInput
-}
-
-/**
- * Workspace.walletTopUps
- */
-export type Workspace$walletTopUpsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the WalletTopUp
-   */
-  select?: Prisma.WalletTopUpSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the WalletTopUp
-   */
-  omit?: Prisma.WalletTopUpOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WalletTopUpInclude<ExtArgs> | null
-  where?: Prisma.WalletTopUpWhereInput
-  orderBy?: Prisma.WalletTopUpOrderByWithRelationInput | Prisma.WalletTopUpOrderByWithRelationInput[]
-  cursor?: Prisma.WalletTopUpWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.WalletTopUpScalarFieldEnum | Prisma.WalletTopUpScalarFieldEnum[]
+  distinct?: Prisma.AiRequestEventScalarFieldEnum | Prisma.AiRequestEventScalarFieldEnum[]
 }
 
 /**
