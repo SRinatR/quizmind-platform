@@ -1468,6 +1468,7 @@ export class PlatformService {
       verified?: string;
       sort?: string;
       page?: string;
+      cursor?: string;
       limit?: string;
     },
   ): Promise<AdminUserDirectorySnapshot> {
@@ -1479,6 +1480,9 @@ export class PlatformService {
     }
 
     const page = Math.max(1, Number(rawFilters?.page) || 1);
+    const cursor = typeof rawFilters?.cursor === 'string' && rawFilters.cursor.trim()
+      ? rawFilters.cursor.trim()
+      : undefined;
     const limit = Math.min(100, Math.max(1, Number(rawFilters?.limit) || 25));
     const roleFilter =
       rawFilters?.role === 'admin' ? 'admin' : rawFilters?.role === 'user' ? 'user' : undefined;
@@ -1492,13 +1496,14 @@ export class PlatformService {
       ? (rawFilters!.sort as SortKey)
       : 'created-desc';
 
-    const { items, total } = await this.userRepository.listWithFilters({
+    const { items, total, hasNext, nextCursor } = await this.userRepository.listWithFilters({
       query: rawFilters?.query,
       role: roleFilter,
       banned: bannedFilter,
       verified: verifiedFilter,
       sort: sortFilter,
       page,
+      cursor,
       limit,
     });
 
@@ -1507,8 +1512,9 @@ export class PlatformService {
       accessDecision,
       writeDecision,
       items: items.map(mapUserRecordToDirectoryEntry),
-      total,
-      page,
+      ...(typeof total === 'number' ? { total, page } : {}),
+      hasNext,
+      nextCursor,
       limit,
       permissions: session.permissions,
     };

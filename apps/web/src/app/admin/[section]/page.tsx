@@ -328,7 +328,6 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 banned: readSearchParam(resolvedSearchParams, 'userBanned') ?? 'all',
                 verified: readSearchParam(resolvedSearchParams, 'userVerified') ?? 'all',
                 sort: readSearchParam(resolvedSearchParams, 'userSort') ?? 'created-desc',
-                page: readIntegerSearchParam(resolvedSearchParams, 'userPage') ?? 1,
                 limit: readIntegerSearchParam(resolvedSearchParams, 'userLimit') ?? 25,
               }}
             />

@@ -582,8 +582,8 @@ test('PlatformService.updateUserProfileForCurrentSession validates timezone valu
 test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into admin directory entries', async () => {
   const { service, userRepository } = createPlatformService();
 
-  userRepository.listAll = async () =>
-    [
+  userRepository.listWithFilters = async () => ({
+    items: [
       {
         id: 'user_1',
         email: 'admin@quizmind.dev',
@@ -614,7 +614,10 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
         systemRoleAssignments: [{ role: 'admin' }],
         memberships: [],
       },
-    ] as any;
+    ] as any,
+    hasNext: true,
+    nextCursor: 'cursor_2',
+  });
 
   const result = await service.listUsersForCurrentSession({
     ...createConnectedSessionSnapshot(),
@@ -657,6 +660,34 @@ test('PlatformService.listUsersForCurrentSession maps Prisma-backed users into a
       workspaces: [],
     },
   ]);
+  assert.equal(result.hasNext, true);
+  assert.equal(result.nextCursor, 'cursor_2');
+  assert.equal(result.total, undefined);
+});
+
+test('PlatformService.listUsersForCurrentSession forwards cursor filters to repository', async () => {
+  const { service, userRepository } = createPlatformService();
+  let capturedFilters: any;
+  userRepository.listWithFilters = async (filters: any) => {
+    capturedFilters = filters;
+    return { items: [], hasNext: false, nextCursor: null };
+  };
+
+  await service.listUsersForCurrentSession(
+    {
+      ...createConnectedSessionSnapshot(),
+      principal: {
+        ...createConnectedSessionSnapshot().principal,
+        systemRoles: ['admin'],
+      },
+      permissions: ['users:read', 'workspaces:read'],
+    },
+    { query: 'john', sort: 'created-desc', cursor: 'cursor_a', limit: '50' },
+  );
+
+  assert.equal(capturedFilters.cursor, 'cursor_a');
+  assert.equal(capturedFilters.limit, 50);
+  assert.equal(capturedFilters.sort, 'created-desc');
 });
 
 test('PlatformService.listUsersForCurrentSession denies principals without users:read', async () => {
