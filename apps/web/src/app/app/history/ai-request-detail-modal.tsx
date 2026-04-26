@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { type AiHistoryAttachment, type AiHistoryDetail } from '@quizmind/contracts';
+import { buildHistoryPromptDisplay } from './history-prompt-display';
+import { getReadableModelName } from './history-model-display';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
 import { formatUsdAmountByPreference } from '../../../lib/money';
@@ -22,95 +24,6 @@ function statusBadgeClass(status: string): string {
   if (status === 'error') return 'tag-soft tag-soft--orange';
   if (status === 'quota_exceeded') return 'tag-soft tag-soft--orange';
   return 'tag-soft tag-soft--gray';
-}
-
-interface ParsedPrompt {
-  userText: string;
-  systemText: string;
-  fallbackText: string;
-  hasImageInput: boolean;
-}
-
-const QUICK_ANSWER_USER_PREFIX = 'Return only the final answer without solution steps. If options are labeled (letters or numbers), return ONLY correct labels separated by commas (for example: a, d). If the question has options but they are unlabeled, number from 1 and answer as: N) option text. If no options exist (free-text question), return ONLY the answer. Question:';
-const VISION_USER_PREFIX = 'Read the screenshot carefully. Double-check option labels before answering. If options are labeled, output only labels (e.g. a, d). If unlabeled options exist, output: N) option text. If no options (text/fill-in question), output only the answer text. Return final answer only.';
-
-interface DisplayPromptResult {
-  mainText: string;
-  promptInstruction: string;
-  prefixRemoved: boolean;
-  hideCopy: boolean;
-}
-
-function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedPrompt {
-  if (Array.isArray(json)) {
-    const msgs = json as Array<Record<string, unknown>>;
-    const gather = (role: string) => msgs
-      .filter((m) => m.role === role)
-      .flatMap((m) => {
-        const c = m.content;
-        if (typeof c === 'string') return [c];
-        if (Array.isArray(c)) {
-          return (c as Array<Record<string, unknown>>)
-            .filter((b) => b.type === 'text' && typeof b.text === 'string')
-            .map((b) => b.text as string);
-        }
-        return [];
-      });
-
-    const hasImageInput = msgs.some((m) => {
-      if (m.role !== 'user') return false;
-      const c = m.content;
-      if (!Array.isArray(c)) return false;
-      return (c as Array<Record<string, unknown>>).some((b) => {
-        const t = typeof b.type === 'string' ? b.type : '';
-        return t.includes('image');
-      });
-    });
-
-    return {
-      userText: gather('user').join('\n\n'),
-      systemText: gather('system').join('\n\n'),
-      fallbackText: '',
-      hasImageInput,
-    };
-  }
-
-  let fallback = '';
-  if (typeof json === 'string') fallback = json;
-  else if (json !== null && json !== undefined) fallback = JSON.stringify(json, null, 2);
-  else fallback = excerpt ?? '';
-  fallback = fallback.replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, '[image attachment omitted]');
-  return { userText: '', systemText: '', fallbackText: fallback, hasImageInput: false };
-}
-
-function getPromptInstructionAndQuestion(parsed: ParsedPrompt, hasPromptImages: boolean): DisplayPromptResult {
-  const basePrompt = parsed.userText || parsed.fallbackText;
-  if (!parsed.userText) {
-    return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false, hideCopy: false };
-  }
-
-  if (parsed.userText.startsWith(QUICK_ANSWER_USER_PREFIX)) {
-    const mainText = parsed.userText.slice(QUICK_ANSWER_USER_PREFIX.length).trim();
-    return {
-      mainText,
-      promptInstruction: QUICK_ANSWER_USER_PREFIX,
-      prefixRemoved: true,
-      hideCopy: false,
-    };
-  }
-
-  const hasImageInput = parsed.hasImageInput || hasPromptImages;
-  if (hasImageInput && parsed.userText.startsWith(VISION_USER_PREFIX)) {
-    const cleaned = parsed.userText.slice(VISION_USER_PREFIX.length).trim();
-    return {
-      mainText: cleaned,
-      promptInstruction: VISION_USER_PREFIX,
-      prefixRemoved: true,
-      hideCopy: cleaned.length === 0,
-    };
-  }
-
-  return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false, hideCopy: false };
 }
 
 function extractFinalAnswer(json: unknown): string {
@@ -234,17 +147,29 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
     return () => { cancelled = true; };
   }, [id]);
 
-  const parsed = detail ? parsePrompt(detail.promptContentJson, detail.promptExcerpt) : null;
-  const imageAttachments = useMemo(
-    () => (detail?.attachments ?? []).filter((a) => a.kind === 'image' && a.role === 'prompt'),
-    [detail?.attachments],
-  );
-  const displayPromptResult = parsed
-    ? getPromptInstructionAndQuestion(parsed, imageAttachments.length > 0)
-    : { mainText: '', promptInstruction: '', prefixRemoved: false, hideCopy: false };
-  const displayPrompt = displayPromptResult.mainText;
-  const hasPromptText = displayPrompt.trim().length > 0;
-  const hasPromptImages = imageAttachments.length > 0;
+  const promptDisplay = useMemo(() => {
+    if (!detail) {
+      return {
+        cleanQuestionText: '',
+        promptInstructionText: undefined,
+        systemText: undefined,
+        hasImages: false,
+        imageAttachments: [] as AiHistoryAttachment[],
+        hasPromptText: false,
+      };
+    }
+
+    return buildHistoryPromptDisplay({
+      promptContentJson: detail.promptContentJson,
+      promptExcerpt: detail.promptExcerpt,
+      requestType: detail.requestType,
+      attachments: detail.attachments,
+    });
+  }, [detail]);
+
+  const displayPrompt = promptDisplay.cleanQuestionText;
+  const hasPromptText = promptDisplay.hasPromptText;
+  const hasPromptImages = promptDisplay.imageAttachments.length > 0;
   const rawRequestText = detail?.promptContentJson == null
     ? ''
     : typeof detail.promptContentJson === 'string'
@@ -275,7 +200,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
           <button aria-label="Close" onClick={onClose} style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1, opacity: 0.5, padding: '0 4px' }}>×</button>
 
           <span className="micro-label">AI Request Detail</span>
-          <h2 style={{ marginTop: '4px', marginBottom: '16px', paddingRight: '32px' }}>{detail?.model ?? (loading ? 'Loading…' : '—')}</h2>
+          <h2 style={{ marginTop: '4px', marginBottom: '16px', paddingRight: '32px' }}>{detail ? getReadableModelName(detail.model) : (loading ? 'Loading…' : '—')}</h2>
 
           {loading && <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Loading…</p>}
           {fetchError && !loading && <div className="empty-state"><span className="micro-label">Error</span><p>{fetchError}</p></div>}
@@ -307,23 +232,23 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
               <section style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span className="micro-label">Request / Question</span>
-                  {hasPromptText && !displayPromptResult.hideCopy && (
+                  {hasPromptText && (
                     <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">Copy</button>
                   )}
                 </div>
                 {hasPromptText ? <pre style={codeBlockStyle}>{displayPrompt}</pre> : null}
                 {hasPromptImages && (
                   <div style={{ marginTop: 12 }}>
-                    {imageAttachments.map((attachment) => (
+                    {promptDisplay.imageAttachments.map((attachment) => (
                       <ImageAttachmentCard key={attachment.id} attachment={attachment} onOpen={setPreviewUrl} />
                     ))}
                   </div>
                 )}
                 {!hasPromptText && !hasPromptImages && <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>No prompt content available.</p>}
-                {displayPromptResult.prefixRemoved && displayPromptResult.promptInstruction && (
-                  <ExpandableSection label="Prompt instruction" content={displayPromptResult.promptInstruction} />
+                {promptDisplay.promptInstructionText && (
+                  <ExpandableSection label="Prompt instruction" content={promptDisplay.promptInstructionText} />
                 )}
-                {parsed?.systemText && <ExpandableSection label="System" content={parsed.systemText} />}
+                {promptDisplay.systemText && <ExpandableSection label="System" content={promptDisplay.systemText} />}
                 {rawRequestText && <ExpandableSection label="Raw request" content={rawRequestText} />}
               </section>
 

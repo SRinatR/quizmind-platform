@@ -186,6 +186,31 @@ function extensionForMimeType(mimeType: string): string {
   return 'bin';
 }
 
+
+function toAttachmentMetadata(detail: {
+  id: string;
+  role: string;
+  kind: string;
+  mimeType: string;
+  originalName: string | null;
+  sizeBytes: number;
+  deletedAt: Date | null;
+  expiresAt: Date;
+}): AiHistoryAttachment {
+  const isDeleted = Boolean(detail.deletedAt);
+  const isExpired = isDeleted || detail.expiresAt < new Date();
+  return {
+    id: detail.id,
+    role: detail.role === 'response' ? 'response' : 'prompt',
+    kind: detail.kind === 'file' ? 'file' : 'image',
+    mimeType: detail.mimeType,
+    originalName: detail.originalName,
+    sizeBytes: detail.sizeBytes,
+    deleted: isDeleted,
+    expired: isExpired,
+  };
+}
+
 function toListItemFromEvent(record: AiHistoryEventListRecord): AiHistoryListItem {
   return {
     id: record.id,
@@ -203,6 +228,7 @@ function toListItemFromEvent(record: AiHistoryEventListRecord): AiHistoryListIte
     promptExcerpt: record.promptExcerpt,
     responseExcerpt: record.responseExcerpt,
     fileMetadata: parseFileMetadata(record.content?.fileMetadataJson ?? null),
+    attachments: record.attachments.map((attachment) => toAttachmentMetadata(attachment)),
     occurredAt: record.occurredAt.toISOString(),
     expiresAt: record.content?.expiresAt?.toISOString() ?? null,
   };
@@ -234,30 +260,6 @@ export class AiHistoryService {
     @Inject(AiHistoryRepository) private readonly repository: AiHistoryRepository,
     @Inject(HistoryBlobService) private readonly blobs: HistoryBlobService,
   ) {}
-
-  private toAttachmentMetadata(detail: {
-    id: string;
-    role: string;
-    kind: string;
-    mimeType: string;
-    originalName: string | null;
-    sizeBytes: number;
-    deletedAt: Date | null;
-    expiresAt: Date;
-  }): AiHistoryAttachment {
-    const isDeleted = Boolean(detail.deletedAt);
-    const isExpired = isDeleted || detail.expiresAt < new Date();
-    return {
-      id: detail.id,
-      role: detail.role === 'response' ? 'response' : 'prompt',
-      kind: detail.kind === 'file' ? 'file' : 'image',
-      mimeType: detail.mimeType,
-      originalName: detail.originalName,
-      sizeBytes: detail.sizeBytes,
-      deleted: isDeleted,
-      expired: isExpired,
-    };
-  }
 
   async listHistory(userId: string, rawFilters: Partial<AiHistoryListFilters>): Promise<AiHistoryListResponse> {
     const limit = clampLimit(rawFilters.limit);
@@ -323,7 +325,7 @@ export class AiHistoryService {
     if (event) {
       const listItem = toListItemFromEvent(event);
       const content = event.content;
-      const attachments = event.attachments.map((attachment) => this.toAttachmentMetadata(attachment));
+      const attachments = event.attachments.map((attachment) => toAttachmentMetadata(attachment));
       if (!content || content.deletedAt || content.expiresAt < new Date()) {
         return {
           ...listItem,
