@@ -2,10 +2,15 @@ import { type AiHistoryAttachment, type AiHistoryFileMetadata, type AiRequestTyp
 
 const QUICK_ANSWER_USER_PREFIX = 'Return only the final answer without solution steps. If options are labeled (letters or numbers), return ONLY correct labels separated by commas (for example: a, d). If the question has options but they are unlabeled, number from 1 and answer as: N) option text. If no options exist (free-text question), return ONLY the answer. Question:';
 const VISION_USER_PREFIX = 'Read the screenshot carefully. Double-check option labels before answering. If options are labeled, output only labels (e.g. a, d). If unlabeled options exist, output: N) option text. If no options (text/fill-in question), output only the answer text. Return final answer only.';
+const QUICK_ANSWER_QUESTION_MARKER = 'Question:';
 
 const SYSTEM_PROMPT_PREFIXES = [
   'You are a test assistant',
   'You are a visual quiz assistant',
+];
+const SERVICE_INSTRUCTION_PREFIXES = [
+  'Return only the final answer without solution steps.',
+  'Read the screenshot carefully.',
 ];
 
 interface ParsedPrompt {
@@ -77,6 +82,14 @@ function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedP
 }
 
 function stripKnownPrefix(userText: string, hasImages: boolean): { cleanQuestionText: string; promptInstructionText?: string } {
+  const questionMarkerIndex = userText.indexOf(QUICK_ANSWER_QUESTION_MARKER);
+  if (questionMarkerIndex >= 0) {
+    return {
+      cleanQuestionText: userText.slice(questionMarkerIndex + QUICK_ANSWER_QUESTION_MARKER.length).trim(),
+      promptInstructionText: userText.slice(0, questionMarkerIndex + QUICK_ANSWER_QUESTION_MARKER.length).trim(),
+    };
+  }
+
   if (userText.startsWith(QUICK_ANSWER_USER_PREFIX)) {
     return {
       cleanQuestionText: userText.slice(QUICK_ANSWER_USER_PREFIX.length).trim(),
@@ -96,6 +109,15 @@ function stripKnownPrefix(userText: string, hasImages: boolean): { cleanQuestion
 
 function startsWithSystemPrompt(text: string): boolean {
   return SYSTEM_PROMPT_PREFIXES.some((prefix) => text.startsWith(prefix));
+}
+
+function startsWithServiceInstruction(text: string): boolean {
+  return SERVICE_INSTRUCTION_PREFIXES.some((prefix) => text.startsWith(prefix));
+}
+
+function isGenericSummaryLabel(text: string): boolean {
+  const normalized = text.trim().toLowerCase();
+  return normalized === 'question' || normalized === 'screenshot question';
 }
 
 export function buildHistoryPromptDisplay(input: {
@@ -130,11 +152,11 @@ export function getHistoryTimelineSummary(input: {
   hasImages: boolean;
   fileMetadata?: AiHistoryFileMetadata | null;
 }): string {
-  if (input.cleanQuestionText) return input.cleanQuestionText;
-  if (input.requestType === 'image' || input.hasImages) return 'Screenshot question';
+  if (input.cleanQuestionText && !isGenericSummaryLabel(input.cleanQuestionText)) return input.cleanQuestionText;
   if (input.requestType === 'file') return input.fileMetadata?.originalName || 'File question';
 
   const fallback = sanitizeHistoryText(input.promptExcerpt);
-  if (!fallback || startsWithSystemPrompt(fallback)) return 'Question';
+  if (!fallback || startsWithSystemPrompt(fallback) || startsWithServiceInstruction(fallback)) return '';
+  if (isGenericSummaryLabel(fallback)) return '';
   return fallback;
 }
