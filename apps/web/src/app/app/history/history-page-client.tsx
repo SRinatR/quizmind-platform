@@ -43,6 +43,10 @@ function listImageAttachments(item: AiHistoryListResponse['items'][number]): AiH
   return (item.attachments ?? []).filter((attachment) => attachment.kind === 'image' && attachment.role === 'prompt' && !attachment.expired && !attachment.deleted);
 }
 
+function hasUnavailablePromptImage(item: AiHistoryListResponse['items'][number]): boolean {
+  return (item.attachments ?? []).some((attachment) => attachment.kind === 'image' && attachment.role === 'prompt' && (attachment.expired || attachment.deleted));
+}
+
 function toAttachmentViewUrl(itemId: string, attachmentId: string): string {
   return `/bff/history/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/view`;
 }
@@ -181,6 +185,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                 fileMetadata: item.fileMetadata,
               });
               const imageAttachments = listImageAttachments(item);
+              const hasUnavailableImage = hasUnavailablePromptImage(item);
 
               return (
                 <div
@@ -195,15 +200,20 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                 <span className={requestTypeDot(item.requestType)} />
                 <div className="event-row__body">
                   <span className="event-row__type">{getReadableModelName(item.model)}</span>
-                  <p className="event-row__summary" style={{ fontSize: '0.9rem', opacity: 0.86 }}>
-                    {summaryText}
-                  </p>
+                  {summaryText ? (
+                    <p className="event-row__summary" style={{ fontSize: '0.9rem', opacity: 0.86 }}>
+                      {summaryText}
+                    </p>
+                  ) : null}
                   {imageAttachments.length > 0 ? (
                     <img
-                      alt={imageAttachments[0]?.originalName ?? 'Screenshot question'}
+                      alt={imageAttachments[0]?.originalName ?? 'Prompt image'}
                       src={toAttachmentViewUrl(item.id, imageAttachments[0]!.id)}
-                      style={{ marginTop: 8, maxHeight: 110, width: 'auto', maxWidth: 170, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--color-border, #ddd)' }}
+                      style={{ marginTop: 8, width: 'min(100%, 720px)', maxHeight: 340, borderRadius: 6, objectFit: 'contain', border: '1px solid var(--color-border, #ddd)', display: 'block', background: 'var(--color-surface-alt, #f4f4f5)' }}
                     />
+                  ) : null}
+                  {imageAttachments.length === 0 && hasUnavailableImage ? (
+                    <span className="event-row__context">Image no longer available.</span>
                   ) : null}
                   {item.fileMetadata ? (
                     <span className="event-row__context">
