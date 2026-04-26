@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import { type AiHistoryListResponse } from '@quizmind/contracts';
+import { type AiHistoryAttachment, type AiHistoryListResponse } from '@quizmind/contracts';
 import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { AiRequestDetailModal } from './ai-request-detail-modal';
+import { getReadableModelName } from './history-model-display';
+import { buildHistoryPromptDisplay, getHistoryTimelineSummary } from './history-prompt-display';
 
 export interface HistoryPageClientProps {
   aiHistory: AiHistoryListResponse | null;
@@ -36,6 +38,14 @@ function requestTypeDot(requestType: string): string {
   return 'event-dot event-dot--info';
 }
 
+
+function listImageAttachments(item: AiHistoryListResponse['items'][number]): AiHistoryAttachment[] {
+  return (item.attachments ?? []).filter((attachment) => attachment.kind === 'image' && attachment.role === 'prompt' && !attachment.expired && !attachment.deleted);
+}
+
+function toAttachmentViewUrl(itemId: string, attachmentId: string): string {
+  return `/bff/history/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/view`;
+}
 function formatTokens(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
@@ -156,8 +166,24 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
         </div>
         {items.length > 0 ? (
           <div className="event-list">
-            {items.map((item) => (
-              <div
+            {items.map((item) => {
+              const promptDisplay = buildHistoryPromptDisplay({
+                promptContentJson: null,
+                promptExcerpt: item.promptExcerpt,
+                requestType: item.requestType,
+                attachments: item.attachments,
+              });
+              const summaryText = getHistoryTimelineSummary({
+                cleanQuestionText: promptDisplay.cleanQuestionText,
+                promptExcerpt: item.promptExcerpt,
+                requestType: item.requestType,
+                hasImages: promptDisplay.hasImages,
+                fileMetadata: item.fileMetadata,
+              });
+              const imageAttachments = listImageAttachments(item);
+
+              return (
+                <div
                 className="event-row"
                 key={item.id}
                 onClick={() => setSelectedId(item.id)}
@@ -168,11 +194,16 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
               >
                 <span className={requestTypeDot(item.requestType)} />
                 <div className="event-row__body">
-                  <span className="event-row__type">{item.model}</span>
-                  {item.promptExcerpt ? (
-                    <p className="event-row__summary" style={{ fontFamily: 'monospace', fontSize: '0.82rem', opacity: 0.8 }}>
-                      {item.promptExcerpt}
-                    </p>
+                  <span className="event-row__type">{getReadableModelName(item.model)}</span>
+                  <p className="event-row__summary" style={{ fontSize: '0.9rem', opacity: 0.86 }}>
+                    {summaryText}
+                  </p>
+                  {imageAttachments.length > 0 ? (
+                    <img
+                      alt={imageAttachments[0]?.originalName ?? 'Screenshot question'}
+                      src={toAttachmentViewUrl(item.id, imageAttachments[0]!.id)}
+                      style={{ marginTop: 8, maxHeight: 110, width: 'auto', maxWidth: 170, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--color-border, #ddd)' }}
+                    />
                   ) : null}
                   {item.fileMetadata ? (
                     <span className="event-row__context">
@@ -190,8 +221,9 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                   </div>
                   {formatUtcDateTime(item.occurredAt)}
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="empty-state">

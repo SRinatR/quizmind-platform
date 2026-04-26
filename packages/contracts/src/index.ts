@@ -1728,6 +1728,8 @@ export interface AiHistoryListItem {
   /** Short excerpt of the response text (first ~300 chars). */
   responseExcerpt?: string | null;
   fileMetadata?: AiHistoryFileMetadata | null;
+  /** Prompt/response attachments metadata (without inlined binary). */
+  attachments?: AiHistoryAttachment[];
   occurredAt: string;
   expiresAt?: string | null;
 }
