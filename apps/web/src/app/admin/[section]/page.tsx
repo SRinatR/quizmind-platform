@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { buildAccessContext } from '@quizmind/auth';
+import { hasPermission } from '@quizmind/permissions';
 import {
   type AdminLogFilters,
 } from '@quizmind/contracts';
@@ -10,8 +11,6 @@ import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import { isAdminSession } from '../../../lib/admin-guard';
 import {
   getAdminProviderGovernance,
-  getAdminLogs,
-  getAdminUsers,
   getCompatibilityRules,
   getFeatureFlags,
   getRemoteConfigState,
@@ -257,45 +256,32 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     aiRouting?: true;
   }
   const SECTION_NEEDS: Record<string, LoaderNeeds> = {
-    users:               { users: true },
-    logs:                { logs: true },
+    users:               {},
+    logs:                {},
     'extension-control': { compatibility: true, flags: true, remoteConfig: true },
     'ai-routing':        { aiRouting: true },
   };
   const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
-  const userFilters = needs.users
-    ? {
-        query: readSearchParam(resolvedSearchParams, 'userQuery'),
-        role: readSearchParam(resolvedSearchParams, 'userRole'),
-        banned: readSearchParam(resolvedSearchParams, 'userBanned'),
-        verified: readSearchParam(resolvedSearchParams, 'userVerified'),
-        sort: readSearchParam(resolvedSearchParams, 'userSort'),
-        page: readIntegerSearchParam(resolvedSearchParams, 'userPage'),
-        limit: readIntegerSearchParam(resolvedSearchParams, 'userLimit'),
-      }
-    : undefined;
-
   const [
     featureFlags,
     adminProviderGovernance,
     compatibilityRules,
-    adminUsers,
     remoteConfigState,
-    adminLogs,
   ] = await Promise.all([
     needs.flags ? getFeatureFlags(persona, accessToken) : Promise.resolve(null),
     needs.aiRouting ? getAdminProviderGovernance(accessToken) : Promise.resolve(null),
     needs.compatibility ? getCompatibilityRules(persona, accessToken) : Promise.resolve(null),
-    needs.users ? getAdminUsers(persona, accessToken, userFilters) : Promise.resolve(null),
     needs.remoteConfig ? getRemoteConfigState(persona, undefined, accessToken) : Promise.resolve(null),
-    needs.logs ? getAdminLogs(persona, adminLogFilters, accessToken) : Promise.resolve(null),
   ]);
 
   const isConnectedSession = session?.personaKey === 'connected-user';
   const canEditFeatureFlags = Boolean(isConnectedSession && featureFlags?.writeDecision.allowed);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const canManageUserAccess = Boolean(isConnectedSession && adminUsers?.writeDecision.allowed);
+  const permissions = session.permissions as Parameters<typeof hasPermission>[0];
+  const canManageUserAccess = Boolean(isConnectedSession && hasPermission(permissions, 'users:update'));
+  const canReadLogs = hasPermission(permissions, 'audit_logs:read');
+  const canExportLogs = hasPermission(permissions, 'audit_logs:export');
   const context = session ? buildAccessContext(session.principal) : null;
   const visibleSections = context ? getVisibleAdminSections(context) : [];
   const visibleNavGroups = context ? buildVisibleAdminNavGroups(context) : [];
@@ -328,27 +314,24 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               groupLabel={resolvedGroupLabel}
               title={resolvedSectionTitle}
               tags={[
-                { label: `${adminUsers?.total ?? 0} ${(adminUsers?.total ?? 0) === 1 ? adminT.usersSuffixSingular : adminT.usersSuffixPlural}` },
+                { label: `— ${adminT.usersSuffixPlural}` },
                 { label: canManageUserAccess ? adminUsersT.writeAccess : adminUsersT.readOnly, warn: !canManageUserAccess },
               ]}
             />
-            {adminUsers ? (
-              <UsersDirectoryClient
-                canManageUserAccess={canManageUserAccess}
-                currentUserId={session.user.id}
-                isConnectedSession={isConnectedSession}
-                items={adminUsers.items}
-                total={adminUsers.total}
-                page={adminUsers.page}
-                limit={adminUsers.limit}
-              />
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">{i18n.admin.nav.items.users}</span>
-                <h2>{adminUsersT.unavailableTitle}</h2>
-                <p>{adminUsersT.unavailableDesc}</p>
-              </section>
-            )}
+            <UsersDirectoryClient
+              canManageUserAccess={canManageUserAccess}
+              currentUserId={session.user.id}
+              isConnectedSession={isConnectedSession}
+              initialFilters={{
+                query: readSearchParam(resolvedSearchParams, 'userQuery'),
+                role: readSearchParam(resolvedSearchParams, 'userRole') ?? 'all',
+                banned: readSearchParam(resolvedSearchParams, 'userBanned') ?? 'all',
+                verified: readSearchParam(resolvedSearchParams, 'userVerified') ?? 'all',
+                sort: readSearchParam(resolvedSearchParams, 'userSort') ?? 'created-desc',
+                page: readIntegerSearchParam(resolvedSearchParams, 'userPage') ?? 1,
+                limit: readIntegerSearchParam(resolvedSearchParams, 'userLimit') ?? 25,
+              }}
+            />
           </>
         ) : // ── Operations: Logs ──────────────────────────────────────────────
         section.id === 'logs' ? (
@@ -357,23 +340,27 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               groupLabel={resolvedGroupLabel}
               title={resolvedSectionTitle}
               tags={[
-                { label: `${adminLogs?.items.length ?? 0} ${(adminLogs?.items.length ?? 0) === 1 ? adminT.eventsSuffixSingular : adminT.eventsSuffixPlural}` },
-                { label: adminLogs?.filters.category ?? adminT.allCategories },
+                { label: canReadLogs ? adminT.logsVisible : adminT.logsHidden, warn: !canReadLogs },
+                { label: (adminLogFilters.category ?? adminT.allCategories) },
               ]}
             />
-            {adminLogs ? (
-              <LogsExplorerClient
-                canExportLogs={adminLogs.exportDecision.allowed}
-                isConnectedSession={isConnectedSession}
-                snapshot={adminLogs}
-              />
-            ) : (
-              <section className="empty-state">
-                <span className="micro-label">{i18n.admin.nav.items.logs}</span>
-                <h2>{adminT.logsUnavailableTitle}</h2>
-                <p>{adminT.logsUnavailableDesc}</p>
-              </section>
-            )}
+            <LogsExplorerClient
+              canExportLogs={canExportLogs}
+              isConnectedSession={isConnectedSession}
+              initialFilters={{
+                stream: adminLogFilters.stream ?? 'all',
+                severity: adminLogFilters.severity ?? 'all',
+                search: adminLogFilters.search,
+                limit: adminLogFilters.limit ?? 25,
+                category: adminLogFilters.category,
+                source: adminLogFilters.source,
+                status: adminLogFilters.status,
+                eventType: adminLogFilters.eventType,
+                from: adminLogFilters.from,
+                to: adminLogFilters.to,
+                page: adminLogFilters.page ?? 1,
+              }}
+            />
           </>
         ) : // ── Control Plane: Extension Control ──────────────────────────────
         section.id === 'extension-control' ? (

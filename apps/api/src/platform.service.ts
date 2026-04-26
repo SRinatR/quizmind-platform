@@ -1372,7 +1372,7 @@ export class PlatformService {
       from: normalizedFilters.from,
       to: normalizedFilters.to,
     });
-    const baseItems = this.mapConnectedAdminLogEntries(records);
+    const baseItems = this.mapConnectedAdminLogEntries(records, { includeMetadata: false });
     const filtered = this.filterAdminLogEntries(baseItems, normalizedFilters);
 
     return {
@@ -1408,6 +1408,29 @@ export class PlatformService {
     });
 
     return this.buildAdminSecuritySnapshot(snapshot);
+  }
+
+  async getAdminLogEntryForCurrentSession(
+    session: CurrentSessionSnapshot,
+    id: string,
+  ): Promise<AdminLogEntry> {
+    const accessDecision = canReadAuditLogs(session.principal as SessionPrincipal);
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const result = await this.adminLogRepository.findOne(id);
+    if (!result) {
+      throw new NotFoundException('Log entry not found.');
+    }
+
+    const entries = this.mapConnectedAdminLogEntries(result, { includeMetadata: true });
+    const entry = entries[0];
+    if (!entry) {
+      throw new NotFoundException('Log entry not found.');
+    }
+
+    return entry;
   }
 
   listFeatureFlags(personaKey?: string) {
@@ -2864,6 +2887,7 @@ export class PlatformService {
 
   private mapConnectedAdminLogEntries(
     input: Awaited<ReturnType<AdminLogRepository['listRecent']>>,
+    options: { includeMetadata: boolean } = { includeMetadata: true },
   ): AdminLogEntry[] {
     const actorById = new Map(
       input.actors.map((actor) => [
@@ -2900,7 +2924,7 @@ export class PlatformService {
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
           targetType: record.targetType,
           targetId: record.targetId,
-          ...(metadata ? { metadata } : {}),
+          ...(options.includeMetadata && metadata ? { metadata } : {}),
           ...richFields,
         };
       }),
@@ -2919,7 +2943,7 @@ export class PlatformService {
           category,
           ...(source ? { source } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(metadata ? { metadata } : {}),
+          ...(options.includeMetadata && metadata ? { metadata } : {}),
           ...richFields,
         };
       }),
@@ -2941,7 +2965,7 @@ export class PlatformService {
           severity: record.severity,
           ...(status ? { status } : {}),
           ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(metadata ? { metadata } : {}),
+          ...(options.includeMetadata && metadata ? { metadata } : {}),
           ...richFields,
         };
       }),
@@ -2959,7 +2983,7 @@ export class PlatformService {
           occurredAt: record.createdAt.toISOString(),
           category,
           ...(source ? { source } : {}),
-          ...(metadata ? { metadata } : {}),
+          ...(options.includeMetadata && metadata ? { metadata } : {}),
           ...richFields,
         };
       }),

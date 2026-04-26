@@ -599,6 +599,8 @@ export const ru: Translations = {
       policy: 'политика',
       logsUnavailableTitle: 'Поток журналов недоступен.',
       logsUnavailableDesc: 'API не вернул снимок журналов для этого контекста.',
+      logsVisible: 'журналы доступны',
+      logsHidden: 'журналы ограничены',
       controlPlaneUnavailableTitle: 'Данные control plane недоступны.',
       controlPlaneUnavailableDesc: 'API не вернул снимок control plane для этого окружения.',
       providerUnavailableTitle: 'Управление провайдерами недоступно.',

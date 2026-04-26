@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Patch, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Param, Patch, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
@@ -172,6 +172,15 @@ export class PlatformController {
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listAdminLogsForCurrentSession(session, filters));
+  }
+
+  @Get('admin/logs/:id')
+  async getAdminLogEntry(
+    @Param('id') id: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.getAdminLogEntryForCurrentSession(session, id));
   }
 
   @Get('admin/security')

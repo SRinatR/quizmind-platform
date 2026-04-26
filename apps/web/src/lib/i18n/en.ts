@@ -597,6 +597,8 @@ export const en = {
       policy: 'policy',
       logsUnavailableTitle: 'Log stream unavailable.',
       logsUnavailableDesc: 'The API did not return a log snapshot for this context.',
+      logsVisible: 'logs visible',
+      logsHidden: 'logs restricted',
       controlPlaneUnavailableTitle: 'Control plane data unavailable.',
       controlPlaneUnavailableDesc: 'The API did not return a control plane snapshot for this environment.',
       providerUnavailableTitle: 'Provider governance unavailable.',

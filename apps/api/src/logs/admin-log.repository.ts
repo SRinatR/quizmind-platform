@@ -203,4 +203,53 @@ export class AdminLogRepository {
       actors,
     };
   }
+
+  async findOne(compositeId: string): Promise<ListAdminLogsResult | null> {
+    const [stream, recordId] = compositeId.split(':');
+
+    if (!stream || !recordId) {
+      return null;
+    }
+
+    let audit: AdminLogAuditRecord[] = [];
+    let activity: AdminLogActivityRecord[] = [];
+    let security: AdminLogSecurityRecord[] = [];
+    let domain: AdminLogDomainRecord[] = [];
+
+    if (stream === 'audit') {
+      const record = await this.prisma.auditLog.findUnique({ where: { id: recordId }, select: auditLogSelect });
+      if (record) audit = [record];
+    } else if (stream === 'activity') {
+      const record = await this.prisma.activityLog.findUnique({ where: { id: recordId }, select: activityLogSelect });
+      if (record) activity = [record];
+    } else if (stream === 'security') {
+      const record = await this.prisma.securityEvent.findUnique({ where: { id: recordId }, select: securityEventSelect });
+      if (record) security = [record];
+    } else if (stream === 'domain') {
+      const record = await this.prisma.domainEvent.findUnique({ where: { id: recordId }, select: domainEventSelect });
+      if (record) domain = [record];
+    } else {
+      return null;
+    }
+
+    const actorIds = Array.from(
+      new Set(
+        [...audit, ...activity, ...security]
+          .map((record) => record.actorId)
+          .filter((actorId): actorId is string => Boolean(actorId)),
+      ),
+    );
+    const actors =
+      actorIds.length === 0
+        ? []
+        : await this.prisma.user.findMany({
+            where: { id: { in: actorIds } },
+            select: userSelect,
+          });
+
+    const hasRecords = audit.length > 0 || activity.length > 0 || security.length > 0 || domain.length > 0;
+    if (!hasRecords) return null;
+
+    return { audit, activity, security, domain, actors };
+  }
 }
