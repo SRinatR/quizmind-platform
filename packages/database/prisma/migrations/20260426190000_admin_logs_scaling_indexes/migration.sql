@@ -1,4 +1,5 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+-- NOTE: these are lightweight source-stream indexes used for backfill ordering and operational lookups.
+-- Apply in a maintenance window for very large tables if needed.
 
 CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_id_idx"
   ON "AuditLog" ("createdAt" DESC, id DESC);
@@ -26,15 +27,3 @@ CREATE INDEX IF NOT EXISTS "SecurityEvent_eventType_createdAt_id_idx"
 
 CREATE INDEX IF NOT EXISTS "DomainEvent_eventType_createdAt_id_idx"
   ON "DomainEvent" ("eventType", "createdAt" DESC, id DESC);
-
-CREATE INDEX IF NOT EXISTS "AuditLog_metadataJson_trgm_idx"
-  ON "AuditLog" USING gin (LOWER(COALESCE("metadataJson"::text, '')) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS "ActivityLog_metadataJson_trgm_idx"
-  ON "ActivityLog" USING gin (LOWER(COALESCE("metadataJson"::text, '')) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS "SecurityEvent_metadataJson_trgm_idx"
-  ON "SecurityEvent" USING gin (LOWER(COALESCE("metadataJson"::text, '')) gin_trgm_ops);
-
-CREATE INDEX IF NOT EXISTS "DomainEvent_payloadJson_trgm_idx"
-  ON "DomainEvent" USING gin (LOWER(COALESCE("payloadJson"::text, '')) gin_trgm_ops);

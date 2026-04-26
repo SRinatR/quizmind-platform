@@ -74,6 +74,7 @@ test('AdminLogRepository.listPage queries AdminLogEvent with bounded page', asyn
   assert.equal(captured.select.metadataJson, undefined);
   assert.equal(captured.select.payloadJson, undefined);
   assert.equal(captured.take, 2);
+  assert.equal(captured.where.searchText.contains, 'login');
 });
 
 test('AdminLogRepository.findOne supports composite id fallback and returns detail metadata', async () => {

@@ -4,6 +4,7 @@ import { type TicketStatus } from '@quizmind/contracts';
 import { type StructuredLogEvent } from '@quizmind/logger';
 
 import { PrismaService } from '../database/prisma.service';
+import { createAuditLogWithReadModel } from '../logs/admin-log-write-path';
 
 const recentSupportTicketInclude = {
   requester: {
@@ -176,15 +177,13 @@ export class SupportTicketRepository {
         include: recentSupportTicketInclude,
       });
 
-      await transaction.auditLog.create({
-        data: {
+      await createAuditLogWithReadModel(transaction, {
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
           targetId: input.auditLog.targetId,
           metadataJson: buildMetadataJson(input.auditLog),
           createdAt: new Date(input.auditLog.occurredAt),
-        },
       });
 
       return updatedTicket;

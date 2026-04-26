@@ -1,27 +1,39 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { upsertAdminLogEventForCreate } from '../src/logs/admin-log-event.dual-write';
+import {
+  createActivityLogWithReadModel,
+  createAuditLogWithReadModel,
+  createDomainEventWithReadModel,
+  createSecurityEventWithReadModel,
+} from '../src/logs/admin-log-write-path';
 
-test('upsertAdminLogEventForCreate upserts for all legacy streams', async () => {
-  const calls: Array<{ stream: string; sourceRecordId: string }> = [];
-  const prisma = {
+test('explicit writer helpers dual-write all legacy streams', async () => {
+  const upserts: string[] = [];
+  const transaction = {
+    auditLog: {
+      create: async () => ({ id: 'a1', action: 'audit.event', actorId: 'u1', targetType: 'user', targetId: 'u2', metadataJson: {}, createdAt: new Date('2026-04-26T00:00:00.000Z') }),
+    },
+    activityLog: {
+      create: async () => ({ id: 'b1', eventType: 'activity.event', actorId: 'u1', metadataJson: {}, createdAt: new Date('2026-04-26T00:00:00.000Z') }),
+    },
+    securityEvent: {
+      create: async () => ({ id: 'c1', eventType: 'security.event', actorId: 'u1', severity: 'warn', metadataJson: {}, createdAt: new Date('2026-04-26T00:00:00.000Z') }),
+    },
+    domainEvent: {
+      create: async () => ({ id: 'd1', eventType: 'domain.event', payloadJson: {}, createdAt: new Date('2026-04-26T00:00:00.000Z') }),
+    },
     adminLogEvent: {
       upsert: async ({ where }: any) => {
-        calls.push(where.stream_sourceRecordId);
+        upserts.push(`${where.stream_sourceRecordId.stream}:${where.stream_sourceRecordId.sourceRecordId}`);
       },
     },
   } as any;
 
-  await upsertAdminLogEventForCreate(prisma, { model: 'AuditLog', action: 'create', args: { data: { action: 'a', createdAt: new Date() } } } as any, { id: '1' });
-  await upsertAdminLogEventForCreate(prisma, { model: 'ActivityLog', action: 'create', args: { data: { eventType: 'b', createdAt: new Date() } } } as any, { id: '2' });
-  await upsertAdminLogEventForCreate(prisma, { model: 'SecurityEvent', action: 'create', args: { data: { eventType: 'c', severity: 'warn', createdAt: new Date() } } } as any, { id: '3' });
-  await upsertAdminLogEventForCreate(prisma, { model: 'DomainEvent', action: 'create', args: { data: { eventType: 'd', createdAt: new Date() } } } as any, { id: '4' });
+  await createAuditLogWithReadModel(transaction, { actorId: 'u1', action: 'audit.event', targetType: 'user', targetId: 'u2', metadataJson: {}, createdAt: new Date() });
+  await createActivityLogWithReadModel(transaction, { actorId: 'u1', eventType: 'activity.event', metadataJson: {}, createdAt: new Date() });
+  await createSecurityEventWithReadModel(transaction, { actorId: 'u1', eventType: 'security.event', severity: 'warn', metadataJson: {}, createdAt: new Date() });
+  await createDomainEventWithReadModel(transaction, { eventType: 'domain.event', payloadJson: {}, createdAt: new Date() });
 
-  assert.deepEqual(calls, [
-    { stream: 'audit', sourceRecordId: '1' },
-    { stream: 'activity', sourceRecordId: '2' },
-    { stream: 'security', sourceRecordId: '3' },
-    { stream: 'domain', sourceRecordId: '4' },
-  ]);
+  assert.deepEqual(upserts, ['audit:a1', 'activity:b1', 'security:c1', 'domain:d1']);
 });

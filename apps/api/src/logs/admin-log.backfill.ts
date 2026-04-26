@@ -1,9 +1,28 @@
 import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
 
+type Stream = 'audit' | 'activity' | 'security' | 'domain';
+
+export interface AdminLogBackfillScope {
+  stream?: Stream | 'all';
+  from?: Date;
+  to?: Date;
+}
+
+export interface AdminLogBackfillVerification {
+  audit: { sourceCount: number; readModelCount: number; missing: number };
+  activity: { sourceCount: number; readModelCount: number; missing: number };
+  security: { sourceCount: number; readModelCount: number; missing: number };
+  domain: { sourceCount: number; readModelCount: number; missing: number };
+}
+
 export class AdminLogBackfillService {
   constructor(private readonly prisma: PrismaClient, private readonly batchSize = 500) {}
 
-  private async upsertBatch(rows: Array<{ stream: 'audit' | 'activity' | 'security' | 'domain'; sourceRecordId: string; data: any }>) {
+  private shouldRun(scope: AdminLogBackfillScope, stream: Stream): boolean {
+    return !scope.stream || scope.stream === 'all' || scope.stream === stream;
+  }
+
+  private async upsertBatch(rows: Array<{ stream: Stream; sourceRecordId: string; data: any }>) {
     for (const row of rows) {
       await this.prisma.adminLogEvent.upsert({
         where: { stream_sourceRecordId: { stream: row.stream, sourceRecordId: row.sourceRecordId } },
@@ -13,20 +32,49 @@ export class AdminLogBackfillService {
     }
   }
 
-  async run(): Promise<void> {
-    await this.backfillAudit();
-    await this.backfillActivity();
-    await this.backfillSecurity();
-    await this.backfillDomain();
+  async run(scope: AdminLogBackfillScope = {}): Promise<void> {
+    if (this.shouldRun(scope, 'audit')) await this.backfillAudit(scope);
+    if (this.shouldRun(scope, 'activity')) await this.backfillActivity(scope);
+    if (this.shouldRun(scope, 'security')) await this.backfillSecurity(scope);
+    if (this.shouldRun(scope, 'domain')) await this.backfillDomain(scope);
   }
 
-  private async backfillAudit() {
+  async verifyCounts(): Promise<AdminLogBackfillVerification> {
+    const [auditSource, activitySource, securitySource, domainSource, auditRead, activityRead, securityRead, domainRead] = await Promise.all([
+      this.prisma.auditLog.count(),
+      this.prisma.activityLog.count(),
+      this.prisma.securityEvent.count(),
+      this.prisma.domainEvent.count(),
+      this.prisma.adminLogEvent.count({ where: { stream: 'audit' } }),
+      this.prisma.adminLogEvent.count({ where: { stream: 'activity' } }),
+      this.prisma.adminLogEvent.count({ where: { stream: 'security' } }),
+      this.prisma.adminLogEvent.count({ where: { stream: 'domain' } }),
+    ]);
+
+    return {
+      audit: { sourceCount: auditSource, readModelCount: auditRead, missing: Math.max(auditSource - auditRead, 0) },
+      activity: { sourceCount: activitySource, readModelCount: activityRead, missing: Math.max(activitySource - activityRead, 0) },
+      security: { sourceCount: securitySource, readModelCount: securityRead, missing: Math.max(securitySource - securityRead, 0) },
+      domain: { sourceCount: domainSource, readModelCount: domainRead, missing: Math.max(domainSource - domainRead, 0) },
+    };
+  }
+
+  private timeWhere(cursor: { createdAt: Date; id: string } | null, scope: AdminLogBackfillScope) {
+    const andFilters: Record<string, unknown>[] = [];
+    if (scope.from || scope.to) {
+      andFilters.push({ createdAt: { ...(scope.from ? { gte: scope.from } : {}), ...(scope.to ? { lte: scope.to } : {}) } });
+    }
+    if (cursor) {
+      andFilters.push({ OR: [{ createdAt: { gt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { gt: cursor.id } }] });
+    }
+    return andFilters.length > 0 ? { AND: andFilters } : undefined;
+  }
+
+  private async backfillAudit(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
       const rows = await this.prisma.auditLog.findMany({
-        where: cursor
-          ? { OR: [{ createdAt: { gt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { gt: cursor.id } }] }
-          : undefined,
+        where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
         select: { id: true, actorId: true, action: true, targetType: true, targetId: true, metadataJson: true, createdAt: true },
@@ -51,13 +99,11 @@ export class AdminLogBackfillService {
     }
   }
 
-  private async backfillActivity() {
+  private async backfillActivity(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
       const rows = await this.prisma.activityLog.findMany({
-        where: cursor
-          ? { OR: [{ createdAt: { gt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { gt: cursor.id } }] }
-          : undefined,
+        where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
         select: { id: true, actorId: true, eventType: true, metadataJson: true, createdAt: true },
@@ -80,13 +126,11 @@ export class AdminLogBackfillService {
     }
   }
 
-  private async backfillSecurity() {
+  private async backfillSecurity(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
       const rows = await this.prisma.securityEvent.findMany({
-        where: cursor
-          ? { OR: [{ createdAt: { gt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { gt: cursor.id } }] }
-          : undefined,
+        where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
         select: { id: true, actorId: true, eventType: true, severity: true, metadataJson: true, createdAt: true },
@@ -110,13 +154,11 @@ export class AdminLogBackfillService {
     }
   }
 
-  private async backfillDomain() {
+  private async backfillDomain(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
       const rows = await this.prisma.domainEvent.findMany({
-        where: cursor
-          ? { OR: [{ createdAt: { gt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { gt: cursor.id } }] }
-          : undefined,
+        where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
         select: { id: true, eventType: true, payloadJson: true, createdAt: true },

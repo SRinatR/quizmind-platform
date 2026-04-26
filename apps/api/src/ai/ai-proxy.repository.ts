@@ -2,6 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Prisma } from '@quizmind/database';
 
 import { PrismaService } from '../database/prisma.service';
+import {
+  createActivityLogWithReadModel,
+  createDomainEventWithReadModel,
+  createSecurityEventWithReadModel,
+} from '../logs/admin-log-write-path';
 
 const quotaCounterSelect = {
   id: true,
@@ -175,32 +180,26 @@ export class AiProxyRepository {
         },
       });
 
-      await transaction.activityLog.create({
-        data: {
-          actorId: input.userId,
-          eventType: 'ai.proxy.completed',
-          metadataJson: metadata,
-          createdAt: input.occurredAt,
-        },
+      await createActivityLogWithReadModel(transaction, {
+        actorId: input.userId,
+        eventType: 'ai.proxy.completed',
+        metadataJson: metadata,
+        createdAt: input.occurredAt,
       });
 
-      await transaction.domainEvent.create({
-        data: {
-          eventType: 'ai.proxy.completed',
-          payloadJson: metadata,
-          createdAt: input.occurredAt,
-        },
+      await createDomainEventWithReadModel(transaction, {
+        eventType: 'ai.proxy.completed',
+        payloadJson: metadata,
+        createdAt: input.occurredAt,
       });
 
       if (input.keySource === 'user') {
-        await transaction.securityEvent.create({
-          data: {
-            actorId: input.userId,
-            eventType: 'ai.proxy.user_key_used',
-            severity: 'info',
-            metadataJson: toNullableJsonInput(metadata),
-            createdAt: input.occurredAt,
-          },
+        await createSecurityEventWithReadModel(transaction, {
+          actorId: input.userId,
+          eventType: 'ai.proxy.user_key_used',
+          severity: 'info',
+          metadataJson: toNullableJsonInput(metadata),
+          createdAt: input.occurredAt,
         });
       }
 
@@ -241,32 +240,26 @@ export class AiProxyRepository {
         },
       });
 
-      await transaction.activityLog.create({
-        data: {
-          actorId: input.userId,
-          eventType: 'ai.proxy.failed',
-          metadataJson: metadata,
-          createdAt: input.occurredAt,
-        },
+      await createActivityLogWithReadModel(transaction, {
+        actorId: input.userId,
+        eventType: 'ai.proxy.failed',
+        metadataJson: metadata,
+        createdAt: input.occurredAt,
       });
 
-      await transaction.domainEvent.create({
-        data: {
-          eventType: 'ai.proxy.failed',
-          payloadJson: metadata,
-          createdAt: input.occurredAt,
-        },
+      await createDomainEventWithReadModel(transaction, {
+        eventType: 'ai.proxy.failed',
+        payloadJson: metadata,
+        createdAt: input.occurredAt,
       });
 
       if (input.keySource === 'user') {
-        await transaction.securityEvent.create({
-          data: {
-            actorId: input.userId,
-            eventType: 'ai.proxy.user_key_failed',
-            severity: 'warn',
-            metadataJson: toNullableJsonInput(metadata),
-            createdAt: input.occurredAt,
-          },
+        await createSecurityEventWithReadModel(transaction, {
+          actorId: input.userId,
+          eventType: 'ai.proxy.user_key_failed',
+          severity: 'warn',
+          metadataJson: toNullableJsonInput(metadata),
+          createdAt: input.occurredAt,
         });
       }
     });

@@ -54,4 +54,4 @@ CREATE INDEX IF NOT EXISTS "AdminLogEvent_actorId_occurredAt_id_idx"
 CREATE INDEX IF NOT EXISTS "AdminLogEvent_eventType_occurredAt_id_idx"
   ON "AdminLogEvent" ("eventType", "occurredAt" DESC, id DESC);
 CREATE INDEX IF NOT EXISTS "AdminLogEvent_searchText_trgm_idx"
-  ON "AdminLogEvent" USING gin (LOWER(COALESCE("searchText", '')) gin_trgm_ops);
+  ON "AdminLogEvent" USING gin ("searchText" gin_trgm_ops);

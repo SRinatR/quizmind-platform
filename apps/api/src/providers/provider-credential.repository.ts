@@ -4,6 +4,11 @@ import { type CredentialValidationStatus } from '@quizmind/contracts';
 import { type StructuredLogEvent } from '@quizmind/logger';
 
 import { PrismaService } from '../database/prisma.service';
+import {
+  createAuditLogWithReadModel,
+  createDomainEventWithReadModel,
+  createSecurityEventWithReadModel,
+} from '../logs/admin-log-write-path';
 
 const providerCredentialSelect = {
   id: true,
@@ -168,36 +173,27 @@ export class ProviderCredentialRepository {
         select: providerCredentialSelect,
       });
 
-      await transaction.auditLog.create({
-        data: {
-
+      await createAuditLogWithReadModel(transaction, {
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
           targetId: input.auditLog.targetId,
           metadataJson: buildMetadataJson(input.auditLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.securityEvent.create({
-        data: {
-
+      await createSecurityEventWithReadModel(transaction, {
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
           metadataJson: buildMetadataJson(input.securityLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.domainEvent.create({
-        data: {
-
+      await createDomainEventWithReadModel(transaction, {
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
-        },
       });
 
       return record;
@@ -222,36 +218,27 @@ export class ProviderCredentialRepository {
         select: providerCredentialSelect,
       });
 
-      await transaction.auditLog.create({
-        data: {
-
+      await createAuditLogWithReadModel(transaction, {
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
           targetId: input.auditLog.targetId,
           metadataJson: buildMetadataJson(input.auditLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.securityEvent.create({
-        data: {
-
+      await createSecurityEventWithReadModel(transaction, {
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
           metadataJson: buildMetadataJson(input.securityLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.domainEvent.create({
-        data: {
-
+      await createDomainEventWithReadModel(transaction, {
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
-        },
       });
 
       return record;
@@ -272,36 +259,27 @@ export class ProviderCredentialRepository {
         select: providerCredentialSelect,
       });
 
-      await transaction.auditLog.create({
-        data: {
-
+      await createAuditLogWithReadModel(transaction, {
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
           targetId: input.auditLog.targetId,
           metadataJson: buildMetadataJson(input.auditLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.securityEvent.create({
-        data: {
-
+      await createSecurityEventWithReadModel(transaction, {
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
           metadataJson: buildMetadataJson(input.securityLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.domainEvent.create({
-        data: {
-
+      await createDomainEventWithReadModel(transaction, {
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
-        },
       });
 
       return record;
@@ -322,36 +300,27 @@ export class ProviderCredentialRepository {
         select: providerCredentialSelect,
       });
 
-      await transaction.auditLog.create({
-        data: {
-
+      await createAuditLogWithReadModel(transaction, {
           actorId: input.auditLog.actorId,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
           targetId: input.auditLog.targetId,
           metadataJson: buildMetadataJson(input.auditLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.securityEvent.create({
-        data: {
-
+      await createSecurityEventWithReadModel(transaction, {
           actorId: input.securityLog.actorId,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
           metadataJson: buildMetadataJson(input.securityLog),
           createdAt: input.occurredAt,
-        },
       });
 
-      await transaction.domainEvent.create({
-        data: {
-
+      await createDomainEventWithReadModel(transaction, {
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
-        },
       });
 
       return record;

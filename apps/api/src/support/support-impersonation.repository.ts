@@ -3,6 +3,10 @@ import { Prisma } from '@quizmind/database';
 import { type StructuredLogEvent } from '@quizmind/logger';
 
 import { PrismaService } from '../database/prisma.service';
+import {
+  createAuditLogWithReadModel,
+  createSecurityEventWithReadModel,
+} from '../logs/admin-log-write-path';
 
 const recentSupportImpersonationSessionInclude = {
   supportActor: {
@@ -99,27 +103,21 @@ export class SupportImpersonationRepository {
         },
       });
 
-      await transaction.auditLog.create({
-        data: {
-
-          actorId: input.supportActorId,
-          action: input.auditLog.eventType,
-          targetType: input.auditLog.targetType,
-          targetId: input.auditLog.targetId,
-          metadataJson: buildMetadataJson(input.auditLog),
-          createdAt: input.createdAt,
-        },
+      await createAuditLogWithReadModel(transaction, {
+        actorId: input.supportActorId,
+        action: input.auditLog.eventType,
+        targetType: input.auditLog.targetType,
+        targetId: input.auditLog.targetId,
+        metadataJson: buildMetadataJson(input.auditLog),
+        createdAt: input.createdAt,
       });
 
-      await transaction.securityEvent.create({
-        data: {
-
-          actorId: input.supportActorId,
-          eventType: input.securityLog.eventType,
-          severity: input.securityLog.severity,
-          metadataJson: buildMetadataJson(input.securityLog),
-          createdAt: input.createdAt,
-        },
+      await createSecurityEventWithReadModel(transaction, {
+        actorId: input.supportActorId,
+        eventType: input.securityLog.eventType,
+        severity: input.securityLog.severity,
+        metadataJson: buildMetadataJson(input.securityLog),
+        createdAt: input.createdAt,
       });
     });
   }
@@ -154,27 +152,21 @@ export class SupportImpersonationRepository {
         include: recentSupportImpersonationSessionInclude,
       });
 
-      await transaction.auditLog.create({
-        data: {
-
-          actorId: input.auditLog.actorId,
-          action: input.auditLog.eventType,
-          targetType: input.auditLog.targetType,
-          targetId: input.auditLog.targetId,
-          metadataJson: buildMetadataJson(input.auditLog),
-          createdAt: input.endedAt,
-        },
+      await createAuditLogWithReadModel(transaction, {
+        actorId: input.auditLog.actorId,
+        action: input.auditLog.eventType,
+        targetType: input.auditLog.targetType,
+        targetId: input.auditLog.targetId,
+        metadataJson: buildMetadataJson(input.auditLog),
+        createdAt: input.endedAt,
       });
 
-      await transaction.securityEvent.create({
-        data: {
-
-          actorId: input.securityLog.actorId,
-          eventType: input.securityLog.eventType,
-          severity: input.securityLog.severity,
-          metadataJson: buildMetadataJson(input.securityLog),
-          createdAt: input.endedAt,
-        },
+      await createSecurityEventWithReadModel(transaction, {
+        actorId: input.securityLog.actorId,
+        eventType: input.securityLog.eventType,
+        severity: input.securityLog.severity,
+        metadataJson: buildMetadataJson(input.securityLog),
+        createdAt: input.endedAt,
       });
 
       return endedSession;
