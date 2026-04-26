@@ -113,7 +113,6 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                 <option value="">all statuses</option>
                 <option value="success">success</option>
                 <option value="error">error</option>
-                <option value="quota_exceeded">quota exceeded</option>
               </select>
             </label>
             <label className="filter-field">
