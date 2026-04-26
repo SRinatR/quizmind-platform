@@ -211,7 +211,7 @@ function toAttachmentMetadata(detail: {
   };
 }
 
-function toListItemFromEvent(record: AiHistoryEventListRecord): AiHistoryListItem {
+function toListItemFromEvent(record: AiHistoryEventListRecord, promptContentJson?: unknown): AiHistoryListItem {
   return {
     id: record.id,
     requestType: (record.requestType ?? 'text') as AiRequestType,
@@ -225,16 +225,17 @@ function toListItemFromEvent(record: AiHistoryEventListRecord): AiHistoryListIte
     totalTokens: record.totalTokens,
     durationMs: record.durationMs,
     estimatedCostUsd: record.estimatedCostUsd ?? 0,
+    promptContentJson,
     promptExcerpt: record.promptExcerpt,
     responseExcerpt: record.responseExcerpt,
     fileMetadata: parseFileMetadata(record.content?.fileMetadataJson ?? null),
-    attachments: record.attachments.map((attachment) => toAttachmentMetadata(attachment)),
+    attachments: (record.attachments ?? []).map((attachment) => toAttachmentMetadata(attachment)),
     occurredAt: record.occurredAt.toISOString(),
     expiresAt: record.content?.expiresAt?.toISOString() ?? null,
   };
 }
 
-function toListItemFromLegacy(record: AiHistoryLegacyListRecord): AiHistoryListItem {
+function toListItemFromLegacy(record: AiHistoryLegacyListRecord, promptContentJson?: unknown): AiHistoryListItem {
   return {
     id: record.id,
     requestType: (record.requestType ?? 'text') as AiRequestType,
@@ -248,6 +249,7 @@ function toListItemFromLegacy(record: AiHistoryLegacyListRecord): AiHistoryListI
     totalTokens: record.totalTokens,
     durationMs: record.durationMs,
     estimatedCostUsd: record.estimatedCostUsd ?? 0,
+    promptContentJson,
     fileMetadata: parseFileMetadata(record.fileMetadataJson),
     occurredAt: record.occurredAt.toISOString(),
     expiresAt: record.expiresAt?.toISOString() ?? null,
@@ -293,7 +295,15 @@ export class AiHistoryService {
     ]);
 
     if (eventTotal > 0) {
-      return { items: eventRecords.map(toListItemFromEvent), total: eventTotal, filters };
+      const eventItems = await Promise.all(eventRecords.map(async (record) => {
+        const content = record.content;
+        if (!content || content.deletedAt || content.expiresAt < new Date() || !content.promptBlobKey) {
+          return toListItemFromEvent(record);
+        }
+        const promptContentJson = await this.blobs.readJson(content.promptBlobKey);
+        return toListItemFromEvent(record, promptContentJson);
+      }));
+      return { items: eventItems, total: eventTotal, filters };
     }
 
     const [legacyRecords, legacyCount] = await Promise.all([
@@ -307,7 +317,7 @@ export class AiHistoryService {
         this.blobs.readResponse(row.id),
       ]);
       return {
-        ...toListItemFromLegacy(row),
+        ...toListItemFromLegacy(row, promptContent),
         promptExcerpt: extractPromptExcerpt(promptContent),
         responseExcerpt: extractResponseExcerpt(responseContent),
       };
@@ -356,12 +366,11 @@ export class AiHistoryService {
       this.blobs.readResponse(id),
     ]);
 
-    const listItem = toListItemFromLegacy(legacy);
+    const listItem = toListItemFromLegacy(legacy, promptContent);
     return {
       ...listItem,
       promptExcerpt: extractPromptExcerpt(promptContent),
       responseExcerpt: extractResponseExcerpt(responseContent),
-      promptContentJson: promptContent,
       responseContentJson: responseContent,
       attachments: [],
     };

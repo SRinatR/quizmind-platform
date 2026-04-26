@@ -1723,6 +1723,8 @@ export interface AiHistoryListItem {
   totalTokens: number;
   durationMs?: number | null;
   estimatedCostUsd: number;
+  /** Full serialized prompt messages used for timeline preview (without inlined attachment bytes). */
+  promptContentJson?: unknown;
   /** Short excerpt of the prompt text (first ~300 chars). */
   promptExcerpt?: string | null;
   /** Short excerpt of the response text (first ~300 chars). */
