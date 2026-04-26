@@ -226,7 +226,7 @@ export interface AuditEvent {
 }
 
 export interface AccessRequirement {
-  permission: ResourceAction;
+  permission?: ResourceAction;
   requiredEntitlements?: string[];
   requiredFlags?: string[];
   requireSystemRole?: SystemRole;

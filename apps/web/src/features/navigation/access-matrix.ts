@@ -35,7 +35,11 @@ export function describeAccessRequirement(requirement?: AccessRequirement): stri
     return 'No explicit access requirement';
   }
 
-  const parts = [`permission ${requirement.permission}`];
+  const parts: string[] = [];
+
+  if (requirement.permission) {
+    parts.push(`permission ${requirement.permission}`);
+  }
 
   if (requirement.requireSystemRole) {
     parts.push(`system role ${requirement.requireSystemRole}`);
@@ -49,7 +53,7 @@ export function describeAccessRequirement(requirement?: AccessRequirement): stri
     parts.push(`feature flags ${requirement.requiredFlags.join(', ')}`);
   }
 
-  return parts.join(' | ');
+  return parts.length > 0 ? parts.join(' | ') : 'No explicit permission requirement';
 }
 
 function createRowsForScope(input: {

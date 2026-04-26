@@ -50,6 +50,21 @@ const NAV_LABEL_KEYS: Record<string, 'profile' | 'usage' | 'history' | 'installa
   '/app/settings':      'settings',
 };
 
+const ADMIN_GROUP_LABEL_KEYS: Record<string, 'people' | 'operations' | 'controlPlane' | 'preferences'> = {
+  People: 'people',
+  Operations: 'operations',
+  'Control Plane': 'controlPlane',
+  Preferences: 'preferences',
+};
+
+const ADMIN_ITEM_LABEL_KEYS: Record<string, 'users' | 'logs' | 'extensionControl' | 'aiRouting' | 'settings'> = {
+  '/admin/users': 'users',
+  '/admin/logs': 'logs',
+  '/admin/extension-control': 'extensionControl',
+  '/admin/ai-routing': 'aiRouting',
+  '/admin/settings': 'settings',
+};
+
 interface SiteShellProps {
   apiState: string;
   children: ReactNode;
@@ -167,7 +182,9 @@ export function SiteShell({
             /* Admin session — admin nav only */
             (adminNavGroups ?? allAdminNavGroups).map((group) => (
               <div key={group.label} className="app-nav-group">
-                <span className="app-nav-group__label">{group.label}</span>
+                <span className="app-nav-group__label">
+                  {ADMIN_GROUP_LABEL_KEYS[group.label] ? t.admin.nav.groups[ADMIN_GROUP_LABEL_KEYS[group.label]] : group.label}
+                </span>
                 {group.items.map((item) => (
                   <Link
                     key={item.href}
@@ -178,7 +195,7 @@ export function SiteShell({
                         : 'app-nav-item'
                     }
                   >
-                    {item.label}
+                    {ADMIN_ITEM_LABEL_KEYS[item.href] ? t.admin.nav.items[ADMIN_ITEM_LABEL_KEYS[item.href]] : item.label}
                   </Link>
                 ))}
               </div>

@@ -5,6 +5,7 @@ import { useState, useTransition, useCallback, useRef, useEffect } from 'react';
 import { type AdminUserMutationResult } from '@quizmind/contracts';
 import { type AdminUsersSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { usePreferences } from '../../../lib/preferences';
 
 const ADMIN_ROLE = 'admin';
 
@@ -82,6 +83,8 @@ function Toolbar({
   onReset,
   onCreateUser,
 }: ToolbarProps) {
+  const { t } = usePreferences();
+  const a = t.admin.users;
   return (
     <div
       style={{
@@ -95,7 +98,7 @@ function Toolbar({
       <input
         onChange={(e) => onQueryChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') onApply(); }}
-        placeholder="Search email, name, ID…"
+        placeholder={a.searchPlaceholder}
         style={{ minWidth: '200px', flex: '1 1 200px', padding: '5px 10px', fontSize: '0.85rem' }}
         type="search"
         value={query}
@@ -105,58 +108,58 @@ function Toolbar({
         style={{ padding: '5px 8px', fontSize: '0.85rem' }}
         value={role}
       >
-        <option value="all">All roles</option>
-        <option value="admin">Admin</option>
-        <option value="user">User</option>
+        <option value="all">{a.allRoles}</option>
+        <option value="admin">{a.admin}</option>
+        <option value="user">{a.user}</option>
       </select>
       <select
         onChange={(e) => onBannedChange(e.target.value)}
         style={{ padding: '5px 8px', fontSize: '0.85rem' }}
         value={banned}
       >
-        <option value="all">All ban states</option>
-        <option value="banned">Banned</option>
-        <option value="not-banned">Not banned</option>
+        <option value="all">{a.allBanStates}</option>
+        <option value="banned">{a.banned}</option>
+        <option value="not-banned">{a.notBanned}</option>
       </select>
       <select
         onChange={(e) => onVerifiedChange(e.target.value)}
         style={{ padding: '5px 8px', fontSize: '0.85rem' }}
         value={verified}
       >
-        <option value="all">All verified states</option>
-        <option value="verified">Verified</option>
-        <option value="unverified">Unverified</option>
+        <option value="all">{a.allVerifiedStates}</option>
+        <option value="verified">{a.verified}</option>
+        <option value="unverified">{a.unverified}</option>
       </select>
       <select
         onChange={(e) => onSortChange(e.target.value)}
         style={{ padding: '5px 8px', fontSize: '0.85rem' }}
         value={sort}
       >
-        <option value="created-desc">Newest first</option>
-        <option value="created-asc">Oldest first</option>
-        <option value="login-desc">Recent login</option>
-        <option value="email-asc">Email A→Z</option>
+        <option value="created-desc">{a.newestFirst}</option>
+        <option value="created-asc">{a.oldestFirst}</option>
+        <option value="login-desc">{a.recentLogin}</option>
+        <option value="email-asc">{a.emailAZ}</option>
       </select>
       <select
         onChange={(e) => onLimitChange(Number(e.target.value))}
         style={{ padding: '5px 8px', fontSize: '0.85rem' }}
         value={limit}
       >
-        <option value={25}>25 / page</option>
-        <option value={50}>50 / page</option>
-        <option value={100}>100 / page</option>
+        <option value={25}>25 {a.perPage}</option>
+        <option value={50}>50 {a.perPage}</option>
+        <option value={100}>100 {a.perPage}</option>
       </select>
       <button className="btn-ghost" onClick={onApply} style={{ fontSize: '0.85rem', padding: '5px 12px' }} type="button">
-        Search
+        {a.search}
       </button>
       {isFiltered ? (
         <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.85rem', padding: '5px 12px' }} type="button">
-          Reset
+          {a.reset}
         </button>
       ) : null}
       {canManage ? (
         <button className="btn-primary" onClick={onCreateUser} style={{ fontSize: '0.85rem', padding: '5px 12px', marginLeft: 'auto' }} type="button">
-          + Create user
+          + {a.createUser}
         </button>
       ) : null}
     </div>
@@ -173,13 +176,15 @@ interface PaginationProps {
 }
 
 function Pagination({ page, limit, total, onPage }: PaginationProps) {
+  const { t } = usePreferences();
+  const a = t.admin.users;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const from = Math.min(total, (page - 1) * limit + 1);
   const to = Math.min(total, page * limit);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0 4px', fontSize: '0.82rem', color: 'var(--muted)' }}>
-      <span>{from}–{to} of {total}</span>
+      <span>{from}–{to} {a.of} {total}</span>
       <button
         className="btn-ghost"
         disabled={page <= 1}
@@ -187,7 +192,7 @@ function Pagination({ page, limit, total, onPage }: PaginationProps) {
         style={{ fontSize: '0.8rem', padding: '3px 10px' }}
         type="button"
       >
-        Prev
+        {a.prev}
       </button>
       <span style={{ minWidth: '60px', textAlign: 'center' }}>
         {page} / {totalPages}
@@ -199,7 +204,7 @@ function Pagination({ page, limit, total, onPage }: PaginationProps) {
         style={{ fontSize: '0.8rem', padding: '3px 10px' }}
         type="button"
       >
-        Next
+        {a.next}
       </button>
     </div>
   );
@@ -219,6 +224,8 @@ interface UserDrawerProps {
 }
 
 function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onToggleBan, onDelete }: UserDrawerProps) {
+  const { t } = usePreferences();
+  const a = t.admin.users;
   return (
     <>
       {/* backdrop */}
@@ -238,8 +245,8 @@ function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onT
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <span className="micro-label">User details</span>
-          <button className="btn-ghost" onClick={onClose} style={{ fontSize: '0.82rem', padding: '3px 10px' }} type="button">Close</button>
+          <span className="micro-label">{a.user}</span>
+          <button className="btn-ghost" onClick={onClose} style={{ fontSize: '0.82rem', padding: '3px 10px' }} type="button">{t.common.close}</button>
         </div>
 
         <div>
@@ -250,24 +257,24 @@ function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onT
 
         <div className="tag-row" style={{ margin: 0 }}>
           <span className={user.emailVerifiedAt ? 'tag-soft tag-soft--green' : 'tag-soft tag-soft--orange'}>
-            {user.emailVerifiedAt ? 'verified' : 'unverified'}
+            {user.emailVerifiedAt ? a.verified : a.unverified}
           </span>
-          {user.suspendedAt ? <span className="tag-soft tag-soft--orange">banned</span> : <span className="tag-soft tag-soft--gray">not banned</span>}
-          {isAdmin(user) ? <span className="tag-soft">admin</span> : <span className="tag-soft tag-soft--gray">user</span>}
-          {isSelf ? <span className="tag-soft tag-soft--gray">you</span> : null}
+          {user.suspendedAt ? <span className="tag-soft tag-soft--orange">{a.banned}</span> : <span className="tag-soft tag-soft--gray">{a.notBanned}</span>}
+          {isAdmin(user) ? <span className="tag-soft">{a.admin}</span> : <span className="tag-soft tag-soft--gray">{a.user}</span>}
+          {isSelf ? <span className="tag-soft tag-soft--gray">{a.you}</span> : null}
         </div>
 
         <table style={{ fontSize: '0.82rem', borderCollapse: 'collapse', width: '100%' }}>
           <tbody>
-            <tr><td style={{ padding: '3px 0', color: 'var(--muted)', width: '100px' }}>Created</td><td>{formatDate(user.createdAt)}</td></tr>
-            <tr><td style={{ padding: '3px 0', color: 'var(--muted)' }}>Last login</td><td>{formatDate(user.lastLoginAt)}</td></tr>
-            {user.suspendedAt ? <tr><td style={{ padding: '3px 0', color: 'var(--muted)' }}>Banned at</td><td>{formatDate(user.suspendedAt)}</td></tr> : null}
+            <tr><td style={{ padding: '3px 0', color: 'var(--muted)', width: '100px' }}>{a.created}</td><td>{formatDate(user.createdAt)}</td></tr>
+            <tr><td style={{ padding: '3px 0', color: 'var(--muted)' }}>{a.lastLogin}</td><td>{formatDate(user.lastLoginAt)}</td></tr>
+            {user.suspendedAt ? <tr><td style={{ padding: '3px 0', color: 'var(--muted)' }}>{a.banned}</td><td>{formatDate(user.suspendedAt)}</td></tr> : null}
           </tbody>
         </table>
 
         {canManage && !isSelf ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid rgba(31,41,51,0.1)' }}>
-            <span className="micro-label">Actions</span>
+            <span className="micro-label">{a.actions}</span>
             <button
               className="btn-ghost"
               disabled={busy}
@@ -275,7 +282,7 @@ function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onT
               style={{ fontSize: '0.85rem', textAlign: 'left' }}
               type="button"
             >
-              {isAdmin(user) ? 'Remove admin' : 'Make admin'}
+              {isAdmin(user) ? a.removeAdmin : a.makeAdmin}
             </button>
             <button
               className="btn-ghost"
@@ -284,7 +291,7 @@ function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onT
               style={{ fontSize: '0.85rem', textAlign: 'left' }}
               type="button"
             >
-              {user.suspendedAt ? 'Unban' : 'Ban'}
+              {user.suspendedAt ? a.unban : a.ban}
             </button>
             <button
               className="btn-ghost"
@@ -293,7 +300,7 @@ function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onT
               style={{ fontSize: '0.85rem', textAlign: 'left', color: 'var(--destructive, #c0392b)' }}
               type="button"
             >
-              Delete account
+              {a.delete}
             </button>
           </div>
         ) : null}
@@ -311,6 +318,8 @@ interface CreateUserModalProps {
 }
 
 function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
+  const { t } = usePreferences();
+  const a = t.admin.users;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -333,11 +342,11 @@ function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ margin: 0, fontSize: '1rem' }}>Create user</h3>
-          <button className="btn-ghost" onClick={onClose} style={{ fontSize: '0.82rem', padding: '3px 10px' }} type="button">Cancel</button>
+          <h3 style={{ margin: 0, fontSize: '1rem' }}>{a.createUser}</h3>
+          <button className="btn-ghost" onClick={onClose} style={{ fontSize: '0.82rem', padding: '3px 10px' }} type="button">{t.common.cancel}</button>
         </div>
         <label className="form-field">
-          <span className="form-field__label">Email</span>
+          <span className="form-field__label">{a.email}</span>
           <input
             disabled={busy}
             onChange={(e) => setEmail(e.target.value)}
@@ -347,21 +356,21 @@ function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
           />
         </label>
         <label className="form-field">
-          <span className="form-field__label">Password</span>
+          <span className="form-field__label">{a.password}</span>
           <input
             disabled={busy}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={a.atLeast8Chars}
             type="password"
             value={password}
           />
         </label>
         <label className="form-field">
-          <span className="form-field__label">Display name <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></span>
+          <span className="form-field__label">{a.displayName} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({a.optional})</span></span>
           <input
             disabled={busy}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Optional"
+            placeholder={a.optionalShort}
             type="text"
             value={displayName}
           />
@@ -373,7 +382,7 @@ function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
             onChange={(e) => setMakeAdmin(e.target.checked)}
             type="checkbox"
           />
-          Admin account
+          {a.admin}
         </label>
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
           <input
@@ -382,7 +391,7 @@ function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
             onChange={(e) => setEmailVerified(e.target.checked)}
             type="checkbox"
           />
-          Mark email as verified
+          {a.verified}
         </label>
         <div className="link-row" style={{ marginTop: '4px' }}>
           <button
@@ -391,7 +400,7 @@ function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
             onClick={() => onSubmit({ email, password, displayName, isAdmin: makeAdmin, emailVerified })}
             type="button"
           >
-            {busy ? 'Creating…' : 'Create user'}
+            {busy ? t.settings.account.saving : a.createUser}
           </button>
         </div>
       </div>
@@ -412,6 +421,8 @@ export function UsersDirectoryClient({
 }: UsersDirectoryClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = usePreferences();
+  const a = t.admin.users;
   const [, startTransition] = useTransition();
 
   // Local optimistic state: overrides applied after mutations until server refresh
@@ -554,7 +565,7 @@ export function UsersDirectoryClient({
   const handleToggleAdmin = useCallback(async (user: DirectoryUser) => {
     if (!isConnectedSession || !canManageUserAccess) return;
     const makeAdmin = !isAdmin(user);
-    if (!makeAdmin && !window.confirm(`Remove admin access for ${user.email}?`)) return;
+    if (!makeAdmin && !window.confirm(`${a.removeAdmin}: ${user.email}?`)) return;
     setBusy(true);
     setErrorMessage(null);
     try {
@@ -565,14 +576,14 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to update role.');
+        setErrorMessage(payload?.error?.message ?? a.unableToUpdateRole);
       } else {
         applyOptimisticMutation(payload.data.user);
-        setStatusMessage(`${makeAdmin ? 'Granted' : 'Removed'} admin for ${user.email}.`);
+        setStatusMessage(`${makeAdmin ? a.makeAdmin : a.removeAdmin}: ${user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the update-access route.');
+      setErrorMessage(a.unableToReachUpdate);
     } finally {
       setBusy(false);
     }
@@ -581,7 +592,7 @@ export function UsersDirectoryClient({
   const handleToggleBan = useCallback(async (user: DirectoryUser) => {
     if (!isConnectedSession || !canManageUserAccess) return;
     const ban = !user.suspendedAt;
-    if (!window.confirm(`${ban ? 'Ban' : 'Unban'} ${user.email}?`)) return;
+    if (!window.confirm(`${ban ? a.ban : a.unban}: ${user.email}?`)) return;
     setBusy(true);
     setErrorMessage(null);
     try {
@@ -592,14 +603,14 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to update ban state.');
+        setErrorMessage(payload?.error?.message ?? a.unableToUpdateBan);
       } else {
         applyOptimisticMutation(payload.data.user);
-        setStatusMessage(`${ban ? 'Banned' : 'Unbanned'} ${user.email}.`);
+        setStatusMessage(`${ban ? a.ban : a.unban}: ${user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the update-access route.');
+      setErrorMessage(a.unableToReachUpdate);
     } finally {
       setBusy(false);
     }
@@ -607,7 +618,7 @@ export function UsersDirectoryClient({
 
   const handleDelete = useCallback(async (user: DirectoryUser) => {
     if (!isConnectedSession || !canManageUserAccess) return;
-    if (!window.confirm(`Delete account for ${user.email}? This cannot be undone.`)) return;
+    if (!window.confirm(`${a.delete}: ${user.email}?`)) return;
     setBusy(true);
     setErrorMessage(null);
     try {
@@ -618,15 +629,15 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as DeleteRouteResponse | null;
       if (!res.ok || !payload?.ok) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to delete user.');
+        setErrorMessage(payload?.error?.message ?? a.unableToDeleteUser);
       } else {
         setLocalItems((curr) => curr.filter((u) => u.id !== user.id));
         setSelectedUser(null);
-        setStatusMessage(`Deleted account for ${user.email}.`);
+        setStatusMessage(`${a.deletedAccountFor} ${user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the delete route.');
+      setErrorMessage(a.unableToReachDelete);
     } finally {
       setBusy(false);
     }
@@ -641,7 +652,7 @@ export function UsersDirectoryClient({
   }) => {
     if (!isConnectedSession || !canManageUserAccess) return;
     if (!data.email.trim() || !data.password.trim()) {
-      setErrorMessage('Email and password are required.');
+      setErrorMessage(`${a.password} ${a.passwordRequired}`);
       return;
     }
     setCreatingUser(true);
@@ -660,14 +671,14 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to create user.');
+        setErrorMessage(payload?.error?.message ?? a.unableToCreateUser);
       } else {
         setShowCreateModal(false);
-        setStatusMessage(`Created user ${payload.data.user.email}.`);
+        setStatusMessage(`${a.createdUser}: ${payload.data.user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the create route.');
+      setErrorMessage(a.unableToReachCreate);
     } finally {
       setCreatingUser(false);
     }
@@ -709,7 +720,7 @@ export function UsersDirectoryClient({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid rgba(31,41,51,0.1)', textAlign: 'left' }}>
-                {(['User', 'Email', 'Role', 'Verified', 'Banned', 'Created', 'Last login', 'Actions'] as const).map((col) => (
+                {([a.user, a.email, a.role, a.verified, a.banned, a.created, a.lastLogin, a.actions] as const).map((col) => (
                   <th key={col} style={{ padding: '6px 10px', fontWeight: 600, fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
                     {col}
                   </th>
@@ -736,23 +747,23 @@ export function UsersDirectoryClient({
                   >
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
                       <span style={{ fontWeight: 500 }}>{user.displayName ?? <span style={{ color: 'var(--muted)' }}>—</span>}</span>
-                      {isSelf ? <span className="tag-soft tag-soft--gray" style={{ marginLeft: '6px', fontSize: '0.7rem' }}>you</span> : null}
+                      {isSelf ? <span className="tag-soft tag-soft--gray" style={{ marginLeft: '6px', fontSize: '0.7rem' }}>{a.you}</span> : null}
                     </td>
                     <td style={{ padding: '7px 10px' }}>{user.email}</td>
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
                       {isAdmin(user)
-                        ? <span className="tag-soft" style={{ fontSize: '0.75rem' }}>admin</span>
-                        : <span className="tag-soft tag-soft--gray" style={{ fontSize: '0.75rem' }}>user</span>}
+                        ? <span className="tag-soft" style={{ fontSize: '0.75rem' }}>{a.admin}</span>
+                        : <span className="tag-soft tag-soft--gray" style={{ fontSize: '0.75rem' }}>{a.user}</span>}
                     </td>
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
                       {user.emailVerifiedAt
-                        ? <span className="tag-soft tag-soft--green" style={{ fontSize: '0.75rem' }}>yes</span>
-                        : <span className="tag-soft tag-soft--orange" style={{ fontSize: '0.75rem' }}>no</span>}
+                        ? <span className="tag-soft tag-soft--green" style={{ fontSize: '0.75rem' }}>{a.verified}</span>
+                        : <span className="tag-soft tag-soft--orange" style={{ fontSize: '0.75rem' }}>{a.unverified}</span>}
                     </td>
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
                       {user.suspendedAt
-                        ? <span className="tag-soft tag-soft--orange" style={{ fontSize: '0.75rem' }}>yes</span>
-                        : <span className="tag-soft tag-soft--gray" style={{ fontSize: '0.75rem' }}>no</span>}
+                        ? <span className="tag-soft tag-soft--orange" style={{ fontSize: '0.75rem' }}>{a.banned}</span>
+                        : <span className="tag-soft tag-soft--gray" style={{ fontSize: '0.75rem' }}>{a.notBanned}</span>}
                     </td>
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{formatDate(user.createdAt)}</td>
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap', color: 'var(--muted)' }}>{formatDate(user.lastLoginAt)}</td>
@@ -769,7 +780,7 @@ export function UsersDirectoryClient({
                             style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                             type="button"
                           >
-                            {isAdmin(user) ? 'Remove admin' : 'Make admin'}
+                            {isAdmin(user) ? a.removeAdmin : a.makeAdmin}
                           </button>
                           <button
                             className="btn-ghost"
@@ -778,7 +789,7 @@ export function UsersDirectoryClient({
                             style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                             type="button"
                           >
-                            {user.suspendedAt ? 'Unban' : 'Ban'}
+                            {user.suspendedAt ? a.unban : a.ban}
                           </button>
                           <button
                             className="btn-ghost"
@@ -787,7 +798,7 @@ export function UsersDirectoryClient({
                             style={{ fontSize: '0.75rem', padding: '2px 8px', color: 'var(--destructive, #c0392b)' }}
                             type="button"
                           >
-                            Delete
+                            {a.delete}
                           </button>
                         </div>
                       ) : <span style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>—</span>}
@@ -800,16 +811,16 @@ export function UsersDirectoryClient({
         </div>
       ) : hasActiveFilters ? (
         <div className="empty-state" style={{ padding: '40px 0' }}>
-          <span className="micro-label">No results</span>
-          <h2>No users match the current filters</h2>
+          <span className="micro-label">{a.noResults}</span>
+          <h2>{a.noUsersMatchFilters}</h2>
           <div className="link-row" style={{ justifyContent: 'center', marginTop: '12px' }}>
-            <button className="btn-ghost" onClick={resetFilters} type="button">Reset filters</button>
+            <button className="btn-ghost" onClick={resetFilters} type="button">{a.resetFilters}</button>
           </div>
         </div>
       ) : (
         <div className="empty-state" style={{ padding: '40px 0' }}>
-          <span className="micro-label">No users</span>
-          <h2>No users in this environment yet</h2>
+          <span className="micro-label">{a.noUsers}</span>
+          <h2>{a.noUsersInEnvironment}</h2>
         </div>
       )}
 
