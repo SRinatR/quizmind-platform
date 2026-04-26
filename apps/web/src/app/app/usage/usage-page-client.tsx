@@ -12,6 +12,7 @@ import type { SessionSnapshot } from '../../../lib/api';
 import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
 import { formatUsdAmountByPreference } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
+import { useAutoRefresh } from '../../../lib/use-auto-refresh';
 
 interface UsagePageClientProps {
   session: SessionSnapshot | null;
@@ -63,13 +64,35 @@ function statCard(label: string, value: string, sub?: string) {
 export function UsagePageClient({ session, analytics, fromDate, toDate, exchangeRates }: UsagePageClientProps) {
   const { t, prefs } = usePreferences();
   const tu = t.usagePage;
+  const [liveAnalytics, setLiveAnalytics] = useState<AiAnalyticsSnapshot | null>(analytics);
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [modelSearchText, setModelSearchText] = useState('');
   const [isModelFilterOpen, setIsModelFilterOpen] = useState(false);
   const modelFilterRef = useRef<HTMLDivElement | null>(null);
+  const refreshAnalytics = async (signal: AbortSignal) => {
+    const params = new URLSearchParams();
+    if (fromDate) params.set('from', fromDate);
+    if (toDate) params.set('to', toDate);
+    const response = await fetch(`/bff/analytics/ai?${params.toString()}`, {
+      cache: 'no-store',
+      signal,
+    });
+    const payload = (await response.json().catch(() => null)) as { ok: boolean; data?: AiAnalyticsSnapshot; error?: { message?: string } } | null;
+    if (!response.ok || !payload?.ok || !payload.data) {
+      throw new Error(payload?.error?.message ?? 'Refresh failed');
+    }
+    setLiveAnalytics(payload.data);
+  };
+
+  const { isRefreshing, lastUpdatedAt, error, refreshNow } = useAutoRefresh({
+    enabled: Boolean(session),
+    intervalMs: 30_000,
+    refresh: refreshAnalytics,
+    pauseWhenHidden: true,
+  });
 
   const modelRows = useMemo(() => {
-    return (analytics?.byModel ?? []).map((row) => ({
+    return (liveAnalytics?.byModel ?? []).map((row) => ({
       ...row,
       displayName: sanitizeUserModelName(
         row.displayName?.trim() || resolveModelDisplayName(row.model),
@@ -81,7 +104,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
       totalCompletionTokens: row.totalCompletionTokens ?? 0,
       avgDurationMs: row.avgDurationMs ?? null,
     }));
-  }, [analytics]);
+  }, [liveAnalytics]);
 
   const modelOptions = useMemo(() => {
     return [...modelRows].sort((a, b) => b.requestCount - a.requestCount);
@@ -173,8 +196,14 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
     ? [...filteredRows].sort((a, b) => b.estimatedCostUsd - a.estimatedCostUsd)[0]
     : null;
 
-  if (session && analytics) {
-    const hasModels = analytics.byModel.length > 0;
+  const refreshStatus = error
+    ? 'Refresh failed'
+    : lastUpdatedAt
+      ? `Updated ${Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000)) < 5 ? 'just now' : `${Math.floor((Date.now() - lastUpdatedAt) / 1000)}s ago`}`
+      : null;
+
+  if (session && liveAnalytics) {
+    const hasModels = liveAnalytics.byModel.length > 0;
 
     return (
       <>
@@ -185,8 +214,14 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
               <h2>Usage overview</h2>
             </div>
             <span style={{ fontSize: '0.82rem', opacity: 0.6 }}>
-              {formatDate(analytics.from)} &ndash; {formatDate(analytics.to)}
+              {formatDate(liveAnalytics.from)} &ndash; {formatDate(liveAnalytics.to)}
             </span>
+            <button className="btn-ghost" type="button" onClick={() => void refreshNow()} disabled={isRefreshing} style={{ padding: '4px 10px', fontSize: '0.78rem' }}>
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            {refreshStatus ? (
+              <span style={{ fontSize: '0.78rem', opacity: 0.65 }}>{refreshStatus}</span>
+            ) : null}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>

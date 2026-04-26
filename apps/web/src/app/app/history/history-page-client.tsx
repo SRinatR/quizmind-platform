@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { type AiHistoryAttachment, type AiHistoryListResponse } from '@quizmind/contracts';
@@ -9,6 +9,7 @@ import { formatUtcDateTime } from '../../../lib/datetime';
 import { AiRequestDetailModal } from './ai-request-detail-modal';
 import { getReadableModelName } from './history-model-display';
 import { buildHistoryPromptDisplay, getHistoryTimelineSummary } from './history-prompt-display';
+import { useAutoRefresh } from '../../../lib/use-auto-refresh';
 
 export interface HistoryPageClientProps {
   aiHistory: AiHistoryListResponse | null;
@@ -57,13 +58,51 @@ function formatTokens(n: number): string {
 
 export function HistoryPageClient(props: HistoryPageClientProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [liveHistory, setLiveHistory] = useState<AiHistoryListResponse | null>(props.aiHistory);
 
   const {
-    aiHistory, effectivePage, pageSize,
+    effectivePage, pageSize,
     requestType, requestStatus, modelFilter, providerFilter,
     fromFilter, toFilter,
     hasSession, clearHref, exchangeRates,
   } = props;
+
+  const refreshHistory = useCallback(async (signal: AbortSignal) => {
+    const params = new URLSearchParams({
+      limit: String(pageSize),
+      offset: String((effectivePage - 1) * pageSize),
+    });
+    if (requestType) params.set('requestType', requestType);
+    if (requestStatus) params.set('status', requestStatus);
+    if (modelFilter) params.set('model', modelFilter);
+    if (providerFilter) params.set('provider', providerFilter);
+    if (fromFilter) params.set('from', fromFilter);
+    if (toFilter) params.set('to', toFilter);
+
+    const res = await fetch(`/bff/history?${params.toString()}`, {
+      cache: 'no-store',
+      signal,
+    });
+    const payload = (await res.json().catch(() => null)) as { ok: boolean; data?: AiHistoryListResponse; error?: { message?: string } } | null;
+    if (!res.ok || !payload?.ok || !payload.data) {
+      throw new Error(payload?.error?.message ?? 'Refresh failed');
+    }
+    setLiveHistory(payload.data);
+  }, [effectivePage, fromFilter, modelFilter, pageSize, providerFilter, requestStatus, requestType, toFilter]);
+
+  const { isRefreshing, lastUpdatedAt, error, refreshNow } = useAutoRefresh({
+    enabled: hasSession,
+    intervalMs: 15_000,
+    refresh: refreshHistory,
+    pauseWhenHidden: true,
+  });
+
+  const refreshStatusText = useMemo(() => {
+    if (error) return 'Refresh failed';
+    if (!lastUpdatedAt) return null;
+    const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
+    return seconds < 5 ? 'Updated just now' : `Updated ${seconds}s ago`;
+  }, [error, lastUpdatedAt]);
 
   if (!hasSession) {
     return (
@@ -75,9 +114,9 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
     );
   }
 
-  const items = aiHistory?.items ?? [];
-  const total = aiHistory?.total ?? 0;
-  const hasNext = aiHistory ? (effectivePage - 1) * pageSize + items.length < total : false;
+  const items = liveHistory?.items ?? [];
+  const total = liveHistory?.total ?? 0;
+  const hasNext = liveHistory ? (effectivePage - 1) * pageSize + items.length < total : false;
   const hasPrev = effectivePage > 1;
 
   function buildUrl(overrides: Record<string, string | number | undefined>) {
@@ -164,9 +203,17 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
             <span className="micro-label">Timeline</span>
             <h2>AI Requests</h2>
           </div>
-          <span className="list-muted" style={{ fontSize: '0.82rem' }}>
-            {total} total &middot; page {effectivePage}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span className="list-muted" style={{ fontSize: '0.82rem' }}>
+              {total} total &middot; page {effectivePage}
+            </span>
+            <button className="btn-ghost" type="button" onClick={() => void refreshNow()} disabled={isRefreshing} style={{ padding: '4px 10px', fontSize: '0.78rem' }}>
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            {refreshStatusText ? (
+              <span className="list-muted" style={{ fontSize: '0.78rem' }}>{refreshStatusText}</span>
+            ) : null}
+          </div>
         </div>
         {items.length > 0 ? (
           <div className="event-list">
