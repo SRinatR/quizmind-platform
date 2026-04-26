@@ -84,6 +84,7 @@ export const ModelName = {
   ActivityLog: 'ActivityLog',
   SecurityEvent: 'SecurityEvent',
   DomainEvent: 'DomainEvent',
+  AdminLogEvent: 'AdminLogEvent',
   SupportTicket: 'SupportTicket',
   SupportTicketPresetFavorite: 'SupportTicketPresetFavorite',
   SupportImpersonationSession: 'SupportImpersonationSession'
@@ -604,6 +605,41 @@ export const DomainEventScalarFieldEnum = {
 } as const
 
 export type DomainEventScalarFieldEnum = (typeof DomainEventScalarFieldEnum)[keyof typeof DomainEventScalarFieldEnum]
+
+
+export const AdminLogEventScalarFieldEnum = {
+  id: 'id',
+  stream: 'stream',
+  sourceRecordId: 'sourceRecordId',
+  eventType: 'eventType',
+  summary: 'summary',
+  occurredAt: 'occurredAt',
+  severity: 'severity',
+  status: 'status',
+  actorId: 'actorId',
+  actorEmail: 'actorEmail',
+  actorDisplayName: 'actorDisplayName',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  category: 'category',
+  source: 'source',
+  installationId: 'installationId',
+  provider: 'provider',
+  model: 'model',
+  durationMs: 'durationMs',
+  costUsd: 'costUsd',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  errorSummary: 'errorSummary',
+  searchText: 'searchText',
+  metadataJson: 'metadataJson',
+  payloadJson: 'payloadJson',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdminLogEventScalarFieldEnum = (typeof AdminLogEventScalarFieldEnum)[keyof typeof AdminLogEventScalarFieldEnum]
 
 
 export const SupportTicketScalarFieldEnum = {

@@ -562,6 +562,23 @@ export type EnumEventSeverityWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumEventSeverityFilter<$PrismaModel>
 }
 
+export type EnumEventSeverityNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.EventSeverity | Prisma.EnumEventSeverityFieldRefInput<$PrismaModel> | null
+  in?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumEventSeverityNullableFilter<$PrismaModel> | $Enums.EventSeverity | null
+}
+
+export type EnumEventSeverityNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EventSeverity | Prisma.EnumEventSeverityFieldRefInput<$PrismaModel> | null
+  in?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumEventSeverityNullableWithAggregatesFilter<$PrismaModel> | $Enums.EventSeverity | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumEventSeverityNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumEventSeverityNullableFilter<$PrismaModel>
+}
+
 export type EnumTicketStatusFilter<$PrismaModel = never> = {
   equals?: $Enums.TicketStatus | Prisma.EnumTicketStatusFieldRefInput<$PrismaModel>
   in?: $Enums.TicketStatus[] | Prisma.ListEnumTicketStatusFieldRefInput<$PrismaModel>
@@ -1062,6 +1079,23 @@ export type NestedEnumEventSeverityWithAggregatesFilter<$PrismaModel = never> = 
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumEventSeverityFilter<$PrismaModel>
   _max?: Prisma.NestedEnumEventSeverityFilter<$PrismaModel>
+}
+
+export type NestedEnumEventSeverityNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.EventSeverity | Prisma.EnumEventSeverityFieldRefInput<$PrismaModel> | null
+  in?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumEventSeverityNullableFilter<$PrismaModel> | $Enums.EventSeverity | null
+}
+
+export type NestedEnumEventSeverityNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.EventSeverity | Prisma.EnumEventSeverityFieldRefInput<$PrismaModel> | null
+  in?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.EventSeverity[] | Prisma.ListEnumEventSeverityFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumEventSeverityNullableWithAggregatesFilter<$PrismaModel> | $Enums.EventSeverity | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumEventSeverityNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumEventSeverityNullableFilter<$PrismaModel>
 }
 
 export type NestedEnumTicketStatusFilter<$PrismaModel = never> = {

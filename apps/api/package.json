@@ -35,6 +35,7 @@
     "dev": "tsx watch src/main.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "start": "tsx src/main.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "admin-logs:backfill": "tsx src/scripts/admin-logs-backfill.ts"
   }
 }
