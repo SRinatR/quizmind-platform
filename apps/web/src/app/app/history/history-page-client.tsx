@@ -172,7 +172,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
           <div className="event-list">
             {items.map((item) => {
               const promptDisplay = buildHistoryPromptDisplay({
-                promptContentJson: null,
+                promptContentJson: item.promptContentJson,
                 promptExcerpt: item.promptExcerpt,
                 requestType: item.requestType,
                 attachments: item.attachments,

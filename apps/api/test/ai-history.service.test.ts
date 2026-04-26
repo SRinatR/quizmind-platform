@@ -260,8 +260,8 @@ test('sanitizeAttachmentFilename strips unsafe chars and enforces mime extension
   assert.equal(name.includes('"'), false);
 });
 
-test('AiHistoryService.listHistory uses DB excerpts for new events without blob reads', async () => {
-  let blobReads = 0;
+test('AiHistoryService.listHistory includes promptContentJson for event list rows when prompt blob exists', async () => {
+  let readJsonCalls = 0;
   const { service } = createService({
     repository: {
       listEventsForUser: async () => [
@@ -281,21 +281,25 @@ test('AiHistoryService.listHistory uses DB excerpts for new events without blob 
           promptExcerpt: 'prompt from db',
           responseExcerpt: 'response from db',
           occurredAt: new Date('2026-04-20T10:00:00.000Z'),
-          content: { fileMetadataJson: null, expiresAt: new Date('2026-04-27T10:00:00.000Z'), deletedAt: null, promptBlobKey: null, responseBlobKey: null, fileBlobKey: null },
+          content: { fileMetadataJson: null, expiresAt: new Date('2026-04-27T10:00:00.000Z'), deletedAt: null, promptBlobKey: 'requests/evt_1/prompt.json', responseBlobKey: null, fileBlobKey: null },
+          attachments: [],
         } as any,
       ],
       countEventsForUser: async () => 1,
     },
     blobs: {
-      readPrompt: async () => { blobReads += 1; return null; },
-      readResponse: async () => { blobReads += 1; return null; },
+      readJson: async (key: string) => {
+        readJsonCalls += 1;
+        return [{ role: 'user', content: `prompt from ${key}` }];
+      },
     },
   });
 
   const result = await service.listHistory('user_1', { limit: 20, offset: 0 });
   assert.equal(result.items[0]?.promptExcerpt, 'prompt from db');
   assert.equal(result.items[0]?.responseExcerpt, 'response from db');
-  assert.equal(blobReads, 0);
+  assert.deepEqual(result.items[0]?.promptContentJson, [{ role: 'user', content: 'prompt from requests/evt_1/prompt.json' }]);
+  assert.equal(readJsonCalls, 1);
 });
 
 test('AiHistoryService.getDetail reads blobs only for selected item', async () => {
@@ -779,4 +783,5 @@ test('AiHistoryService.listHistory falls back to legacy list when no events exis
   const result = await service.listHistory('user_1', { limit: 10, offset: 0 });
   assert.equal(result.total, 1);
   assert.equal(result.items[0]?.id, 'legacy_1');
+  assert.deepEqual(result.items[0]?.promptContentJson, null);
 });

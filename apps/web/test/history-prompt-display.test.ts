@@ -4,9 +4,8 @@ import test from 'node:test';
 import { buildHistoryPromptDisplay, getHistoryTimelineSummary } from '../src/app/app/history/history-prompt-display';
 
 const QUICK_PREFIX = 'Return only the final answer without solution steps. If options are labeled (letters or numbers), return ONLY correct labels separated by commas (for example: a, d). If the question has options but they are unlabeled, number from 1 and answer as: N) option text. If no options exist (free-text question), return ONLY the answer. Question:';
-const VISION_PREFIX = 'Read the screenshot carefully. Double-check option labels before answering. If options are labeled, output only labels (e.g. a, d). If unlabeled options exist, output: N) option text. If no options (text/fill-in question), output only the answer text. Return final answer only.';
 
-test('quick-answer prompt shows only cleaned question in timeline summary', () => {
+test('list item with full promptContentJson containing quick-answer prefix produces real question preview', () => {
   const question = 'What is 12 × 9?';
   const display = buildHistoryPromptDisplay({
     promptContentJson: [{ role: 'user', content: `${QUICK_PREFIX} ${question}` }],
@@ -24,27 +23,27 @@ test('quick-answer prompt shows only cleaned question in timeline summary', () =
   assert.equal(display.promptInstructionText, QUICK_PREFIX);
 });
 
-test('system prompt content is not used as timeline summary', () => {
+test('truncated promptExcerpt without Question marker does not produce fake generic text', () => {
   const display = buildHistoryPromptDisplay({
-    promptContentJson: [{ role: 'system', content: 'You are a test assistant. Return only one label.' }],
-    promptExcerpt: 'You are a test assistant. Return only one label.',
+    promptContentJson: null,
+    promptExcerpt: 'Return only the final answer without solution steps. If options are labeled',
     requestType: 'text',
   });
 
   const summary = getHistoryTimelineSummary({
     cleanQuestionText: display.cleanQuestionText,
-    promptExcerpt: 'You are a test assistant. Return only one label.',
+    promptExcerpt: 'Return only the final answer without solution steps. If options are labeled',
     requestType: 'text',
     hasImages: display.hasImages,
   });
 
   assert.equal(display.cleanQuestionText, '');
-  assert.equal(summary, 'Question');
+  assert.equal(summary, '');
 });
 
-test('image request with vision prefix returns screenshot summary and hasImages true', () => {
+test('image-only prompt shows image and no generic text fallback', () => {
   const display = buildHistoryPromptDisplay({
-    promptContentJson: [{ role: 'user', content: `${VISION_PREFIX}` }],
+    promptContentJson: [{ role: 'user', content: [{ type: 'input_image', image_url: 'https://example.com/q.png' }] }],
     requestType: 'image',
     attachments: [{
       id: 'att_1',
@@ -59,16 +58,16 @@ test('image request with vision prefix returns screenshot summary and hasImages 
 
   const summary = getHistoryTimelineSummary({
     cleanQuestionText: display.cleanQuestionText,
-    promptExcerpt: VISION_PREFIX,
+    promptExcerpt: null,
     requestType: 'image',
     hasImages: display.hasImages,
   });
 
   assert.equal(display.hasImages, true);
-  assert.equal(summary, 'Screenshot question');
+  assert.equal(summary, '');
 });
 
-test('unknown prompt format falls back to sanitized excerpt', () => {
+test('unknown prompt format falls back safely to promptExcerpt', () => {
   const promptExcerpt = 'Solve: 2 + 2 = ?';
   const display = buildHistoryPromptDisplay({
     promptContentJson: null,
