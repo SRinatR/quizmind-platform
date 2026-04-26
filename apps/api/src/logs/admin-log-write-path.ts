@@ -50,6 +50,8 @@ export async function createAuditLogWithReadModel(
       metadata: toMetadata(row.metadataJson),
     }),
   );
+
+  return row;
 }
 
 export async function createActivityLogWithReadModel(
@@ -73,6 +75,8 @@ export async function createActivityLogWithReadModel(
       metadata: toMetadata(row.metadataJson),
     }),
   );
+
+  return row;
 }
 
 export async function createSecurityEventWithReadModel(
@@ -97,6 +101,8 @@ export async function createSecurityEventWithReadModel(
       metadata: toMetadata(row.metadataJson),
     }),
   );
+
+  return row;
 }
 
 export async function createDomainEventWithReadModel(
@@ -119,4 +125,6 @@ export async function createDomainEventWithReadModel(
       payload: toMetadata(row.payloadJson),
     }),
   );
+
+  return row;
 }

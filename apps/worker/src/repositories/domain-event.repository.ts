@@ -11,6 +11,8 @@ export class WorkerDomainEventRepository {
 
   create(input: CreateWorkerDomainEventInput): Promise<{ id: string }> {
     return this.prisma.$transaction(async (transaction) => {
+      // Worker keeps an explicit local domain write + read-model upsert sequence.
+      // We intentionally do not import API helper modules here to keep worker isolated.
       const domainEvent = await transaction.domainEvent.create({
         data: {
           eventType: input.eventType,
