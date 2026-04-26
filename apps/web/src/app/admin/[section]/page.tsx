@@ -24,6 +24,7 @@ import { AdminAiProvidersClient } from './admin-ai-providers-client';
 import { ExtensionControlAdminClient } from './extension-control-admin-client';
 import { UsersDirectoryClient } from './users-directory-client';
 import { LogsExplorerClient } from './logs-explorer-client';
+import { AppearanceSettingsPanel } from '../../components/settings/appearance-settings-panel';
 
 // ── Route aliases ─────────────────────────────────────────────────────────────
 const ROUTE_REDIRECTS: Record<string, string> = {
@@ -257,12 +258,12 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       apiState={`Connected \u2014 ${sessionLabel}`}
       currentPersona={persona}
       description=""
-      eyebrow="Admin"
+      eyebrow={sec === 'settings' ? 'ADMIN / Settings' : 'Admin'}
       isAdmin={isAdmin}
       isSignedIn={Boolean(session)}
       pathname={`/admin/${sec}`}
       showPersonaSwitcher={false}
-      title={section?.title ?? sec}
+      title={sec === 'settings' ? 'Settings' : (section?.title ?? sec)}
     >
       {section && session ? (
         // ── People: Users ─────────────────────────────────────────────────
@@ -371,6 +372,18 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </section>
             )}
           </>
+        ) : // ── Control Plane: Settings ───────────────────────────────────────
+        section.id === 'settings' ? (
+          <div className="settings-section">
+            <div className="settings-section__header">
+              <h3 className="settings-section__title">Appearance</h3>
+              <p className="settings-section__desc">Visual preferences and interface settings. Saved to your account.</p>
+            </div>
+
+            <article className="panel settings-card">
+              <AppearanceSettingsPanel isSignedIn={isConnectedSession} />
+            </article>
+          </div>
         ) : (
           // ── Fallback ─────────────────────────────────────────────────
           <section className="panel">

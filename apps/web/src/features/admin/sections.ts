@@ -60,6 +60,17 @@ export const adminSections: AdminSection[] = [
     group: 'control-plane',
     groupLabel: 'Control Plane',
   },
+
+  {
+    id: 'settings',
+    title: 'Settings',
+    navLabel: 'Settings',
+    href: '/admin/settings',
+    description: 'Appearance preferences for your admin workspace.',
+    requirement: { permission: 'users:read' },
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
+  },
 ];
 
 // ── Group order and labels ────────────────────────────────────────────────────

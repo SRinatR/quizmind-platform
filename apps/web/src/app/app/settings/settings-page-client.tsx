@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { usePreferences } from '../../../lib/preferences';
-import { AppearanceSettingsClient } from './appearance-settings-client';
+import { AppearanceSettingsPanel } from '../../components/settings/appearance-settings-panel';
 
 type SettingsTab = 'security' | 'appearance';
 
@@ -82,7 +82,7 @@ export function SettingsPageClient({
           </div>
 
           <article className="panel settings-card">
-            <AppearanceSettingsClient isSignedIn={isConnectedSession} />
+            <AppearanceSettingsPanel isSignedIn={isConnectedSession} />
           </article>
         </div>
       ) : null}
