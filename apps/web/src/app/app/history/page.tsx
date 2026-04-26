@@ -1,12 +1,8 @@
-import { type UsageHistoryRequest, type UsageHistorySourceFilter } from '@quizmind/contracts';
-
 import { SiteShell } from '../../../components/site-shell';
 import { getAccessTokenFromCookies } from '../../../lib/auth-session';
 import {
   getAiHistory,
-  getAiAnalytics,
   getSession,
-  getUsageHistory,
   getUserProfile,
   resolvePersona,
 } from '../../../lib/api';
@@ -19,22 +15,12 @@ interface HistoryPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const maxHistoryFetchLimit = 200;
-
 function readSearchParam(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) {
     return value[0];
   }
 
   return value;
-}
-
-function normalizeHistorySource(value: string | undefined): UsageHistorySourceFilter | 'ai_requests' {
-  if (value === 'activity' || value === 'telemetry' || value === 'ai' || value === 'all' || value === 'ai_requests') {
-    return value;
-  }
-
-  return 'ai_requests';
 }
 
 function normalizePositiveInt(value: string | undefined, fallback: number): number {
@@ -71,13 +57,8 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     getExchangeRates(),
   ]);
   const sessionLabel = session?.user.displayName || session?.user.email;
-  const source = normalizeHistorySource(readSearchParam(resolvedSearchParams?.source));
   const pageSize = normalizePositiveInt(readSearchParam(resolvedSearchParams?.limit), 25);
   const requestedPage = normalizePositiveInt(readSearchParam(resolvedSearchParams?.page), 1);
-  const fetchLimit = Math.min(requestedPage * pageSize, maxHistoryFetchLimit);
-  const eventType = normalizeFilterText(readSearchParam(resolvedSearchParams?.eventType));
-  const installationId = normalizeFilterText(readSearchParam(resolvedSearchParams?.installationId));
-  const actorId = normalizeFilterText(readSearchParam(resolvedSearchParams?.actorId));
   const requestType = normalizeFilterText(readSearchParam(resolvedSearchParams?.requestType));
   const requestStatus = normalizeFilterText(readSearchParam(resolvedSearchParams?.status));
   const modelFilter = normalizeFilterText(readSearchParam(resolvedSearchParams?.model));
@@ -86,34 +67,19 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const toFilter = normalizeFilterText(readSearchParam(resolvedSearchParams?.to));
   const isAdmin = session ? isAdminSession(session) : false;
 
-  // For 'ai_requests' source, use the dedicated AI history endpoint.
-  let aiHistory = null;
-  let legacyHistory = null;
-
-  if (source === 'ai_requests') {
-    aiHistory = await getAiHistory(
-      {
-        limit: pageSize,
-        offset: (requestedPage - 1) * pageSize,
-        requestType: requestType as never,
-        status: requestStatus as never,
-        model: modelFilter,
-        provider: providerFilter,
-        from: fromFilter,
-        to: toFilter,
-      },
-      accessToken,
-    );
-  } else {
-    const historyRequest: Partial<UsageHistoryRequest> = {
-      source: source as UsageHistorySourceFilter,
-      limit: fetchLimit,
-      ...(eventType ? { eventType } : {}),
-      ...(source !== 'activity' && installationId ? { installationId } : {}),
-      ...(source !== 'telemetry' && actorId ? { actorId } : {}),
-    };
-    legacyHistory = await getUsageHistory(persona, historyRequest, accessToken);
-  }
+  const aiHistory = await getAiHistory(
+    {
+      limit: pageSize,
+      offset: (requestedPage - 1) * pageSize,
+      requestType: requestType as never,
+      status: requestStatus as never,
+      model: modelFilter,
+      provider: providerFilter,
+      from: fromFilter,
+      to: toFilter,
+    },
+    accessToken,
+  );
 
   const effectivePage = requestedPage;
 
@@ -133,9 +99,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     >
       <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
       <HistoryPageClient
-        source={source}
         aiHistory={aiHistory}
-        legacyHistory={legacyHistory}
         effectivePage={effectivePage}
         pageSize={pageSize}
         requestType={requestType}
@@ -144,9 +108,6 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         providerFilter={providerFilter}
         fromFilter={fromFilter}
         toFilter={toFilter}
-        eventType={eventType}
-        installationId={installationId}
-        actorId={actorId}
         hasSession={Boolean(session)}
         clearHref="/app/history"
         exchangeRates={exchangeRates}
