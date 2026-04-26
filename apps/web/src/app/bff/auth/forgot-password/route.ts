@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { type AuthForgotPasswordRequest, type AuthForgotPasswordResult } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
+import { buildForwardedAuthHeaders } from '../../../../lib/bff-forwarding';
 
 interface RouteErrorPayload {
   ok: false;
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     cache: 'no-store',
     headers: {
       'content-type': 'application/json',
+      ...buildForwardedAuthHeaders(request),
     },
     body: JSON.stringify({
       email,

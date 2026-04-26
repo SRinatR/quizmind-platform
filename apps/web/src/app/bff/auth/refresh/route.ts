@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { type AuthSessionPayload } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
+import { buildForwardedAuthHeaders } from '../../../../lib/bff-forwarding';
 import { getRefreshTokenFromCookies, persistAuthSession } from '../../../../lib/auth-session';
 
-export async function POST() {
+export async function POST(request: Request) {
   const refreshToken = await getRefreshTokenFromCookies();
 
   if (!refreshToken) {
@@ -14,7 +15,10 @@ export async function POST() {
   const response = await fetch(`${API_URL}/auth/refresh`, {
     method: 'POST',
     cache: 'no-store',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...buildForwardedAuthHeaders(request),
+    },
     body: JSON.stringify({ refreshToken }),
   }).catch(() => null);
 

@@ -4,6 +4,7 @@ import { loadApiEnv } from '@quizmind/config';
 import { DistributedRateLimitService } from './rate-limit.service';
 
 interface RateLimitedRequest {
+  headers?: Record<string, string | string[] | undefined>;
   ip?: string;
   method?: string;
   originalUrl?: string;
@@ -123,9 +124,76 @@ export class RateLimitGuard implements CanActivate {
   }
 
   private resolveIdentity(request: RateLimitedRequest): string {
+    const forwardedIp = this.resolveForwardedClientIp(request.headers);
     const requestIp = request.ip?.trim();
     const remoteIp = request.socket?.remoteAddress?.trim();
 
-    return requestIp || remoteIp || 'anonymous';
+    return forwardedIp || requestIp || remoteIp || 'anonymous';
+  }
+
+  private resolveForwardedClientIp(headers?: Record<string, string | string[] | undefined>): string | null {
+    if (!headers) {
+      return null;
+    }
+
+    const forwardedForRaw = headers['x-forwarded-for'];
+    const forwardedFor = Array.isArray(forwardedForRaw) ? forwardedForRaw.join(',') : forwardedForRaw;
+    const candidates = (forwardedFor ?? '')
+      .split(',')
+      .map((ip) => this.normalizeIp(ip))
+      .filter((ip): ip is string => Boolean(ip));
+
+    const firstPublic = candidates.find((ip) => !this.isPrivateOrLocalIp(ip));
+
+    if (firstPublic) {
+      return firstPublic;
+    }
+
+    if (candidates.length > 0) {
+      return candidates[0];
+    }
+
+    const realIpRaw = headers['x-real-ip'];
+    const realIp = this.normalizeIp(Array.isArray(realIpRaw) ? realIpRaw[0] : realIpRaw);
+
+    return realIp ?? null;
+  }
+
+  private normalizeIp(value?: string): string | null {
+    const trimmed = value?.trim();
+
+    if (!trimmed) {
+      return null;
+    }
+
+    const withoutPort = trimmed.startsWith('[')
+      ? trimmed.replace(/^\[([^\]]+)](?::\d+)?$/, '$1')
+      : trimmed.includes(':') && trimmed.includes('.')
+        ? trimmed.replace(/:\d+$/, '')
+        : trimmed;
+    const lower = withoutPort.toLowerCase();
+
+    return lower.startsWith('::ffff:') ? lower.slice(7) : lower;
+  }
+
+  private isPrivateOrLocalIp(ip: string): boolean {
+    if (ip === '::1' || ip === 'localhost') {
+      return true;
+    }
+
+    if (ip.includes(':')) {
+      return ip.startsWith('fc') || ip.startsWith('fd') || ip.startsWith('fe80:') || ip === '::';
+    }
+
+    if (ip.startsWith('10.') || ip.startsWith('127.') || ip.startsWith('192.168.')) {
+      return true;
+    }
+
+    if (ip.startsWith('172.')) {
+      const secondOctet = Number.parseInt(ip.split('.')[1] ?? '', 10);
+      return Number.isFinite(secondOctet) && secondOctet >= 16 && secondOctet <= 31;
+    }
+
+    return false;
   }
 }

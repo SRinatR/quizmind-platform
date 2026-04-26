@@ -3,6 +3,7 @@ import { type AuthExchangePayload, type AuthLoginRequest } from '@quizmind/contr
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
 import { persistAuthSession } from '../../../../lib/auth-session';
+import { buildForwardedAuthHeaders } from '../../../../lib/bff-forwarding';
 
 interface RouteErrorPayload {
   ok: false;
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
     cache: 'no-store',
     headers: {
       'content-type': 'application/json',
+      ...buildForwardedAuthHeaders(request),
     },
     body: JSON.stringify({
       email: body.email,

@@ -69,21 +69,39 @@ test('DistributedRateLimitService uses in-memory fallback in mock runtime mode',
   assert.equal(third.allowed, false);
 });
 
-test('RateLimitGuard.resolveIdentity ignores spoofable forwarded headers and prefers trusted socket/request ip', () => {
+test('RateLimitGuard.resolveIdentity prefers public forwarded client IP over Docker/private proxy IPs', () => {
   const fallback = new InMemoryRateLimitService();
   const distributed = new DistributedRateLimitService(fallback);
   const guard = new RateLimitGuard(distributed);
   const identity = (guard as any).resolveIdentity({
     headers: {
-      'x-forwarded-for': '198.51.100.23',
+      'x-forwarded-for': '172.19.0.6, 198.51.100.23, 10.0.0.7',
+      'x-real-ip': '172.19.0.6',
     },
-    ip: '10.0.0.7',
+    ip: '172.19.0.6',
     socket: {
       remoteAddress: '172.16.0.8',
     },
   });
 
-  assert.equal(identity, '10.0.0.7');
+  assert.equal(identity, '198.51.100.23');
+});
+
+test('RateLimitGuard.resolveIdentity falls back to first forwarded IP when all hops are private', () => {
+  const fallback = new InMemoryRateLimitService();
+  const distributed = new DistributedRateLimitService(fallback);
+  const guard = new RateLimitGuard(distributed);
+  const identity = (guard as any).resolveIdentity({
+    headers: {
+      'x-forwarded-for': '172.19.0.6, 10.0.0.7',
+    },
+    ip: '172.19.0.6',
+    socket: {
+      remoteAddress: '172.16.0.8',
+    },
+  });
+
+  assert.equal(identity, '172.19.0.6');
 });
 
 test('RateLimitGuard.resolvePolicy excludes health and readiness probes from throttling', () => {
