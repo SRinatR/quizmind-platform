@@ -445,6 +445,7 @@ export async function getAdminUsers(
     verified?: string;
     sort?: string;
     page?: number;
+    cursor?: string;
     limit?: number;
   },
 ) {
@@ -455,6 +456,7 @@ export async function getAdminUsers(
     verified: filters?.verified,
     sort: filters?.sort,
     page: filters?.page,
+    cursor: filters?.cursor,
     limit: filters?.limit,
   });
   return readApiData<AdminUsersSnapshot>(path, withAccessToken(undefined, accessToken));

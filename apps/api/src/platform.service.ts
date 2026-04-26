@@ -1468,6 +1468,7 @@ export class PlatformService {
       verified?: string;
       sort?: string;
       page?: string;
+      cursor?: string;
       limit?: string;
     },
   ): Promise<AdminUserDirectorySnapshot> {
@@ -1478,7 +1479,13 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const page = Math.max(1, Number(rawFilters?.page) || 1);
+    const page =
+      typeof rawFilters?.page === 'string' && rawFilters.page.trim()
+        ? Math.max(1, Number(rawFilters.page) || 1)
+        : undefined;
+    const cursor = typeof rawFilters?.cursor === 'string' && rawFilters.cursor.trim()
+      ? rawFilters.cursor.trim()
+      : undefined;
     const limit = Math.min(100, Math.max(1, Number(rawFilters?.limit) || 25));
     const roleFilter =
       rawFilters?.role === 'admin' ? 'admin' : rawFilters?.role === 'user' ? 'user' : undefined;
@@ -1492,13 +1499,14 @@ export class PlatformService {
       ? (rawFilters!.sort as SortKey)
       : 'created-desc';
 
-    const { items, total } = await this.userRepository.listWithFilters({
+    const { items, total, hasNext, nextCursor } = await this.userRepository.listWithFilters({
       query: rawFilters?.query,
       role: roleFilter,
       banned: bannedFilter,
       verified: verifiedFilter,
       sort: sortFilter,
-      page,
+      ...(typeof page === 'number' ? { page } : {}),
+      cursor,
       limit,
     });
 
@@ -1507,8 +1515,9 @@ export class PlatformService {
       accessDecision,
       writeDecision,
       items: items.map(mapUserRecordToDirectoryEntry),
-      total,
-      page,
+      ...(typeof total === 'number' ? { total, ...(typeof page === 'number' ? { page } : {}) } : {}),
+      hasNext,
+      nextCursor,
       limit,
       permissions: session.permissions,
     };

@@ -457,9 +457,12 @@ export interface AdminUserDirectorySnapshot {
   accessDecision: AccessDecision;
   writeDecision: AccessDecision;
   items: AdminUserDirectoryEntry[];
-  total: number;
-  page: number;
+  total?: number;
+  page?: number;
   limit: number;
+  hasNext?: boolean;
+  nextCursor?: string | null;
+  previousCursor?: string | null;
   permissions: string[];
 }
 

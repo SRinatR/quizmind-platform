@@ -540,6 +540,7 @@ export const en = {
       reset: 'Reset',
       prev: 'Prev',
       next: 'Next',
+      pageLabel: 'Page',
       of: 'of',
       you: 'you',
       password: 'Password',

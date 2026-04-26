@@ -240,6 +240,7 @@ export class PlatformController {
     @Query('verified') verified?: string,
     @Query('sort') sort?: string,
     @Query('page') page?: string,
+    @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Headers('authorization') authorization?: string,
   ) {
@@ -247,7 +248,7 @@ export class PlatformController {
     return ok(
       await this.platformService.listUsersForCurrentSession(
         await this.requireStrictConnectedSession(authorization),
-        { query, role, banned, verified, sort, page, limit },
+        { query, role, banned, verified, sort, page, cursor, limit },
       ),
     );
   }

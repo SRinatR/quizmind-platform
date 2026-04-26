@@ -21,7 +21,6 @@ interface UsersDirectoryClientProps {
     banned: string;
     verified: string;
     sort: string;
-    page: number;
     limit: number;
   };
 }
@@ -182,36 +181,37 @@ function Toolbar({
 interface PaginationProps {
   page: number;
   limit: number;
-  total: number;
-  onPage: (p: number) => void;
+  itemsCount: number;
+  hasNext: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
 }
 
-function Pagination({ page, limit, total, onPage }: PaginationProps) {
+function Pagination({ page, limit, itemsCount, hasNext, onPrevious, onNext }: PaginationProps) {
   const { t } = usePreferences();
   const a = t.admin.users;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const from = Math.min(total, (page - 1) * limit + 1);
-  const to = Math.min(total, page * limit);
+  const from = (page - 1) * limit + (itemsCount > 0 ? 1 : 0);
+  const to = (page - 1) * limit + itemsCount;
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0 4px', fontSize: '0.82rem', color: 'var(--muted)' }}>
-      <span>{from}–{to} {a.of} {total}</span>
+      <span>{itemsCount > 0 ? `${from}–${to}` : `0–0`} · {limit} {a.perPage}</span>
       <button
         className="btn-ghost"
         disabled={page <= 1}
-        onClick={() => onPage(page - 1)}
+        onClick={onPrevious}
         style={{ fontSize: '0.8rem', padding: '3px 10px' }}
         type="button"
       >
         {a.prev}
       </button>
       <span style={{ minWidth: '60px', textAlign: 'center' }}>
-        {page} / {totalPages}
+        {a.pageLabel} {page}
       </span>
       <button
         className="btn-ghost"
-        disabled={page >= totalPages}
-        onClick={() => onPage(page + 1)}
+        disabled={!hasNext}
+        onClick={onNext}
         style={{ fontSize: '0.8rem', padding: '3px 10px' }}
         type="button"
       >
@@ -435,9 +435,12 @@ export function UsersDirectoryClient({
 
   // Local optimistic state: overrides applied after mutations until server refresh
   const [localItems, setLocalItems] = useState<DirectoryUser[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(initialFilters.page);
+  const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(initialFilters.limit);
+  const [hasNext, setHasNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursorHistory, setCursorHistory] = useState<Array<string | null>>([]);
   const [isLoadingTable, setIsLoadingTable] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -481,15 +484,14 @@ export function UsersDirectoryClient({
     const banned = searchParams.get('userBanned');
     const verified = searchParams.get('userVerified');
     const sort = searchParams.get('userSort');
-    const pageParam = searchParams.get('userPage');
     const limitParam = searchParams.get('userLimit');
+    if (cursor) params.set('cursor', cursor);
 
     if (query) params.set('query', query);
     if (role) params.set('role', role);
     if (banned) params.set('banned', banned);
     if (verified) params.set('verified', verified);
     if (sort) params.set('sort', sort);
-    if (pageParam) params.set('page', pageParam);
     if (limitParam) params.set('limit', limitParam);
 
     setIsLoadingTable(true);
@@ -501,8 +503,8 @@ export function UsersDirectoryClient({
           throw new Error(payload?.error?.message ?? a.unavailableDesc);
         }
         setLocalItems(payload.data.items);
-        setTotal(payload.data.total);
-        setPage(payload.data.page);
+        setHasNext(Boolean(payload.data.hasNext));
+        setNextCursor(payload.data.nextCursor ?? null);
         setLimit(payload.data.limit);
         setErrorMessage(null);
       })
@@ -518,7 +520,7 @@ export function UsersDirectoryClient({
       });
 
     return () => controller.abort();
-  }, [searchParams, a.unavailableDesc, refreshTick]);
+  }, [searchParams, a.unavailableDesc, refreshTick, cursor]);
 
   function buildParams(
     overrides: Record<string, string | number | undefined> = {},
@@ -539,7 +541,6 @@ export function UsersDirectoryClient({
       userVerified: v !== 'all' ? v : undefined,
       userSort: s !== 'created-desc' ? s : undefined,
       userLimit: l !== 25 ? String(l) : undefined,
-      userPage: undefined,
       ...Object.fromEntries(Object.entries(overrides).map(([k, val]) => [k, val === undefined ? undefined : String(val)])),
     };
     for (const [k, val] of Object.entries(apply)) {
@@ -553,7 +554,10 @@ export function UsersDirectoryClient({
   }
 
   function applyFilters() {
-    const qs = buildParams({ userPage: undefined });
+    setCursor(null);
+    setCursorHistory([]);
+    setPage(1);
+    const qs = buildParams();
     startTransition(() => {
       router.push(`?${qs}`, { scroll: false });
     });
@@ -563,7 +567,10 @@ export function UsersDirectoryClient({
     setDraftQuery(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      const qs = buildParams({ userPage: undefined }, {
+      setCursor(null);
+      setCursorHistory([]);
+      setPage(1);
+      const qs = buildParams({}, {
         query: draftQueryRef.current,
         role: draftRole,
         banned: draftBanned,
@@ -588,17 +595,31 @@ export function UsersDirectoryClient({
     setDraftSort('created-desc');
     setDraftLimit(25);
     const next = new URLSearchParams(searchParams.toString());
-    ['userQuery', 'userRole', 'userBanned', 'userVerified', 'userSort', 'userLimit', 'userPage'].forEach((k) => next.delete(k));
+    setCursor(null);
+    setCursorHistory([]);
+    setPage(1);
+    ['userQuery', 'userRole', 'userBanned', 'userVerified', 'userSort', 'userLimit'].forEach((k) => next.delete(k));
     startTransition(() => {
       router.push(`?${next.toString()}`, { scroll: false });
     });
   }
 
-  function goToPage(p: number) {
-    const qs = buildParams({ userPage: p > 1 ? String(p) : undefined });
-    startTransition(() => {
-      router.push(`?${qs}`, { scroll: false });
+  function goToNextPage() {
+    if (!nextCursor || !hasNext) return;
+    setCursorHistory((history) => [...history, cursor]);
+    setCursor(nextCursor);
+    setPage((value) => value + 1);
+  }
+
+  function goToPreviousPage() {
+    if (page <= 1) return;
+    setCursorHistory((history) => {
+      const copy = [...history];
+      const previous = copy.pop() ?? null;
+      setCursor(previous);
+      return copy;
     });
+    setPage((value) => Math.max(1, value - 1));
   }
 
   function refresh() {
@@ -878,12 +899,14 @@ export function UsersDirectoryClient({
         </div>
       )}
 
-      {total > 0 ? (
+      {(localItems.length > 0 || page > 1) ? (
         <Pagination
           page={page}
           limit={limit}
-          total={total}
-          onPage={goToPage}
+          itemsCount={localItems.length}
+          hasNext={hasNext}
+          onPrevious={goToPreviousPage}
+          onNext={goToNextPage}
         />
       ) : null}
 
