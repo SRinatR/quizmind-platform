@@ -14,8 +14,12 @@ async function tryUnlink(p: string): Promise<void> {
   try { await fs.unlink(p); } catch { /* already gone */ }
 }
 
-function toPath(blobDir: string, key: string): string {
-  return path.join(blobDir, key);
+function resolveSafeBlobPath(blobDir: string, blobKey: string): string | null {
+  const normalized = blobKey.trim().replaceAll('\\', '/');
+  if (!normalized || normalized.startsWith('/') || normalized.includes('..')) {
+    return null;
+  }
+  return path.join(blobDir, normalized);
 }
 
 export async function processHistoryCleanupJob(
@@ -34,6 +38,7 @@ export async function processHistoryCleanupJob(
       },
       select: {
         id: true,
+        aiRequestEventId: true,
         promptBlobKey: true,
         responseBlobKey: true,
         fileBlobKey: true,
@@ -46,8 +51,31 @@ export async function processHistoryCleanupJob(
 
     await Promise.all(expiredContents.flatMap((content) => {
       const keys = [content.promptBlobKey, content.responseBlobKey, content.fileBlobKey].filter((k): k is string => Boolean(k));
-      return keys.map((key) => tryUnlink(toPath(blobDir, key)));
+      return keys.map((key) => resolveSafeBlobPath(blobDir, key)).flatMap((safePath) => (safePath ? [tryUnlink(safePath)] : []));
     }));
+
+    const eventIds = expiredContents.map((row) => row.aiRequestEventId);
+    const expiredAttachments = await prisma.aiRequestAttachment.findMany({
+      where: {
+        aiRequestEventId: { in: eventIds },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        blobKey: true,
+      },
+    });
+    await Promise.all(
+      expiredAttachments
+        .map((attachment) => resolveSafeBlobPath(blobDir, attachment.blobKey))
+        .flatMap((safePath) => (safePath ? [tryUnlink(safePath)] : [])),
+    );
+    if (expiredAttachments.length > 0) {
+      await prisma.aiRequestAttachment.updateMany({
+        where: { id: { in: expiredAttachments.map((attachment) => attachment.id) }, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+    }
 
     const ids = expiredContents.map((row) => row.id);
     const result = await prisma.aiRequestContent.updateMany({
@@ -80,13 +108,13 @@ export async function processHistoryCleanupJob(
     const legacyOnlyIds = legacyIds.filter((id) => !matchingEventIds.has(id));
     if (legacyOnlyIds.length > 0) {
       await Promise.all(legacyOnlyIds.flatMap((id) => [
-        tryUnlink(path.join(blobDir, `requests/${id}/prompt.json`)),
-        tryUnlink(path.join(blobDir, `requests/${id}/response.json`)),
-        tryUnlink(path.join(blobDir, `requests/${id}/file.bin`)),
-        tryUnlink(path.join(blobDir, `${id}.prompt.json`)),
-        tryUnlink(path.join(blobDir, `${id}.response.json`)),
-        tryUnlink(path.join(blobDir, `${id}.file.bin`)),
-      ]));
+        resolveSafeBlobPath(blobDir, `requests/${id}/prompt.json`),
+        resolveSafeBlobPath(blobDir, `requests/${id}/response.json`),
+        resolveSafeBlobPath(blobDir, `requests/${id}/file.bin`),
+        resolveSafeBlobPath(blobDir, `${id}.prompt.json`),
+        resolveSafeBlobPath(blobDir, `${id}.response.json`),
+        resolveSafeBlobPath(blobDir, `${id}.file.bin`),
+      ].flatMap((safePath) => (safePath ? [tryUnlink(safePath)] : []))));
 
       const removed = await prisma.aiRequest.deleteMany({ where: { id: { in: legacyOnlyIds } } });
       deletedRows += removed.count;

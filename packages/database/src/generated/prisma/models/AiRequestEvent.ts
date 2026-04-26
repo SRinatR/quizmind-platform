@@ -355,6 +355,7 @@ export type AiRequestEventWhereInput = {
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   content?: Prisma.XOR<Prisma.AiRequestContentNullableScalarRelationFilter, Prisma.AiRequestContentWhereInput> | null
+  attachments?: Prisma.AiRequestAttachmentListRelationFilter
 }
 
 export type AiRequestEventOrderByWithRelationInput = {
@@ -381,6 +382,7 @@ export type AiRequestEventOrderByWithRelationInput = {
   user?: Prisma.UserOrderByWithRelationInput
   workspace?: Prisma.WorkspaceOrderByWithRelationInput
   content?: Prisma.AiRequestContentOrderByWithRelationInput
+  attachments?: Prisma.AiRequestAttachmentOrderByRelationAggregateInput
 }
 
 export type AiRequestEventWhereUniqueInput = Prisma.AtLeast<{
@@ -410,6 +412,7 @@ export type AiRequestEventWhereUniqueInput = Prisma.AtLeast<{
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   content?: Prisma.XOR<Prisma.AiRequestContentNullableScalarRelationFilter, Prisma.AiRequestContentWhereInput> | null
+  attachments?: Prisma.AiRequestAttachmentListRelationFilter
 }, "id">
 
 export type AiRequestEventOrderByWithAggregationInput = {
@@ -488,6 +491,7 @@ export type AiRequestEventCreateInput = {
   user: Prisma.UserCreateNestedOneWithoutAiRequestEventsInput
   workspace?: Prisma.WorkspaceCreateNestedOneWithoutAiRequestEventsInput
   content?: Prisma.AiRequestContentCreateNestedOneWithoutEventInput
+  attachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventUncheckedCreateInput = {
@@ -512,6 +516,7 @@ export type AiRequestEventUncheckedCreateInput = {
   occurredAt?: Date | string
   createdAt?: Date | string
   content?: Prisma.AiRequestContentUncheckedCreateNestedOneWithoutEventInput
+  attachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventUpdateInput = {
@@ -536,6 +541,7 @@ export type AiRequestEventUpdateInput = {
   user?: Prisma.UserUpdateOneRequiredWithoutAiRequestEventsNestedInput
   workspace?: Prisma.WorkspaceUpdateOneWithoutAiRequestEventsNestedInput
   content?: Prisma.AiRequestContentUpdateOneWithoutEventNestedInput
+  attachments?: Prisma.AiRequestAttachmentUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventUncheckedUpdateInput = {
@@ -560,6 +566,7 @@ export type AiRequestEventUncheckedUpdateInput = {
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content?: Prisma.AiRequestContentUncheckedUpdateOneWithoutEventNestedInput
+  attachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventCreateManyInput = {
@@ -827,6 +834,20 @@ export type AiRequestEventUpdateOneRequiredWithoutContentNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AiRequestEventUpdateToOneWithWhereWithoutContentInput, Prisma.AiRequestEventUpdateWithoutContentInput>, Prisma.AiRequestEventUncheckedUpdateWithoutContentInput>
 }
 
+export type AiRequestEventCreateNestedOneWithoutAttachmentsInput = {
+  create?: Prisma.XOR<Prisma.AiRequestEventCreateWithoutAttachmentsInput, Prisma.AiRequestEventUncheckedCreateWithoutAttachmentsInput>
+  connectOrCreate?: Prisma.AiRequestEventCreateOrConnectWithoutAttachmentsInput
+  connect?: Prisma.AiRequestEventWhereUniqueInput
+}
+
+export type AiRequestEventUpdateOneRequiredWithoutAttachmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.AiRequestEventCreateWithoutAttachmentsInput, Prisma.AiRequestEventUncheckedCreateWithoutAttachmentsInput>
+  connectOrCreate?: Prisma.AiRequestEventCreateOrConnectWithoutAttachmentsInput
+  upsert?: Prisma.AiRequestEventUpsertWithoutAttachmentsInput
+  connect?: Prisma.AiRequestEventWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AiRequestEventUpdateToOneWithWhereWithoutAttachmentsInput, Prisma.AiRequestEventUpdateWithoutAttachmentsInput>, Prisma.AiRequestEventUncheckedUpdateWithoutAttachmentsInput>
+}
+
 export type AiRequestEventCreateWithoutUserInput = {
   id: string
   installationId?: string | null
@@ -848,6 +869,7 @@ export type AiRequestEventCreateWithoutUserInput = {
   createdAt?: Date | string
   workspace?: Prisma.WorkspaceCreateNestedOneWithoutAiRequestEventsInput
   content?: Prisma.AiRequestContentCreateNestedOneWithoutEventInput
+  attachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventUncheckedCreateWithoutUserInput = {
@@ -871,6 +893,7 @@ export type AiRequestEventUncheckedCreateWithoutUserInput = {
   occurredAt?: Date | string
   createdAt?: Date | string
   content?: Prisma.AiRequestContentUncheckedCreateNestedOneWithoutEventInput
+  attachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventCreateOrConnectWithoutUserInput = {
@@ -946,6 +969,7 @@ export type AiRequestEventCreateWithoutWorkspaceInput = {
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutAiRequestEventsInput
   content?: Prisma.AiRequestContentCreateNestedOneWithoutEventInput
+  attachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventUncheckedCreateWithoutWorkspaceInput = {
@@ -969,6 +993,7 @@ export type AiRequestEventUncheckedCreateWithoutWorkspaceInput = {
   occurredAt?: Date | string
   createdAt?: Date | string
   content?: Prisma.AiRequestContentUncheckedCreateNestedOneWithoutEventInput
+  attachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventCreateOrConnectWithoutWorkspaceInput = {
@@ -1018,6 +1043,7 @@ export type AiRequestEventCreateWithoutContentInput = {
   createdAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutAiRequestEventsInput
   workspace?: Prisma.WorkspaceCreateNestedOneWithoutAiRequestEventsInput
+  attachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventUncheckedCreateWithoutContentInput = {
@@ -1041,6 +1067,7 @@ export type AiRequestEventUncheckedCreateWithoutContentInput = {
   responseExcerpt?: string | null
   occurredAt?: Date | string
   createdAt?: Date | string
+  attachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutEventInput
 }
 
 export type AiRequestEventCreateOrConnectWithoutContentInput = {
@@ -1080,6 +1107,7 @@ export type AiRequestEventUpdateWithoutContentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutAiRequestEventsNestedInput
   workspace?: Prisma.WorkspaceUpdateOneWithoutAiRequestEventsNestedInput
+  attachments?: Prisma.AiRequestAttachmentUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventUncheckedUpdateWithoutContentInput = {
@@ -1103,6 +1131,119 @@ export type AiRequestEventUncheckedUpdateWithoutContentInput = {
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  attachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutEventNestedInput
+}
+
+export type AiRequestEventCreateWithoutAttachmentsInput = {
+  id: string
+  installationId?: string | null
+  provider: string
+  model: string
+  modelDisplayName?: string | null
+  requestType: string
+  keySource?: string
+  status?: string
+  errorCode?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostUsd?: number | null
+  durationMs?: number | null
+  promptExcerpt?: string | null
+  responseExcerpt?: string | null
+  occurredAt?: Date | string
+  createdAt?: Date | string
+  user: Prisma.UserCreateNestedOneWithoutAiRequestEventsInput
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutAiRequestEventsInput
+  content?: Prisma.AiRequestContentCreateNestedOneWithoutEventInput
+}
+
+export type AiRequestEventUncheckedCreateWithoutAttachmentsInput = {
+  id: string
+  userId: string
+  workspaceId?: string | null
+  installationId?: string | null
+  provider: string
+  model: string
+  modelDisplayName?: string | null
+  requestType: string
+  keySource?: string
+  status?: string
+  errorCode?: string | null
+  promptTokens?: number
+  completionTokens?: number
+  totalTokens?: number
+  estimatedCostUsd?: number | null
+  durationMs?: number | null
+  promptExcerpt?: string | null
+  responseExcerpt?: string | null
+  occurredAt?: Date | string
+  createdAt?: Date | string
+  content?: Prisma.AiRequestContentUncheckedCreateNestedOneWithoutEventInput
+}
+
+export type AiRequestEventCreateOrConnectWithoutAttachmentsInput = {
+  where: Prisma.AiRequestEventWhereUniqueInput
+  create: Prisma.XOR<Prisma.AiRequestEventCreateWithoutAttachmentsInput, Prisma.AiRequestEventUncheckedCreateWithoutAttachmentsInput>
+}
+
+export type AiRequestEventUpsertWithoutAttachmentsInput = {
+  update: Prisma.XOR<Prisma.AiRequestEventUpdateWithoutAttachmentsInput, Prisma.AiRequestEventUncheckedUpdateWithoutAttachmentsInput>
+  create: Prisma.XOR<Prisma.AiRequestEventCreateWithoutAttachmentsInput, Prisma.AiRequestEventUncheckedCreateWithoutAttachmentsInput>
+  where?: Prisma.AiRequestEventWhereInput
+}
+
+export type AiRequestEventUpdateToOneWithWhereWithoutAttachmentsInput = {
+  where?: Prisma.AiRequestEventWhereInput
+  data: Prisma.XOR<Prisma.AiRequestEventUpdateWithoutAttachmentsInput, Prisma.AiRequestEventUncheckedUpdateWithoutAttachmentsInput>
+}
+
+export type AiRequestEventUpdateWithoutAttachmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  installationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  model?: Prisma.StringFieldUpdateOperationsInput | string
+  modelDisplayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestType?: Prisma.StringFieldUpdateOperationsInput | string
+  keySource?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  user?: Prisma.UserUpdateOneRequiredWithoutAiRequestEventsNestedInput
+  workspace?: Prisma.WorkspaceUpdateOneWithoutAiRequestEventsNestedInput
+  content?: Prisma.AiRequestContentUpdateOneWithoutEventNestedInput
+}
+
+export type AiRequestEventUncheckedUpdateWithoutAttachmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  installationId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  provider?: Prisma.StringFieldUpdateOperationsInput | string
+  model?: Prisma.StringFieldUpdateOperationsInput | string
+  modelDisplayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  requestType?: Prisma.StringFieldUpdateOperationsInput | string
+  keySource?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  errorCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
+  estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  content?: Prisma.AiRequestContentUncheckedUpdateOneWithoutEventNestedInput
 }
 
 export type AiRequestEventCreateManyUserInput = {
@@ -1148,6 +1289,7 @@ export type AiRequestEventUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   workspace?: Prisma.WorkspaceUpdateOneWithoutAiRequestEventsNestedInput
   content?: Prisma.AiRequestContentUpdateOneWithoutEventNestedInput
+  attachments?: Prisma.AiRequestAttachmentUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventUncheckedUpdateWithoutUserInput = {
@@ -1171,6 +1313,7 @@ export type AiRequestEventUncheckedUpdateWithoutUserInput = {
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content?: Prisma.AiRequestContentUncheckedUpdateOneWithoutEventNestedInput
+  attachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventUncheckedUpdateManyWithoutUserInput = {
@@ -1238,6 +1381,7 @@ export type AiRequestEventUpdateWithoutWorkspaceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutAiRequestEventsNestedInput
   content?: Prisma.AiRequestContentUpdateOneWithoutEventNestedInput
+  attachments?: Prisma.AiRequestAttachmentUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventUncheckedUpdateWithoutWorkspaceInput = {
@@ -1261,6 +1405,7 @@ export type AiRequestEventUncheckedUpdateWithoutWorkspaceInput = {
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   content?: Prisma.AiRequestContentUncheckedUpdateOneWithoutEventNestedInput
+  attachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutEventNestedInput
 }
 
 export type AiRequestEventUncheckedUpdateManyWithoutWorkspaceInput = {
@@ -1285,6 +1430,35 @@ export type AiRequestEventUncheckedUpdateManyWithoutWorkspaceInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type AiRequestEventCountOutputType
+ */
+
+export type AiRequestEventCountOutputType = {
+  attachments: number
+}
+
+export type AiRequestEventCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  attachments?: boolean | AiRequestEventCountOutputTypeCountAttachmentsArgs
+}
+
+/**
+ * AiRequestEventCountOutputType without action
+ */
+export type AiRequestEventCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AiRequestEventCountOutputType
+   */
+  select?: Prisma.AiRequestEventCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * AiRequestEventCountOutputType without action
+ */
+export type AiRequestEventCountOutputTypeCountAttachmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AiRequestAttachmentWhereInput
+}
 
 
 export type AiRequestEventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1311,6 +1485,8 @@ export type AiRequestEventSelect<ExtArgs extends runtime.Types.Extensions.Intern
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   workspace?: boolean | Prisma.AiRequestEvent$workspaceArgs<ExtArgs>
   content?: boolean | Prisma.AiRequestEvent$contentArgs<ExtArgs>
+  attachments?: boolean | Prisma.AiRequestEvent$attachmentsArgs<ExtArgs>
+  _count?: boolean | Prisma.AiRequestEventCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["aiRequestEvent"]>
 
 export type AiRequestEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1391,6 +1567,8 @@ export type AiRequestEventInclude<ExtArgs extends runtime.Types.Extensions.Inter
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   workspace?: boolean | Prisma.AiRequestEvent$workspaceArgs<ExtArgs>
   content?: boolean | Prisma.AiRequestEvent$contentArgs<ExtArgs>
+  attachments?: boolean | Prisma.AiRequestEvent$attachmentsArgs<ExtArgs>
+  _count?: boolean | Prisma.AiRequestEventCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AiRequestEventIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1407,6 +1585,7 @@ export type $AiRequestEventPayload<ExtArgs extends runtime.Types.Extensions.Inte
     user: Prisma.$UserPayload<ExtArgs>
     workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     content: Prisma.$AiRequestContentPayload<ExtArgs> | null
+    attachments: Prisma.$AiRequestAttachmentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1826,6 +2005,7 @@ export interface Prisma__AiRequestEventClient<T, Null = never, ExtArgs extends r
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   workspace<T extends Prisma.AiRequestEvent$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiRequestEvent$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   content<T extends Prisma.AiRequestEvent$contentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiRequestEvent$contentArgs<ExtArgs>>): Prisma.Prisma__AiRequestContentClient<runtime.Types.Result.GetResult<Prisma.$AiRequestContentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  attachments<T extends Prisma.AiRequestEvent$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiRequestEvent$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestAttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2311,6 +2491,30 @@ export type AiRequestEvent$contentArgs<ExtArgs extends runtime.Types.Extensions.
    */
   include?: Prisma.AiRequestContentInclude<ExtArgs> | null
   where?: Prisma.AiRequestContentWhereInput
+}
+
+/**
+ * AiRequestEvent.attachments
+ */
+export type AiRequestEvent$attachmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AiRequestAttachment
+   */
+  select?: Prisma.AiRequestAttachmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AiRequestAttachment
+   */
+  omit?: Prisma.AiRequestAttachmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AiRequestAttachmentInclude<ExtArgs> | null
+  where?: Prisma.AiRequestAttachmentWhereInput
+  orderBy?: Prisma.AiRequestAttachmentOrderByWithRelationInput | Prisma.AiRequestAttachmentOrderByWithRelationInput[]
+  cursor?: Prisma.AiRequestAttachmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AiRequestAttachmentScalarFieldEnum | Prisma.AiRequestAttachmentScalarFieldEnum[]
 }
 
 /**

@@ -188,6 +188,7 @@ export type WorkspaceWhereInput = {
   supportTickets?: Prisma.SupportTicketListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
   aiRequestEvents?: Prisma.AiRequestEventListRelationFilter
+  aiRequestAttachments?: Prisma.AiRequestAttachmentListRelationFilter
 }
 
 export type WorkspaceOrderByWithRelationInput = {
@@ -202,6 +203,7 @@ export type WorkspaceOrderByWithRelationInput = {
   supportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
   aiRequests?: Prisma.AiRequestOrderByRelationAggregateInput
   aiRequestEvents?: Prisma.AiRequestEventOrderByRelationAggregateInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentOrderByRelationAggregateInput
 }
 
 export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
@@ -219,6 +221,7 @@ export type WorkspaceWhereUniqueInput = Prisma.AtLeast<{
   supportTickets?: Prisma.SupportTicketListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
   aiRequestEvents?: Prisma.AiRequestEventListRelationFilter
+  aiRequestAttachments?: Prisma.AiRequestAttachmentListRelationFilter
 }, "id" | "slug">
 
 export type WorkspaceOrderByWithAggregationInput = {
@@ -255,6 +258,7 @@ export type WorkspaceCreateInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateInput = {
@@ -269,6 +273,7 @@ export type WorkspaceUncheckedCreateInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUpdateInput = {
@@ -283,6 +288,7 @@ export type WorkspaceUpdateInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateInput = {
@@ -297,6 +303,7 @@ export type WorkspaceUncheckedUpdateInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateManyInput = {
@@ -417,6 +424,22 @@ export type WorkspaceUpdateOneWithoutAiRequestEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAiRequestEventsInput, Prisma.WorkspaceUpdateWithoutAiRequestEventsInput>, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestEventsInput>
 }
 
+export type WorkspaceCreateNestedOneWithoutAiRequestAttachmentsInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestAttachmentsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiRequestAttachmentsInput
+  connect?: Prisma.WorkspaceWhereUniqueInput
+}
+
+export type WorkspaceUpdateOneWithoutAiRequestAttachmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestAttachmentsInput>
+  connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutAiRequestAttachmentsInput
+  upsert?: Prisma.WorkspaceUpsertWithoutAiRequestAttachmentsInput
+  disconnect?: Prisma.WorkspaceWhereInput | boolean
+  delete?: Prisma.WorkspaceWhereInput | boolean
+  connect?: Prisma.WorkspaceWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.WorkspaceUpdateToOneWithWhereWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUpdateWithoutAiRequestAttachmentsInput>, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestAttachmentsInput>
+}
+
 export type WorkspaceCreateNestedOneWithoutFeatureFlagOverridesInput = {
   create?: Prisma.XOR<Prisma.WorkspaceCreateWithoutFeatureFlagOverridesInput, Prisma.WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput>
   connectOrCreate?: Prisma.WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput
@@ -460,6 +483,7 @@ export type WorkspaceCreateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
@@ -473,6 +497,7 @@ export type WorkspaceUncheckedCreateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutMembershipsInput = {
@@ -502,6 +527,7 @@ export type WorkspaceUpdateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
@@ -515,6 +541,7 @@ export type WorkspaceUncheckedUpdateWithoutMembershipsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutInvitationsInput = {
@@ -528,6 +555,7 @@ export type WorkspaceCreateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
@@ -541,6 +569,7 @@ export type WorkspaceUncheckedCreateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutInvitationsInput = {
@@ -570,6 +599,7 @@ export type WorkspaceUpdateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
@@ -583,6 +613,7 @@ export type WorkspaceUncheckedUpdateWithoutInvitationsInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAiRequestsInput = {
@@ -596,6 +627,7 @@ export type WorkspaceCreateWithoutAiRequestsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAiRequestsInput = {
@@ -609,6 +641,7 @@ export type WorkspaceUncheckedCreateWithoutAiRequestsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAiRequestsInput = {
@@ -638,6 +671,7 @@ export type WorkspaceUpdateWithoutAiRequestsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAiRequestsInput = {
@@ -651,6 +685,7 @@ export type WorkspaceUncheckedUpdateWithoutAiRequestsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutAiRequestEventsInput = {
@@ -664,6 +699,7 @@ export type WorkspaceCreateWithoutAiRequestEventsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutAiRequestEventsInput = {
@@ -677,6 +713,7 @@ export type WorkspaceUncheckedCreateWithoutAiRequestEventsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutAiRequestEventsInput = {
@@ -706,6 +743,7 @@ export type WorkspaceUpdateWithoutAiRequestEventsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutAiRequestEventsInput = {
@@ -719,6 +757,79 @@ export type WorkspaceUncheckedUpdateWithoutAiRequestEventsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceCreateWithoutAiRequestAttachmentsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceUncheckedCreateWithoutAiRequestAttachmentsInput = {
+  id?: string
+  slug: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutWorkspaceInput
+  invitations?: Prisma.WorkspaceInviteUncheckedCreateNestedManyWithoutWorkspaceInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+}
+
+export type WorkspaceCreateOrConnectWithoutAiRequestAttachmentsInput = {
+  where: Prisma.WorkspaceWhereUniqueInput
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestAttachmentsInput>
+}
+
+export type WorkspaceUpsertWithoutAiRequestAttachmentsInput = {
+  update: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestAttachmentsInput>
+  create: Prisma.XOR<Prisma.WorkspaceCreateWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUncheckedCreateWithoutAiRequestAttachmentsInput>
+  where?: Prisma.WorkspaceWhereInput
+}
+
+export type WorkspaceUpdateToOneWithWhereWithoutAiRequestAttachmentsInput = {
+  where?: Prisma.WorkspaceWhereInput
+  data: Prisma.XOR<Prisma.WorkspaceUpdateWithoutAiRequestAttachmentsInput, Prisma.WorkspaceUncheckedUpdateWithoutAiRequestAttachmentsInput>
+}
+
+export type WorkspaceUpdateWithoutAiRequestAttachmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+}
+
+export type WorkspaceUncheckedUpdateWithoutAiRequestAttachmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutWorkspaceNestedInput
+  invitations?: Prisma.WorkspaceInviteUncheckedUpdateManyWithoutWorkspaceNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
@@ -732,6 +843,7 @@ export type WorkspaceCreateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
@@ -745,6 +857,7 @@ export type WorkspaceUncheckedCreateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutFeatureFlagOverridesInput = {
@@ -774,6 +887,7 @@ export type WorkspaceUpdateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
@@ -787,6 +901,7 @@ export type WorkspaceUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceCreateWithoutSupportTicketsInput = {
@@ -800,6 +915,7 @@ export type WorkspaceCreateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
@@ -813,6 +929,7 @@ export type WorkspaceUncheckedCreateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutWorkspaceInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutWorkspaceInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutWorkspaceInput
 }
 
 export type WorkspaceCreateOrConnectWithoutSupportTicketsInput = {
@@ -842,6 +959,7 @@ export type WorkspaceUpdateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutWorkspaceNestedInput
 }
 
 export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
@@ -855,6 +973,7 @@ export type WorkspaceUncheckedUpdateWithoutSupportTicketsInput = {
   featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutWorkspaceNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutWorkspaceNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutWorkspaceNestedInput
 }
 
 
@@ -869,6 +988,7 @@ export type WorkspaceCountOutputType = {
   supportTickets: number
   aiRequests: number
   aiRequestEvents: number
+  aiRequestAttachments: number
 }
 
 export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -878,6 +998,7 @@ export type WorkspaceCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   supportTickets?: boolean | WorkspaceCountOutputTypeCountSupportTicketsArgs
   aiRequests?: boolean | WorkspaceCountOutputTypeCountAiRequestsArgs
   aiRequestEvents?: boolean | WorkspaceCountOutputTypeCountAiRequestEventsArgs
+  aiRequestAttachments?: boolean | WorkspaceCountOutputTypeCountAiRequestAttachmentsArgs
 }
 
 /**
@@ -932,6 +1053,13 @@ export type WorkspaceCountOutputTypeCountAiRequestEventsArgs<ExtArgs extends run
   where?: Prisma.AiRequestEventWhereInput
 }
 
+/**
+ * WorkspaceCountOutputType without action
+ */
+export type WorkspaceCountOutputTypeCountAiRequestAttachmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AiRequestAttachmentWhereInput
+}
+
 
 export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -945,6 +1073,7 @@ export type WorkspaceSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.Workspace$aiRequestsArgs<ExtArgs>
   aiRequestEvents?: boolean | Prisma.Workspace$aiRequestEventsArgs<ExtArgs>
+  aiRequestAttachments?: boolean | Prisma.Workspace$aiRequestAttachmentsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["workspace"]>
 
@@ -980,6 +1109,7 @@ export type WorkspaceInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   supportTickets?: boolean | Prisma.Workspace$supportTicketsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.Workspace$aiRequestsArgs<ExtArgs>
   aiRequestEvents?: boolean | Prisma.Workspace$aiRequestEventsArgs<ExtArgs>
+  aiRequestAttachments?: boolean | Prisma.Workspace$aiRequestAttachmentsArgs<ExtArgs>
   _count?: boolean | Prisma.WorkspaceCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type WorkspaceIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -994,6 +1124,7 @@ export type $WorkspacePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     supportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
     aiRequests: Prisma.$AiRequestPayload<ExtArgs>[]
     aiRequestEvents: Prisma.$AiRequestEventPayload<ExtArgs>[]
+    aiRequestAttachments: Prisma.$AiRequestAttachmentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1401,6 +1532,7 @@ export interface Prisma__WorkspaceClient<T, Null = never, ExtArgs extends runtim
   supportTickets<T extends Prisma.Workspace$supportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$supportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRequests<T extends Prisma.Workspace$aiRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRequestEvents<T extends Prisma.Workspace$aiRequestEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiRequestEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  aiRequestAttachments<T extends Prisma.Workspace$aiRequestAttachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Workspace$aiRequestAttachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestAttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1969,6 +2101,30 @@ export type Workspace$aiRequestEventsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.AiRequestEventScalarFieldEnum | Prisma.AiRequestEventScalarFieldEnum[]
+}
+
+/**
+ * Workspace.aiRequestAttachments
+ */
+export type Workspace$aiRequestAttachmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AiRequestAttachment
+   */
+  select?: Prisma.AiRequestAttachmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AiRequestAttachment
+   */
+  omit?: Prisma.AiRequestAttachmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AiRequestAttachmentInclude<ExtArgs> | null
+  where?: Prisma.AiRequestAttachmentWhereInput
+  orderBy?: Prisma.AiRequestAttachmentOrderByWithRelationInput | Prisma.AiRequestAttachmentOrderByWithRelationInput[]
+  cursor?: Prisma.AiRequestAttachmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AiRequestAttachmentScalarFieldEnum | Prisma.AiRequestAttachmentScalarFieldEnum[]
 }
 
 /**
