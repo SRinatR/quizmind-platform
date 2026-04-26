@@ -1,4 +1,5 @@
 import {
+  GoneException,
   Controller,
   Get,
   Headers,
@@ -6,13 +7,22 @@ import {
   NotFoundException,
   Param,
   Query,
+  Res,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { parseBearerToken } from '@quizmind/auth';
 import { type AiHistoryListFilters, type AiRequestStatus, type AiRequestType, type ApiSuccess } from '@quizmind/contracts';
 
 import { AuthService } from '../auth/auth.service';
 import { AiHistoryService } from './ai-history.service';
+
+const MAX_FILENAME_LENGTH = 120;
+const fallbackExtensionByMimeType: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
 
 function ok<T>(data: T): ApiSuccess<T> {
   return { ok: true, data };
@@ -27,6 +37,31 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;
   const n = Number.parseInt(value, 10);
   return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+function extensionForMimeType(mimeType: string): string {
+  return fallbackExtensionByMimeType[mimeType] ?? 'bin';
+}
+
+export function sanitizeAttachmentFilename(originalName: string, mimeType: string): string {
+  const clean = originalName
+    .replace(/[\r\n]/g, ' ')
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .replace(/[\\/"<>|:*?]/g, '_')
+    .trim()
+    .replace(/\s+/g, ' ');
+  const fallbackBase = 'attachment';
+  const ext = extensionForMimeType(mimeType);
+  const normalized = clean.length > 0 ? clean : `${fallbackBase}.${ext}`;
+  const splitIndex = normalized.lastIndexOf('.');
+  const base = splitIndex > 0 ? normalized.slice(0, splitIndex) : normalized;
+  const providedExt = splitIndex > 0 ? normalized.slice(splitIndex + 1).toLowerCase() : '';
+  const requiredExt = ext.toLowerCase();
+  const safeBase = base.slice(0, MAX_FILENAME_LENGTH).trim() || fallbackBase;
+  if (providedExt === requiredExt) {
+    return `${safeBase}.${providedExt}`;
+  }
+  return `${safeBase}.${requiredExt}`;
 }
 
 @Controller()
@@ -87,6 +122,62 @@ export class AiHistoryController {
     }
 
     return ok(detail);
+  }
+
+  @Get('history/:id/attachments/:attachmentId/view')
+  async viewAttachment(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Res() response: Response,
+  ) {
+    const session = await this.requireSession(authorization);
+    const attachment = await this.aiHistoryService.getAttachmentForUser({
+      userId: session.user.id,
+      aiRequestEventId: id,
+      attachmentId,
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found.');
+    }
+    if (attachment.expired) {
+      throw new GoneException('Image expired after retention window.');
+    }
+
+    const safeFilename = sanitizeAttachmentFilename(attachment.originalName, attachment.mimeType);
+    response.setHeader('Content-Type', attachment.mimeType);
+    response.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    response.setHeader('Cache-Control', 'private, max-age=60');
+    response.send(attachment.bytes);
+  }
+
+  @Get('history/:id/attachments/:attachmentId/download')
+  async downloadAttachment(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Res() response: Response,
+  ) {
+    const session = await this.requireSession(authorization);
+    const attachment = await this.aiHistoryService.getAttachmentForUser({
+      userId: session.user.id,
+      aiRequestEventId: id,
+      attachmentId,
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found.');
+    }
+    if (attachment.expired) {
+      throw new GoneException('Image expired after retention window.');
+    }
+
+    const safeFilename = sanitizeAttachmentFilename(attachment.originalName, attachment.mimeType);
+    response.setHeader('Content-Type', attachment.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    response.setHeader('Cache-Control', 'private, max-age=60');
+    response.send(attachment.bytes);
   }
 
   /**

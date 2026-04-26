@@ -127,6 +127,11 @@ export type AiRequestEvent = Prisma.AiRequestEventModel
  */
 export type AiRequestContent = Prisma.AiRequestContentModel
 /**
+ * Model AiRequestAttachment
+ * 
+ */
+export type AiRequestAttachment = Prisma.AiRequestAttachmentModel
+/**
  * Model AiUsageDailyRollup
  * 
  */

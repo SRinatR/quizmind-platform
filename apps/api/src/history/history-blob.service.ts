@@ -13,7 +13,7 @@ export function resolveHistoryBlobDir(): string {
   return process.env['HISTORY_BLOB_DIR'] ?? path.join(process.cwd(), 'data', 'history');
 }
 
-function toStoragePath(dir: string, blobKey: string) {
+export function resolveHistoryBlobPath(dir: string, blobKey: string): string {
   const normalized = blobKey.trim().replaceAll('\\', '/');
   if (!normalized || normalized.startsWith('/') || normalized.includes('..')) {
     throw new Error(`Invalid history blob key: ${blobKey}`);
@@ -39,30 +39,38 @@ export class HistoryBlobService {
 
   private async ensureParentDir(blobKey: string): Promise<void> {
     await this.ensureDir();
-    await fs.mkdir(path.dirname(toStoragePath(this.dir, blobKey)), { recursive: true });
+    await fs.mkdir(path.dirname(resolveHistoryBlobPath(this.dir, blobKey)), { recursive: true });
   }
 
   async writeJson(blobKey: string, payload: unknown): Promise<void> {
     await this.ensureParentDir(blobKey);
-    await fs.writeFile(toStoragePath(this.dir, blobKey), JSON.stringify(payload), 'utf8');
+    await fs.writeFile(resolveHistoryBlobPath(this.dir, blobKey), JSON.stringify(payload), 'utf8');
   }
 
   async writeBinary(blobKey: string, buffer: Buffer): Promise<void> {
     await this.ensureParentDir(blobKey);
-    await fs.writeFile(toStoragePath(this.dir, blobKey), buffer);
+    await fs.writeFile(resolveHistoryBlobPath(this.dir, blobKey), buffer);
   }
 
   async readJson(blobKey: string): Promise<unknown | null> {
     try {
-      const raw = await fs.readFile(toStoragePath(this.dir, blobKey), 'utf8');
+      const raw = await fs.readFile(resolveHistoryBlobPath(this.dir, blobKey), 'utf8');
       return JSON.parse(raw) as unknown;
     } catch {
       return null;
     }
   }
 
+  async readBinary(blobKey: string): Promise<Buffer | null> {
+    try {
+      return await fs.readFile(resolveHistoryBlobPath(this.dir, blobKey));
+    } catch {
+      return null;
+    }
+  }
+
   async deleteByKey(blobKey: string): Promise<void> {
-    await tryUnlink(toStoragePath(this.dir, blobKey));
+    await tryUnlink(resolveHistoryBlobPath(this.dir, blobKey));
   }
 
   async writePrompt(requestId: string, messages: unknown): Promise<string> {
@@ -79,6 +87,12 @@ export class HistoryBlobService {
 
   async writeFileContent(requestId: string, buffer: Buffer): Promise<string> {
     const key = `requests/${requestId}/file.bin`;
+    await this.writeBinary(key, buffer);
+    return key;
+  }
+
+  async writeAttachmentContent(requestId: string, attachmentId: string, buffer: Buffer): Promise<string> {
+    const key = `requests/${requestId}/attachments/${attachmentId}.bin`;
     await this.writeBinary(key, buffer);
     return key;
   }

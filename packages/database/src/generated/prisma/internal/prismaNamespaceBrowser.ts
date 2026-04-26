@@ -68,6 +68,7 @@ export const ModelName = {
   AiRequest: 'AiRequest',
   AiRequestEvent: 'AiRequestEvent',
   AiRequestContent: 'AiRequestContent',
+  AiRequestAttachment: 'AiRequestAttachment',
   AiUsageDailyRollup: 'AiUsageDailyRollup',
   FeatureFlag: 'FeatureFlag',
   FeatureFlagOverride: 'FeatureFlagOverride',
@@ -364,6 +365,25 @@ export const AiRequestContentScalarFieldEnum = {
 } as const
 
 export type AiRequestContentScalarFieldEnum = (typeof AiRequestContentScalarFieldEnum)[keyof typeof AiRequestContentScalarFieldEnum]
+
+
+export const AiRequestAttachmentScalarFieldEnum = {
+  id: 'id',
+  aiRequestEventId: 'aiRequestEventId',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  role: 'role',
+  kind: 'kind',
+  mimeType: 'mimeType',
+  originalName: 'originalName',
+  sizeBytes: 'sizeBytes',
+  blobKey: 'blobKey',
+  expiresAt: 'expiresAt',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestAttachmentScalarFieldEnum = (typeof AiRequestAttachmentScalarFieldEnum)[keyof typeof AiRequestAttachmentScalarFieldEnum]
 
 
 export const AiUsageDailyRollupScalarFieldEnum = {
