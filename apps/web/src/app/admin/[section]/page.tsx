@@ -26,7 +26,7 @@ import { AdminAiProvidersClient } from './admin-ai-providers-client';
 import { ExtensionControlAdminClient } from './extension-control-admin-client';
 import { UsersDirectoryClient } from './users-directory-client';
 import { LogsExplorerClient } from './logs-explorer-client';
-import { AppearanceSettingsPanel } from '../../components/settings/appearance-settings-panel';
+import { AdminSettingsClient } from './admin-settings-client';
 
 // ── Route aliases ─────────────────────────────────────────────────────────────
 const ROUTE_REDIRECTS: Record<string, string> = {
@@ -267,6 +267,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       pathname={`/admin/${sec}`}
       showPersonaSwitcher={false}
       title={sec === 'settings' ? 'Settings' : (section?.title ?? sec)}
+      userDisplayName={session?.user.displayName ?? undefined}
+      userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
       {sec === 'settings' ? (
         <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
@@ -380,16 +382,12 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
           </>
         ) : // ── Control Plane: Settings ───────────────────────────────────────
         section.id === 'settings' ? (
-          <div className="settings-section">
-            <div className="settings-section__header">
-              <h3 className="settings-section__title">Appearance</h3>
-              <p className="settings-section__desc">Visual preferences and interface settings. Saved to your account.</p>
-            </div>
-
-            <article className="panel settings-card">
-              <AppearanceSettingsPanel isSignedIn={isConnectedSession} />
-            </article>
-          </div>
+          <AdminSettingsClient
+            isConnectedSession={isConnectedSession}
+            sessionDisplayName={session.user.displayName ?? null}
+            sessionEmail={session.user.email}
+            userProfile={userProfile}
+          />
         ) : (
           // ── Fallback ─────────────────────────────────────────────────
           <section className="panel">

@@ -1,7 +1,7 @@
 import { type AccessRequirement } from '@quizmind/contracts';
 import { type AdminNavGroup, type NavigationItem } from '@quizmind/ui';
 
-export type AdminSectionGroup = 'people' | 'operations' | 'control-plane';
+export type AdminSectionGroup = 'people' | 'operations' | 'control-plane' | 'preferences';
 
 export interface AdminSection {
   id: string;
@@ -68,19 +68,20 @@ export const adminSections: AdminSection[] = [
     href: '/admin/settings',
     description: 'Appearance preferences for your admin workspace.',
     requirement: { permission: 'installations:read' },
-    group: 'control-plane',
-    groupLabel: 'Control Plane',
+    group: 'preferences',
+    groupLabel: 'Preferences',
   },
 ];
 
 // ── Group order and labels ────────────────────────────────────────────────────
 
-const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'control-plane'];
+const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'control-plane', 'preferences'];
 
 const GROUP_LABELS: Record<AdminSectionGroup, string> = {
   people: 'People',
   operations: 'Operations',
   'control-plane': 'Control Plane',
+  preferences: 'Preferences',
 };
 
 /**

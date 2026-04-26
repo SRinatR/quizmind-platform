@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
+import { usePreferences } from '../lib/preferences';
 
 export function LogoutButton() {
   const router = useRouter();
+  const { t } = usePreferences();
   const [isPending, setIsPending] = useState(false);
   const [, startNavigation] = useTransition();
 
@@ -24,7 +26,7 @@ export function LogoutButton() {
       onClick={() => void handleLogout()}
       type="button"
     >
-      {isPending ? 'Signing out\u2026' : 'Sign out'}
+      {isPending ? t.shell.signingOut : t.shell.signOut}
     </button>
   );
 }
