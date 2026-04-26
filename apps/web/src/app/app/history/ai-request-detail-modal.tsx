@@ -28,14 +28,18 @@ interface ParsedPrompt {
   userText: string;
   systemText: string;
   fallbackText: string;
+  hasImageInput: boolean;
 }
 
 const QUICK_ANSWER_USER_PREFIX = 'Return only the final answer without solution steps. If options are labeled (letters or numbers), return ONLY correct labels separated by commas (for example: a, d). If the question has options but they are unlabeled, number from 1 and answer as: N) option text. If no options exist (free-text question), return ONLY the answer. Question:';
+const VISION_USER_PREFIX = 'Read the screenshot carefully. Double-check option labels before answering. If options are labeled, output only labels (e.g. a, d). If unlabeled options exist, output: N) option text. If no options (text/fill-in question), output only the answer text. Return final answer only.';
+const IMAGE_QUESTION_PLACEHOLDER = 'Question was provided as an image.';
 
 interface DisplayPromptResult {
   mainText: string;
   promptInstruction: string;
   prefixRemoved: boolean;
+  hideCopy: boolean;
 }
 
 function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedPrompt {
@@ -54,10 +58,21 @@ function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedP
         return [];
       });
 
+    const hasImageInput = msgs.some((m) => {
+      if (m.role !== 'user') return false;
+      const c = m.content;
+      if (!Array.isArray(c)) return false;
+      return (c as Array<Record<string, unknown>>).some((b) => {
+        const t = typeof b.type === 'string' ? b.type : '';
+        return t.includes('image');
+      });
+    });
+
     return {
       userText: gather('user').join('\n\n'),
       systemText: gather('system').join('\n\n'),
       fallbackText: '',
+      hasImageInput,
     };
   }
 
@@ -66,13 +81,13 @@ function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedP
   else if (json !== null && json !== undefined) fallback = JSON.stringify(json, null, 2);
   else fallback = excerpt ?? '';
   fallback = fallback.replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, '[image attachment omitted]');
-  return { userText: '', systemText: '', fallbackText: fallback };
+  return { userText: '', systemText: '', fallbackText: fallback, hasImageInput: false };
 }
 
-function getPromptInstructionAndQuestion(parsed: ParsedPrompt): DisplayPromptResult {
+function getPromptInstructionAndQuestion(parsed: ParsedPrompt, hasPromptImages: boolean): DisplayPromptResult {
   const basePrompt = parsed.userText || parsed.fallbackText;
   if (!parsed.userText) {
-    return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false };
+    return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false, hideCopy: false };
   }
 
   if (parsed.userText.startsWith(QUICK_ANSWER_USER_PREFIX)) {
@@ -81,10 +96,22 @@ function getPromptInstructionAndQuestion(parsed: ParsedPrompt): DisplayPromptRes
       mainText,
       promptInstruction: QUICK_ANSWER_USER_PREFIX,
       prefixRemoved: true,
+      hideCopy: false,
     };
   }
 
-  return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false };
+  const hasImageInput = parsed.hasImageInput || hasPromptImages;
+  if (hasImageInput && parsed.userText.startsWith(VISION_USER_PREFIX)) {
+    const cleaned = parsed.userText.slice(VISION_USER_PREFIX.length).trim();
+    return {
+      mainText: cleaned || IMAGE_QUESTION_PLACEHOLDER,
+      promptInstruction: VISION_USER_PREFIX,
+      prefixRemoved: true,
+      hideCopy: cleaned.length === 0,
+    };
+  }
+
+  return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false, hideCopy: false };
 }
 
 function extractFinalAnswer(json: unknown): string {
@@ -209,9 +236,13 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
   }, [id]);
 
   const parsed = detail ? parsePrompt(detail.promptContentJson, detail.promptExcerpt) : null;
+  const imageAttachments = useMemo(
+    () => (detail?.attachments ?? []).filter((a) => a.kind === 'image' && a.role === 'prompt'),
+    [detail?.attachments],
+  );
   const displayPromptResult = parsed
-    ? getPromptInstructionAndQuestion(parsed)
-    : { mainText: '', promptInstruction: '', prefixRemoved: false };
+    ? getPromptInstructionAndQuestion(parsed, imageAttachments.length > 0)
+    : { mainText: '', promptInstruction: '', prefixRemoved: false, hideCopy: false };
   const displayPrompt = displayPromptResult.mainText;
   const rawRequestText = detail?.promptContentJson == null
     ? ''
@@ -222,10 +253,6 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
   const rawResponseText = detail ? extractResponseText(detail.responseContentJson, detail.responseExcerpt) : '';
   const finalAnswer = detail ? extractFinalAnswer(detail.responseContentJson) : '';
   const displayResponse = finalAnswer || rawResponseText;
-  const imageAttachments = useMemo(
-    () => (detail?.attachments ?? []).filter((a) => a.kind === 'image' && a.role === 'prompt'),
-    [detail?.attachments],
-  );
 
   return (
     <>
@@ -279,7 +306,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
               <section style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span className="micro-label">Request / Question</span>
-                  {displayPrompt && (
+                  {displayPrompt && !displayPromptResult.hideCopy && (
                     <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">Copy</button>
                   )}
                 </div>
