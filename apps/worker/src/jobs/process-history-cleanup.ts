@@ -69,7 +69,18 @@ export async function processHistoryCleanupJob(
     });
     if (legacy.length === 0) break;
     const legacyIds = legacy.map((row) => row.id);
-    await Promise.all(legacyIds.flatMap((id) => [
+    const matchingEventRows = await prisma.aiRequestEvent.findMany({
+      where: { id: { in: legacyIds } },
+      select: { id: true },
+    });
+    const matchingEventIds = new Set(matchingEventRows.map((row) => row.id));
+    const legacyOnlyIds = legacyIds.filter((id) => !matchingEventIds.has(id));
+    if (legacyOnlyIds.length === 0) {
+      if (legacy.length < BATCH) break;
+      continue;
+    }
+
+    await Promise.all(legacyOnlyIds.flatMap((id) => [
       tryUnlink(path.join(blobDir, `requests/${id}/prompt.json`)),
       tryUnlink(path.join(blobDir, `requests/${id}/response.json`)),
       tryUnlink(path.join(blobDir, `requests/${id}/file.bin`)),
@@ -78,7 +89,7 @@ export async function processHistoryCleanupJob(
       tryUnlink(path.join(blobDir, `${id}.file.bin`)),
     ]));
 
-    const removed = await prisma.aiRequest.deleteMany({ where: { id: { in: legacyIds } } });
+    const removed = await prisma.aiRequest.deleteMany({ where: { id: { in: legacyOnlyIds } } });
     deletedRows += removed.count;
     if (legacy.length < BATCH) break;
   }

@@ -119,6 +119,25 @@ export interface AiAnalyticsRow {
   avgDurationMs: number | null;
 }
 
+interface RollupBucketKey {
+  userId: string;
+  date: Date;
+  model: string;
+  requestType: string;
+  status: string;
+}
+
+interface RollupContribution {
+  requestCount: number;
+  successCount: number;
+  failedCount: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+  totalDurationMs: number;
+}
+
 function buildEventWhere(input: Omit<ListHistoryInput, 'limit' | 'offset'>): Prisma.AiRequestEventWhereInput {
   return {
     userId: input.userId,
@@ -176,6 +195,20 @@ export class AiHistoryRepository {
     });
   }
 
+  listLegacyForUser(input: ListHistoryInput): Promise<AiHistoryLegacyListRecord[]> {
+    return this.prisma.aiRequest.findMany({
+      where: buildLegacyWhere(input),
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      skip: input.offset,
+      take: input.limit,
+      select: aiHistoryLegacyListSelect,
+    });
+  }
+
+  countLegacyForUser(input: Omit<ListHistoryInput, 'limit' | 'offset'>): Promise<number> {
+    return this.prisma.aiRequest.count({ where: buildLegacyWhere(input) });
+  }
+
   countLegacyForUserExcludingEventIds(input: Omit<ListHistoryInput, 'limit' | 'offset'>, excludedIds: string[]): Promise<number> {
     return this.prisma.aiRequest.count({
       where: {
@@ -194,9 +227,23 @@ export class AiHistoryRepository {
   }
 
   async upsertEventContentAndRollup(input: UpsertEventAndContentInput): Promise<void> {
-    const day = new Date(Date.UTC(input.occurredAt.getUTCFullYear(), input.occurredAt.getUTCMonth(), input.occurredAt.getUTCDate()));
-
     await this.prisma.$transaction(async (tx) => {
+      const previousEvent = await tx.aiRequestEvent.findUnique({
+        where: { id: input.eventId },
+        select: {
+          userId: true,
+          model: true,
+          requestType: true,
+          status: true,
+          promptTokens: true,
+          completionTokens: true,
+          totalTokens: true,
+          estimatedCostUsd: true,
+          durationMs: true,
+          occurredAt: true,
+        },
+      });
+
       await tx.aiRequestEvent.upsert({
         where: { id: input.eventId },
         create: {
@@ -262,44 +309,59 @@ export class AiHistoryRepository {
         },
       });
 
-      await tx.aiUsageDailyRollup.upsert({
-        where: {
-          userId_date_model_requestType_status: {
-            userId: input.userId,
-            date: day,
-            model: input.model,
-            requestType: input.requestType,
-            status: input.status,
-          },
-        },
-        create: {
-          userId: input.userId,
-          date: day,
-          requestType: input.requestType,
-          model: input.model,
-          modelDisplayName: input.modelDisplayName,
-          status: input.status,
-          requestCount: 1,
-          successCount: input.status === 'success' ? 1 : 0,
-          failedCount: input.status === 'success' ? 0 : 1,
-          promptTokens: input.promptTokens,
-          completionTokens: input.completionTokens,
-          totalTokens: input.totalTokens,
-          estimatedCostUsd: input.estimatedCostUsd,
-          totalDurationMs: input.durationMs ?? 0,
-        },
-        update: {
-          modelDisplayName: input.modelDisplayName,
-          requestCount: { increment: 1 },
-          successCount: { increment: input.status === 'success' ? 1 : 0 },
-          failedCount: { increment: input.status === 'success' ? 0 : 1 },
-          promptTokens: { increment: input.promptTokens },
-          completionTokens: { increment: input.completionTokens },
-          totalTokens: { increment: input.totalTokens },
-          estimatedCostUsd: { increment: input.estimatedCostUsd },
-          totalDurationMs: { increment: input.durationMs ?? 0 },
-        },
+      const nextBucket = this.toRollupBucket({
+        userId: input.userId,
+        model: input.model,
+        requestType: input.requestType,
+        status: input.status,
+        occurredAt: input.occurredAt,
       });
+      const nextContribution = this.toRollupContribution({
+        status: input.status,
+        promptTokens: input.promptTokens,
+        completionTokens: input.completionTokens,
+        totalTokens: input.totalTokens,
+        estimatedCostUsd: input.estimatedCostUsd,
+        durationMs: input.durationMs ?? 0,
+      });
+
+      if (!previousEvent) {
+        await this.applyRollupDelta(tx, nextBucket, nextContribution, input.modelDisplayName);
+        return;
+      }
+
+      const previousBucket = this.toRollupBucket({
+        userId: previousEvent.userId,
+        model: previousEvent.model,
+        requestType: previousEvent.requestType,
+        status: previousEvent.status,
+        occurredAt: previousEvent.occurredAt,
+      });
+      const previousContribution = this.toRollupContribution({
+        status: previousEvent.status,
+        promptTokens: previousEvent.promptTokens,
+        completionTokens: previousEvent.completionTokens,
+        totalTokens: previousEvent.totalTokens,
+        estimatedCostUsd: previousEvent.estimatedCostUsd ?? 0,
+        durationMs: previousEvent.durationMs ?? 0,
+      });
+
+      await this.applyRollupDelta(
+        tx,
+        previousBucket,
+        {
+          requestCount: -previousContribution.requestCount,
+          successCount: -previousContribution.successCount,
+          failedCount: -previousContribution.failedCount,
+          promptTokens: -previousContribution.promptTokens,
+          completionTokens: -previousContribution.completionTokens,
+          totalTokens: -previousContribution.totalTokens,
+          estimatedCostUsd: -previousContribution.estimatedCostUsd,
+          totalDurationMs: -previousContribution.totalDurationMs,
+        },
+        input.modelDisplayName,
+      );
+      await this.applyRollupDelta(tx, nextBucket, nextContribution, input.modelDisplayName);
     });
   }
 
@@ -320,6 +382,7 @@ export class AiHistoryRepository {
     const rollups = await this.prisma.aiUsageDailyRollup.findMany({
       where: { userId: input.userId, date: { gte: fromDay, lte: toDay } },
       select: {
+        date: true,
         model: true,
         status: true,
         requestCount: true,
@@ -333,7 +396,19 @@ export class AiHistoryRepository {
       },
     });
 
-    if (rollups.length > 0) {
+    const eventDays = await this.prisma.aiRequestEvent.findMany({
+      where: {
+        userId: input.userId,
+        occurredAt: { gte: input.from, lte: input.to },
+      },
+      select: { occurredAt: true },
+    });
+    const rollupDayKeys = new Set(rollups.map((row) => row.date.toISOString().slice(0, 10)));
+    const coverageComplete = rollups.length > 0 && eventDays.every(
+      (row) => rollupDayKeys.has(row.occurredAt.toISOString().slice(0, 10)),
+    );
+
+    if (coverageComplete) {
       const byModelMap = new Map<string, AiAnalyticsRow & { durationMsTotal: number }>();
       let totalRequests = 0;
       let successfulRequests = 0;
@@ -452,5 +527,98 @@ export class AiHistoryRepository {
       avgDurationMs: total > 0 ? (aggregates._sum.durationMs ?? 0) / total : null,
       byModel: [...byModelMap.values()].sort((a, b) => b.requestCount - a.requestCount).slice(0, 20),
     };
+  }
+
+  private toRollupBucket(input: {
+    userId: string;
+    model: string;
+    requestType: string;
+    status: string;
+    occurredAt: Date;
+  }): RollupBucketKey {
+    return {
+      userId: input.userId,
+      date: new Date(Date.UTC(input.occurredAt.getUTCFullYear(), input.occurredAt.getUTCMonth(), input.occurredAt.getUTCDate())),
+      model: input.model,
+      requestType: input.requestType,
+      status: input.status,
+    };
+  }
+
+  private toRollupContribution(input: {
+    status: string;
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+    estimatedCostUsd: number;
+    durationMs: number;
+  }): RollupContribution {
+    return {
+      requestCount: 1,
+      successCount: input.status === 'success' ? 1 : 0,
+      failedCount: input.status === 'success' ? 0 : 1,
+      promptTokens: input.promptTokens,
+      completionTokens: input.completionTokens,
+      totalTokens: input.totalTokens,
+      estimatedCostUsd: input.estimatedCostUsd,
+      totalDurationMs: input.durationMs,
+    };
+  }
+
+  private async applyRollupDelta(
+    tx: Prisma.TransactionClient,
+    bucket: RollupBucketKey,
+    delta: RollupContribution,
+    modelDisplayName?: string,
+  ): Promise<void> {
+    const existing = await tx.aiUsageDailyRollup.findUnique({
+      where: {
+        userId_date_model_requestType_status: {
+          userId: bucket.userId,
+          date: bucket.date,
+          model: bucket.model,
+          requestType: bucket.requestType,
+          status: bucket.status,
+        },
+      },
+    });
+
+    if (!existing) {
+      if (delta.requestCount <= 0) return;
+      await tx.aiUsageDailyRollup.create({
+        data: {
+          userId: bucket.userId,
+          date: bucket.date,
+          model: bucket.model,
+          requestType: bucket.requestType,
+          status: bucket.status,
+          modelDisplayName,
+          requestCount: Math.max(0, delta.requestCount),
+          successCount: Math.max(0, delta.successCount),
+          failedCount: Math.max(0, delta.failedCount),
+          promptTokens: Math.max(0, delta.promptTokens),
+          completionTokens: Math.max(0, delta.completionTokens),
+          totalTokens: Math.max(0, delta.totalTokens),
+          estimatedCostUsd: Math.max(0, delta.estimatedCostUsd),
+          totalDurationMs: Math.max(0, delta.totalDurationMs),
+        },
+      });
+      return;
+    }
+
+    await tx.aiUsageDailyRollup.update({
+      where: { id: existing.id },
+      data: {
+        modelDisplayName,
+        requestCount: Math.max(0, existing.requestCount + delta.requestCount),
+        successCount: Math.max(0, existing.successCount + delta.successCount),
+        failedCount: Math.max(0, existing.failedCount + delta.failedCount),
+        promptTokens: Math.max(0, existing.promptTokens + delta.promptTokens),
+        completionTokens: Math.max(0, existing.completionTokens + delta.completionTokens),
+        totalTokens: Math.max(0, existing.totalTokens + delta.totalTokens),
+        estimatedCostUsd: Math.max(0, existing.estimatedCostUsd + delta.estimatedCostUsd),
+        totalDurationMs: Math.max(0, existing.totalDurationMs + delta.totalDurationMs),
+      },
+    });
   }
 }

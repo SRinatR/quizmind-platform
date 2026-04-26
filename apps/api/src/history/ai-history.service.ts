@@ -208,16 +208,13 @@ export class AiHistoryService {
       this.repository.countEventsForUser(queryInput),
     ]);
 
-    const eventItems = eventRecords.map(toListItemFromEvent);
-
-    if (eventItems.length >= limit) {
-      return { items: eventItems, total: eventTotal, filters };
+    if (eventTotal > 0) {
+      return { items: eventRecords.map(toListItemFromEvent), total: eventTotal, filters };
     }
 
-    const excludedEventIds = eventRecords.map((row) => row.id);
     const [legacyRecords, legacyCount] = await Promise.all([
-      this.repository.listLegacyForUserExcludingEventIds(queryInput, excludedEventIds),
-      this.repository.countLegacyForUserExcludingEventIds(queryInput, excludedEventIds),
+      this.repository.listLegacyForUser(queryInput),
+      this.repository.countLegacyForUser(queryInput),
     ]);
 
     const legacyItems = await Promise.all(legacyRecords.map(async (row) => {
@@ -232,13 +229,9 @@ export class AiHistoryService {
       };
     }));
 
-    const combined = [...eventItems, ...legacyItems]
-      .sort((a, b) => +new Date(b.occurredAt) - +new Date(a.occurredAt))
-      .slice(offset, offset + limit);
-
     return {
-      items: combined,
-      total: eventTotal + legacyCount,
+      items: legacyItems,
+      total: legacyCount,
       filters,
     };
   }

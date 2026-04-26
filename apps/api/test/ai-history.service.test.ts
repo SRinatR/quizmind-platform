@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { AiHistoryService } from '../src/history/ai-history.service';
+import { AiHistoryRepository } from '../src/history/ai-history.repository';
 import { type AiHistoryRepository } from '../src/history/ai-history.repository';
 import { type HistoryBlobService } from '../src/history/history-blob.service';
 
@@ -234,4 +235,205 @@ test('AiHistoryService falls back to legacy AiRequest rows', async () => {
 
   const detail = await service.getDetail('legacy_1', 'user_1');
   assert.equal(detail?.promptExcerpt, 'legacy prompt');
+});
+
+test('AiHistoryService.listHistory uses event-only pagination when events exist', async () => {
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async (input: any) => [
+        {
+          id: input.offset === 0 ? 'evt_2' : 'evt_1',
+          provider: 'openrouter',
+          model: 'openai/gpt-4o-mini',
+          keySource: 'platform',
+          status: 'success',
+          errorCode: null,
+          promptTokens: 1,
+          completionTokens: 1,
+          totalTokens: 2,
+          durationMs: 1,
+          requestType: 'text',
+          estimatedCostUsd: 0,
+          promptExcerpt: 'p',
+          responseExcerpt: 'r',
+          occurredAt: new Date('2026-04-20T10:00:00.000Z'),
+          content: {
+            fileMetadataJson: null,
+            expiresAt: new Date(),
+            deletedAt: null,
+            promptBlobKey: null,
+            responseBlobKey: null,
+            fileBlobKey: null,
+          },
+        } as any,
+      ],
+      countEventsForUser: async () => 2,
+      listLegacyForUser: async () => [{ id: 'legacy_1' } as any],
+    },
+  });
+
+  const page1 = await service.listHistory('user_1', { limit: 1, offset: 0 });
+  const page2 = await service.listHistory('user_1', { limit: 1, offset: 1 });
+  assert.equal(page1.total, 2);
+  assert.equal(page1.items[0]?.id, 'evt_2');
+  assert.equal(page2.items[0]?.id, 'evt_1');
+});
+
+test('AiHistoryRepository.upsertEventContentAndRollup is idempotent for same event', async () => {
+  const events = new Map<string, any>();
+  const rollups = new Map<string, any>();
+  const keyFor = (v: any) => `${v.userId}|${v.date.toISOString()}|${v.model}|${v.requestType}|${v.status}`;
+  const prisma: any = {
+    $transaction: async (fn: any) => fn(prisma),
+    aiRequestEvent: {
+      findUnique: async ({ where }: any) => events.get(where.id) ?? null,
+      upsert: async ({ where, create, update }: any) => {
+        const next = events.has(where.id) ? { ...events.get(where.id), ...update } : create;
+        events.set(where.id, next);
+      },
+    },
+    aiRequestContent: { upsert: async () => undefined },
+    aiUsageDailyRollup: {
+      findUnique: async ({ where }: any) => rollups.get(keyFor(where.userId_date_model_requestType_status)) ?? null,
+      create: async ({ data }: any) => rollups.set(keyFor(data), { id: `r_${rollups.size + 1}`, ...data }),
+      update: async ({ where, data }: any) => {
+        for (const [k, v] of rollups.entries()) {
+          if (v.id === where.id) rollups.set(k, { ...v, ...data });
+        }
+      },
+    },
+  };
+  const repository = new AiHistoryRepository(prisma);
+  const input = {
+    eventId: 'evt_1',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'text' as const,
+    keySource: 'platform',
+    status: 'success',
+    promptTokens: 10,
+    completionTokens: 20,
+    totalTokens: 30,
+    estimatedCostUsd: 1,
+    occurredAt: new Date('2026-04-20T10:00:00.000Z'),
+    expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+  };
+
+  await repository.upsertEventContentAndRollup(input);
+  await repository.upsertEventContentAndRollup(input);
+  const row = [...rollups.values()][0];
+  assert.equal(row.requestCount, 1);
+  assert.equal(row.totalTokens, 30);
+});
+
+test('AiHistoryRepository.upsertEventContentAndRollup moves buckets when status/model/date/type changes', async () => {
+  const events = new Map<string, any>();
+  const rollups = new Map<string, any>();
+  const keyFor = (v: any) => `${v.userId}|${v.date.toISOString()}|${v.model}|${v.requestType}|${v.status}`;
+  const prisma: any = {
+    $transaction: async (fn: any) => fn(prisma),
+    aiRequestEvent: {
+      findUnique: async ({ where }: any) => events.get(where.id) ?? null,
+      upsert: async ({ where, create, update }: any) => {
+        const next = events.has(where.id) ? { ...events.get(where.id), ...update } : create;
+        events.set(where.id, next);
+      },
+    },
+    aiRequestContent: { upsert: async () => undefined },
+    aiUsageDailyRollup: {
+      findUnique: async ({ where }: any) => rollups.get(keyFor(where.userId_date_model_requestType_status)) ?? null,
+      create: async ({ data }: any) => rollups.set(keyFor(data), { id: `r_${rollups.size + 1}`, ...data }),
+      update: async ({ where, data }: any) => {
+        for (const [k, v] of rollups.entries()) {
+          if (v.id === where.id) rollups.set(k, { ...v, ...data });
+        }
+      },
+    },
+  };
+  const repository = new AiHistoryRepository(prisma);
+  await repository.upsertEventContentAndRollup({
+    eventId: 'evt_1', userId: 'user_1', provider: 'openrouter', model: 'm1', requestType: 'text', keySource: 'platform',
+    status: 'error', promptTokens: 1, completionTokens: 0, totalTokens: 1, estimatedCostUsd: 1, occurredAt: new Date('2026-04-20T10:00:00.000Z'), expiresAt: new Date(),
+  });
+  await repository.upsertEventContentAndRollup({
+    eventId: 'evt_1', userId: 'user_1', provider: 'openrouter', model: 'm2', requestType: 'image', keySource: 'platform',
+    status: 'success', promptTokens: 3, completionTokens: 2, totalTokens: 5, estimatedCostUsd: 2, occurredAt: new Date('2026-04-21T10:00:00.000Z'), expiresAt: new Date(),
+  });
+  const all = [...rollups.values()];
+  const oldBucket = all.find((row) => row.model === 'm1');
+  const newBucket = all.find((row) => row.model === 'm2');
+  assert.equal(oldBucket?.requestCount, 0);
+  assert.equal(newBucket?.requestCount, 1);
+  assert.equal(newBucket?.successCount, 1);
+});
+
+test('AiHistoryRepository.getAnalytics falls back to events when rollup coverage is partial', async () => {
+  const prisma: any = {
+    aiUsageDailyRollup: {
+      findMany: async () => [{
+        model: 'm1', status: 'success', requestCount: 1, successCount: 1, failedCount: 0, promptTokens: 1, completionTokens: 1, totalTokens: 2, estimatedCostUsd: 1, totalDurationMs: 10, date: new Date('2026-04-20T00:00:00.000Z'),
+      }],
+    },
+    aiRequestEvent: {
+      findMany: async ({ select }: any) => (select?.occurredAt ? [{ occurredAt: new Date('2026-04-20T12:00:00.000Z') }, { occurredAt: new Date('2026-04-21T12:00:00.000Z') }] : []),
+      aggregate: async () => ({ _count: { id: 2 }, _sum: { promptTokens: 2, completionTokens: 2, totalTokens: 4, estimatedCostUsd: 2, durationMs: 20 } }),
+      groupBy: async () => [{ model: 'm1', status: 'success', _count: { id: 2 }, _sum: { promptTokens: 2, completionTokens: 2, totalTokens: 4, estimatedCostUsd: 2, durationMs: 20 } }],
+      count: async () => 2,
+    },
+  };
+  const repository = new AiHistoryRepository(prisma);
+  const snapshot = await repository.getAnalytics({ userId: 'user_1', from: new Date('2026-04-20T00:00:00.000Z'), to: new Date('2026-04-21T23:59:59.000Z') });
+  assert.equal(snapshot.totalRequests, 2);
+});
+
+test('AiHistoryRepository.getAnalytics uses rollups when coverage is full', async () => {
+  const prisma: any = {
+    aiUsageDailyRollup: {
+      findMany: async () => [{
+        model: 'm1', status: 'success', requestCount: 2, successCount: 2, failedCount: 0, promptTokens: 2, completionTokens: 2, totalTokens: 4, estimatedCostUsd: 2, totalDurationMs: 20, date: new Date('2026-04-20T00:00:00.000Z'),
+      }],
+    },
+    aiRequestEvent: {
+      findMany: async () => [{ occurredAt: new Date('2026-04-20T12:00:00.000Z') }],
+      aggregate: async () => ({ _count: { id: 99 }, _sum: { promptTokens: 99, completionTokens: 99, totalTokens: 99, estimatedCostUsd: 99, durationMs: 99 } }),
+      groupBy: async () => [],
+      count: async () => 0,
+    },
+  };
+  const repository = new AiHistoryRepository(prisma);
+  const snapshot = await repository.getAnalytics({ userId: 'user_1', from: new Date('2026-04-20T00:00:00.000Z'), to: new Date('2026-04-20T23:59:59.000Z') });
+  assert.equal(snapshot.totalRequests, 2);
+});
+
+test('AiHistoryService.listHistory falls back to legacy list when no events exist', async () => {
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async () => [],
+      countEventsForUser: async () => 0,
+      listLegacyForUser: async () => [
+        {
+          id: 'legacy_1',
+          provider: 'openrouter',
+          model: 'openai/gpt-4o-mini',
+          keySource: 'platform',
+          status: 'success',
+          errorCode: null,
+          promptTokens: 1,
+          completionTokens: 2,
+          totalTokens: 3,
+          durationMs: 1,
+          requestType: 'text',
+          fileMetadataJson: null,
+          estimatedCostUsd: 0,
+          occurredAt: new Date('2026-04-20T10:00:00.000Z'),
+          expiresAt: null,
+        } as any,
+      ],
+      countLegacyForUser: async () => 1,
+    },
+  });
+  const result = await service.listHistory('user_1', { limit: 10, offset: 0 });
+  assert.equal(result.total, 1);
+  assert.equal(result.items[0]?.id, 'legacy_1');
 });

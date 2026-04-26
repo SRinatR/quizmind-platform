@@ -19,6 +19,9 @@ test('processHistoryCleanupJob marks expired content deleted and keeps event row
         return { count: where.id.in.length };
       },
     },
+    aiRequestEvent: {
+      findMany: async () => [],
+    },
     aiRequest: {
       findMany: async () => [],
       deleteMany: async () => {
@@ -33,4 +36,33 @@ test('processHistoryCleanupJob marks expired content deleted and keeps event row
   assert.equal(result.deletedRows, 1);
   assert.deepEqual(updatedIds, ['cnt_1']);
   assert.equal(legacyDeleted, false);
+});
+
+test('processHistoryCleanupJob deletes only legacy ai_requests without matching event ids', async () => {
+  let legacyPending = true;
+  let deletedIds: string[] = [];
+  const prisma = {
+    aiRequestContent: {
+      findMany: async () => [],
+      updateMany: async () => ({ count: 0 }),
+    },
+    aiRequestEvent: {
+      findMany: async () => [{ id: 'req_keep' }],
+    },
+    aiRequest: {
+      findMany: async () => {
+        if (!legacyPending) return [];
+        legacyPending = false;
+        return [{ id: 'req_keep' }, { id: 'req_delete' }];
+      },
+      deleteMany: async ({ where }: any) => {
+        deletedIds = where.id.in;
+        return { count: where.id.in.length };
+      },
+    },
+  } as any;
+
+  const result = await processHistoryCleanupJob({ triggeredAt: '2026-04-26T00:00:00.000Z' }, prisma);
+  assert.equal(result.deletedRows, 1);
+  assert.deepEqual(deletedIds, ['req_delete']);
 });
