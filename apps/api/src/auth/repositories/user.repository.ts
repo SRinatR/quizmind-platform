@@ -46,7 +46,33 @@ function encodeCursor(payload: CursorPayload): string {
 function decodeCursor(cursor: string): CursorPayload | null {
   try {
     const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as CursorPayload;
-    if (!parsed || typeof parsed.i !== 'string' || !('s' in parsed)) {
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+    if (
+      parsed.s !== 'created-desc'
+      && parsed.s !== 'created-asc'
+      && parsed.s !== 'login-desc'
+      && parsed.s !== 'email-asc'
+    ) {
+      return null;
+    }
+    if (typeof parsed.i !== 'string' || parsed.i.trim().length === 0) {
+      return null;
+    }
+    if (!(typeof parsed.c === 'string' || parsed.c === null)) {
+      return null;
+    }
+    if ((parsed.s === 'created-desc' || parsed.s === 'created-asc') && parsed.c === null) {
+      return null;
+    }
+    if ((parsed.s === 'created-desc' || parsed.s === 'created-asc' || parsed.s === 'login-desc') && parsed.c !== null) {
+      const timestamp = Date.parse(parsed.c);
+      if (!Number.isFinite(timestamp)) {
+        return null;
+      }
+    }
+    if (parsed.s === 'email-asc' && parsed.c === null) {
       return null;
     }
     return parsed;
@@ -118,8 +144,8 @@ export class UserRepository extends BaseRepository<AuthUserRecord, Prisma.UserCr
   async listWithFilters(filters: AdminUserListFilters): Promise<AdminUserListResult> {
     const where = this.buildWhere(filters);
     const sort: AdminUserSort = filters.sort ?? 'created-desc';
-
-    if (filters.cursor) {
+    const isLegacyPageMode = typeof filters.page === 'number' && Number.isFinite(filters.page) && !filters.cursor;
+    if (!isLegacyPageMode) {
       return this.listWithCursor(filters, where, sort);
     }
 

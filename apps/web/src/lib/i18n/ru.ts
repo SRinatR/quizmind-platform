@@ -542,6 +542,7 @@ export const ru: Translations = {
       reset: 'Сброс',
       prev: 'Назад',
       next: 'Вперёд',
+      pageLabel: 'Страница',
       of: 'из',
       you: 'вы',
       password: 'Пароль',

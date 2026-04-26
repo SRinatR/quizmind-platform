@@ -22,8 +22,17 @@ CREATE INDEX IF NOT EXISTS "User_emailVerifiedAt_idx"
 CREATE INDEX IF NOT EXISTS "UserSystemRole_userId_role_idx"
   ON "UserSystemRole" ("userId", "role");
 
+CREATE INDEX IF NOT EXISTS "UserSystemRole_role_userId_idx"
+  ON "UserSystemRole" ("role", "userId");
+
 CREATE INDEX IF NOT EXISTS "User_email_lower_trgm_idx"
   ON "User" USING GIN (LOWER("email") gin_trgm_ops);
 
 CREATE INDEX IF NOT EXISTS "User_displayName_lower_trgm_idx"
   ON "User" USING GIN (LOWER(COALESCE("displayName", '')) gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS "User_email_trgm_idx"
+  ON "User" USING GIN ("email" gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS "User_displayName_trgm_idx"
+  ON "User" USING GIN ("displayName" gin_trgm_ops);

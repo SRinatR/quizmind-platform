@@ -206,7 +206,7 @@ function Pagination({ page, limit, itemsCount, hasNext, onPrevious, onNext }: Pa
         {a.prev}
       </button>
       <span style={{ minWidth: '60px', textAlign: 'center' }}>
-        Page {page}
+        {a.pageLabel} {page}
       </span>
       <button
         className="btn-ghost"
@@ -567,6 +567,9 @@ export function UsersDirectoryClient({
     setDraftQuery(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      setCursor(null);
+      setCursorHistory([]);
+      setPage(1);
       const qs = buildParams({}, {
         query: draftQueryRef.current,
         role: draftRole,

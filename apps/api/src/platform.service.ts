@@ -1479,7 +1479,10 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const page = Math.max(1, Number(rawFilters?.page) || 1);
+    const page =
+      typeof rawFilters?.page === 'string' && rawFilters.page.trim()
+        ? Math.max(1, Number(rawFilters.page) || 1)
+        : undefined;
     const cursor = typeof rawFilters?.cursor === 'string' && rawFilters.cursor.trim()
       ? rawFilters.cursor.trim()
       : undefined;
@@ -1502,7 +1505,7 @@ export class PlatformService {
       banned: bannedFilter,
       verified: verifiedFilter,
       sort: sortFilter,
-      page,
+      ...(typeof page === 'number' ? { page } : {}),
       cursor,
       limit,
     });
@@ -1512,7 +1515,7 @@ export class PlatformService {
       accessDecision,
       writeDecision,
       items: items.map(mapUserRecordToDirectoryEntry),
-      ...(typeof total === 'number' ? { total, page } : {}),
+      ...(typeof total === 'number' ? { total, ...(typeof page === 'number' ? { page } : {}) } : {}),
       hasNext,
       nextCursor,
       limit,
