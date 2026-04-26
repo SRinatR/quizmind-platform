@@ -128,6 +128,7 @@ model User {
   providerCredentials    ProviderCredential[]
   aiRequests             AiRequest[]
   aiRequestEvents        AiRequestEvent[]
+  aiRequestAttachments   AiRequestAttachment[]
   aiUsageDailyRollups    AiUsageDailyRollup[]
   aiProviderPoliciesUpdated AiProviderPolicy[]  @relation("AiProviderPolicyUpdatedBy")
   supportTickets         SupportTicket[]         @relation("SupportTicketRequester")
@@ -196,6 +197,7 @@ model Workspace {
   supportTickets         SupportTicket[]
   aiRequests             AiRequest[]
   aiRequestEvents        AiRequestEvent[]
+  aiRequestAttachments   AiRequestAttachment[]
 }
 
 model Wallet {
@@ -361,6 +363,7 @@ model AiRequestEvent {
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace        Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   content          AiRequestContent?
+  attachments      AiRequestAttachment[]
 
   @@index([userId, occurredAt])
   @@index([userId, status, occurredAt])
@@ -385,6 +388,29 @@ model AiRequestContent {
 
   @@index([expiresAt, deletedAt])
   @@map("ai_request_contents")
+}
+
+model AiRequestAttachment {
+  id               String         @id @default(cuid())
+  aiRequestEventId String
+  userId           String
+  workspaceId      String?
+  role             String
+  kind             String
+  mimeType         String
+  originalName     String?
+  sizeBytes        Int
+  blobKey          String
+  expiresAt        DateTime
+  deletedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  event            AiRequestEvent @relation(fields: [aiRequestEventId], references: [id], onDelete: Cascade)
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([aiRequestEventId])
+  @@index([expiresAt, deletedAt])
+  @@map("ai_request_attachments")
 }
 
 model AiUsageDailyRollup {

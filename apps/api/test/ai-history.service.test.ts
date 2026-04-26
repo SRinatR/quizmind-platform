@@ -17,6 +17,7 @@ function createService(overrides?: {
     countLegacyForUserExcludingEventIds: async () => 0,
     getEventDetailForUser: async () => null,
     getLegacyDetailForUser: async () => null,
+    getAttachmentForUser: async () => null,
     upsertEventContentAndRollup: async () => undefined,
     getAnalytics: async () => ({
       totalRequests: 0,
@@ -38,6 +39,8 @@ function createService(overrides?: {
     writeResponse: async () => 'requests/id/response.json',
     writeFileContent: async () => 'requests/id/file.bin',
     readJson: async () => null,
+    readBinary: async () => null,
+    writeAttachmentContent: async () => 'requests/id/attachments/att_1.bin',
     ...overrides?.blobs,
   };
 
@@ -80,6 +83,49 @@ test('AiHistoryService.persistContent dual-writes event/content/rollup', async (
   assert.equal(upsertInput.responseBlobKey, 'requests/req_1/response.json');
   assert.equal(upsertInput.promptExcerpt, 'hello');
   assert.equal(upsertInput.responseExcerpt, 'world');
+});
+
+test('AiHistoryService.persistContent extracts data URL image into attachment and strips base64 from prompt blob', async () => {
+  let persistedPrompt: unknown;
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+    blobs: {
+      writePrompt: async (_id: string, payload: unknown) => {
+        persistedPrompt = payload;
+        return 'requests/req_img/prompt.json';
+      },
+      writeAttachmentContent: async () => 'requests/req_img/attachments/att_1.bin',
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_img',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'what is on screenshot?' },
+          { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,aGVsbG8=' } },
+        ],
+      },
+    ],
+    responseContent: { choices: [{ message: { content: 'done' } }] },
+  });
+
+  const serialized = JSON.stringify(persistedPrompt);
+  assert.equal(serialized.includes('data:image/jpeg;base64'), false);
+  assert.match(serialized, /image_attachment/);
+  assert.equal(Array.isArray(upsertInput.promptAttachments), true);
+  assert.equal(upsertInput.promptAttachments.length, 1);
 });
 
 test('AiHistoryService.listHistory uses DB excerpts for new events without blob reads', async () => {
@@ -150,6 +196,7 @@ test('AiHistoryService.getDetail reads blobs only for selected item', async () =
           responseBlobKey: 'requests/evt_1/response.json',
           fileBlobKey: null,
         },
+        attachments: [],
       } as any),
     },
     blobs: {
@@ -194,6 +241,7 @@ test('AiHistoryService.getDetail returns safe message for expired/deleted conten
           responseBlobKey: 'requests/evt_1/response.json',
           fileBlobKey: null,
         },
+        attachments: [],
       } as any),
     },
   });
@@ -235,6 +283,90 @@ test('AiHistoryService falls back to legacy AiRequest rows', async () => {
 
   const detail = await service.getDetail('legacy_1', 'user_1');
   assert.equal(detail?.promptExcerpt, 'legacy prompt');
+});
+
+test('AiHistoryService.getDetail includes attachment metadata for event detail', async () => {
+  const { service } = createService({
+    repository: {
+      getEventDetailForUser: async () => ({
+        id: 'evt_1',
+        userId: 'user_1',
+        installationId: null,
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        keySource: 'platform',
+        status: 'success',
+        errorCode: null,
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        durationMs: 30,
+        requestType: 'image',
+        estimatedCostUsd: 0.001,
+        promptExcerpt: 'p',
+        responseExcerpt: 'r',
+        occurredAt: new Date('2026-04-20T10:00:00.000Z'),
+        content: {
+          fileMetadataJson: null,
+          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          deletedAt: null,
+          promptBlobKey: 'requests/evt_1/prompt.json',
+          responseBlobKey: 'requests/evt_1/response.json',
+          fileBlobKey: null,
+        },
+        attachments: [{
+          id: 'att_1',
+          role: 'prompt',
+          kind: 'image',
+          mimeType: 'image/jpeg',
+          originalName: 'image-1.jpg',
+          sizeBytes: 5,
+          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          deletedAt: null,
+          blobKey: 'requests/evt_1/attachments/att_1.bin',
+        }],
+      } as any),
+    },
+    blobs: {
+      readJson: async () => ({}),
+    },
+  });
+
+  const detail = await service.getDetail('evt_1', 'user_1');
+  assert.equal(detail?.attachments?.[0]?.id, 'att_1');
+  assert.equal(detail?.attachments?.[0]?.expired, false);
+});
+
+test('AiHistoryService.getAttachmentForUser enforces ownership and expiry', async () => {
+  const { service } = createService({
+    repository: {
+      getAttachmentForUser: async (input: any) => {
+        if (input.userId !== 'user_1') return null;
+        return {
+          id: 'att_1',
+          aiRequestEventId: 'evt_1',
+          role: 'prompt',
+          kind: 'image',
+          mimeType: 'image/jpeg',
+          originalName: 'img.jpg',
+          sizeBytes: 5,
+          blobKey: 'requests/evt_1/attachments/att_1.bin',
+          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          deletedAt: null,
+          event: { id: 'evt_1', userId: 'user_1' },
+        };
+      },
+    },
+    blobs: {
+      readBinary: async () => Buffer.from('hello'),
+    },
+  });
+
+  const allowed = await service.getAttachmentForUser({ userId: 'user_1', aiRequestEventId: 'evt_1', attachmentId: 'att_1' });
+  const denied = await service.getAttachmentForUser({ userId: 'user_2', aiRequestEventId: 'evt_1', attachmentId: 'att_1' });
+  assert.equal(allowed?.expired, false);
+  assert.equal(allowed?.bytes.toString('utf8'), 'hello');
+  assert.equal(denied, null);
 });
 
 test('AiHistoryService.listHistory uses event-only pagination when events exist', async () => {
@@ -293,6 +425,7 @@ test('AiHistoryRepository.upsertEventContentAndRollup is idempotent for same eve
       },
     },
     aiRequestContent: { upsert: async () => undefined },
+    aiRequestAttachment: { deleteMany: async () => undefined, createMany: async () => undefined },
     aiUsageDailyRollup: {
       findUnique: async ({ where }: any) => rollups.get(keyFor(where.userId_date_model_requestType_status)) ?? null,
       create: async ({ data }: any) => rollups.set(keyFor(data), { id: `r_${rollups.size + 1}`, ...data }),
@@ -341,6 +474,7 @@ test('AiHistoryRepository.upsertEventContentAndRollup moves buckets when status/
       },
     },
     aiRequestContent: { upsert: async () => undefined },
+    aiRequestAttachment: { deleteMany: async () => undefined, createMany: async () => undefined },
     aiUsageDailyRollup: {
       findUnique: async ({ where }: any) => rollups.get(keyFor(where.userId_date_model_requestType_status)) ?? null,
       create: async ({ data }: any) => rollups.set(keyFor(data), { id: `r_${rollups.size + 1}`, ...data }),

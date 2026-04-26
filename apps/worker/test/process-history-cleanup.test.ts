@@ -12,12 +12,16 @@ test('processHistoryCleanupJob marks expired content deleted and keeps event row
       findMany: async () => {
         if (!pending) return [];
         pending = false;
-        return [{ id: 'cnt_1', promptBlobKey: null, responseBlobKey: null, fileBlobKey: null }];
+        return [{ id: 'cnt_1', aiRequestEventId: 'evt_1', promptBlobKey: null, responseBlobKey: null, fileBlobKey: null }];
       },
       updateMany: async ({ where }: any) => {
         updatedIds.push(...where.id.in);
         return { count: where.id.in.length };
       },
+    },
+    aiRequestAttachment: {
+      findMany: async () => [],
+      updateMany: async () => ({ count: 0 }),
     },
     aiRequestEvent: {
       findMany: async () => [],
@@ -43,6 +47,10 @@ test('processHistoryCleanupJob deletes only legacy ai_requests without matching 
   let deletedIds: string[] = [];
   const prisma = {
     aiRequestContent: {
+      findMany: async () => [],
+      updateMany: async () => ({ count: 0 }),
+    },
+    aiRequestAttachment: {
       findMany: async () => [],
       updateMany: async () => ({ count: 0 }),
     },
@@ -77,6 +85,10 @@ test('processHistoryCleanupJob does not hang when a full legacy batch is entirel
       findMany: async () => [],
       updateMany: async () => ({ count: 0 }),
     },
+    aiRequestAttachment: {
+      findMany: async () => [],
+      updateMany: async () => ({ count: 0 }),
+    },
     aiRequestEvent: {
       findMany: async () => protectedRows,
     },
@@ -97,4 +109,36 @@ test('processHistoryCleanupJob does not hang when a full legacy batch is entirel
   assert.equal(result.deletedRows, 0);
   assert.equal(deleted, 0);
   assert.equal(calls, 2);
+});
+
+test('processHistoryCleanupJob deletes expired attachment blobs and marks attachment rows deleted', async () => {
+  let pending = true;
+  const updatedAttachmentIds: string[] = [];
+  const prisma = {
+    aiRequestContent: {
+      findMany: async () => {
+        if (!pending) return [];
+        pending = false;
+        return [{ id: 'cnt_1', aiRequestEventId: 'evt_1', promptBlobKey: null, responseBlobKey: null, fileBlobKey: null }];
+      },
+      updateMany: async ({ where }: any) => ({ count: where.id.in.length }),
+    },
+    aiRequestAttachment: {
+      findMany: async () => [{ id: 'att_1', blobKey: 'requests/evt_1/attachments/att_1.bin' }],
+      updateMany: async ({ where }: any) => {
+        updatedAttachmentIds.push(...where.id.in);
+        return { count: where.id.in.length };
+      },
+    },
+    aiRequestEvent: {
+      findMany: async () => [],
+    },
+    aiRequest: {
+      findMany: async () => [],
+      deleteMany: async () => ({ count: 0 }),
+    },
+  } as any;
+
+  await processHistoryCleanupJob({ triggeredAt: '2026-04-26T00:00:00.000Z' }, prisma);
+  assert.deepEqual(updatedAttachmentIds, ['att_1']);
 });

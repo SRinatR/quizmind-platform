@@ -37,5 +37,12 @@ export async function GET(
     return errorResponse('Unable to fetch history detail.', response.status || 500);
   }
 
-  return NextResponse.json({ ok: true, data: payload.data }, { status: 200 });
+  const detail = payload.data;
+  const attachments = (detail.attachments ?? []).map((attachment) => ({
+    ...attachment,
+    viewUrl: `/bff/history/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachment.id)}/view`,
+    downloadUrl: `/bff/history/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachment.id)}/download`,
+  }));
+
+  return NextResponse.json({ ok: true, data: { ...detail, attachments } }, { status: 200 });
 }

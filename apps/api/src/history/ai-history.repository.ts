@@ -29,6 +29,19 @@ const aiHistoryEventListSelect = {
       fileBlobKey: true,
     },
   },
+  attachments: {
+    select: {
+      id: true,
+      role: true,
+      kind: true,
+      mimeType: true,
+      originalName: true,
+      sizeBytes: true,
+      expiresAt: true,
+      deletedAt: true,
+      blobKey: true,
+    },
+  },
 } satisfies Prisma.AiRequestEventSelect;
 
 const aiHistoryEventDetailSelect = {
@@ -104,6 +117,17 @@ export interface UpsertEventAndContentInput {
   responseBlobKey?: string;
   fileBlobKey?: string;
   fileMetadataJson?: Prisma.InputJsonValue;
+  promptAttachments?: Array<{
+    id: string;
+    role: 'prompt' | 'response';
+    kind: 'image' | 'file';
+    mimeType: string;
+    originalName?: string;
+    sizeBytes: number;
+    blobKey: string;
+    expiresAt: Date;
+    deletedAt?: Date | null;
+  }>;
 }
 
 export interface AiAnalyticsRow {
@@ -117,6 +141,23 @@ export interface AiAnalyticsRow {
   totalTokens: number;
   totalCostUsd: number;
   avgDurationMs: number | null;
+}
+
+export interface AiHistoryAttachmentAccessRecord {
+  id: string;
+  aiRequestEventId: string;
+  role: string;
+  kind: string;
+  mimeType: string;
+  originalName: string | null;
+  sizeBytes: number;
+  blobKey: string;
+  expiresAt: Date;
+  deletedAt: Date | null;
+  event: {
+    id: string;
+    userId: string;
+  };
 }
 
 interface RollupBucketKey {
@@ -309,6 +350,34 @@ export class AiHistoryRepository {
         },
       });
 
+      if (input.promptAttachments) {
+        await tx.aiRequestAttachment.deleteMany({
+          where: {
+            aiRequestEventId: input.eventId,
+            role: 'prompt',
+          },
+        });
+
+        if (input.promptAttachments.length > 0) {
+          await tx.aiRequestAttachment.createMany({
+            data: input.promptAttachments.map((attachment) => ({
+              id: attachment.id,
+              aiRequestEventId: input.eventId,
+              userId: input.userId,
+              workspaceId: input.workspaceId,
+              role: attachment.role,
+              kind: attachment.kind,
+              mimeType: attachment.mimeType,
+              originalName: attachment.originalName ?? null,
+              sizeBytes: attachment.sizeBytes,
+              blobKey: attachment.blobKey,
+              expiresAt: attachment.expiresAt,
+              deletedAt: attachment.deletedAt ?? null,
+            })),
+          });
+        }
+      }
+
       const nextBucket = this.toRollupBucket({
         userId: input.userId,
         model: input.model,
@@ -362,6 +431,38 @@ export class AiHistoryRepository {
         input.modelDisplayName,
       );
       await this.applyRollupDelta(tx, nextBucket, nextContribution, input.modelDisplayName);
+    });
+  }
+
+  getAttachmentForUser(input: {
+    attachmentId: string;
+    aiRequestEventId: string;
+    userId: string;
+  }): Promise<AiHistoryAttachmentAccessRecord | null> {
+    return this.prisma.aiRequestAttachment.findFirst({
+      where: {
+        id: input.attachmentId,
+        aiRequestEventId: input.aiRequestEventId,
+        userId: input.userId,
+      },
+      select: {
+        id: true,
+        aiRequestEventId: true,
+        role: true,
+        kind: true,
+        mimeType: true,
+        originalName: true,
+        sizeBytes: true,
+        blobKey: true,
+        expiresAt: true,
+        deletedAt: true,
+        event: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+      },
     });
   }
 

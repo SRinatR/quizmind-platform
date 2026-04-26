@@ -263,6 +263,7 @@ export type UserWhereInput = {
   providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
   aiRequestEvents?: Prisma.AiRequestEventListRelationFilter
+  aiRequestAttachments?: Prisma.AiRequestAttachmentListRelationFilter
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupListRelationFilter
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
@@ -301,6 +302,7 @@ export type UserOrderByWithRelationInput = {
   providerCredentials?: Prisma.ProviderCredentialOrderByRelationAggregateInput
   aiRequests?: Prisma.AiRequestOrderByRelationAggregateInput
   aiRequestEvents?: Prisma.AiRequestEventOrderByRelationAggregateInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentOrderByRelationAggregateInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupOrderByRelationAggregateInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyOrderByRelationAggregateInput
   supportTickets?: Prisma.SupportTicketOrderByRelationAggregateInput
@@ -342,6 +344,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   providerCredentials?: Prisma.ProviderCredentialListRelationFilter
   aiRequests?: Prisma.AiRequestListRelationFilter
   aiRequestEvents?: Prisma.AiRequestEventListRelationFilter
+  aiRequestAttachments?: Prisma.AiRequestAttachmentListRelationFilter
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupListRelationFilter
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyListRelationFilter
   supportTickets?: Prisma.SupportTicketListRelationFilter
@@ -420,6 +423,7 @@ export type UserCreateInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -458,6 +462,7 @@ export type UserUncheckedCreateInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -496,6 +501,7 @@ export type UserUpdateInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -534,6 +540,7 @@ export type UserUncheckedUpdateInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -796,6 +803,20 @@ export type UserUpdateOneRequiredWithoutAiRequestEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAiRequestEventsInput, Prisma.UserUpdateWithoutAiRequestEventsInput>, Prisma.UserUncheckedUpdateWithoutAiRequestEventsInput>
 }
 
+export type UserCreateNestedOneWithoutAiRequestAttachmentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAiRequestAttachmentsInput, Prisma.UserUncheckedCreateWithoutAiRequestAttachmentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAiRequestAttachmentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutAiRequestAttachmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutAiRequestAttachmentsInput, Prisma.UserUncheckedCreateWithoutAiRequestAttachmentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutAiRequestAttachmentsInput
+  upsert?: Prisma.UserUpsertWithoutAiRequestAttachmentsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutAiRequestAttachmentsInput, Prisma.UserUpdateWithoutAiRequestAttachmentsInput>, Prisma.UserUncheckedUpdateWithoutAiRequestAttachmentsInput>
+}
+
 export type UserCreateNestedOneWithoutAiUsageDailyRollupsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutAiUsageDailyRollupsInput, Prisma.UserUncheckedCreateWithoutAiUsageDailyRollupsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutAiUsageDailyRollupsInput
@@ -1001,6 +1022,7 @@ export type UserCreateWithoutAccountsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -1038,6 +1060,7 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -1091,6 +1114,7 @@ export type UserUpdateWithoutAccountsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -1128,6 +1152,7 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -1165,6 +1190,7 @@ export type UserCreateWithoutSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -1202,6 +1228,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -1255,6 +1282,7 @@ export type UserUpdateWithoutSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -1292,6 +1320,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -1329,6 +1358,7 @@ export type UserCreateWithoutEmailVerificationsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -1366,6 +1396,7 @@ export type UserUncheckedCreateWithoutEmailVerificationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -1419,6 +1450,7 @@ export type UserUpdateWithoutEmailVerificationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -1456,6 +1488,7 @@ export type UserUncheckedUpdateWithoutEmailVerificationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -1493,6 +1526,7 @@ export type UserCreateWithoutPasswordResetsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -1530,6 +1564,7 @@ export type UserUncheckedCreateWithoutPasswordResetsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -1583,6 +1618,7 @@ export type UserUpdateWithoutPasswordResetsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -1620,6 +1656,7 @@ export type UserUncheckedUpdateWithoutPasswordResetsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -1658,6 +1695,7 @@ export type UserCreateWithoutWalletInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -1695,6 +1733,7 @@ export type UserUncheckedCreateWithoutWalletInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -1748,6 +1787,7 @@ export type UserUpdateWithoutWalletInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -1785,6 +1825,7 @@ export type UserUncheckedUpdateWithoutWalletInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -1821,6 +1862,7 @@ export type UserCreateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -1858,6 +1900,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -1911,6 +1954,7 @@ export type UserUpdateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -1948,6 +1992,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -1985,6 +2030,7 @@ export type UserCreateWithoutSystemRoleAssignmentsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -2022,6 +2068,7 @@ export type UserUncheckedCreateWithoutSystemRoleAssignmentsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -2075,6 +2122,7 @@ export type UserUpdateWithoutSystemRoleAssignmentsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -2112,6 +2160,7 @@ export type UserUncheckedUpdateWithoutSystemRoleAssignmentsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -2149,6 +2198,7 @@ export type UserCreateWithoutAiRequestsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -2186,6 +2236,7 @@ export type UserUncheckedCreateWithoutAiRequestsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -2239,6 +2290,7 @@ export type UserUpdateWithoutAiRequestsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -2276,6 +2328,7 @@ export type UserUncheckedUpdateWithoutAiRequestsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -2313,6 +2366,7 @@ export type UserCreateWithoutAiRequestEventsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -2350,6 +2404,7 @@ export type UserUncheckedCreateWithoutAiRequestEventsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -2403,6 +2458,7 @@ export type UserUpdateWithoutAiRequestEventsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -2440,6 +2496,175 @@ export type UserUncheckedUpdateWithoutAiRequestEventsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+}
+
+export type UserCreateWithoutAiRequestAttachmentsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutAiRequestAttachmentsInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetUncheckedCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutAiRequestAttachmentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutAiRequestAttachmentsInput, Prisma.UserUncheckedCreateWithoutAiRequestAttachmentsInput>
+}
+
+export type UserUpsertWithoutAiRequestAttachmentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutAiRequestAttachmentsInput, Prisma.UserUncheckedUpdateWithoutAiRequestAttachmentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutAiRequestAttachmentsInput, Prisma.UserUncheckedCreateWithoutAiRequestAttachmentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutAiRequestAttachmentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutAiRequestAttachmentsInput, Prisma.UserUncheckedUpdateWithoutAiRequestAttachmentsInput>
+}
+
+export type UserUpdateWithoutAiRequestAttachmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutAiRequestAttachmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUncheckedUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -2478,6 +2703,7 @@ export type UserCreateWithoutAiUsageDailyRollupsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
@@ -2515,6 +2741,7 @@ export type UserUncheckedCreateWithoutAiUsageDailyRollupsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
@@ -2568,6 +2795,7 @@ export type UserUpdateWithoutAiUsageDailyRollupsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
@@ -2605,6 +2833,7 @@ export type UserUncheckedUpdateWithoutAiUsageDailyRollupsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
@@ -2641,6 +2870,7 @@ export type UserCreateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -2678,6 +2908,7 @@ export type UserUncheckedCreateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -2731,6 +2962,7 @@ export type UserUpdateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -2768,6 +3000,7 @@ export type UserUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -2805,6 +3038,7 @@ export type UserCreateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -2842,6 +3076,7 @@ export type UserUncheckedCreateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -2895,6 +3130,7 @@ export type UserUpdateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -2932,6 +3168,7 @@ export type UserUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -2969,6 +3206,7 @@ export type UserCreateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -3006,6 +3244,7 @@ export type UserUncheckedCreateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -3059,6 +3298,7 @@ export type UserUpdateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -3096,6 +3336,7 @@ export type UserUncheckedUpdateWithoutExtensionInstallationsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -3133,6 +3374,7 @@ export type UserCreateWithoutExtensionInstallationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -3170,6 +3412,7 @@ export type UserUncheckedCreateWithoutExtensionInstallationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -3223,6 +3466,7 @@ export type UserUpdateWithoutExtensionInstallationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -3260,6 +3504,7 @@ export type UserUncheckedUpdateWithoutExtensionInstallationSessionsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -3297,6 +3542,7 @@ export type UserCreateWithoutProviderCredentialsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -3334,6 +3580,7 @@ export type UserUncheckedCreateWithoutProviderCredentialsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -3387,6 +3634,7 @@ export type UserUpdateWithoutProviderCredentialsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -3424,6 +3672,7 @@ export type UserUncheckedUpdateWithoutProviderCredentialsInput = {
   extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -3462,6 +3711,7 @@ export type UserCreateWithoutAiProviderPoliciesUpdatedInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
@@ -3499,6 +3749,7 @@ export type UserUncheckedCreateWithoutAiProviderPoliciesUpdatedInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
@@ -3552,6 +3803,7 @@ export type UserUpdateWithoutAiProviderPoliciesUpdatedInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
@@ -3589,6 +3841,7 @@ export type UserUncheckedUpdateWithoutAiProviderPoliciesUpdatedInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
@@ -3626,6 +3879,7 @@ export type UserCreateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
@@ -3663,6 +3917,7 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
@@ -3705,6 +3960,7 @@ export type UserCreateWithoutAssignedSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -3742,6 +3998,7 @@ export type UserUncheckedCreateWithoutAssignedSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -3795,6 +4052,7 @@ export type UserUpdateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
@@ -3832,6 +4090,7 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
@@ -3880,6 +4139,7 @@ export type UserUpdateWithoutAssignedSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -3917,6 +4177,7 @@ export type UserUncheckedUpdateWithoutAssignedSupportTicketsInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -3954,6 +4215,7 @@ export type UserCreateWithoutSupportTicketPresetFavoritesInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -3991,6 +4253,7 @@ export type UserUncheckedCreateWithoutSupportTicketPresetFavoritesInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -4044,6 +4307,7 @@ export type UserUpdateWithoutSupportTicketPresetFavoritesInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -4081,6 +4345,7 @@ export type UserUncheckedUpdateWithoutSupportTicketPresetFavoritesInput = {
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -4118,6 +4383,7 @@ export type UserCreateWithoutSupportImpersonationSessionsStartedInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -4155,6 +4421,7 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsStartedInput =
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -4197,6 +4464,7 @@ export type UserCreateWithoutSupportImpersonationSessionsTargetedInput = {
   providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
@@ -4234,6 +4502,7 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsTargetedInput 
   providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
   aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
   supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
@@ -4287,6 +4556,7 @@ export type UserUpdateWithoutSupportImpersonationSessionsStartedInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -4324,6 +4594,7 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsStartedInput =
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -4372,6 +4643,7 @@ export type UserUpdateWithoutSupportImpersonationSessionsTargetedInput = {
   providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
@@ -4409,6 +4681,7 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsTargetedInput 
   providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
   aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
   aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
   aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
   aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
   supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
@@ -4437,6 +4710,7 @@ export type UserCountOutputType = {
   providerCredentials: number
   aiRequests: number
   aiRequestEvents: number
+  aiRequestAttachments: number
   aiUsageDailyRollups: number
   aiProviderPoliciesUpdated: number
   supportTickets: number
@@ -4460,6 +4734,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   providerCredentials?: boolean | UserCountOutputTypeCountProviderCredentialsArgs
   aiRequests?: boolean | UserCountOutputTypeCountAiRequestsArgs
   aiRequestEvents?: boolean | UserCountOutputTypeCountAiRequestEventsArgs
+  aiRequestAttachments?: boolean | UserCountOutputTypeCountAiRequestAttachmentsArgs
   aiUsageDailyRollups?: boolean | UserCountOutputTypeCountAiUsageDailyRollupsArgs
   aiProviderPoliciesUpdated?: boolean | UserCountOutputTypeCountAiProviderPoliciesUpdatedArgs
   supportTickets?: boolean | UserCountOutputTypeCountSupportTicketsArgs
@@ -4573,6 +4848,13 @@ export type UserCountOutputTypeCountAiRequestEventsArgs<ExtArgs extends runtime.
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountAiRequestAttachmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AiRequestAttachmentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountAiUsageDailyRollupsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.AiUsageDailyRollupWhereInput
 }
@@ -4648,6 +4930,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   providerCredentials?: boolean | Prisma.User$providerCredentialsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.User$aiRequestsArgs<ExtArgs>
   aiRequestEvents?: boolean | Prisma.User$aiRequestEventsArgs<ExtArgs>
+  aiRequestAttachments?: boolean | Prisma.User$aiRequestAttachmentsArgs<ExtArgs>
   aiUsageDailyRollups?: boolean | Prisma.User$aiUsageDailyRollupsArgs<ExtArgs>
   aiProviderPoliciesUpdated?: boolean | Prisma.User$aiProviderPoliciesUpdatedArgs<ExtArgs>
   supportTickets?: boolean | Prisma.User$supportTicketsArgs<ExtArgs>
@@ -4725,6 +5008,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   providerCredentials?: boolean | Prisma.User$providerCredentialsArgs<ExtArgs>
   aiRequests?: boolean | Prisma.User$aiRequestsArgs<ExtArgs>
   aiRequestEvents?: boolean | Prisma.User$aiRequestEventsArgs<ExtArgs>
+  aiRequestAttachments?: boolean | Prisma.User$aiRequestAttachmentsArgs<ExtArgs>
   aiUsageDailyRollups?: boolean | Prisma.User$aiUsageDailyRollupsArgs<ExtArgs>
   aiProviderPoliciesUpdated?: boolean | Prisma.User$aiProviderPoliciesUpdatedArgs<ExtArgs>
   supportTickets?: boolean | Prisma.User$supportTicketsArgs<ExtArgs>
@@ -4754,6 +5038,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     providerCredentials: Prisma.$ProviderCredentialPayload<ExtArgs>[]
     aiRequests: Prisma.$AiRequestPayload<ExtArgs>[]
     aiRequestEvents: Prisma.$AiRequestEventPayload<ExtArgs>[]
+    aiRequestAttachments: Prisma.$AiRequestAttachmentPayload<ExtArgs>[]
     aiUsageDailyRollups: Prisma.$AiUsageDailyRollupPayload<ExtArgs>[]
     aiProviderPoliciesUpdated: Prisma.$AiProviderPolicyPayload<ExtArgs>[]
     supportTickets: Prisma.$SupportTicketPayload<ExtArgs>[]
@@ -5185,6 +5470,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   providerCredentials<T extends Prisma.User$providerCredentialsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$providerCredentialsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ProviderCredentialPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRequests<T extends Prisma.User$aiRequestsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$aiRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRequestEvents<T extends Prisma.User$aiRequestEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$aiRequestEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  aiRequestAttachments<T extends Prisma.User$aiRequestAttachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$aiRequestAttachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRequestAttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiUsageDailyRollups<T extends Prisma.User$aiUsageDailyRollupsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$aiUsageDailyRollupsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiUsageDailyRollupPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiProviderPoliciesUpdated<T extends Prisma.User$aiProviderPoliciesUpdatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$aiProviderPoliciesUpdatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiProviderPolicyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportTickets<T extends Prisma.User$supportTicketsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$supportTicketsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportTicketPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -5938,6 +6224,30 @@ export type User$aiRequestEventsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.AiRequestEventScalarFieldEnum | Prisma.AiRequestEventScalarFieldEnum[]
+}
+
+/**
+ * User.aiRequestAttachments
+ */
+export type User$aiRequestAttachmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AiRequestAttachment
+   */
+  select?: Prisma.AiRequestAttachmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AiRequestAttachment
+   */
+  omit?: Prisma.AiRequestAttachmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AiRequestAttachmentInclude<ExtArgs> | null
+  where?: Prisma.AiRequestAttachmentWhereInput
+  orderBy?: Prisma.AiRequestAttachmentOrderByWithRelationInput | Prisma.AiRequestAttachmentOrderByWithRelationInput[]
+  cursor?: Prisma.AiRequestAttachmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AiRequestAttachmentScalarFieldEnum | Prisma.AiRequestAttachmentScalarFieldEnum[]
 }
 
 /**

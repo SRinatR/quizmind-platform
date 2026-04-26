@@ -1,4 +1,5 @@
 import {
+  GoneException,
   Controller,
   Get,
   Headers,
@@ -6,8 +7,10 @@ import {
   NotFoundException,
   Param,
   Query,
+  Res,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { parseBearerToken } from '@quizmind/auth';
 import { type AiHistoryListFilters, type AiRequestStatus, type AiRequestType, type ApiSuccess } from '@quizmind/contracts';
 
@@ -87,6 +90,60 @@ export class AiHistoryController {
     }
 
     return ok(detail);
+  }
+
+  @Get('history/:id/attachments/:attachmentId/view')
+  async viewAttachment(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Res() response: Response,
+  ) {
+    const session = await this.requireSession(authorization);
+    const attachment = await this.aiHistoryService.getAttachmentForUser({
+      userId: session.user.id,
+      aiRequestEventId: id,
+      attachmentId,
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found.');
+    }
+    if (attachment.expired) {
+      throw new GoneException('Image expired after retention window.');
+    }
+
+    response.setHeader('Content-Type', attachment.mimeType);
+    response.setHeader('Content-Disposition', `inline; filename=\"${attachment.originalName}\"`);
+    response.setHeader('Cache-Control', 'private, max-age=60');
+    response.send(attachment.bytes);
+  }
+
+  @Get('history/:id/attachments/:attachmentId/download')
+  async downloadAttachment(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Headers('authorization') authorization: string | undefined,
+    @Res() response: Response,
+  ) {
+    const session = await this.requireSession(authorization);
+    const attachment = await this.aiHistoryService.getAttachmentForUser({
+      userId: session.user.id,
+      aiRequestEventId: id,
+      attachmentId,
+    });
+
+    if (!attachment) {
+      throw new NotFoundException('Attachment not found.');
+    }
+    if (attachment.expired) {
+      throw new GoneException('Image expired after retention window.');
+    }
+
+    response.setHeader('Content-Type', attachment.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename=\"${attachment.originalName}\"`);
+    response.setHeader('Cache-Control', 'private, max-age=60');
+    response.send(attachment.bytes);
   }
 
   /**

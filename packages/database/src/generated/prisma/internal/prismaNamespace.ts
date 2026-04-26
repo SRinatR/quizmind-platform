@@ -401,6 +401,7 @@ export const ModelName = {
   AiRequest: 'AiRequest',
   AiRequestEvent: 'AiRequestEvent',
   AiRequestContent: 'AiRequestContent',
+  AiRequestAttachment: 'AiRequestAttachment',
   AiUsageDailyRollup: 'AiUsageDailyRollup',
   FeatureFlag: 'FeatureFlag',
   FeatureFlagOverride: 'FeatureFlagOverride',
@@ -434,7 +435,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1693,6 +1694,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AiRequestContentCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AiRequestContentCountAggregateOutputType> | number
+        }
+      }
+    }
+    AiRequestAttachment: {
+      payload: Prisma.$AiRequestAttachmentPayload<ExtArgs>
+      fields: Prisma.AiRequestAttachmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiRequestAttachmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiRequestAttachmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>
+        }
+        findFirst: {
+          args: Prisma.AiRequestAttachmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiRequestAttachmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>
+        }
+        findMany: {
+          args: Prisma.AiRequestAttachmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>[]
+        }
+        create: {
+          args: Prisma.AiRequestAttachmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>
+        }
+        createMany: {
+          args: Prisma.AiRequestAttachmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiRequestAttachmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>[]
+        }
+        delete: {
+          args: Prisma.AiRequestAttachmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>
+        }
+        update: {
+          args: Prisma.AiRequestAttachmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiRequestAttachmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiRequestAttachmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiRequestAttachmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiRequestAttachmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestAttachmentPayload>
+        }
+        aggregate: {
+          args: Prisma.AiRequestAttachmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiRequestAttachment>
+        }
+        groupBy: {
+          args: Prisma.AiRequestAttachmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestAttachmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiRequestAttachmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestAttachmentCountAggregateOutputType> | number
         }
       }
     }
@@ -3329,6 +3404,25 @@ export const AiRequestContentScalarFieldEnum = {
 export type AiRequestContentScalarFieldEnum = (typeof AiRequestContentScalarFieldEnum)[keyof typeof AiRequestContentScalarFieldEnum]
 
 
+export const AiRequestAttachmentScalarFieldEnum = {
+  id: 'id',
+  aiRequestEventId: 'aiRequestEventId',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  role: 'role',
+  kind: 'kind',
+  mimeType: 'mimeType',
+  originalName: 'originalName',
+  sizeBytes: 'sizeBytes',
+  blobKey: 'blobKey',
+  expiresAt: 'expiresAt',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestAttachmentScalarFieldEnum = (typeof AiRequestAttachmentScalarFieldEnum)[keyof typeof AiRequestAttachmentScalarFieldEnum]
+
+
 export const AiUsageDailyRollupScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -4014,6 +4108,7 @@ export type GlobalOmitConfig = {
   aiRequest?: Prisma.AiRequestOmit
   aiRequestEvent?: Prisma.AiRequestEventOmit
   aiRequestContent?: Prisma.AiRequestContentOmit
+  aiRequestAttachment?: Prisma.AiRequestAttachmentOmit
   aiUsageDailyRollup?: Prisma.AiUsageDailyRollupOmit
   featureFlag?: Prisma.FeatureFlagOmit
   featureFlagOverride?: Prisma.FeatureFlagOverrideOmit

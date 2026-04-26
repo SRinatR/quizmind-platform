@@ -34,6 +34,7 @@ export async function processHistoryCleanupJob(
       },
       select: {
         id: true,
+        aiRequestEventId: true,
         promptBlobKey: true,
         responseBlobKey: true,
         fileBlobKey: true,
@@ -48,6 +49,25 @@ export async function processHistoryCleanupJob(
       const keys = [content.promptBlobKey, content.responseBlobKey, content.fileBlobKey].filter((k): k is string => Boolean(k));
       return keys.map((key) => tryUnlink(toPath(blobDir, key)));
     }));
+
+    const eventIds = expiredContents.map((row) => row.aiRequestEventId);
+    const expiredAttachments = await prisma.aiRequestAttachment.findMany({
+      where: {
+        aiRequestEventId: { in: eventIds },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        blobKey: true,
+      },
+    });
+    await Promise.all(expiredAttachments.map((attachment) => tryUnlink(toPath(blobDir, attachment.blobKey))));
+    if (expiredAttachments.length > 0) {
+      await prisma.aiRequestAttachment.updateMany({
+        where: { id: { in: expiredAttachments.map((attachment) => attachment.id) }, deletedAt: null },
+        data: { deletedAt: new Date() },
+      });
+    }
 
     const ids = expiredContents.map((row) => row.id);
     const result = await prisma.aiRequestContent.updateMany({

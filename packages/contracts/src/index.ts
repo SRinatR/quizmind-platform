@@ -1697,6 +1697,19 @@ export interface AiHistoryFileMetadata {
   contentType: 'text' | 'image';
 }
 
+export interface AiHistoryAttachment {
+  id: string;
+  role: 'prompt' | 'response';
+  kind: 'image' | 'file';
+  mimeType: string;
+  originalName?: string | null;
+  sizeBytes: number;
+  deleted: boolean;
+  expired: boolean;
+  viewUrl?: string;
+  downloadUrl?: string;
+}
+
 export interface AiHistoryListItem {
   id: string;
   requestType: AiRequestType;
@@ -1724,6 +1737,7 @@ export interface AiHistoryDetail extends AiHistoryListItem {
   promptContentJson?: unknown;
   /** Full serialized provider response (from blob storage). */
   responseContentJson?: unknown;
+  attachments?: AiHistoryAttachment[];
 }
 
 export interface AiHistoryListFilters {

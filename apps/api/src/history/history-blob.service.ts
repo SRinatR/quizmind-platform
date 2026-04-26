@@ -61,6 +61,14 @@ export class HistoryBlobService {
     }
   }
 
+  async readBinary(blobKey: string): Promise<Buffer | null> {
+    try {
+      return await fs.readFile(toStoragePath(this.dir, blobKey));
+    } catch {
+      return null;
+    }
+  }
+
   async deleteByKey(blobKey: string): Promise<void> {
     await tryUnlink(toStoragePath(this.dir, blobKey));
   }
@@ -79,6 +87,12 @@ export class HistoryBlobService {
 
   async writeFileContent(requestId: string, buffer: Buffer): Promise<string> {
     const key = `requests/${requestId}/file.bin`;
+    await this.writeBinary(key, buffer);
+    return key;
+  }
+
+  async writeAttachmentContent(requestId: string, attachmentId: string, buffer: Buffer): Promise<string> {
+    const key = `requests/${requestId}/attachments/${attachmentId}.bin`;
     await this.writeBinary(key, buffer);
     return key;
   }
