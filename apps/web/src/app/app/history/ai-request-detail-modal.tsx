@@ -33,7 +33,6 @@ interface ParsedPrompt {
 
 const QUICK_ANSWER_USER_PREFIX = 'Return only the final answer without solution steps. If options are labeled (letters or numbers), return ONLY correct labels separated by commas (for example: a, d). If the question has options but they are unlabeled, number from 1 and answer as: N) option text. If no options exist (free-text question), return ONLY the answer. Question:';
 const VISION_USER_PREFIX = 'Read the screenshot carefully. Double-check option labels before answering. If options are labeled, output only labels (e.g. a, d). If unlabeled options exist, output: N) option text. If no options (text/fill-in question), output only the answer text. Return final answer only.';
-const IMAGE_QUESTION_PLACEHOLDER = 'Question was provided as an image.';
 
 interface DisplayPromptResult {
   mainText: string;
@@ -104,7 +103,7 @@ function getPromptInstructionAndQuestion(parsed: ParsedPrompt, hasPromptImages: 
   if (hasImageInput && parsed.userText.startsWith(VISION_USER_PREFIX)) {
     const cleaned = parsed.userText.slice(VISION_USER_PREFIX.length).trim();
     return {
-      mainText: cleaned || IMAGE_QUESTION_PLACEHOLDER,
+      mainText: cleaned,
       promptInstruction: VISION_USER_PREFIX,
       prefixRemoved: true,
       hideCopy: cleaned.length === 0,
@@ -319,7 +318,6 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
 
                 {imageAttachments.length > 0 && (
                   <div style={{ marginTop: 12 }}>
-                    <span className="micro-label">Prompt Images</span>
                     {imageAttachments.map((attachment) => (
                       <ImageAttachmentCard key={attachment.id} attachment={attachment} onOpen={setPreviewUrl} />
                     ))}
