@@ -143,12 +143,6 @@ export class RateLimitGuard implements CanActivate {
       .map((ip) => this.normalizeIp(ip))
       .filter((ip): ip is string => Boolean(ip));
 
-    const firstPublic = candidates.find((ip) => !this.isPrivateOrLocalIp(ip));
-
-    if (firstPublic) {
-      return firstPublic;
-    }
-
     if (candidates.length > 0) {
       return candidates[0];
     }
@@ -174,26 +168,5 @@ export class RateLimitGuard implements CanActivate {
     const lower = withoutPort.toLowerCase();
 
     return lower.startsWith('::ffff:') ? lower.slice(7) : lower;
-  }
-
-  private isPrivateOrLocalIp(ip: string): boolean {
-    if (ip === '::1' || ip === 'localhost') {
-      return true;
-    }
-
-    if (ip.includes(':')) {
-      return ip.startsWith('fc') || ip.startsWith('fd') || ip.startsWith('fe80:') || ip === '::';
-    }
-
-    if (ip.startsWith('10.') || ip.startsWith('127.') || ip.startsWith('192.168.')) {
-      return true;
-    }
-
-    if (ip.startsWith('172.')) {
-      const secondOctet = Number.parseInt(ip.split('.')[1] ?? '', 10);
-      return Number.isFinite(secondOctet) && secondOctet >= 16 && secondOctet <= 31;
-    }
-
-    return false;
   }
 }

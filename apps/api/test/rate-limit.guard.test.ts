@@ -69,13 +69,13 @@ test('DistributedRateLimitService uses in-memory fallback in mock runtime mode',
   assert.equal(third.allowed, false);
 });
 
-test('RateLimitGuard.resolveIdentity prefers public forwarded client IP over Docker/private proxy IPs', () => {
+test('RateLimitGuard.resolveIdentity uses first x-forwarded-for entry when client IP is first', () => {
   const fallback = new InMemoryRateLimitService();
   const distributed = new DistributedRateLimitService(fallback);
   const guard = new RateLimitGuard(distributed);
   const identity = (guard as any).resolveIdentity({
     headers: {
-      'x-forwarded-for': '172.19.0.6, 198.51.100.23, 10.0.0.7',
+      'x-forwarded-for': '188.130.155.182, 172.19.0.6',
       'x-real-ip': '172.19.0.6',
     },
     ip: '172.19.0.6',
@@ -84,16 +84,16 @@ test('RateLimitGuard.resolveIdentity prefers public forwarded client IP over Doc
     },
   });
 
-  assert.equal(identity, '198.51.100.23');
+  assert.equal(identity, '188.130.155.182');
 });
 
-test('RateLimitGuard.resolveIdentity falls back to first forwarded IP when all hops are private', () => {
+test('RateLimitGuard.resolveIdentity keeps first forwarded hop even if later hop is public', () => {
   const fallback = new InMemoryRateLimitService();
   const distributed = new DistributedRateLimitService(fallback);
   const guard = new RateLimitGuard(distributed);
   const identity = (guard as any).resolveIdentity({
     headers: {
-      'x-forwarded-for': '172.19.0.6, 10.0.0.7',
+      'x-forwarded-for': '172.19.0.6, 198.51.100.23',
     },
     ip: '172.19.0.6',
     socket: {
@@ -102,6 +102,23 @@ test('RateLimitGuard.resolveIdentity falls back to first forwarded IP when all h
   });
 
   assert.equal(identity, '172.19.0.6');
+});
+
+test('RateLimitGuard.resolveIdentity falls back to x-real-ip when x-forwarded-for is missing', () => {
+  const fallback = new InMemoryRateLimitService();
+  const distributed = new DistributedRateLimitService(fallback);
+  const guard = new RateLimitGuard(distributed);
+  const identity = (guard as any).resolveIdentity({
+    headers: {
+      'x-real-ip': '203.0.113.12',
+    },
+    ip: '172.19.0.6',
+    socket: {
+      remoteAddress: '172.16.0.8',
+    },
+  });
+
+  assert.equal(identity, '203.0.113.12');
 });
 
 test('RateLimitGuard.resolvePolicy excludes health and readiness probes from throttling', () => {
