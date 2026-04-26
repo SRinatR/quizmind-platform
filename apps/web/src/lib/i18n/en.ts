@@ -486,6 +486,13 @@ export const en = {
         aiRouting: 'AI Routing',
         settings: 'Settings',
       },
+      descriptions: {
+        users: 'User directory and role assignments.',
+        logs: 'Unified platform log center: auth, extension, AI, admin, and system events.',
+        extensionControl: 'Client version policy, runtime feature settings, and config rollouts.',
+        aiRouting: 'Provider registry, platform credentials, and routing policy.',
+        settings: 'Appearance preferences for your admin workspace.',
+      },
     },
     settings: {
       pageTitle: 'Settings',

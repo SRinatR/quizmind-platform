@@ -22,6 +22,7 @@ import {
 import { ServerPrefsSync } from '../../../lib/preferences';
 import { en } from '../../../lib/i18n/en';
 import { ru } from '../../../lib/i18n/ru';
+import type { Translations } from '../../../lib/i18n/en';
 import { getVisibleAdminSections, buildVisibleAdminNavGroups } from '../../../features/navigation/visibility';
 import { type AdminSection } from '../../../features/admin/sections';
 import { AdminAiProvidersClient } from './admin-ai-providers-client';
@@ -29,6 +30,8 @@ import { ExtensionControlAdminClient } from './extension-control-admin-client';
 import { UsersDirectoryClient } from './users-directory-client';
 import { LogsExplorerClient } from './logs-explorer-client';
 import { AdminSettingsClient } from './admin-settings-client';
+
+type AdminI18n = Translations['admin'];
 
 // ── Route aliases ─────────────────────────────────────────────────────────────
 const ROUTE_REDIRECTS: Record<string, string> = {
@@ -108,9 +111,13 @@ function SectionHeader({
 function SectionGroupLinks({
   current,
   visibleSections,
+  getSectionLabel,
+  groupLabel,
 }: {
   current: AdminSection;
   visibleSections: AdminSection[];
+  getSectionLabel: (section: AdminSection) => string;
+  groupLabel: string;
 }) {
   const peers = visibleSections.filter(
     (s) => s.group === current.group && s.id !== current.id,
@@ -122,7 +129,7 @@ function SectionGroupLinks({
       style={{ margin: 0, padding: '0 0 4px' }}
     >
       <span style={{ fontSize: '0.74rem', color: 'var(--muted)', paddingRight: '4px', fontWeight: 500 }}>
-        {current.groupLabel}:
+        {groupLabel}:
       </span>
       {peers.map((peer) => (
         <Link
@@ -131,11 +138,43 @@ function SectionGroupLinks({
           className="btn-ghost"
           style={{ fontSize: '0.78rem', padding: '3px 10px' }}
         >
-          {peer.navLabel}
+          {getSectionLabel(peer)}
         </Link>
       ))}
     </div>
   );
+}
+
+function getLocalizedSectionTitle(section: AdminSection, adminI18n: AdminI18n): string {
+  switch (section.id) {
+    case 'users': return adminI18n.nav.items.users;
+    case 'logs': return adminI18n.nav.items.logs;
+    case 'extension-control': return adminI18n.nav.items.extensionControl;
+    case 'ai-routing': return adminI18n.nav.items.aiRouting;
+    case 'settings': return adminI18n.nav.items.settings;
+    default: return section.title;
+  }
+}
+
+function getLocalizedGroupLabel(section: AdminSection, adminI18n: AdminI18n): string {
+  switch (section.group) {
+    case 'people': return adminI18n.nav.groups.people;
+    case 'operations': return adminI18n.nav.groups.operations;
+    case 'control-plane': return adminI18n.nav.groups.controlPlane;
+    case 'preferences': return adminI18n.nav.groups.preferences;
+    default: return section.groupLabel;
+  }
+}
+
+function getLocalizedSectionDescription(section: AdminSection, adminI18n: AdminI18n): string {
+  switch (section.id) {
+    case 'users': return adminI18n.nav.descriptions.users;
+    case 'logs': return adminI18n.nav.descriptions.logs;
+    case 'extension-control': return adminI18n.nav.descriptions.extensionControl;
+    case 'ai-routing': return adminI18n.nav.descriptions.aiRouting;
+    case 'settings': return adminI18n.nav.descriptions.settings;
+    default: return section.description;
+  }
 }
 
 export default async function AdminSectionPage({ params, searchParams }: AdminSectionPageProps) {
@@ -261,6 +300,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
   const visibleSections = context ? getVisibleAdminSections(context) : [];
   const visibleNavGroups = context ? buildVisibleAdminNavGroups(context) : [];
   const section = visibleSections.find((item) => item.href.endsWith(`/${sec}`));
+  const resolvedSectionTitle = section ? getLocalizedSectionTitle(section, i18n.admin) : sec;
+  const resolvedGroupLabel = section ? getLocalizedGroupLabel(section, i18n.admin) : adminT.adminLabel;
   return (
     <SiteShell
       adminNavGroups={visibleNavGroups}
@@ -272,7 +313,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       isSignedIn={Boolean(session)}
       pathname={`/admin/${sec}`}
       showPersonaSwitcher={false}
-      title={sec === 'settings' ? adminT.settingsTitle : (section?.title ?? sec)}
+      title={sec === 'settings' ? adminT.settingsTitle : resolvedSectionTitle}
       userDisplayName={session?.user.displayName ?? undefined}
       userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
@@ -284,8 +325,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         section.id === 'users' ? (
           <>
             <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
+              groupLabel={resolvedGroupLabel}
+              title={resolvedSectionTitle}
               tags={[
                 { label: `${adminUsers?.total ?? 0} ${(adminUsers?.total ?? 0) === 1 ? adminT.usersSuffixSingular : adminT.usersSuffixPlural}` },
                 { label: canManageUserAccess ? adminUsersT.writeAccess : adminUsersT.readOnly, warn: !canManageUserAccess },
@@ -313,8 +354,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         section.id === 'logs' ? (
           <>
             <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
+              groupLabel={resolvedGroupLabel}
+              title={resolvedSectionTitle}
               tags={[
                 { label: `${adminLogs?.items.length ?? 0} ${(adminLogs?.items.length ?? 0) === 1 ? adminT.eventsSuffixSingular : adminT.eventsSuffixPlural}` },
                 { label: adminLogs?.filters.category ?? adminT.allCategories },
@@ -338,15 +379,20 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         section.id === 'extension-control' ? (
           <>
             <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
+              groupLabel={resolvedGroupLabel}
+              title={resolvedSectionTitle}
               tags={[
                 { label: `${featureFlags?.flags.length ?? 0} ${(featureFlags?.flags.length ?? 0) === 1 ? adminT.flagsSuffixSingular : adminT.flagsSuffixPlural}` },
                 { label: `${remoteConfigState?.activeLayers.length ?? 0} ${(remoteConfigState?.activeLayers.length ?? 0) === 1 ? adminT.layersSuffixSingular : adminT.layersSuffixPlural}` },
                 { label: compatibilityRules?.publishDecision.allowed ? adminT.publishAccess : adminT.publishBlocked, warn: !compatibilityRules?.publishDecision.allowed },
               ]}
             />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
+            <SectionGroupLinks
+              current={section}
+              visibleSections={visibleSections}
+              getSectionLabel={(peer) => getLocalizedSectionTitle(peer, i18n.admin)}
+              groupLabel={resolvedGroupLabel}
+            />
             {compatibilityRules ? (
               <ExtensionControlAdminClient
                 compatibilityRules={compatibilityRules}
@@ -367,15 +413,20 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         section.id === 'ai-routing' ? (
           <>
             <SectionHeader
-              groupLabel={section.groupLabel}
-              title={section.title}
+              groupLabel={resolvedGroupLabel}
+              title={resolvedSectionTitle}
               tags={[
                 { label: `${adminProviderGovernance?.items.length ?? 0} ${(adminProviderGovernance?.items.length ?? 0) === 1 ? adminT.credentialsSuffixSingular : adminT.credentialsSuffixPlural}` },
                 { label: `${adminProviderGovernance?.providerBreakdown.filter((e) => e.totalCredentials > 0).length ?? 0} ${(adminProviderGovernance?.providerBreakdown.filter((e) => e.totalCredentials > 0).length ?? 0) === 1 ? adminT.activeProvidersSuffixSingular : adminT.activeProvidersSuffixPlural}` },
                 ...(adminProviderGovernance?.aiAccessPolicy.mode ? [{ label: `${adminT.policy}: ${adminProviderGovernance.aiAccessPolicy.mode}` }] : []),
               ]}
             />
-            <SectionGroupLinks current={section} visibleSections={visibleSections} />
+            <SectionGroupLinks
+              current={section}
+              visibleSections={visibleSections}
+              getSectionLabel={(peer) => getLocalizedSectionTitle(peer, i18n.admin)}
+              groupLabel={resolvedGroupLabel}
+            />
             {adminProviderGovernance ? (
               <AdminAiProvidersClient governance={adminProviderGovernance} isConnectedSession={isConnectedSession} />
             ) : (
@@ -397,9 +448,9 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         ) : (
           // ── Fallback ─────────────────────────────────────────────────
           <section className="panel">
-            <span className="micro-label">{section.groupLabel}</span>
-            <h2>{section.title}</h2>
-            <p>{section.description}</p>
+            <span className="micro-label">{resolvedGroupLabel}</span>
+            <h2>{resolvedSectionTitle}</h2>
+            <p>{getLocalizedSectionDescription(section, i18n.admin)}</p>
           </section>
         )
       ) : (
