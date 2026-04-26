@@ -27,7 +27,6 @@ export type AggregateExtensionInstallation = {
 export type ExtensionInstallationMinAggregateOutputType = {
   id: string | null
   userId: string | null
-  workspaceId: string | null
   installationId: string | null
   browser: string | null
   extensionVersion: string | null
@@ -40,7 +39,6 @@ export type ExtensionInstallationMinAggregateOutputType = {
 export type ExtensionInstallationMaxAggregateOutputType = {
   id: string | null
   userId: string | null
-  workspaceId: string | null
   installationId: string | null
   browser: string | null
   extensionVersion: string | null
@@ -53,7 +51,6 @@ export type ExtensionInstallationMaxAggregateOutputType = {
 export type ExtensionInstallationCountAggregateOutputType = {
   id: number
   userId: number
-  workspaceId: number
   installationId: number
   browser: number
   extensionVersion: number
@@ -69,7 +66,6 @@ export type ExtensionInstallationCountAggregateOutputType = {
 export type ExtensionInstallationMinAggregateInputType = {
   id?: true
   userId?: true
-  workspaceId?: true
   installationId?: true
   browser?: true
   extensionVersion?: true
@@ -82,7 +78,6 @@ export type ExtensionInstallationMinAggregateInputType = {
 export type ExtensionInstallationMaxAggregateInputType = {
   id?: true
   userId?: true
-  workspaceId?: true
   installationId?: true
   browser?: true
   extensionVersion?: true
@@ -95,7 +90,6 @@ export type ExtensionInstallationMaxAggregateInputType = {
 export type ExtensionInstallationCountAggregateInputType = {
   id?: true
   userId?: true
-  workspaceId?: true
   installationId?: true
   browser?: true
   extensionVersion?: true
@@ -182,7 +176,6 @@ export type ExtensionInstallationGroupByArgs<ExtArgs extends runtime.Types.Exten
 export type ExtensionInstallationGroupByOutputType = {
   id: string
   userId: string
-  workspaceId: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -217,7 +210,6 @@ export type ExtensionInstallationWhereInput = {
   NOT?: Prisma.ExtensionInstallationWhereInput | Prisma.ExtensionInstallationWhereInput[]
   id?: Prisma.StringFilter<"ExtensionInstallation"> | string
   userId?: Prisma.StringFilter<"ExtensionInstallation"> | string
-  workspaceId?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
   installationId?: Prisma.StringFilter<"ExtensionInstallation"> | string
   browser?: Prisma.StringFilter<"ExtensionInstallation"> | string
   extensionVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
@@ -227,7 +219,6 @@ export type ExtensionInstallationWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableFilter<"ExtensionInstallation"> | Date | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   telemetry?: Prisma.ExtensionTelemetryListRelationFilter
   sessions?: Prisma.ExtensionInstallationSessionListRelationFilter
 }
@@ -235,7 +226,6 @@ export type ExtensionInstallationWhereInput = {
 export type ExtensionInstallationOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   installationId?: Prisma.SortOrder
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
@@ -245,7 +235,6 @@ export type ExtensionInstallationOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   telemetry?: Prisma.ExtensionTelemetryOrderByRelationAggregateInput
   sessions?: Prisma.ExtensionInstallationSessionOrderByRelationAggregateInput
 }
@@ -257,7 +246,6 @@ export type ExtensionInstallationWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.ExtensionInstallationWhereInput[]
   NOT?: Prisma.ExtensionInstallationWhereInput | Prisma.ExtensionInstallationWhereInput[]
   userId?: Prisma.StringFilter<"ExtensionInstallation"> | string
-  workspaceId?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
   browser?: Prisma.StringFilter<"ExtensionInstallation"> | string
   extensionVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   schemaVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
@@ -266,7 +254,6 @@ export type ExtensionInstallationWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableFilter<"ExtensionInstallation"> | Date | string | null
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   telemetry?: Prisma.ExtensionTelemetryListRelationFilter
   sessions?: Prisma.ExtensionInstallationSessionListRelationFilter
 }, "id" | "installationId">
@@ -274,7 +261,6 @@ export type ExtensionInstallationWhereUniqueInput = Prisma.AtLeast<{
 export type ExtensionInstallationOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   installationId?: Prisma.SortOrder
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
@@ -294,7 +280,6 @@ export type ExtensionInstallationScalarWhereWithAggregatesInput = {
   NOT?: Prisma.ExtensionInstallationScalarWhereWithAggregatesInput | Prisma.ExtensionInstallationScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
   userId?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
   installationId?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
   browser?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
   extensionVersion?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
@@ -316,7 +301,6 @@ export type ExtensionInstallationCreateInput = {
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
   user: Prisma.UserCreateNestedOneWithoutExtensionInstallationsInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutExtensionInstallationsInput
   telemetry?: Prisma.ExtensionTelemetryCreateNestedManyWithoutInstallationInput
   sessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutInstallationInput
 }
@@ -324,7 +308,6 @@ export type ExtensionInstallationCreateInput = {
 export type ExtensionInstallationUncheckedCreateInput = {
   id?: string
   userId: string
-  workspaceId?: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -348,7 +331,6 @@ export type ExtensionInstallationUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutExtensionInstallationsNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutExtensionInstallationsNestedInput
   telemetry?: Prisma.ExtensionTelemetryUpdateManyWithoutInstallationNestedInput
   sessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutInstallationNestedInput
 }
@@ -356,7 +338,6 @@ export type ExtensionInstallationUpdateInput = {
 export type ExtensionInstallationUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   installationId?: Prisma.StringFieldUpdateOperationsInput | string
   browser?: Prisma.StringFieldUpdateOperationsInput | string
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
@@ -372,7 +353,6 @@ export type ExtensionInstallationUncheckedUpdateInput = {
 export type ExtensionInstallationCreateManyInput = {
   id?: string
   userId: string
-  workspaceId?: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -398,7 +378,6 @@ export type ExtensionInstallationUpdateManyMutationInput = {
 export type ExtensionInstallationUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   installationId?: Prisma.StringFieldUpdateOperationsInput | string
   browser?: Prisma.StringFieldUpdateOperationsInput | string
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
@@ -422,7 +401,6 @@ export type ExtensionInstallationOrderByRelationAggregateInput = {
 export type ExtensionInstallationCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   installationId?: Prisma.SortOrder
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
@@ -436,7 +414,6 @@ export type ExtensionInstallationCountOrderByAggregateInput = {
 export type ExtensionInstallationMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   installationId?: Prisma.SortOrder
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
@@ -449,7 +426,6 @@ export type ExtensionInstallationMaxOrderByAggregateInput = {
 export type ExtensionInstallationMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   installationId?: Prisma.SortOrder
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
@@ -506,48 +482,6 @@ export type ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.ExtensionInstallationScalarWhereInput | Prisma.ExtensionInstallationScalarWhereInput[]
 }
 
-export type ExtensionInstallationCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput> | Prisma.ExtensionInstallationCreateWithoutWorkspaceInput[] | Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput | Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.ExtensionInstallationCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-}
-
-export type ExtensionInstallationUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput> | Prisma.ExtensionInstallationCreateWithoutWorkspaceInput[] | Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput | Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.ExtensionInstallationCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-}
-
-export type ExtensionInstallationUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput> | Prisma.ExtensionInstallationCreateWithoutWorkspaceInput[] | Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput | Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.ExtensionInstallationUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.ExtensionInstallationUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.ExtensionInstallationCreateManyWorkspaceInputEnvelope
-  set?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  disconnect?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  delete?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  connect?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  update?: Prisma.ExtensionInstallationUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.ExtensionInstallationUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.ExtensionInstallationUpdateManyWithWhereWithoutWorkspaceInput | Prisma.ExtensionInstallationUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.ExtensionInstallationScalarWhereInput | Prisma.ExtensionInstallationScalarWhereInput[]
-}
-
-export type ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput> | Prisma.ExtensionInstallationCreateWithoutWorkspaceInput[] | Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput | Prisma.ExtensionInstallationCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.ExtensionInstallationUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.ExtensionInstallationUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.ExtensionInstallationCreateManyWorkspaceInputEnvelope
-  set?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  disconnect?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  delete?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  connect?: Prisma.ExtensionInstallationWhereUniqueInput | Prisma.ExtensionInstallationWhereUniqueInput[]
-  update?: Prisma.ExtensionInstallationUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.ExtensionInstallationUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.ExtensionInstallationUpdateManyWithWhereWithoutWorkspaceInput | Prisma.ExtensionInstallationUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.ExtensionInstallationScalarWhereInput | Prisma.ExtensionInstallationScalarWhereInput[]
-}
-
 export type ExtensionInstallationCreateNestedOneWithoutSessionsInput = {
   create?: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutSessionsInput, Prisma.ExtensionInstallationUncheckedCreateWithoutSessionsInput>
   connectOrCreate?: Prisma.ExtensionInstallationCreateOrConnectWithoutSessionsInput
@@ -586,14 +520,12 @@ export type ExtensionInstallationCreateWithoutUserInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutExtensionInstallationsInput
   telemetry?: Prisma.ExtensionTelemetryCreateNestedManyWithoutInstallationInput
   sessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutInstallationInput
 }
 
 export type ExtensionInstallationUncheckedCreateWithoutUserInput = {
   id?: string
-  workspaceId?: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -638,7 +570,6 @@ export type ExtensionInstallationScalarWhereInput = {
   NOT?: Prisma.ExtensionInstallationScalarWhereInput | Prisma.ExtensionInstallationScalarWhereInput[]
   id?: Prisma.StringFilter<"ExtensionInstallation"> | string
   userId?: Prisma.StringFilter<"ExtensionInstallation"> | string
-  workspaceId?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
   installationId?: Prisma.StringFilter<"ExtensionInstallation"> | string
   browser?: Prisma.StringFilter<"ExtensionInstallation"> | string
   extensionVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
@@ -647,62 +578,6 @@ export type ExtensionInstallationScalarWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableFilter<"ExtensionInstallation"> | Date | string | null
-}
-
-export type ExtensionInstallationCreateWithoutWorkspaceInput = {
-  id?: string
-  installationId: string
-  browser: string
-  extensionVersion: string
-  schemaVersion: string
-  capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  lastSeenAt?: Date | string | null
-  user: Prisma.UserCreateNestedOneWithoutExtensionInstallationsInput
-  telemetry?: Prisma.ExtensionTelemetryCreateNestedManyWithoutInstallationInput
-  sessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutInstallationInput
-}
-
-export type ExtensionInstallationUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  userId: string
-  installationId: string
-  browser: string
-  extensionVersion: string
-  schemaVersion: string
-  capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  lastSeenAt?: Date | string | null
-  telemetry?: Prisma.ExtensionTelemetryUncheckedCreateNestedManyWithoutInstallationInput
-  sessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutInstallationInput
-}
-
-export type ExtensionInstallationCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.ExtensionInstallationWhereUniqueInput
-  create: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type ExtensionInstallationCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.ExtensionInstallationCreateManyWorkspaceInput | Prisma.ExtensionInstallationCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type ExtensionInstallationUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.ExtensionInstallationWhereUniqueInput
-  update: Prisma.XOR<Prisma.ExtensionInstallationUpdateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.ExtensionInstallationCreateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type ExtensionInstallationUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.ExtensionInstallationWhereUniqueInput
-  data: Prisma.XOR<Prisma.ExtensionInstallationUpdateWithoutWorkspaceInput, Prisma.ExtensionInstallationUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type ExtensionInstallationUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.ExtensionInstallationScalarWhereInput
-  data: Prisma.XOR<Prisma.ExtensionInstallationUpdateManyMutationInput, Prisma.ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceInput>
 }
 
 export type ExtensionInstallationCreateWithoutSessionsInput = {
@@ -716,14 +591,12 @@ export type ExtensionInstallationCreateWithoutSessionsInput = {
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
   user: Prisma.UserCreateNestedOneWithoutExtensionInstallationsInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutExtensionInstallationsInput
   telemetry?: Prisma.ExtensionTelemetryCreateNestedManyWithoutInstallationInput
 }
 
 export type ExtensionInstallationUncheckedCreateWithoutSessionsInput = {
   id?: string
   userId: string
-  workspaceId?: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -762,14 +635,12 @@ export type ExtensionInstallationUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutExtensionInstallationsNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutExtensionInstallationsNestedInput
   telemetry?: Prisma.ExtensionTelemetryUpdateManyWithoutInstallationNestedInput
 }
 
 export type ExtensionInstallationUncheckedUpdateWithoutSessionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   installationId?: Prisma.StringFieldUpdateOperationsInput | string
   browser?: Prisma.StringFieldUpdateOperationsInput | string
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
@@ -792,14 +663,12 @@ export type ExtensionInstallationCreateWithoutTelemetryInput = {
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
   user: Prisma.UserCreateNestedOneWithoutExtensionInstallationsInput
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutExtensionInstallationsInput
   sessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutInstallationInput
 }
 
 export type ExtensionInstallationUncheckedCreateWithoutTelemetryInput = {
   id?: string
   userId: string
-  workspaceId?: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -838,14 +707,12 @@ export type ExtensionInstallationUpdateWithoutTelemetryInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   user?: Prisma.UserUpdateOneRequiredWithoutExtensionInstallationsNestedInput
-  workspace?: Prisma.WorkspaceUpdateOneWithoutExtensionInstallationsNestedInput
   sessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutInstallationNestedInput
 }
 
 export type ExtensionInstallationUncheckedUpdateWithoutTelemetryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   installationId?: Prisma.StringFieldUpdateOperationsInput | string
   browser?: Prisma.StringFieldUpdateOperationsInput | string
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
@@ -859,7 +726,6 @@ export type ExtensionInstallationUncheckedUpdateWithoutTelemetryInput = {
 
 export type ExtensionInstallationCreateManyUserInput = {
   id?: string
-  workspaceId?: string | null
   installationId: string
   browser: string
   extensionVersion: string
@@ -880,14 +746,12 @@ export type ExtensionInstallationUpdateWithoutUserInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  workspace?: Prisma.WorkspaceUpdateOneWithoutExtensionInstallationsNestedInput
   telemetry?: Prisma.ExtensionTelemetryUpdateManyWithoutInstallationNestedInput
   sessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutInstallationNestedInput
 }
 
 export type ExtensionInstallationUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   installationId?: Prisma.StringFieldUpdateOperationsInput | string
   browser?: Prisma.StringFieldUpdateOperationsInput | string
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
@@ -902,63 +766,6 @@ export type ExtensionInstallationUncheckedUpdateWithoutUserInput = {
 
 export type ExtensionInstallationUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  installationId?: Prisma.StringFieldUpdateOperationsInput | string
-  browser?: Prisma.StringFieldUpdateOperationsInput | string
-  extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
-  schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
-  capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type ExtensionInstallationCreateManyWorkspaceInput = {
-  id?: string
-  userId: string
-  installationId: string
-  browser: string
-  extensionVersion: string
-  schemaVersion: string
-  capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  lastSeenAt?: Date | string | null
-}
-
-export type ExtensionInstallationUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  installationId?: Prisma.StringFieldUpdateOperationsInput | string
-  browser?: Prisma.StringFieldUpdateOperationsInput | string
-  extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
-  schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
-  capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  user?: Prisma.UserUpdateOneRequiredWithoutExtensionInstallationsNestedInput
-  telemetry?: Prisma.ExtensionTelemetryUpdateManyWithoutInstallationNestedInput
-  sessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutInstallationNestedInput
-}
-
-export type ExtensionInstallationUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
-  installationId?: Prisma.StringFieldUpdateOperationsInput | string
-  browser?: Prisma.StringFieldUpdateOperationsInput | string
-  extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
-  schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
-  capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  telemetry?: Prisma.ExtensionTelemetryUncheckedUpdateManyWithoutInstallationNestedInput
-  sessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutInstallationNestedInput
-}
-
-export type ExtensionInstallationUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  userId?: Prisma.StringFieldUpdateOperationsInput | string
   installationId?: Prisma.StringFieldUpdateOperationsInput | string
   browser?: Prisma.StringFieldUpdateOperationsInput | string
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1012,7 +819,6 @@ export type ExtensionInstallationCountOutputTypeCountSessionsArgs<ExtArgs extend
 export type ExtensionInstallationSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  workspaceId?: boolean
   installationId?: boolean
   browser?: boolean
   extensionVersion?: boolean
@@ -1022,7 +828,6 @@ export type ExtensionInstallationSelect<ExtArgs extends runtime.Types.Extensions
   updatedAt?: boolean
   lastSeenAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>
   telemetry?: boolean | Prisma.ExtensionInstallation$telemetryArgs<ExtArgs>
   sessions?: boolean | Prisma.ExtensionInstallation$sessionsArgs<ExtArgs>
   _count?: boolean | Prisma.ExtensionInstallationCountOutputTypeDefaultArgs<ExtArgs>
@@ -1031,7 +836,6 @@ export type ExtensionInstallationSelect<ExtArgs extends runtime.Types.Extensions
 export type ExtensionInstallationSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  workspaceId?: boolean
   installationId?: boolean
   browser?: boolean
   extensionVersion?: boolean
@@ -1041,13 +845,11 @@ export type ExtensionInstallationSelectCreateManyAndReturn<ExtArgs extends runti
   updatedAt?: boolean
   lastSeenAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["extensionInstallation"]>
 
 export type ExtensionInstallationSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   userId?: boolean
-  workspaceId?: boolean
   installationId?: boolean
   browser?: boolean
   extensionVersion?: boolean
@@ -1057,13 +859,11 @@ export type ExtensionInstallationSelectUpdateManyAndReturn<ExtArgs extends runti
   updatedAt?: boolean
   lastSeenAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["extensionInstallation"]>
 
 export type ExtensionInstallationSelectScalar = {
   id?: boolean
   userId?: boolean
-  workspaceId?: boolean
   installationId?: boolean
   browser?: boolean
   extensionVersion?: boolean
@@ -1074,35 +874,30 @@ export type ExtensionInstallationSelectScalar = {
   lastSeenAt?: boolean
 }
 
-export type ExtensionInstallationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "workspaceId" | "installationId" | "browser" | "extensionVersion" | "schemaVersion" | "capabilitiesJson" | "createdAt" | "updatedAt" | "lastSeenAt", ExtArgs["result"]["extensionInstallation"]>
+export type ExtensionInstallationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "installationId" | "browser" | "extensionVersion" | "schemaVersion" | "capabilitiesJson" | "createdAt" | "updatedAt" | "lastSeenAt", ExtArgs["result"]["extensionInstallation"]>
 export type ExtensionInstallationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>
   telemetry?: boolean | Prisma.ExtensionInstallation$telemetryArgs<ExtArgs>
   sessions?: boolean | Prisma.ExtensionInstallation$sessionsArgs<ExtArgs>
   _count?: boolean | Prisma.ExtensionInstallationCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ExtensionInstallationIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>
 }
 export type ExtensionInstallationIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  workspace?: boolean | Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>
 }
 
 export type $ExtensionInstallationPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "ExtensionInstallation"
   objects: {
     user: Prisma.$UserPayload<ExtArgs>
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     telemetry: Prisma.$ExtensionTelemetryPayload<ExtArgs>[]
     sessions: Prisma.$ExtensionInstallationSessionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     userId: string
-    workspaceId: string | null
     installationId: string
     browser: string
     extensionVersion: string
@@ -1506,7 +1301,6 @@ readonly fields: ExtensionInstallationFieldRefs;
 export interface Prisma__ExtensionInstallationClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  workspace<T extends Prisma.ExtensionInstallation$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExtensionInstallation$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   telemetry<T extends Prisma.ExtensionInstallation$telemetryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExtensionInstallation$telemetryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtensionTelemetryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   sessions<T extends Prisma.ExtensionInstallation$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ExtensionInstallation$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExtensionInstallationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1540,7 +1334,6 @@ export interface Prisma__ExtensionInstallationClient<T, Null = never, ExtArgs ex
 export interface ExtensionInstallationFieldRefs {
   readonly id: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly userId: Prisma.FieldRef<"ExtensionInstallation", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly installationId: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly browser: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly extensionVersion: Prisma.FieldRef<"ExtensionInstallation", 'String'>
@@ -1947,25 +1740,6 @@ export type ExtensionInstallationDeleteManyArgs<ExtArgs extends runtime.Types.Ex
    * Limit how many ExtensionInstallations to delete.
    */
   limit?: number
-}
-
-/**
- * ExtensionInstallation.workspace
- */
-export type ExtensionInstallation$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

@@ -399,6 +399,9 @@ export const ModelName = {
   WebhookEvent: 'WebhookEvent',
   QuotaCounter: 'QuotaCounter',
   AiRequest: 'AiRequest',
+  AiRequestEvent: 'AiRequestEvent',
+  AiRequestContent: 'AiRequestContent',
+  AiUsageDailyRollup: 'AiUsageDailyRollup',
   FeatureFlag: 'FeatureFlag',
   FeatureFlagOverride: 'FeatureFlagOverride',
   RemoteConfigVersion: 'RemoteConfigVersion',
@@ -431,7 +434,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1542,6 +1545,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.AiRequestCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.AiRequestCountAggregateOutputType> | number
+        }
+      }
+    }
+    AiRequestEvent: {
+      payload: Prisma.$AiRequestEventPayload<ExtArgs>
+      fields: Prisma.AiRequestEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiRequestEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiRequestEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>
+        }
+        findFirst: {
+          args: Prisma.AiRequestEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiRequestEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>
+        }
+        findMany: {
+          args: Prisma.AiRequestEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>[]
+        }
+        create: {
+          args: Prisma.AiRequestEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>
+        }
+        createMany: {
+          args: Prisma.AiRequestEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiRequestEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>[]
+        }
+        delete: {
+          args: Prisma.AiRequestEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>
+        }
+        update: {
+          args: Prisma.AiRequestEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiRequestEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiRequestEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiRequestEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiRequestEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestEventPayload>
+        }
+        aggregate: {
+          args: Prisma.AiRequestEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiRequestEvent>
+        }
+        groupBy: {
+          args: Prisma.AiRequestEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiRequestEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestEventCountAggregateOutputType> | number
+        }
+      }
+    }
+    AiRequestContent: {
+      payload: Prisma.$AiRequestContentPayload<ExtArgs>
+      fields: Prisma.AiRequestContentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiRequestContentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiRequestContentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>
+        }
+        findFirst: {
+          args: Prisma.AiRequestContentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiRequestContentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>
+        }
+        findMany: {
+          args: Prisma.AiRequestContentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>[]
+        }
+        create: {
+          args: Prisma.AiRequestContentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>
+        }
+        createMany: {
+          args: Prisma.AiRequestContentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiRequestContentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>[]
+        }
+        delete: {
+          args: Prisma.AiRequestContentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>
+        }
+        update: {
+          args: Prisma.AiRequestContentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiRequestContentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiRequestContentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiRequestContentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiRequestContentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiRequestContentPayload>
+        }
+        aggregate: {
+          args: Prisma.AiRequestContentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiRequestContent>
+        }
+        groupBy: {
+          args: Prisma.AiRequestContentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestContentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiRequestContentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiRequestContentCountAggregateOutputType> | number
+        }
+      }
+    }
+    AiUsageDailyRollup: {
+      payload: Prisma.$AiUsageDailyRollupPayload<ExtArgs>
+      fields: Prisma.AiUsageDailyRollupFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AiUsageDailyRollupFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AiUsageDailyRollupFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>
+        }
+        findFirst: {
+          args: Prisma.AiUsageDailyRollupFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AiUsageDailyRollupFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>
+        }
+        findMany: {
+          args: Prisma.AiUsageDailyRollupFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>[]
+        }
+        create: {
+          args: Prisma.AiUsageDailyRollupCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>
+        }
+        createMany: {
+          args: Prisma.AiUsageDailyRollupCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AiUsageDailyRollupCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>[]
+        }
+        delete: {
+          args: Prisma.AiUsageDailyRollupDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>
+        }
+        update: {
+          args: Prisma.AiUsageDailyRollupUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>
+        }
+        deleteMany: {
+          args: Prisma.AiUsageDailyRollupDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AiUsageDailyRollupUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AiUsageDailyRollupUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>[]
+        }
+        upsert: {
+          args: Prisma.AiUsageDailyRollupUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AiUsageDailyRollupPayload>
+        }
+        aggregate: {
+          args: Prisma.AiUsageDailyRollupAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAiUsageDailyRollup>
+        }
+        groupBy: {
+          args: Prisma.AiUsageDailyRollupGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiUsageDailyRollupGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AiUsageDailyRollupCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AiUsageDailyRollupCountAggregateOutputType> | number
         }
       }
     }
@@ -2927,7 +3152,7 @@ export type WorkspaceScalarFieldEnum = (typeof WorkspaceScalarFieldEnum)[keyof t
 
 export const WalletScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
+  userId: 'userId',
   currency: 'currency',
   balanceKopecks: 'balanceKopecks',
   createdAt: 'createdAt',
@@ -2940,7 +3165,6 @@ export type WalletScalarFieldEnum = (typeof WalletScalarFieldEnum)[keyof typeof 
 export const WalletTopUpScalarFieldEnum = {
   id: 'id',
   walletId: 'walletId',
-  workspaceId: 'workspaceId',
   createdByUserId: 'createdByUserId',
   amountKopecks: 'amountKopecks',
   currency: 'currency',
@@ -3027,7 +3251,6 @@ export type WebhookEventScalarFieldEnum = (typeof WebhookEventScalarFieldEnum)[k
 
 export const QuotaCounterScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   key: 'key',
   consumed: 'consumed',
   periodStart: 'periodStart',
@@ -3065,6 +3288,70 @@ export const AiRequestScalarFieldEnum = {
 export type AiRequestScalarFieldEnum = (typeof AiRequestScalarFieldEnum)[keyof typeof AiRequestScalarFieldEnum]
 
 
+export const AiRequestEventScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  workspaceId: 'workspaceId',
+  installationId: 'installationId',
+  provider: 'provider',
+  model: 'model',
+  modelDisplayName: 'modelDisplayName',
+  requestType: 'requestType',
+  keySource: 'keySource',
+  status: 'status',
+  errorCode: 'errorCode',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostUsd: 'estimatedCostUsd',
+  durationMs: 'durationMs',
+  promptExcerpt: 'promptExcerpt',
+  responseExcerpt: 'responseExcerpt',
+  occurredAt: 'occurredAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestEventScalarFieldEnum = (typeof AiRequestEventScalarFieldEnum)[keyof typeof AiRequestEventScalarFieldEnum]
+
+
+export const AiRequestContentScalarFieldEnum = {
+  id: 'id',
+  aiRequestEventId: 'aiRequestEventId',
+  promptBlobKey: 'promptBlobKey',
+  responseBlobKey: 'responseBlobKey',
+  fileBlobKey: 'fileBlobKey',
+  fileMetadataJson: 'fileMetadataJson',
+  expiresAt: 'expiresAt',
+  deletedAt: 'deletedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type AiRequestContentScalarFieldEnum = (typeof AiRequestContentScalarFieldEnum)[keyof typeof AiRequestContentScalarFieldEnum]
+
+
+export const AiUsageDailyRollupScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  date: 'date',
+  requestType: 'requestType',
+  model: 'model',
+  modelDisplayName: 'modelDisplayName',
+  status: 'status',
+  requestCount: 'requestCount',
+  successCount: 'successCount',
+  failedCount: 'failedCount',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  estimatedCostUsd: 'estimatedCostUsd',
+  totalDurationMs: 'totalDurationMs',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AiUsageDailyRollupScalarFieldEnum = (typeof AiUsageDailyRollupScalarFieldEnum)[keyof typeof AiUsageDailyRollupScalarFieldEnum]
+
+
 export const FeatureFlagScalarFieldEnum = {
   id: 'id',
   key: 'key',
@@ -3095,7 +3382,6 @@ export type FeatureFlagOverrideScalarFieldEnum = (typeof FeatureFlagOverrideScal
 
 export const RemoteConfigVersionScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   publishedById: 'publishedById',
   versionLabel: 'versionLabel',
   isActive: 'isActive',
@@ -3135,7 +3421,6 @@ export type ExtensionCompatibilityRuleScalarFieldEnum = (typeof ExtensionCompati
 export const ExtensionInstallationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
-  workspaceId: 'workspaceId',
   installationId: 'installationId',
   browser: 'browser',
   extensionVersion: 'extensionVersion',
@@ -3168,7 +3453,6 @@ export const ProviderCredentialScalarFieldEnum = {
   ownerType: 'ownerType',
   ownerId: 'ownerId',
   userId: 'userId',
-  workspaceId: 'workspaceId',
   encryptedSecretJson: 'encryptedSecretJson',
   validationStatus: 'validationStatus',
   scopesJson: 'scopesJson',
@@ -3187,7 +3471,6 @@ export const AiProviderPolicyScalarFieldEnum = {
   id: 'id',
   scopeKey: 'scopeKey',
   scopeType: 'scopeType',
-  workspaceId: 'workspaceId',
   mode: 'mode',
   allowPlatformManaged: 'allowPlatformManaged',
   allowBringYourOwnKey: 'allowBringYourOwnKey',
@@ -3222,7 +3505,6 @@ export type ExtensionTelemetryScalarFieldEnum = (typeof ExtensionTelemetryScalar
 
 export const AuditLogScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   actorId: 'actorId',
   action: 'action',
   targetType: 'targetType',
@@ -3236,7 +3518,6 @@ export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typ
 
 export const ActivityLogScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   actorId: 'actorId',
   eventType: 'eventType',
   metadataJson: 'metadataJson',
@@ -3248,7 +3529,6 @@ export type ActivityLogScalarFieldEnum = (typeof ActivityLogScalarFieldEnum)[key
 
 export const SecurityEventScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   actorId: 'actorId',
   eventType: 'eventType',
   severity: 'severity',
@@ -3261,7 +3541,6 @@ export type SecurityEventScalarFieldEnum = (typeof SecurityEventScalarFieldEnum)
 
 export const DomainEventScalarFieldEnum = {
   id: 'id',
-  workspaceId: 'workspaceId',
   eventType: 'eventType',
   payloadJson: 'payloadJson',
   createdAt: 'createdAt'
@@ -3300,7 +3579,6 @@ export const SupportImpersonationSessionScalarFieldEnum = {
   id: 'id',
   supportActorId: 'supportActorId',
   targetUserId: 'targetUserId',
-  workspaceId: 'workspaceId',
   supportTicketId: 'supportTicketId',
   reason: 'reason',
   operatorNote: 'operatorNote',
@@ -3734,6 +4012,9 @@ export type GlobalOmitConfig = {
   webhookEvent?: Prisma.WebhookEventOmit
   quotaCounter?: Prisma.QuotaCounterOmit
   aiRequest?: Prisma.AiRequestOmit
+  aiRequestEvent?: Prisma.AiRequestEventOmit
+  aiRequestContent?: Prisma.AiRequestContentOmit
+  aiUsageDailyRollup?: Prisma.AiUsageDailyRollupOmit
   featureFlag?: Prisma.FeatureFlagOmit
   featureFlagOverride?: Prisma.FeatureFlagOverrideOmit
   remoteConfigVersion?: Prisma.RemoteConfigVersionOmit

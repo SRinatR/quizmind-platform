@@ -225,6 +225,17 @@ async function bootstrap() {
             connection: redisConnectionOptions,
           }),
       );
+      const historyCleanupQueue = queueBindings.find((queue) => queue.name === 'history-cleanup');
+      if (historyCleanupQueue) {
+        await historyCleanupQueue.add(
+          'history-cleanup-hourly',
+          { triggeredAt: new Date().toISOString() } satisfies HistoryCleanupJobPayload,
+          {
+            jobId: 'history-cleanup-hourly',
+            repeat: { every: 60 * 60 * 1000 },
+          },
+        );
+      }
       const billingWebhookRepository = new WorkerBillingProcessingRepository(prisma);
       const usageProcessingRepository = new WorkerUsageProcessingRepository(prisma);
       const domainEventRepository = new WorkerDomainEventRepository(prisma);
@@ -363,7 +374,7 @@ async function bootstrap() {
             return processQueueJobWithDomainLogging(job, domainEventRepository, async () => {
               const result = await processHistoryCleanupJob(payload, prisma!);
               historyCleanupRunsTotal.inc();
-              const deleted = (result.logEvent.metadata as Record<string, unknown> | undefined)?.deletedCount;
+              const deleted = (result.logEvent.metadata as Record<string, unknown> | undefined)?.deletedRows;
               if (typeof deleted === 'number' && deleted > 0) {
                 historyCleanupDeletedTotal.inc(deleted);
               }

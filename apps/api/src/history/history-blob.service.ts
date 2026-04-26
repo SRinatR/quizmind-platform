@@ -5,26 +5,20 @@ import { Injectable } from '@nestjs/common';
 
 /** Local filesystem blob store for AI request history heavy content.
  *  Blob dir is controlled by HISTORY_BLOB_DIR env var (default: <cwd>/data/history).
- *  Each request produces up to three files:
- *    {requestId}.prompt.json   – serialised prompt messages array
- *    {requestId}.response.json – raw provider response object
- *    {requestId}.file.bin      – raw uploaded file bytes (uploads only)
+ *  Blob keys are explicit and storage-backend agnostic so S3-compatible backends
+ *  can be added later without changing call sites.
  */
 
 export function resolveHistoryBlobDir(): string {
   return process.env['HISTORY_BLOB_DIR'] ?? path.join(process.cwd(), 'data', 'history');
 }
 
-function promptPath(dir: string, requestId: string) {
-  return path.join(dir, `${requestId}.prompt.json`);
-}
-
-function responsePath(dir: string, requestId: string) {
-  return path.join(dir, `${requestId}.response.json`);
-}
-
-function filePath(dir: string, requestId: string) {
-  return path.join(dir, `${requestId}.file.bin`);
+function toStoragePath(dir: string, blobKey: string) {
+  const normalized = blobKey.trim().replaceAll('\\', '/');
+  if (!normalized || normalized.startsWith('/') || normalized.includes('..')) {
+    throw new Error(`Invalid history blob key: ${blobKey}`);
+  }
+  return path.join(dir, normalized);
 }
 
 async function tryUnlink(p: string): Promise<void> {
@@ -43,44 +37,66 @@ export class HistoryBlobService {
     await fs.mkdir(this.dir, { recursive: true });
   }
 
-  async writePrompt(requestId: string, messages: unknown): Promise<void> {
+  private async ensureParentDir(blobKey: string): Promise<void> {
     await this.ensureDir();
-    await fs.writeFile(promptPath(this.dir, requestId), JSON.stringify(messages), 'utf8');
+    await fs.mkdir(path.dirname(toStoragePath(this.dir, blobKey)), { recursive: true });
   }
 
-  async writeResponse(requestId: string, response: unknown): Promise<void> {
-    await this.ensureDir();
-    await fs.writeFile(responsePath(this.dir, requestId), JSON.stringify(response), 'utf8');
+  async writeJson(blobKey: string, payload: unknown): Promise<void> {
+    await this.ensureParentDir(blobKey);
+    await fs.writeFile(toStoragePath(this.dir, blobKey), JSON.stringify(payload), 'utf8');
   }
 
-  async writeFileContent(requestId: string, buffer: Buffer): Promise<void> {
-    await this.ensureDir();
-    await fs.writeFile(filePath(this.dir, requestId), buffer);
+  async writeBinary(blobKey: string, buffer: Buffer): Promise<void> {
+    await this.ensureParentDir(blobKey);
+    await fs.writeFile(toStoragePath(this.dir, blobKey), buffer);
+  }
+
+  async readJson(blobKey: string): Promise<unknown | null> {
+    try {
+      const raw = await fs.readFile(toStoragePath(this.dir, blobKey), 'utf8');
+      return JSON.parse(raw) as unknown;
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteByKey(blobKey: string): Promise<void> {
+    await tryUnlink(toStoragePath(this.dir, blobKey));
+  }
+
+  async writePrompt(requestId: string, messages: unknown): Promise<string> {
+    const key = `requests/${requestId}/prompt.json`;
+    await this.writeJson(key, messages);
+    return key;
+  }
+
+  async writeResponse(requestId: string, response: unknown): Promise<string> {
+    const key = `requests/${requestId}/response.json`;
+    await this.writeJson(key, response);
+    return key;
+  }
+
+  async writeFileContent(requestId: string, buffer: Buffer): Promise<string> {
+    const key = `requests/${requestId}/file.bin`;
+    await this.writeBinary(key, buffer);
+    return key;
   }
 
   async readPrompt(requestId: string): Promise<unknown | null> {
-    try {
-      const raw = await fs.readFile(promptPath(this.dir, requestId), 'utf8');
-      return JSON.parse(raw) as unknown;
-    } catch {
-      return null;
-    }
+    return this.readJson(`requests/${requestId}/prompt.json`);
   }
 
   async readResponse(requestId: string): Promise<unknown | null> {
-    try {
-      const raw = await fs.readFile(responsePath(this.dir, requestId), 'utf8');
-      return JSON.parse(raw) as unknown;
-    } catch {
-      return null;
-    }
+    return this.readJson(`requests/${requestId}/response.json`);
   }
 
   async deleteAllForRequest(requestId: string): Promise<void> {
+    await this.ensureDir();
     await Promise.all([
-      tryUnlink(promptPath(this.dir, requestId)),
-      tryUnlink(responsePath(this.dir, requestId)),
-      tryUnlink(filePath(this.dir, requestId)),
+      this.deleteByKey(`requests/${requestId}/prompt.json`),
+      this.deleteByKey(`requests/${requestId}/response.json`),
+      this.deleteByKey(`requests/${requestId}/file.bin`),
     ]);
   }
 }

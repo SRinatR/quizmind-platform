@@ -36,7 +36,6 @@ export type QuotaCounterSumAggregateOutputType = {
 
 export type QuotaCounterMinAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   key: string | null
   consumed: number | null
   periodStart: Date | null
@@ -47,7 +46,6 @@ export type QuotaCounterMinAggregateOutputType = {
 
 export type QuotaCounterMaxAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   key: string | null
   consumed: number | null
   periodStart: Date | null
@@ -58,7 +56,6 @@ export type QuotaCounterMaxAggregateOutputType = {
 
 export type QuotaCounterCountAggregateOutputType = {
   id: number
-  workspaceId: number
   key: number
   consumed: number
   periodStart: number
@@ -79,7 +76,6 @@ export type QuotaCounterSumAggregateInputType = {
 
 export type QuotaCounterMinAggregateInputType = {
   id?: true
-  workspaceId?: true
   key?: true
   consumed?: true
   periodStart?: true
@@ -90,7 +86,6 @@ export type QuotaCounterMinAggregateInputType = {
 
 export type QuotaCounterMaxAggregateInputType = {
   id?: true
-  workspaceId?: true
   key?: true
   consumed?: true
   periodStart?: true
@@ -101,7 +96,6 @@ export type QuotaCounterMaxAggregateInputType = {
 
 export type QuotaCounterCountAggregateInputType = {
   id?: true
-  workspaceId?: true
   key?: true
   consumed?: true
   periodStart?: true
@@ -199,7 +193,6 @@ export type QuotaCounterGroupByArgs<ExtArgs extends runtime.Types.Extensions.Int
 
 export type QuotaCounterGroupByOutputType = {
   id: string
-  workspaceId: string
   key: string
   consumed: number
   periodStart: Date
@@ -233,7 +226,6 @@ export type QuotaCounterWhereInput = {
   OR?: Prisma.QuotaCounterWhereInput[]
   NOT?: Prisma.QuotaCounterWhereInput | Prisma.QuotaCounterWhereInput[]
   id?: Prisma.StringFilter<"QuotaCounter"> | string
-  workspaceId?: Prisma.StringFilter<"QuotaCounter"> | string
   key?: Prisma.StringFilter<"QuotaCounter"> | string
   consumed?: Prisma.IntFilter<"QuotaCounter"> | number
   periodStart?: Prisma.DateTimeFilter<"QuotaCounter"> | Date | string
@@ -244,7 +236,6 @@ export type QuotaCounterWhereInput = {
 
 export type QuotaCounterOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   consumed?: Prisma.SortOrder
   periodStart?: Prisma.SortOrder
@@ -255,22 +246,20 @@ export type QuotaCounterOrderByWithRelationInput = {
 
 export type QuotaCounterWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  workspaceId_key_periodStart_periodEnd?: Prisma.QuotaCounterWorkspaceIdKeyPeriodStartPeriodEndCompoundUniqueInput
+  key_periodStart_periodEnd?: Prisma.QuotaCounterKeyPeriodStartPeriodEndCompoundUniqueInput
   AND?: Prisma.QuotaCounterWhereInput | Prisma.QuotaCounterWhereInput[]
   OR?: Prisma.QuotaCounterWhereInput[]
   NOT?: Prisma.QuotaCounterWhereInput | Prisma.QuotaCounterWhereInput[]
-  workspaceId?: Prisma.StringFilter<"QuotaCounter"> | string
   key?: Prisma.StringFilter<"QuotaCounter"> | string
   consumed?: Prisma.IntFilter<"QuotaCounter"> | number
   periodStart?: Prisma.DateTimeFilter<"QuotaCounter"> | Date | string
   periodEnd?: Prisma.DateTimeFilter<"QuotaCounter"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"QuotaCounter"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"QuotaCounter"> | Date | string
-}, "id" | "workspaceId_key_periodStart_periodEnd">
+}, "id" | "key_periodStart_periodEnd">
 
 export type QuotaCounterOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   consumed?: Prisma.SortOrder
   periodStart?: Prisma.SortOrder
@@ -289,7 +278,6 @@ export type QuotaCounterScalarWhereWithAggregatesInput = {
   OR?: Prisma.QuotaCounterScalarWhereWithAggregatesInput[]
   NOT?: Prisma.QuotaCounterScalarWhereWithAggregatesInput | Prisma.QuotaCounterScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"QuotaCounter"> | string
-  workspaceId?: Prisma.StringWithAggregatesFilter<"QuotaCounter"> | string
   key?: Prisma.StringWithAggregatesFilter<"QuotaCounter"> | string
   consumed?: Prisma.IntWithAggregatesFilter<"QuotaCounter"> | number
   periodStart?: Prisma.DateTimeWithAggregatesFilter<"QuotaCounter"> | Date | string
@@ -300,7 +288,6 @@ export type QuotaCounterScalarWhereWithAggregatesInput = {
 
 export type QuotaCounterCreateInput = {
   id?: string
-  workspaceId: string
   key: string
   consumed?: number
   periodStart: Date | string
@@ -311,7 +298,6 @@ export type QuotaCounterCreateInput = {
 
 export type QuotaCounterUncheckedCreateInput = {
   id?: string
-  workspaceId: string
   key: string
   consumed?: number
   periodStart: Date | string
@@ -322,7 +308,6 @@ export type QuotaCounterUncheckedCreateInput = {
 
 export type QuotaCounterUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   consumed?: Prisma.IntFieldUpdateOperationsInput | number
   periodStart?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -333,7 +318,6 @@ export type QuotaCounterUpdateInput = {
 
 export type QuotaCounterUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   consumed?: Prisma.IntFieldUpdateOperationsInput | number
   periodStart?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -344,7 +328,6 @@ export type QuotaCounterUncheckedUpdateInput = {
 
 export type QuotaCounterCreateManyInput = {
   id?: string
-  workspaceId: string
   key: string
   consumed?: number
   periodStart: Date | string
@@ -355,7 +338,6 @@ export type QuotaCounterCreateManyInput = {
 
 export type QuotaCounterUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   consumed?: Prisma.IntFieldUpdateOperationsInput | number
   periodStart?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -366,7 +348,6 @@ export type QuotaCounterUpdateManyMutationInput = {
 
 export type QuotaCounterUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.StringFieldUpdateOperationsInput | string
   key?: Prisma.StringFieldUpdateOperationsInput | string
   consumed?: Prisma.IntFieldUpdateOperationsInput | number
   periodStart?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -375,8 +356,7 @@ export type QuotaCounterUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type QuotaCounterWorkspaceIdKeyPeriodStartPeriodEndCompoundUniqueInput = {
-  workspaceId: string
+export type QuotaCounterKeyPeriodStartPeriodEndCompoundUniqueInput = {
   key: string
   periodStart: Date | string
   periodEnd: Date | string
@@ -384,7 +364,6 @@ export type QuotaCounterWorkspaceIdKeyPeriodStartPeriodEndCompoundUniqueInput = 
 
 export type QuotaCounterCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   consumed?: Prisma.SortOrder
   periodStart?: Prisma.SortOrder
@@ -399,7 +378,6 @@ export type QuotaCounterAvgOrderByAggregateInput = {
 
 export type QuotaCounterMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   consumed?: Prisma.SortOrder
   periodStart?: Prisma.SortOrder
@@ -410,7 +388,6 @@ export type QuotaCounterMaxOrderByAggregateInput = {
 
 export type QuotaCounterMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   key?: Prisma.SortOrder
   consumed?: Prisma.SortOrder
   periodStart?: Prisma.SortOrder
@@ -427,7 +404,6 @@ export type QuotaCounterSumOrderByAggregateInput = {
 
 export type QuotaCounterSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   key?: boolean
   consumed?: boolean
   periodStart?: boolean
@@ -438,7 +414,6 @@ export type QuotaCounterSelect<ExtArgs extends runtime.Types.Extensions.Internal
 
 export type QuotaCounterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   key?: boolean
   consumed?: boolean
   periodStart?: boolean
@@ -449,7 +424,6 @@ export type QuotaCounterSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
 
 export type QuotaCounterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   key?: boolean
   consumed?: boolean
   periodStart?: boolean
@@ -460,7 +434,6 @@ export type QuotaCounterSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
 
 export type QuotaCounterSelectScalar = {
   id?: boolean
-  workspaceId?: boolean
   key?: boolean
   consumed?: boolean
   periodStart?: boolean
@@ -469,14 +442,13 @@ export type QuotaCounterSelectScalar = {
   updatedAt?: boolean
 }
 
-export type QuotaCounterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "key" | "consumed" | "periodStart" | "periodEnd" | "createdAt" | "updatedAt", ExtArgs["result"]["quotaCounter"]>
+export type QuotaCounterOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "key" | "consumed" | "periodStart" | "periodEnd" | "createdAt" | "updatedAt", ExtArgs["result"]["quotaCounter"]>
 
 export type $QuotaCounterPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "QuotaCounter"
   objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    workspaceId: string
     key: string
     consumed: number
     periodStart: Date
@@ -907,7 +879,6 @@ export interface Prisma__QuotaCounterClient<T, Null = never, ExtArgs extends run
  */
 export interface QuotaCounterFieldRefs {
   readonly id: Prisma.FieldRef<"QuotaCounter", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"QuotaCounter", 'String'>
   readonly key: Prisma.FieldRef<"QuotaCounter", 'String'>
   readonly consumed: Prisma.FieldRef<"QuotaCounter", 'Int'>
   readonly periodStart: Prisma.FieldRef<"QuotaCounter", 'DateTime'>

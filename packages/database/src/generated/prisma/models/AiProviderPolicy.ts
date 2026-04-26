@@ -28,7 +28,6 @@ export type AiProviderPolicyMinAggregateOutputType = {
   id: string | null
   scopeKey: string | null
   scopeType: $Enums.AiProviderPolicyScopeType | null
-  workspaceId: string | null
   mode: $Enums.AiAccessPolicyMode | null
   allowPlatformManaged: boolean | null
   allowBringYourOwnKey: boolean | null
@@ -48,7 +47,6 @@ export type AiProviderPolicyMaxAggregateOutputType = {
   id: string | null
   scopeKey: string | null
   scopeType: $Enums.AiProviderPolicyScopeType | null
-  workspaceId: string | null
   mode: $Enums.AiAccessPolicyMode | null
   allowPlatformManaged: boolean | null
   allowBringYourOwnKey: boolean | null
@@ -68,7 +66,6 @@ export type AiProviderPolicyCountAggregateOutputType = {
   id: number
   scopeKey: number
   scopeType: number
-  workspaceId: number
   mode: number
   allowPlatformManaged: number
   allowBringYourOwnKey: number
@@ -92,7 +89,6 @@ export type AiProviderPolicyMinAggregateInputType = {
   id?: true
   scopeKey?: true
   scopeType?: true
-  workspaceId?: true
   mode?: true
   allowPlatformManaged?: true
   allowBringYourOwnKey?: true
@@ -112,7 +108,6 @@ export type AiProviderPolicyMaxAggregateInputType = {
   id?: true
   scopeKey?: true
   scopeType?: true
-  workspaceId?: true
   mode?: true
   allowPlatformManaged?: true
   allowBringYourOwnKey?: true
@@ -132,7 +127,6 @@ export type AiProviderPolicyCountAggregateInputType = {
   id?: true
   scopeKey?: true
   scopeType?: true
-  workspaceId?: true
   mode?: true
   allowPlatformManaged?: true
   allowBringYourOwnKey?: true
@@ -227,7 +221,6 @@ export type AiProviderPolicyGroupByOutputType = {
   id: string
   scopeKey: string
   scopeType: $Enums.AiProviderPolicyScopeType
-  workspaceId: string | null
   mode: $Enums.AiAccessPolicyMode
   allowPlatformManaged: boolean
   allowBringYourOwnKey: boolean
@@ -270,7 +263,6 @@ export type AiProviderPolicyWhereInput = {
   id?: Prisma.StringFilter<"AiProviderPolicy"> | string
   scopeKey?: Prisma.StringFilter<"AiProviderPolicy"> | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFilter<"AiProviderPolicy"> | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.StringNullableFilter<"AiProviderPolicy"> | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFilter<"AiProviderPolicy"> | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFilter<"AiProviderPolicy"> | boolean
   allowBringYourOwnKey?: Prisma.BoolFilter<"AiProviderPolicy"> | boolean
@@ -286,7 +278,6 @@ export type AiProviderPolicyWhereInput = {
   updatedById?: Prisma.StringNullableFilter<"AiProviderPolicy"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AiProviderPolicy"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiProviderPolicy"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   updatedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
 }
 
@@ -294,7 +285,6 @@ export type AiProviderPolicyOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   scopeKey?: Prisma.SortOrder
   scopeType?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   mode?: Prisma.SortOrder
   allowPlatformManaged?: Prisma.SortOrder
   allowBringYourOwnKey?: Prisma.SortOrder
@@ -310,7 +300,6 @@ export type AiProviderPolicyOrderByWithRelationInput = {
   updatedById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   updatedBy?: Prisma.UserOrderByWithRelationInput
 }
 
@@ -321,7 +310,6 @@ export type AiProviderPolicyWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.AiProviderPolicyWhereInput[]
   NOT?: Prisma.AiProviderPolicyWhereInput | Prisma.AiProviderPolicyWhereInput[]
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFilter<"AiProviderPolicy"> | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.StringNullableFilter<"AiProviderPolicy"> | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFilter<"AiProviderPolicy"> | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFilter<"AiProviderPolicy"> | boolean
   allowBringYourOwnKey?: Prisma.BoolFilter<"AiProviderPolicy"> | boolean
@@ -337,7 +325,6 @@ export type AiProviderPolicyWhereUniqueInput = Prisma.AtLeast<{
   updatedById?: Prisma.StringNullableFilter<"AiProviderPolicy"> | string | null
   createdAt?: Prisma.DateTimeFilter<"AiProviderPolicy"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"AiProviderPolicy"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   updatedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
 }, "id" | "scopeKey">
 
@@ -345,7 +332,6 @@ export type AiProviderPolicyOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   scopeKey?: Prisma.SortOrder
   scopeType?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   mode?: Prisma.SortOrder
   allowPlatformManaged?: Prisma.SortOrder
   allowBringYourOwnKey?: Prisma.SortOrder
@@ -373,7 +359,6 @@ export type AiProviderPolicyScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"AiProviderPolicy"> | string
   scopeKey?: Prisma.StringWithAggregatesFilter<"AiProviderPolicy"> | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeWithAggregatesFilter<"AiProviderPolicy"> | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"AiProviderPolicy"> | string | null
   mode?: Prisma.EnumAiAccessPolicyModeWithAggregatesFilter<"AiProviderPolicy"> | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolWithAggregatesFilter<"AiProviderPolicy"> | boolean
   allowBringYourOwnKey?: Prisma.BoolWithAggregatesFilter<"AiProviderPolicy"> | boolean
@@ -409,7 +394,6 @@ export type AiProviderPolicyCreateInput = {
   reason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutAiProviderPoliciesInput
   updatedBy?: Prisma.UserCreateNestedOneWithoutAiProviderPoliciesUpdatedInput
 }
 
@@ -417,7 +401,6 @@ export type AiProviderPolicyUncheckedCreateInput = {
   id?: string
   scopeKey: string
   scopeType: $Enums.AiProviderPolicyScopeType
-  workspaceId?: string | null
   mode: $Enums.AiAccessPolicyMode
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -453,7 +436,6 @@ export type AiProviderPolicyUpdateInput = {
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutAiProviderPoliciesNestedInput
   updatedBy?: Prisma.UserUpdateOneWithoutAiProviderPoliciesUpdatedNestedInput
 }
 
@@ -461,7 +443,6 @@ export type AiProviderPolicyUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -483,7 +464,6 @@ export type AiProviderPolicyCreateManyInput = {
   id?: string
   scopeKey: string
   scopeType: $Enums.AiProviderPolicyScopeType
-  workspaceId?: string | null
   mode: $Enums.AiAccessPolicyMode
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -525,7 +505,6 @@ export type AiProviderPolicyUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -557,7 +536,6 @@ export type AiProviderPolicyCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scopeKey?: Prisma.SortOrder
   scopeType?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   mode?: Prisma.SortOrder
   allowPlatformManaged?: Prisma.SortOrder
   allowBringYourOwnKey?: Prisma.SortOrder
@@ -579,7 +557,6 @@ export type AiProviderPolicyMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scopeKey?: Prisma.SortOrder
   scopeType?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   mode?: Prisma.SortOrder
   allowPlatformManaged?: Prisma.SortOrder
   allowBringYourOwnKey?: Prisma.SortOrder
@@ -599,7 +576,6 @@ export type AiProviderPolicyMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   scopeKey?: Prisma.SortOrder
   scopeType?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   mode?: Prisma.SortOrder
   allowPlatformManaged?: Prisma.SortOrder
   allowBringYourOwnKey?: Prisma.SortOrder
@@ -657,48 +633,6 @@ export type AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput = {
   deleteMany?: Prisma.AiProviderPolicyScalarWhereInput | Prisma.AiProviderPolicyScalarWhereInput[]
 }
 
-export type AiProviderPolicyCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.AiProviderPolicyCreateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput> | Prisma.AiProviderPolicyCreateWithoutWorkspaceInput[] | Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput | Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.AiProviderPolicyCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-}
-
-export type AiProviderPolicyUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.AiProviderPolicyCreateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput> | Prisma.AiProviderPolicyCreateWithoutWorkspaceInput[] | Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput | Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.AiProviderPolicyCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-}
-
-export type AiProviderPolicyUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.AiProviderPolicyCreateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput> | Prisma.AiProviderPolicyCreateWithoutWorkspaceInput[] | Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput | Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.AiProviderPolicyUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.AiProviderPolicyUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.AiProviderPolicyCreateManyWorkspaceInputEnvelope
-  set?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  disconnect?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  delete?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  connect?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  update?: Prisma.AiProviderPolicyUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.AiProviderPolicyUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.AiProviderPolicyUpdateManyWithWhereWithoutWorkspaceInput | Prisma.AiProviderPolicyUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.AiProviderPolicyScalarWhereInput | Prisma.AiProviderPolicyScalarWhereInput[]
-}
-
-export type AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.AiProviderPolicyCreateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput> | Prisma.AiProviderPolicyCreateWithoutWorkspaceInput[] | Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput | Prisma.AiProviderPolicyCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.AiProviderPolicyUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.AiProviderPolicyUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.AiProviderPolicyCreateManyWorkspaceInputEnvelope
-  set?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  disconnect?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  delete?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  connect?: Prisma.AiProviderPolicyWhereUniqueInput | Prisma.AiProviderPolicyWhereUniqueInput[]
-  update?: Prisma.AiProviderPolicyUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.AiProviderPolicyUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.AiProviderPolicyUpdateManyWithWhereWithoutWorkspaceInput | Prisma.AiProviderPolicyUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.AiProviderPolicyScalarWhereInput | Prisma.AiProviderPolicyScalarWhereInput[]
-}
-
 export type EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput = {
   set?: $Enums.AiProviderPolicyScopeType
 }
@@ -725,14 +659,12 @@ export type AiProviderPolicyCreateWithoutUpdatedByInput = {
   reason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutAiProviderPoliciesInput
 }
 
 export type AiProviderPolicyUncheckedCreateWithoutUpdatedByInput = {
   id?: string
   scopeKey: string
   scopeType: $Enums.AiProviderPolicyScopeType
-  workspaceId?: string | null
   mode: $Enums.AiAccessPolicyMode
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -782,7 +714,6 @@ export type AiProviderPolicyScalarWhereInput = {
   id?: Prisma.StringFilter<"AiProviderPolicy"> | string
   scopeKey?: Prisma.StringFilter<"AiProviderPolicy"> | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFilter<"AiProviderPolicy"> | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.StringNullableFilter<"AiProviderPolicy"> | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFilter<"AiProviderPolicy"> | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFilter<"AiProviderPolicy"> | boolean
   allowBringYourOwnKey?: Prisma.BoolFilter<"AiProviderPolicy"> | boolean
@@ -800,79 +731,10 @@ export type AiProviderPolicyScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"AiProviderPolicy"> | Date | string
 }
 
-export type AiProviderPolicyCreateWithoutWorkspaceInput = {
-  id?: string
-  scopeKey: string
-  scopeType: $Enums.AiProviderPolicyScopeType
-  mode: $Enums.AiAccessPolicyMode
-  allowPlatformManaged?: boolean
-  allowBringYourOwnKey?: boolean
-  allowDirectProviderMode?: boolean
-  allowWorkspaceSharedCredentials?: boolean
-  requireAdminApproval?: boolean
-  allowVisionOnUserKeys?: boolean
-  providersJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  allowedModelTagsJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  defaultProvider?: string | null
-  defaultModel?: string | null
-  reason?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  updatedBy?: Prisma.UserCreateNestedOneWithoutAiProviderPoliciesUpdatedInput
-}
-
-export type AiProviderPolicyUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  scopeKey: string
-  scopeType: $Enums.AiProviderPolicyScopeType
-  mode: $Enums.AiAccessPolicyMode
-  allowPlatformManaged?: boolean
-  allowBringYourOwnKey?: boolean
-  allowDirectProviderMode?: boolean
-  allowWorkspaceSharedCredentials?: boolean
-  requireAdminApproval?: boolean
-  allowVisionOnUserKeys?: boolean
-  providersJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  allowedModelTagsJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  defaultProvider?: string | null
-  defaultModel?: string | null
-  reason?: string | null
-  updatedById?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type AiProviderPolicyCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.AiProviderPolicyWhereUniqueInput
-  create: Prisma.XOR<Prisma.AiProviderPolicyCreateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type AiProviderPolicyCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.AiProviderPolicyCreateManyWorkspaceInput | Prisma.AiProviderPolicyCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type AiProviderPolicyUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.AiProviderPolicyWhereUniqueInput
-  update: Prisma.XOR<Prisma.AiProviderPolicyUpdateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.AiProviderPolicyCreateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type AiProviderPolicyUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.AiProviderPolicyWhereUniqueInput
-  data: Prisma.XOR<Prisma.AiProviderPolicyUpdateWithoutWorkspaceInput, Prisma.AiProviderPolicyUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type AiProviderPolicyUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.AiProviderPolicyScalarWhereInput
-  data: Prisma.XOR<Prisma.AiProviderPolicyUpdateManyMutationInput, Prisma.AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceInput>
-}
-
 export type AiProviderPolicyCreateManyUpdatedByInput = {
   id?: string
   scopeKey: string
   scopeType: $Enums.AiProviderPolicyScopeType
-  workspaceId?: string | null
   mode: $Enums.AiAccessPolicyMode
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -907,14 +769,12 @@ export type AiProviderPolicyUpdateWithoutUpdatedByInput = {
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutAiProviderPoliciesNestedInput
 }
 
 export type AiProviderPolicyUncheckedUpdateWithoutUpdatedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -935,7 +795,6 @@ export type AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
   scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
   allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
   allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -948,90 +807,6 @@ export type AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByInput = {
   defaultProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   defaultModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type AiProviderPolicyCreateManyWorkspaceInput = {
-  id?: string
-  scopeKey: string
-  scopeType: $Enums.AiProviderPolicyScopeType
-  mode: $Enums.AiAccessPolicyMode
-  allowPlatformManaged?: boolean
-  allowBringYourOwnKey?: boolean
-  allowDirectProviderMode?: boolean
-  allowWorkspaceSharedCredentials?: boolean
-  requireAdminApproval?: boolean
-  allowVisionOnUserKeys?: boolean
-  providersJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  allowedModelTagsJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  defaultProvider?: string | null
-  defaultModel?: string | null
-  reason?: string | null
-  updatedById?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type AiProviderPolicyUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
-  scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
-  allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowDirectProviderMode?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowWorkspaceSharedCredentials?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  requireAdminApproval?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowVisionOnUserKeys?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  providersJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  allowedModelTagsJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  defaultProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedBy?: Prisma.UserUpdateOneWithoutAiProviderPoliciesUpdatedNestedInput
-}
-
-export type AiProviderPolicyUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
-  scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
-  allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowDirectProviderMode?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowWorkspaceSharedCredentials?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  requireAdminApproval?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowVisionOnUserKeys?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  providersJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  allowedModelTagsJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  defaultProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  updatedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type AiProviderPolicyUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  scopeKey?: Prisma.StringFieldUpdateOperationsInput | string
-  scopeType?: Prisma.EnumAiProviderPolicyScopeTypeFieldUpdateOperationsInput | $Enums.AiProviderPolicyScopeType
-  mode?: Prisma.EnumAiAccessPolicyModeFieldUpdateOperationsInput | $Enums.AiAccessPolicyMode
-  allowPlatformManaged?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowBringYourOwnKey?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowDirectProviderMode?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowWorkspaceSharedCredentials?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  requireAdminApproval?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  allowVisionOnUserKeys?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  providersJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
-  allowedModelTagsJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  defaultProvider?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  defaultModel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  updatedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1042,7 +817,6 @@ export type AiProviderPolicySelect<ExtArgs extends runtime.Types.Extensions.Inte
   id?: boolean
   scopeKey?: boolean
   scopeType?: boolean
-  workspaceId?: boolean
   mode?: boolean
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -1058,7 +832,6 @@ export type AiProviderPolicySelect<ExtArgs extends runtime.Types.Extensions.Inte
   updatedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  workspace?: boolean | Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>
   updatedBy?: boolean | Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>
 }, ExtArgs["result"]["aiProviderPolicy"]>
 
@@ -1066,7 +839,6 @@ export type AiProviderPolicySelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   scopeKey?: boolean
   scopeType?: boolean
-  workspaceId?: boolean
   mode?: boolean
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -1082,7 +854,6 @@ export type AiProviderPolicySelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   updatedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  workspace?: boolean | Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>
   updatedBy?: boolean | Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>
 }, ExtArgs["result"]["aiProviderPolicy"]>
 
@@ -1090,7 +861,6 @@ export type AiProviderPolicySelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   id?: boolean
   scopeKey?: boolean
   scopeType?: boolean
-  workspaceId?: boolean
   mode?: boolean
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -1106,7 +876,6 @@ export type AiProviderPolicySelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   updatedById?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  workspace?: boolean | Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>
   updatedBy?: boolean | Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>
 }, ExtArgs["result"]["aiProviderPolicy"]>
 
@@ -1114,7 +883,6 @@ export type AiProviderPolicySelectScalar = {
   id?: boolean
   scopeKey?: boolean
   scopeType?: boolean
-  workspaceId?: boolean
   mode?: boolean
   allowPlatformManaged?: boolean
   allowBringYourOwnKey?: boolean
@@ -1132,31 +900,26 @@ export type AiProviderPolicySelectScalar = {
   updatedAt?: boolean
 }
 
-export type AiProviderPolicyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scopeKey" | "scopeType" | "workspaceId" | "mode" | "allowPlatformManaged" | "allowBringYourOwnKey" | "allowDirectProviderMode" | "allowWorkspaceSharedCredentials" | "requireAdminApproval" | "allowVisionOnUserKeys" | "providersJson" | "allowedModelTagsJson" | "defaultProvider" | "defaultModel" | "reason" | "updatedById" | "createdAt" | "updatedAt", ExtArgs["result"]["aiProviderPolicy"]>
+export type AiProviderPolicyOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "scopeKey" | "scopeType" | "mode" | "allowPlatformManaged" | "allowBringYourOwnKey" | "allowDirectProviderMode" | "allowWorkspaceSharedCredentials" | "requireAdminApproval" | "allowVisionOnUserKeys" | "providersJson" | "allowedModelTagsJson" | "defaultProvider" | "defaultModel" | "reason" | "updatedById" | "createdAt" | "updatedAt", ExtArgs["result"]["aiProviderPolicy"]>
 export type AiProviderPolicyInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>
   updatedBy?: boolean | Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>
 }
 export type AiProviderPolicyIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>
   updatedBy?: boolean | Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>
 }
 export type AiProviderPolicyIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>
   updatedBy?: boolean | Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>
 }
 
 export type $AiProviderPolicyPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "AiProviderPolicy"
   objects: {
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     updatedBy: Prisma.$UserPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     scopeKey: string
     scopeType: $Enums.AiProviderPolicyScopeType
-    workspaceId: string | null
     mode: $Enums.AiAccessPolicyMode
     allowPlatformManaged: boolean
     allowBringYourOwnKey: boolean
@@ -1566,7 +1329,6 @@ readonly fields: AiProviderPolicyFieldRefs;
  */
 export interface Prisma__AiProviderPolicyClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  workspace<T extends Prisma.AiProviderPolicy$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiProviderPolicy$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   updatedBy<T extends Prisma.AiProviderPolicy$updatedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AiProviderPolicy$updatedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1600,7 +1362,6 @@ export interface AiProviderPolicyFieldRefs {
   readonly id: Prisma.FieldRef<"AiProviderPolicy", 'String'>
   readonly scopeKey: Prisma.FieldRef<"AiProviderPolicy", 'String'>
   readonly scopeType: Prisma.FieldRef<"AiProviderPolicy", 'AiProviderPolicyScopeType'>
-  readonly workspaceId: Prisma.FieldRef<"AiProviderPolicy", 'String'>
   readonly mode: Prisma.FieldRef<"AiProviderPolicy", 'AiAccessPolicyMode'>
   readonly allowPlatformManaged: Prisma.FieldRef<"AiProviderPolicy", 'Boolean'>
   readonly allowBringYourOwnKey: Prisma.FieldRef<"AiProviderPolicy", 'Boolean'>
@@ -2014,25 +1775,6 @@ export type AiProviderPolicyDeleteManyArgs<ExtArgs extends runtime.Types.Extensi
    * Limit how many AiProviderPolicies to delete.
    */
   limit?: number
-}
-
-/**
- * AiProviderPolicy.workspace
- */
-export type AiProviderPolicy$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

@@ -26,7 +26,6 @@ export type AggregateRemoteConfigVersion = {
 
 export type RemoteConfigVersionMinAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   publishedById: string | null
   versionLabel: string | null
   isActive: boolean | null
@@ -35,7 +34,6 @@ export type RemoteConfigVersionMinAggregateOutputType = {
 
 export type RemoteConfigVersionMaxAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   publishedById: string | null
   versionLabel: string | null
   isActive: boolean | null
@@ -44,7 +42,6 @@ export type RemoteConfigVersionMaxAggregateOutputType = {
 
 export type RemoteConfigVersionCountAggregateOutputType = {
   id: number
-  workspaceId: number
   publishedById: number
   versionLabel: number
   isActive: number
@@ -55,7 +52,6 @@ export type RemoteConfigVersionCountAggregateOutputType = {
 
 export type RemoteConfigVersionMinAggregateInputType = {
   id?: true
-  workspaceId?: true
   publishedById?: true
   versionLabel?: true
   isActive?: true
@@ -64,7 +60,6 @@ export type RemoteConfigVersionMinAggregateInputType = {
 
 export type RemoteConfigVersionMaxAggregateInputType = {
   id?: true
-  workspaceId?: true
   publishedById?: true
   versionLabel?: true
   isActive?: true
@@ -73,7 +68,6 @@ export type RemoteConfigVersionMaxAggregateInputType = {
 
 export type RemoteConfigVersionCountAggregateInputType = {
   id?: true
-  workspaceId?: true
   publishedById?: true
   versionLabel?: true
   isActive?: true
@@ -155,7 +149,6 @@ export type RemoteConfigVersionGroupByArgs<ExtArgs extends runtime.Types.Extensi
 
 export type RemoteConfigVersionGroupByOutputType = {
   id: string
-  workspaceId: string | null
   publishedById: string | null
   versionLabel: string
   isActive: boolean
@@ -185,24 +178,20 @@ export type RemoteConfigVersionWhereInput = {
   OR?: Prisma.RemoteConfigVersionWhereInput[]
   NOT?: Prisma.RemoteConfigVersionWhereInput | Prisma.RemoteConfigVersionWhereInput[]
   id?: Prisma.StringFilter<"RemoteConfigVersion"> | string
-  workspaceId?: Prisma.StringNullableFilter<"RemoteConfigVersion"> | string | null
   publishedById?: Prisma.StringNullableFilter<"RemoteConfigVersion"> | string | null
   versionLabel?: Prisma.StringFilter<"RemoteConfigVersion"> | string
   isActive?: Prisma.BoolFilter<"RemoteConfigVersion"> | boolean
   createdAt?: Prisma.DateTimeFilter<"RemoteConfigVersion"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   publishedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   layers?: Prisma.RemoteConfigLayerListRelationFilter
 }
 
 export type RemoteConfigVersionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   publishedById?: Prisma.SortOrderInput | Prisma.SortOrder
   versionLabel?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   publishedBy?: Prisma.UserOrderByWithRelationInput
   layers?: Prisma.RemoteConfigLayerOrderByRelationAggregateInput
 }
@@ -212,19 +201,16 @@ export type RemoteConfigVersionWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.RemoteConfigVersionWhereInput | Prisma.RemoteConfigVersionWhereInput[]
   OR?: Prisma.RemoteConfigVersionWhereInput[]
   NOT?: Prisma.RemoteConfigVersionWhereInput | Prisma.RemoteConfigVersionWhereInput[]
-  workspaceId?: Prisma.StringNullableFilter<"RemoteConfigVersion"> | string | null
   publishedById?: Prisma.StringNullableFilter<"RemoteConfigVersion"> | string | null
   versionLabel?: Prisma.StringFilter<"RemoteConfigVersion"> | string
   isActive?: Prisma.BoolFilter<"RemoteConfigVersion"> | boolean
   createdAt?: Prisma.DateTimeFilter<"RemoteConfigVersion"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   publishedBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   layers?: Prisma.RemoteConfigLayerListRelationFilter
 }, "id">
 
 export type RemoteConfigVersionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   publishedById?: Prisma.SortOrderInput | Prisma.SortOrder
   versionLabel?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -239,7 +225,6 @@ export type RemoteConfigVersionScalarWhereWithAggregatesInput = {
   OR?: Prisma.RemoteConfigVersionScalarWhereWithAggregatesInput[]
   NOT?: Prisma.RemoteConfigVersionScalarWhereWithAggregatesInput | Prisma.RemoteConfigVersionScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"RemoteConfigVersion"> | string
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"RemoteConfigVersion"> | string | null
   publishedById?: Prisma.StringNullableWithAggregatesFilter<"RemoteConfigVersion"> | string | null
   versionLabel?: Prisma.StringWithAggregatesFilter<"RemoteConfigVersion"> | string
   isActive?: Prisma.BoolWithAggregatesFilter<"RemoteConfigVersion"> | boolean
@@ -251,14 +236,12 @@ export type RemoteConfigVersionCreateInput = {
   versionLabel: string
   isActive?: boolean
   createdAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutRemoteConfigVersionsInput
   publishedBy?: Prisma.UserCreateNestedOneWithoutRemoteConfigVersionsInput
   layers?: Prisma.RemoteConfigLayerCreateNestedManyWithoutRemoteConfigVersionInput
 }
 
 export type RemoteConfigVersionUncheckedCreateInput = {
   id?: string
-  workspaceId?: string | null
   publishedById?: string | null
   versionLabel: string
   isActive?: boolean
@@ -271,14 +254,12 @@ export type RemoteConfigVersionUpdateInput = {
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutRemoteConfigVersionsNestedInput
   publishedBy?: Prisma.UserUpdateOneWithoutRemoteConfigVersionsNestedInput
   layers?: Prisma.RemoteConfigLayerUpdateManyWithoutRemoteConfigVersionNestedInput
 }
 
 export type RemoteConfigVersionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   publishedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -288,7 +269,6 @@ export type RemoteConfigVersionUncheckedUpdateInput = {
 
 export type RemoteConfigVersionCreateManyInput = {
   id?: string
-  workspaceId?: string | null
   publishedById?: string | null
   versionLabel: string
   isActive?: boolean
@@ -304,7 +284,6 @@ export type RemoteConfigVersionUpdateManyMutationInput = {
 
 export type RemoteConfigVersionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   publishedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -323,7 +302,6 @@ export type RemoteConfigVersionOrderByRelationAggregateInput = {
 
 export type RemoteConfigVersionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   publishedById?: Prisma.SortOrder
   versionLabel?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -332,7 +310,6 @@ export type RemoteConfigVersionCountOrderByAggregateInput = {
 
 export type RemoteConfigVersionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   publishedById?: Prisma.SortOrder
   versionLabel?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -341,7 +318,6 @@ export type RemoteConfigVersionMaxOrderByAggregateInput = {
 
 export type RemoteConfigVersionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   publishedById?: Prisma.SortOrder
   versionLabel?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
@@ -395,48 +371,6 @@ export type RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput 
   deleteMany?: Prisma.RemoteConfigVersionScalarWhereInput | Prisma.RemoteConfigVersionScalarWhereInput[]
 }
 
-export type RemoteConfigVersionCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput> | Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput[] | Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput | Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.RemoteConfigVersionCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-}
-
-export type RemoteConfigVersionUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput> | Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput[] | Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput | Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.RemoteConfigVersionCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-}
-
-export type RemoteConfigVersionUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput> | Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput[] | Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput | Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.RemoteConfigVersionUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.RemoteConfigVersionUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.RemoteConfigVersionCreateManyWorkspaceInputEnvelope
-  set?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  disconnect?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  delete?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  connect?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  update?: Prisma.RemoteConfigVersionUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.RemoteConfigVersionUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.RemoteConfigVersionUpdateManyWithWhereWithoutWorkspaceInput | Prisma.RemoteConfigVersionUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.RemoteConfigVersionScalarWhereInput | Prisma.RemoteConfigVersionScalarWhereInput[]
-}
-
-export type RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput> | Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput[] | Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput | Prisma.RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.RemoteConfigVersionUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.RemoteConfigVersionUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.RemoteConfigVersionCreateManyWorkspaceInputEnvelope
-  set?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  disconnect?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  delete?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  connect?: Prisma.RemoteConfigVersionWhereUniqueInput | Prisma.RemoteConfigVersionWhereUniqueInput[]
-  update?: Prisma.RemoteConfigVersionUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.RemoteConfigVersionUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.RemoteConfigVersionUpdateManyWithWhereWithoutWorkspaceInput | Prisma.RemoteConfigVersionUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.RemoteConfigVersionScalarWhereInput | Prisma.RemoteConfigVersionScalarWhereInput[]
-}
-
 export type RemoteConfigVersionCreateNestedOneWithoutLayersInput = {
   create?: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutLayersInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutLayersInput>
   connectOrCreate?: Prisma.RemoteConfigVersionCreateOrConnectWithoutLayersInput
@@ -456,13 +390,11 @@ export type RemoteConfigVersionCreateWithoutPublishedByInput = {
   versionLabel: string
   isActive?: boolean
   createdAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutRemoteConfigVersionsInput
   layers?: Prisma.RemoteConfigLayerCreateNestedManyWithoutRemoteConfigVersionInput
 }
 
 export type RemoteConfigVersionUncheckedCreateWithoutPublishedByInput = {
   id?: string
-  workspaceId?: string | null
   versionLabel: string
   isActive?: boolean
   createdAt?: Date | string
@@ -500,55 +432,10 @@ export type RemoteConfigVersionScalarWhereInput = {
   OR?: Prisma.RemoteConfigVersionScalarWhereInput[]
   NOT?: Prisma.RemoteConfigVersionScalarWhereInput | Prisma.RemoteConfigVersionScalarWhereInput[]
   id?: Prisma.StringFilter<"RemoteConfigVersion"> | string
-  workspaceId?: Prisma.StringNullableFilter<"RemoteConfigVersion"> | string | null
   publishedById?: Prisma.StringNullableFilter<"RemoteConfigVersion"> | string | null
   versionLabel?: Prisma.StringFilter<"RemoteConfigVersion"> | string
   isActive?: Prisma.BoolFilter<"RemoteConfigVersion"> | boolean
   createdAt?: Prisma.DateTimeFilter<"RemoteConfigVersion"> | Date | string
-}
-
-export type RemoteConfigVersionCreateWithoutWorkspaceInput = {
-  id?: string
-  versionLabel: string
-  isActive?: boolean
-  createdAt?: Date | string
-  publishedBy?: Prisma.UserCreateNestedOneWithoutRemoteConfigVersionsInput
-  layers?: Prisma.RemoteConfigLayerCreateNestedManyWithoutRemoteConfigVersionInput
-}
-
-export type RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  publishedById?: string | null
-  versionLabel: string
-  isActive?: boolean
-  createdAt?: Date | string
-  layers?: Prisma.RemoteConfigLayerUncheckedCreateNestedManyWithoutRemoteConfigVersionInput
-}
-
-export type RemoteConfigVersionCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.RemoteConfigVersionWhereUniqueInput
-  create: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type RemoteConfigVersionCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.RemoteConfigVersionCreateManyWorkspaceInput | Prisma.RemoteConfigVersionCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type RemoteConfigVersionUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.RemoteConfigVersionWhereUniqueInput
-  update: Prisma.XOR<Prisma.RemoteConfigVersionUpdateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.RemoteConfigVersionCreateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type RemoteConfigVersionUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.RemoteConfigVersionWhereUniqueInput
-  data: Prisma.XOR<Prisma.RemoteConfigVersionUpdateWithoutWorkspaceInput, Prisma.RemoteConfigVersionUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type RemoteConfigVersionUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.RemoteConfigVersionScalarWhereInput
-  data: Prisma.XOR<Prisma.RemoteConfigVersionUpdateManyMutationInput, Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceInput>
 }
 
 export type RemoteConfigVersionCreateWithoutLayersInput = {
@@ -556,13 +443,11 @@ export type RemoteConfigVersionCreateWithoutLayersInput = {
   versionLabel: string
   isActive?: boolean
   createdAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutRemoteConfigVersionsInput
   publishedBy?: Prisma.UserCreateNestedOneWithoutRemoteConfigVersionsInput
 }
 
 export type RemoteConfigVersionUncheckedCreateWithoutLayersInput = {
   id?: string
-  workspaceId?: string | null
   publishedById?: string | null
   versionLabel: string
   isActive?: boolean
@@ -590,13 +475,11 @@ export type RemoteConfigVersionUpdateWithoutLayersInput = {
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutRemoteConfigVersionsNestedInput
   publishedBy?: Prisma.UserUpdateOneWithoutRemoteConfigVersionsNestedInput
 }
 
 export type RemoteConfigVersionUncheckedUpdateWithoutLayersInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   publishedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -605,7 +488,6 @@ export type RemoteConfigVersionUncheckedUpdateWithoutLayersInput = {
 
 export type RemoteConfigVersionCreateManyPublishedByInput = {
   id?: string
-  workspaceId?: string | null
   versionLabel: string
   isActive?: boolean
   createdAt?: Date | string
@@ -616,13 +498,11 @@ export type RemoteConfigVersionUpdateWithoutPublishedByInput = {
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutRemoteConfigVersionsNestedInput
   layers?: Prisma.RemoteConfigLayerUpdateManyWithoutRemoteConfigVersionNestedInput
 }
 
 export type RemoteConfigVersionUncheckedUpdateWithoutPublishedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -631,41 +511,6 @@ export type RemoteConfigVersionUncheckedUpdateWithoutPublishedByInput = {
 
 export type RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type RemoteConfigVersionCreateManyWorkspaceInput = {
-  id?: string
-  publishedById?: string | null
-  versionLabel: string
-  isActive?: boolean
-  createdAt?: Date | string
-}
-
-export type RemoteConfigVersionUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  publishedBy?: Prisma.UserUpdateOneWithoutRemoteConfigVersionsNestedInput
-  layers?: Prisma.RemoteConfigLayerUpdateManyWithoutRemoteConfigVersionNestedInput
-}
-
-export type RemoteConfigVersionUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  publishedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  layers?: Prisma.RemoteConfigLayerUncheckedUpdateManyWithoutRemoteConfigVersionNestedInput
-}
-
-export type RemoteConfigVersionUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  publishedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   versionLabel?: Prisma.StringFieldUpdateOperationsInput | string
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -704,12 +549,10 @@ export type RemoteConfigVersionCountOutputTypeCountLayersArgs<ExtArgs extends ru
 
 export type RemoteConfigVersionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   publishedById?: boolean
   versionLabel?: boolean
   isActive?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>
   publishedBy?: boolean | Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>
   layers?: boolean | Prisma.RemoteConfigVersion$layersArgs<ExtArgs>
   _count?: boolean | Prisma.RemoteConfigVersionCountOutputTypeDefaultArgs<ExtArgs>
@@ -717,61 +560,51 @@ export type RemoteConfigVersionSelect<ExtArgs extends runtime.Types.Extensions.I
 
 export type RemoteConfigVersionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   publishedById?: boolean
   versionLabel?: boolean
   isActive?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>
   publishedBy?: boolean | Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>
 }, ExtArgs["result"]["remoteConfigVersion"]>
 
 export type RemoteConfigVersionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   publishedById?: boolean
   versionLabel?: boolean
   isActive?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>
   publishedBy?: boolean | Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>
 }, ExtArgs["result"]["remoteConfigVersion"]>
 
 export type RemoteConfigVersionSelectScalar = {
   id?: boolean
-  workspaceId?: boolean
   publishedById?: boolean
   versionLabel?: boolean
   isActive?: boolean
   createdAt?: boolean
 }
 
-export type RemoteConfigVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "publishedById" | "versionLabel" | "isActive" | "createdAt", ExtArgs["result"]["remoteConfigVersion"]>
+export type RemoteConfigVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "publishedById" | "versionLabel" | "isActive" | "createdAt", ExtArgs["result"]["remoteConfigVersion"]>
 export type RemoteConfigVersionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>
   publishedBy?: boolean | Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>
   layers?: boolean | Prisma.RemoteConfigVersion$layersArgs<ExtArgs>
   _count?: boolean | Prisma.RemoteConfigVersionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type RemoteConfigVersionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>
   publishedBy?: boolean | Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>
 }
 export type RemoteConfigVersionIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>
   publishedBy?: boolean | Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>
 }
 
 export type $RemoteConfigVersionPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "RemoteConfigVersion"
   objects: {
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     publishedBy: Prisma.$UserPayload<ExtArgs> | null
     layers: Prisma.$RemoteConfigLayerPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    workspaceId: string | null
     publishedById: string | null
     versionLabel: string
     isActive: boolean
@@ -1170,7 +1003,6 @@ readonly fields: RemoteConfigVersionFieldRefs;
  */
 export interface Prisma__RemoteConfigVersionClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  workspace<T extends Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RemoteConfigVersion$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   publishedBy<T extends Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RemoteConfigVersion$publishedByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   layers<T extends Prisma.RemoteConfigVersion$layersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RemoteConfigVersion$layersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RemoteConfigLayerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1203,7 +1035,6 @@ export interface Prisma__RemoteConfigVersionClient<T, Null = never, ExtArgs exte
  */
 export interface RemoteConfigVersionFieldRefs {
   readonly id: Prisma.FieldRef<"RemoteConfigVersion", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"RemoteConfigVersion", 'String'>
   readonly publishedById: Prisma.FieldRef<"RemoteConfigVersion", 'String'>
   readonly versionLabel: Prisma.FieldRef<"RemoteConfigVersion", 'String'>
   readonly isActive: Prisma.FieldRef<"RemoteConfigVersion", 'Boolean'>
@@ -1606,25 +1437,6 @@ export type RemoteConfigVersionDeleteManyArgs<ExtArgs extends runtime.Types.Exte
    * Limit how many RemoteConfigVersions to delete.
    */
   limit?: number
-}
-
-/**
- * RemoteConfigVersion.workspace
- */
-export type RemoteConfigVersion$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

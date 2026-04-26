@@ -26,7 +26,6 @@ export type AggregateSecurityEvent = {
 
 export type SecurityEventMinAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   actorId: string | null
   eventType: string | null
   severity: $Enums.EventSeverity | null
@@ -35,7 +34,6 @@ export type SecurityEventMinAggregateOutputType = {
 
 export type SecurityEventMaxAggregateOutputType = {
   id: string | null
-  workspaceId: string | null
   actorId: string | null
   eventType: string | null
   severity: $Enums.EventSeverity | null
@@ -44,7 +42,6 @@ export type SecurityEventMaxAggregateOutputType = {
 
 export type SecurityEventCountAggregateOutputType = {
   id: number
-  workspaceId: number
   actorId: number
   eventType: number
   severity: number
@@ -56,7 +53,6 @@ export type SecurityEventCountAggregateOutputType = {
 
 export type SecurityEventMinAggregateInputType = {
   id?: true
-  workspaceId?: true
   actorId?: true
   eventType?: true
   severity?: true
@@ -65,7 +61,6 @@ export type SecurityEventMinAggregateInputType = {
 
 export type SecurityEventMaxAggregateInputType = {
   id?: true
-  workspaceId?: true
   actorId?: true
   eventType?: true
   severity?: true
@@ -74,7 +69,6 @@ export type SecurityEventMaxAggregateInputType = {
 
 export type SecurityEventCountAggregateInputType = {
   id?: true
-  workspaceId?: true
   actorId?: true
   eventType?: true
   severity?: true
@@ -157,7 +151,6 @@ export type SecurityEventGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 
 export type SecurityEventGroupByOutputType = {
   id: string
-  workspaceId: string | null
   actorId: string | null
   eventType: string
   severity: $Enums.EventSeverity
@@ -188,24 +181,20 @@ export type SecurityEventWhereInput = {
   OR?: Prisma.SecurityEventWhereInput[]
   NOT?: Prisma.SecurityEventWhereInput | Prisma.SecurityEventWhereInput[]
   id?: Prisma.StringFilter<"SecurityEvent"> | string
-  workspaceId?: Prisma.StringNullableFilter<"SecurityEvent"> | string | null
   actorId?: Prisma.StringNullableFilter<"SecurityEvent"> | string | null
   eventType?: Prisma.StringFilter<"SecurityEvent"> | string
   severity?: Prisma.EnumEventSeverityFilter<"SecurityEvent"> | $Enums.EventSeverity
   metadataJson?: Prisma.JsonNullableFilter<"SecurityEvent">
   createdAt?: Prisma.DateTimeFilter<"SecurityEvent"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }
 
 export type SecurityEventOrderByWithRelationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   actorId?: Prisma.SortOrderInput | Prisma.SortOrder
   eventType?: Prisma.SortOrder
   severity?: Prisma.SortOrder
   metadataJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
-  workspace?: Prisma.WorkspaceOrderByWithRelationInput
 }
 
 export type SecurityEventWhereUniqueInput = Prisma.AtLeast<{
@@ -213,18 +202,15 @@ export type SecurityEventWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.SecurityEventWhereInput | Prisma.SecurityEventWhereInput[]
   OR?: Prisma.SecurityEventWhereInput[]
   NOT?: Prisma.SecurityEventWhereInput | Prisma.SecurityEventWhereInput[]
-  workspaceId?: Prisma.StringNullableFilter<"SecurityEvent"> | string | null
   actorId?: Prisma.StringNullableFilter<"SecurityEvent"> | string | null
   eventType?: Prisma.StringFilter<"SecurityEvent"> | string
   severity?: Prisma.EnumEventSeverityFilter<"SecurityEvent"> | $Enums.EventSeverity
   metadataJson?: Prisma.JsonNullableFilter<"SecurityEvent">
   createdAt?: Prisma.DateTimeFilter<"SecurityEvent"> | Date | string
-  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
 }, "id">
 
 export type SecurityEventOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   actorId?: Prisma.SortOrderInput | Prisma.SortOrder
   eventType?: Prisma.SortOrder
   severity?: Prisma.SortOrder
@@ -240,7 +226,6 @@ export type SecurityEventScalarWhereWithAggregatesInput = {
   OR?: Prisma.SecurityEventScalarWhereWithAggregatesInput[]
   NOT?: Prisma.SecurityEventScalarWhereWithAggregatesInput | Prisma.SecurityEventScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"SecurityEvent"> | string
-  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"SecurityEvent"> | string | null
   actorId?: Prisma.StringNullableWithAggregatesFilter<"SecurityEvent"> | string | null
   eventType?: Prisma.StringWithAggregatesFilter<"SecurityEvent"> | string
   severity?: Prisma.EnumEventSeverityWithAggregatesFilter<"SecurityEvent"> | $Enums.EventSeverity
@@ -255,12 +240,10 @@ export type SecurityEventCreateInput = {
   severity: $Enums.EventSeverity
   metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
-  workspace?: Prisma.WorkspaceCreateNestedOneWithoutSecurityEventsInput
 }
 
 export type SecurityEventUncheckedCreateInput = {
   id?: string
-  workspaceId?: string | null
   actorId?: string | null
   eventType: string
   severity: $Enums.EventSeverity
@@ -275,12 +258,10 @@ export type SecurityEventUpdateInput = {
   severity?: Prisma.EnumEventSeverityFieldUpdateOperationsInput | $Enums.EventSeverity
   metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  workspace?: Prisma.WorkspaceUpdateOneWithoutSecurityEventsNestedInput
 }
 
 export type SecurityEventUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   eventType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.EnumEventSeverityFieldUpdateOperationsInput | $Enums.EventSeverity
@@ -290,7 +271,6 @@ export type SecurityEventUncheckedUpdateInput = {
 
 export type SecurityEventCreateManyInput = {
   id?: string
-  workspaceId?: string | null
   actorId?: string | null
   eventType: string
   severity: $Enums.EventSeverity
@@ -309,7 +289,6 @@ export type SecurityEventUpdateManyMutationInput = {
 
 export type SecurityEventUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   eventType?: Prisma.StringFieldUpdateOperationsInput | string
   severity?: Prisma.EnumEventSeverityFieldUpdateOperationsInput | $Enums.EventSeverity
@@ -317,19 +296,8 @@ export type SecurityEventUncheckedUpdateManyInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type SecurityEventListRelationFilter = {
-  every?: Prisma.SecurityEventWhereInput
-  some?: Prisma.SecurityEventWhereInput
-  none?: Prisma.SecurityEventWhereInput
-}
-
-export type SecurityEventOrderByRelationAggregateInput = {
-  _count?: Prisma.SortOrder
-}
-
 export type SecurityEventCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   actorId?: Prisma.SortOrder
   eventType?: Prisma.SortOrder
   severity?: Prisma.SortOrder
@@ -339,7 +307,6 @@ export type SecurityEventCountOrderByAggregateInput = {
 
 export type SecurityEventMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   actorId?: Prisma.SortOrder
   eventType?: Prisma.SortOrder
   severity?: Prisma.SortOrder
@@ -348,186 +315,43 @@ export type SecurityEventMaxOrderByAggregateInput = {
 
 export type SecurityEventMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
-  workspaceId?: Prisma.SortOrder
   actorId?: Prisma.SortOrder
   eventType?: Prisma.SortOrder
   severity?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
-export type SecurityEventCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.SecurityEventCreateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput> | Prisma.SecurityEventCreateWithoutWorkspaceInput[] | Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput | Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.SecurityEventCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-}
-
-export type SecurityEventUncheckedCreateNestedManyWithoutWorkspaceInput = {
-  create?: Prisma.XOR<Prisma.SecurityEventCreateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput> | Prisma.SecurityEventCreateWithoutWorkspaceInput[] | Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput | Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput[]
-  createMany?: Prisma.SecurityEventCreateManyWorkspaceInputEnvelope
-  connect?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-}
-
-export type SecurityEventUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.SecurityEventCreateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput> | Prisma.SecurityEventCreateWithoutWorkspaceInput[] | Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput | Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.SecurityEventUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.SecurityEventUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.SecurityEventCreateManyWorkspaceInputEnvelope
-  set?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  disconnect?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  delete?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  connect?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  update?: Prisma.SecurityEventUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.SecurityEventUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.SecurityEventUpdateManyWithWhereWithoutWorkspaceInput | Prisma.SecurityEventUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.SecurityEventScalarWhereInput | Prisma.SecurityEventScalarWhereInput[]
-}
-
-export type SecurityEventUncheckedUpdateManyWithoutWorkspaceNestedInput = {
-  create?: Prisma.XOR<Prisma.SecurityEventCreateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput> | Prisma.SecurityEventCreateWithoutWorkspaceInput[] | Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput[]
-  connectOrCreate?: Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput | Prisma.SecurityEventCreateOrConnectWithoutWorkspaceInput[]
-  upsert?: Prisma.SecurityEventUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.SecurityEventUpsertWithWhereUniqueWithoutWorkspaceInput[]
-  createMany?: Prisma.SecurityEventCreateManyWorkspaceInputEnvelope
-  set?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  disconnect?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  delete?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  connect?: Prisma.SecurityEventWhereUniqueInput | Prisma.SecurityEventWhereUniqueInput[]
-  update?: Prisma.SecurityEventUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.SecurityEventUpdateWithWhereUniqueWithoutWorkspaceInput[]
-  updateMany?: Prisma.SecurityEventUpdateManyWithWhereWithoutWorkspaceInput | Prisma.SecurityEventUpdateManyWithWhereWithoutWorkspaceInput[]
-  deleteMany?: Prisma.SecurityEventScalarWhereInput | Prisma.SecurityEventScalarWhereInput[]
-}
-
-export type SecurityEventCreateWithoutWorkspaceInput = {
-  id?: string
-  actorId?: string | null
-  eventType: string
-  severity: $Enums.EventSeverity
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-}
-
-export type SecurityEventUncheckedCreateWithoutWorkspaceInput = {
-  id?: string
-  actorId?: string | null
-  eventType: string
-  severity: $Enums.EventSeverity
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-}
-
-export type SecurityEventCreateOrConnectWithoutWorkspaceInput = {
-  where: Prisma.SecurityEventWhereUniqueInput
-  create: Prisma.XOR<Prisma.SecurityEventCreateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type SecurityEventCreateManyWorkspaceInputEnvelope = {
-  data: Prisma.SecurityEventCreateManyWorkspaceInput | Prisma.SecurityEventCreateManyWorkspaceInput[]
-  skipDuplicates?: boolean
-}
-
-export type SecurityEventUpsertWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.SecurityEventWhereUniqueInput
-  update: Prisma.XOR<Prisma.SecurityEventUpdateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedUpdateWithoutWorkspaceInput>
-  create: Prisma.XOR<Prisma.SecurityEventCreateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedCreateWithoutWorkspaceInput>
-}
-
-export type SecurityEventUpdateWithWhereUniqueWithoutWorkspaceInput = {
-  where: Prisma.SecurityEventWhereUniqueInput
-  data: Prisma.XOR<Prisma.SecurityEventUpdateWithoutWorkspaceInput, Prisma.SecurityEventUncheckedUpdateWithoutWorkspaceInput>
-}
-
-export type SecurityEventUpdateManyWithWhereWithoutWorkspaceInput = {
-  where: Prisma.SecurityEventScalarWhereInput
-  data: Prisma.XOR<Prisma.SecurityEventUpdateManyMutationInput, Prisma.SecurityEventUncheckedUpdateManyWithoutWorkspaceInput>
-}
-
-export type SecurityEventScalarWhereInput = {
-  AND?: Prisma.SecurityEventScalarWhereInput | Prisma.SecurityEventScalarWhereInput[]
-  OR?: Prisma.SecurityEventScalarWhereInput[]
-  NOT?: Prisma.SecurityEventScalarWhereInput | Prisma.SecurityEventScalarWhereInput[]
-  id?: Prisma.StringFilter<"SecurityEvent"> | string
-  workspaceId?: Prisma.StringNullableFilter<"SecurityEvent"> | string | null
-  actorId?: Prisma.StringNullableFilter<"SecurityEvent"> | string | null
-  eventType?: Prisma.StringFilter<"SecurityEvent"> | string
-  severity?: Prisma.EnumEventSeverityFilter<"SecurityEvent"> | $Enums.EventSeverity
-  metadataJson?: Prisma.JsonNullableFilter<"SecurityEvent">
-  createdAt?: Prisma.DateTimeFilter<"SecurityEvent"> | Date | string
-}
-
-export type SecurityEventCreateManyWorkspaceInput = {
-  id?: string
-  actorId?: string | null
-  eventType: string
-  severity: $Enums.EventSeverity
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Date | string
-}
-
-export type SecurityEventUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  actorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  eventType?: Prisma.StringFieldUpdateOperationsInput | string
-  severity?: Prisma.EnumEventSeverityFieldUpdateOperationsInput | $Enums.EventSeverity
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SecurityEventUncheckedUpdateWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  actorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  eventType?: Prisma.StringFieldUpdateOperationsInput | string
-  severity?: Prisma.EnumEventSeverityFieldUpdateOperationsInput | $Enums.EventSeverity
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
-export type SecurityEventUncheckedUpdateManyWithoutWorkspaceInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  actorId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  eventType?: Prisma.StringFieldUpdateOperationsInput | string
-  severity?: Prisma.EnumEventSeverityFieldUpdateOperationsInput | $Enums.EventSeverity
-  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-}
-
 
 
 export type SecurityEventSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   actorId?: boolean
   eventType?: boolean
   severity?: boolean
   metadataJson?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.SecurityEvent$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["securityEvent"]>
 
 export type SecurityEventSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   actorId?: boolean
   eventType?: boolean
   severity?: boolean
   metadataJson?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.SecurityEvent$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["securityEvent"]>
 
 export type SecurityEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
-  workspaceId?: boolean
   actorId?: boolean
   eventType?: boolean
   severity?: boolean
   metadataJson?: boolean
   createdAt?: boolean
-  workspace?: boolean | Prisma.SecurityEvent$workspaceArgs<ExtArgs>
 }, ExtArgs["result"]["securityEvent"]>
 
 export type SecurityEventSelectScalar = {
   id?: boolean
-  workspaceId?: boolean
   actorId?: boolean
   eventType?: boolean
   severity?: boolean
@@ -535,25 +359,13 @@ export type SecurityEventSelectScalar = {
   createdAt?: boolean
 }
 
-export type SecurityEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "actorId" | "eventType" | "severity" | "metadataJson" | "createdAt", ExtArgs["result"]["securityEvent"]>
-export type SecurityEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.SecurityEvent$workspaceArgs<ExtArgs>
-}
-export type SecurityEventIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.SecurityEvent$workspaceArgs<ExtArgs>
-}
-export type SecurityEventIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  workspace?: boolean | Prisma.SecurityEvent$workspaceArgs<ExtArgs>
-}
+export type SecurityEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "actorId" | "eventType" | "severity" | "metadataJson" | "createdAt", ExtArgs["result"]["securityEvent"]>
 
 export type $SecurityEventPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "SecurityEvent"
-  objects: {
-    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
-  }
+  objects: {}
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
-    workspaceId: string | null
     actorId: string | null
     eventType: string
     severity: $Enums.EventSeverity
@@ -953,7 +765,6 @@ readonly fields: SecurityEventFieldRefs;
  */
 export interface Prisma__SecurityEventClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  workspace<T extends Prisma.SecurityEvent$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.SecurityEvent$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -984,7 +795,6 @@ export interface Prisma__SecurityEventClient<T, Null = never, ExtArgs extends ru
  */
 export interface SecurityEventFieldRefs {
   readonly id: Prisma.FieldRef<"SecurityEvent", 'String'>
-  readonly workspaceId: Prisma.FieldRef<"SecurityEvent", 'String'>
   readonly actorId: Prisma.FieldRef<"SecurityEvent", 'String'>
   readonly eventType: Prisma.FieldRef<"SecurityEvent", 'String'>
   readonly severity: Prisma.FieldRef<"SecurityEvent", 'EventSeverity'>
@@ -1007,10 +817,6 @@ export type SecurityEventFindUniqueArgs<ExtArgs extends runtime.Types.Extensions
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
-  /**
    * Filter, which SecurityEvent to fetch.
    */
   where: Prisma.SecurityEventWhereUniqueInput
@@ -1029,10 +835,6 @@ export type SecurityEventFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Ext
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
-  /**
    * Filter, which SecurityEvent to fetch.
    */
   where: Prisma.SecurityEventWhereUniqueInput
@@ -1050,10 +852,6 @@ export type SecurityEventFindFirstArgs<ExtArgs extends runtime.Types.Extensions.
    * Omit specific fields from the SecurityEvent
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
   /**
    * Filter, which SecurityEvent to fetch.
    */
@@ -1103,10 +901,6 @@ export type SecurityEventFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Exte
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
-  /**
    * Filter, which SecurityEvent to fetch.
    */
   where?: Prisma.SecurityEventWhereInput
@@ -1154,10 +948,6 @@ export type SecurityEventFindManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Omit specific fields from the SecurityEvent
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
   /**
    * Filter, which SecurityEvents to fetch.
    */
@@ -1207,10 +997,6 @@ export type SecurityEventCreateArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
-  /**
    * The data needed to create a SecurityEvent.
    */
   data: Prisma.XOR<Prisma.SecurityEventCreateInput, Prisma.SecurityEventUncheckedCreateInput>
@@ -1244,10 +1030,6 @@ export type SecurityEventCreateManyAndReturnArgs<ExtArgs extends runtime.Types.E
    */
   data: Prisma.SecurityEventCreateManyInput | Prisma.SecurityEventCreateManyInput[]
   skipDuplicates?: boolean
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventIncludeCreateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1262,10 +1044,6 @@ export type SecurityEventUpdateArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the SecurityEvent
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
   /**
    * The data needed to update a SecurityEvent.
    */
@@ -1318,10 +1096,6 @@ export type SecurityEventUpdateManyAndReturnArgs<ExtArgs extends runtime.Types.E
    * Limit how many SecurityEvents to update.
    */
   limit?: number
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventIncludeUpdateManyAndReturn<ExtArgs> | null
 }
 
 /**
@@ -1336,10 +1110,6 @@ export type SecurityEventUpsertArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Omit specific fields from the SecurityEvent
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
   /**
    * The filter to search for the SecurityEvent to update in case it exists.
    */
@@ -1367,10 +1137,6 @@ export type SecurityEventDeleteArgs<ExtArgs extends runtime.Types.Extensions.Int
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
   /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
-  /**
    * Filter which SecurityEvent to delete.
    */
   where: Prisma.SecurityEventWhereUniqueInput
@@ -1391,25 +1157,6 @@ export type SecurityEventDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
 }
 
 /**
- * SecurityEvent.workspace
- */
-export type SecurityEvent$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Workspace
-   */
-  select?: Prisma.WorkspaceSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Workspace
-   */
-  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WorkspaceInclude<ExtArgs> | null
-  where?: Prisma.WorkspaceWhereInput
-}
-
-/**
  * SecurityEvent without action
  */
 export type SecurityEventDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1421,8 +1168,4 @@ export type SecurityEventDefaultArgs<ExtArgs extends runtime.Types.Extensions.In
    * Omit specific fields from the SecurityEvent
    */
   omit?: Prisma.SecurityEventOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SecurityEventInclude<ExtArgs> | null
 }
