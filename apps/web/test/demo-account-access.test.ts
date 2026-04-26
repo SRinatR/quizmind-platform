@@ -68,6 +68,17 @@ test('user demo account context resolves zero admin sections', () => {
   assert.equal(visibleSections.length, 0, 'user account must not resolve any admin sections');
 });
 
+test('admin settings section is visible for admin role and hidden for non-admin role', () => {
+  const adminContext = createContext(['admin']);
+  const userContext = createContext([]);
+
+  const adminVisible = getVisibleAdminSections(adminContext).some((section) => section.id === 'settings');
+  const userVisible = getVisibleAdminSections(userContext).some((section) => section.id === 'settings');
+
+  assert.equal(adminVisible, true, 'settings must be visible for admin role');
+  assert.equal(userVisible, false, 'settings must be hidden for non-admin');
+});
+
 test('isAdminEmail returns false for unknown emails', () => {
   assert.equal(isAdminEmail('unknown@quizmind.dev'), false);
 });

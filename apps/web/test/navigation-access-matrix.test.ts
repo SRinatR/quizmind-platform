@@ -27,7 +27,7 @@ test('buildAccessMatrixRows exposes all admin sections as allowed for admin', ()
     scopes: ['admin'],
   });
 
-  const logsRow = rows.find((row) => row.id === 'events');
+  const logsRow = rows.find((row) => row.id === 'logs');
   assert.ok(logsRow);
   assert.equal(logsRow.allowed, true);
 
@@ -52,7 +52,7 @@ test('buildAccessMatrixRows explains admin log denial for user', () => {
     context: createContext({ systemRoles: [] }),
     scopes: ['admin'],
   });
-  const eventsRow = rows.find((row) => row.id === 'events');
+  const eventsRow = rows.find((row) => row.id === 'logs');
 
   assert.ok(eventsRow);
   assert.equal(eventsRow.allowed, false);
@@ -71,4 +71,13 @@ test('describeAccessRequirement summarizes compound requirements', () => {
   assert.equal(summary.includes('system role admin'), true);
   assert.equal(summary.includes('entitlements feature.text_answering'), true);
   assert.equal(summary.includes('feature flags beta.remote-config-v2'), true);
+});
+
+test('describeAccessRequirement supports role-only requirements', () => {
+  const summary = describeAccessRequirement({
+    requireSystemRole: 'admin',
+  });
+
+  assert.equal(summary.includes('system role admin'), true);
+  assert.equal(summary.includes('permission '), false);
 });

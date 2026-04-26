@@ -97,7 +97,7 @@ export function evaluateAccess(context: AccessContext, requirement: AccessRequir
     authenticatedUser: true,
   });
 
-  if (!hasPermission(permissions, requirement.permission as Permission)) {
+  if (requirement.permission && !hasPermission(permissions, requirement.permission as Permission)) {
     reasons.push(`Missing permission: ${requirement.permission}`);
   }
 

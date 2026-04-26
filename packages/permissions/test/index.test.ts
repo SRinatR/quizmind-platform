@@ -56,3 +56,32 @@ test('evaluateAccess denies user with no roles from admin sections', () => {
   assert.equal(decision.allowed, false);
   assert.ok(decision.reasons.some((r) => r.includes('Missing permission: users:read')));
 });
+
+test('evaluateAccess supports role-only requirements', () => {
+  const adminDecision = evaluateAccess(
+    buildAccessContext({
+      userId: 'user_admin',
+      email: 'admin@quizmind.dev',
+      systemRoles: ['admin'],
+      workspaceMemberships: [],
+      entitlements: [],
+      featureFlags: [],
+    }),
+    { requireSystemRole: 'admin' },
+  );
+  assert.deepEqual(adminDecision, { allowed: true, reasons: [] });
+
+  const userDecision = evaluateAccess(
+    buildAccessContext({
+      userId: 'user_member',
+      email: 'user@quizmind.dev',
+      systemRoles: [],
+      workspaceMemberships: [],
+      entitlements: [],
+      featureFlags: [],
+    }),
+    { requireSystemRole: 'admin' },
+  );
+  assert.equal(userDecision.allowed, false);
+  assert.ok(userDecision.reasons.some((r) => r.includes('Missing system role: admin')));
+});
