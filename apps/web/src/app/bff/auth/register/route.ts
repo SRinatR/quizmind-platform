@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { type AuthExchangePayload, type AuthRegisterRequest } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../lib/api';
+import { buildForwardedAuthHeaders } from '../../../../lib/bff-forwarding';
 import { persistAuthSession } from '../../../../lib/auth-session';
 
 interface RouteErrorPayload {
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     cache: 'no-store',
     headers: {
       'content-type': 'application/json',
+      ...buildForwardedAuthHeaders(request),
     },
     body: JSON.stringify({
       email,

@@ -69,21 +69,56 @@ test('DistributedRateLimitService uses in-memory fallback in mock runtime mode',
   assert.equal(third.allowed, false);
 });
 
-test('RateLimitGuard.resolveIdentity ignores spoofable forwarded headers and prefers trusted socket/request ip', () => {
+test('RateLimitGuard.resolveIdentity uses first x-forwarded-for entry when client IP is first', () => {
   const fallback = new InMemoryRateLimitService();
   const distributed = new DistributedRateLimitService(fallback);
   const guard = new RateLimitGuard(distributed);
   const identity = (guard as any).resolveIdentity({
     headers: {
-      'x-forwarded-for': '198.51.100.23',
+      'x-forwarded-for': '188.130.155.182, 172.19.0.6',
+      'x-real-ip': '172.19.0.6',
     },
-    ip: '10.0.0.7',
+    ip: '172.19.0.6',
     socket: {
       remoteAddress: '172.16.0.8',
     },
   });
 
-  assert.equal(identity, '10.0.0.7');
+  assert.equal(identity, '188.130.155.182');
+});
+
+test('RateLimitGuard.resolveIdentity keeps first forwarded hop even if later hop is public', () => {
+  const fallback = new InMemoryRateLimitService();
+  const distributed = new DistributedRateLimitService(fallback);
+  const guard = new RateLimitGuard(distributed);
+  const identity = (guard as any).resolveIdentity({
+    headers: {
+      'x-forwarded-for': '172.19.0.6, 198.51.100.23',
+    },
+    ip: '172.19.0.6',
+    socket: {
+      remoteAddress: '172.16.0.8',
+    },
+  });
+
+  assert.equal(identity, '172.19.0.6');
+});
+
+test('RateLimitGuard.resolveIdentity falls back to x-real-ip when x-forwarded-for is missing', () => {
+  const fallback = new InMemoryRateLimitService();
+  const distributed = new DistributedRateLimitService(fallback);
+  const guard = new RateLimitGuard(distributed);
+  const identity = (guard as any).resolveIdentity({
+    headers: {
+      'x-real-ip': '203.0.113.12',
+    },
+    ip: '172.19.0.6',
+    socket: {
+      remoteAddress: '172.16.0.8',
+    },
+  });
+
+  assert.equal(identity, '203.0.113.12');
 });
 
 test('RateLimitGuard.resolvePolicy excludes health and readiness probes from throttling', () => {

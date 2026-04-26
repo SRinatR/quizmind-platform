@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 
 import { API_URL } from '../../../../lib/api';
+import { buildForwardedAuthHeaders } from '../../../../lib/bff-forwarding';
 import { clearAuthSession, getAccessTokenFromCookies, getRefreshTokenFromCookies } from '../../../../lib/auth-session';
 
-export async function POST() {
+export async function POST(request: Request) {
   const [accessToken, refreshToken] = await Promise.all([getAccessTokenFromCookies(), getRefreshTokenFromCookies()]);
 
   if (refreshToken || accessToken) {
@@ -13,6 +14,7 @@ export async function POST() {
       headers: {
         'content-type': 'application/json',
         ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}),
+        ...buildForwardedAuthHeaders(request),
       },
       body: JSON.stringify(refreshToken ? { refreshToken } : {}),
     }).catch(() => null);
