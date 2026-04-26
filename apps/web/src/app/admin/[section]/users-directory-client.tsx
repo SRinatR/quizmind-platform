@@ -446,6 +446,7 @@ export function UsersDirectoryClient({
   const [selectedUser, setSelectedUser] = useState<DirectoryUser | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
+  const requestSequenceRef = useRef(0);
 
   // Keep local items in sync when server sends new props (after navigation)
   // We use a key trick: items reference changes on every server render
@@ -473,6 +474,7 @@ export function UsersDirectoryClient({
 
   useEffect(() => {
     const controller = new AbortController();
+    const requestId = ++requestSequenceRef.current;
     const params = new URLSearchParams();
     const query = searchParams.get('userQuery');
     const role = searchParams.get('userRole');
@@ -493,6 +495,7 @@ export function UsersDirectoryClient({
     setIsLoadingTable(true);
     void fetch(`/bff/admin/users?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
       .then(async (res) => {
+        if (requestId !== requestSequenceRef.current) return;
         const payload = (await res.json().catch(() => null)) as ListRouteResponse | null;
         if (!res.ok || !payload?.ok || !payload.data) {
           throw new Error(payload?.error?.message ?? a.unavailableDesc);
@@ -505,10 +508,11 @@ export function UsersDirectoryClient({
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
+        if (requestId !== requestSequenceRef.current) return;
         setErrorMessage(error instanceof Error ? error.message : a.unavailableDesc);
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
+        if (!controller.signal.aborted && requestId === requestSequenceRef.current) {
           setIsLoadingTable(false);
         }
       });

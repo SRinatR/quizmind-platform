@@ -15,7 +15,7 @@ import {
   type AdminLogSourceFilter,
 } from '@quizmind/contracts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type AdminLogsStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -321,6 +321,8 @@ export function LogsExplorerClient({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<AdminLogEntry | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const listRequestSeqRef = useRef(0);
+  const detailRequestSeqRef = useRef(0);
 
   const effectiveSnapshot = useMemo<AdminLogsStateSnapshot>(() => (
     snapshot ?? {
@@ -345,6 +347,7 @@ export function LogsExplorerClient({
 
   useEffect(() => {
     const controller = new AbortController();
+    const requestId = ++listRequestSeqRef.current;
     const params = new URLSearchParams();
     const map: Record<string, string> = {
       logStream: 'stream',
@@ -367,6 +370,7 @@ export function LogsExplorerClient({
     setIsLoadingTable(true);
     void fetch(`/bff/admin/logs?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
       .then(async (res) => {
+        if (requestId !== listRequestSeqRef.current) return;
         const payload = (await res.json().catch(() => null)) as LogListRouteResponse | null;
         if (!res.ok || !payload?.ok || !payload.data) {
           throw new Error(payload?.error?.message ?? 'Unable to load logs.');
@@ -376,10 +380,11 @@ export function LogsExplorerClient({
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
+        if (requestId !== listRequestSeqRef.current) return;
         setErrorMessage(error instanceof Error ? error.message : 'Unable to load logs.');
       })
       .finally(() => {
-        if (!controller.signal.aborted) setIsLoadingTable(false);
+        if (!controller.signal.aborted && requestId === listRequestSeqRef.current) setIsLoadingTable(false);
       });
 
     return () => controller.abort();
@@ -493,14 +498,17 @@ export function LogsExplorerClient({
     }
     setSelectedEntry(item);
     setIsLoadingDetail(true);
+    const requestId = ++detailRequestSeqRef.current;
     try {
       const response = await fetch(`/bff/admin/logs/${encodeURIComponent(item.id)}`, { cache: 'no-store' });
       const payload = (await response.json().catch(() => null)) as MutationRouteResponse<AdminLogEntry> | null;
-      if (response.ok && payload?.ok && payload.data) {
+      if (requestId === detailRequestSeqRef.current && response.ok && payload?.ok && payload.data) {
         setSelectedEntry(payload.data);
       }
     } finally {
-      setIsLoadingDetail(false);
+      if (requestId === detailRequestSeqRef.current) {
+        setIsLoadingDetail(false);
+      }
     }
   }
 
