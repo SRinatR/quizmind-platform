@@ -11,6 +11,7 @@ import type { ExchangeRateSnapshot } from '../../lib/exchange-rates';
 import { formatBalanceFromKopecks } from '../../lib/money';
 import { usePreferences } from '../../lib/preferences';
 import { useShellProfile } from '../../lib/shell-profile-context';
+import { useAutoRefresh } from '../../lib/use-auto-refresh';
 
 interface ProfilePageClientProps {
   canManageBilling: boolean;
@@ -125,6 +126,8 @@ export function ProfilePageClient({
   );
   const [avatarDraft, setAvatarDraft] = useState(userProfile?.avatarUrl ?? '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [displayNameTouched, setDisplayNameTouched] = useState(false);
+  const [avatarTouched, setAvatarTouched] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -156,6 +159,27 @@ export function ProfilePageClient({
   const currentEmail = profileState?.email ?? session.user.email;
   const avatarUrl = profileState?.avatarUrl ?? userProfile?.avatarUrl;
   const initials = currentDisplayName ? getInitials(currentDisplayName) : '?';
+
+  useEffect(() => {
+    setProfileState(userProfile);
+
+    if (!isEditingProfile || !displayNameTouched) {
+      setDisplayNameDraft(userProfile?.displayName ?? session.user.displayName ?? '');
+    }
+
+    if (!isEditingProfile || !avatarTouched) {
+      setAvatarDraft(userProfile?.avatarUrl ?? '');
+    }
+
+    if (!isEditingProfile) {
+      setDisplayNameTouched(false);
+      setAvatarTouched(false);
+    }
+  }, [avatarTouched, displayNameTouched, isEditingProfile, session.user.displayName, userProfile]);
+
+  useEffect(() => {
+    setBalance(initialBalance);
+  }, [initialBalance]);
 
   // ── YooKassa widget mount ──
   useEffect(() => {
@@ -210,6 +234,40 @@ export function ProfilePageClient({
     }
   }, []);
 
+  const refreshProfile = useCallback(async (signal: AbortSignal) => {
+    const res = await fetch('/bff/user/profile', { cache: 'no-store', signal });
+    const payload = (await res.json().catch(() => null)) as UserProfileRouteResponse | null;
+    if (!res.ok || !payload?.ok || !payload.data) {
+      throw new Error(payload?.error?.message ?? 'Refresh failed');
+    }
+
+    const nextProfile = payload.data;
+    setProfileState(nextProfile);
+    if (!isEditingProfile || !displayNameTouched) {
+      setDisplayNameDraft(nextProfile.displayName ?? '');
+    }
+    if (!isEditingProfile || !avatarTouched) {
+      setAvatarDraft(nextProfile.avatarUrl ?? '');
+    }
+    updateShellProfile(nextProfile.displayName, nextProfile.avatarUrl);
+  }, [avatarTouched, displayNameTouched, isEditingProfile, updateShellProfile]);
+
+  const refreshBalanceWithSignal = useCallback(async (signal: AbortSignal) => {
+    const res = await fetch('/bff/wallet/balance', { cache: 'no-store', signal });
+    const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
+    if (!res.ok || !payload?.ok || !payload.data) {
+      throw new Error(payload?.error?.message ?? 'Refresh failed');
+    }
+    setBalance(payload.data);
+  }, []);
+
+  const { isRefreshing, lastUpdatedAt, error, refreshNow } = useAutoRefresh({
+    enabled: canManageBilling && isConnectedSession,
+    intervalMs: 60_000,
+    refresh: refreshBalanceWithSignal,
+    pauseWhenHidden: true,
+  });
+
   // ── Avatar file upload (canvas resize → JPEG 256×256, ~20–50 KB) ──
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -227,6 +285,7 @@ export function ProfilePageClient({
 
     try {
       const dataUrl = await resizeAvatarFile(file);
+      setAvatarTouched(true);
       setAvatarDraft(dataUrl);
       setProfileError(null);
     } catch {
@@ -298,6 +357,8 @@ export function ProfilePageClient({
       setProfileState(payload.data);
       setDisplayNameDraft(payload.data.displayName ?? '');
       setAvatarDraft(payload.data.avatarUrl ?? '');
+      setDisplayNameTouched(false);
+      setAvatarTouched(false);
       updateShellProfile(payload.data.displayName, payload.data.avatarUrl);
       setProfileStatus(s.account.savedMessage);
       setIsEditingProfile(false);
@@ -315,8 +376,24 @@ export function ProfilePageClient({
     setIsEditingProfile(false);
     setDisplayNameDraft(profileState?.displayName ?? session.user.displayName ?? '');
     setAvatarDraft(profileState?.avatarUrl ?? '');
+    setDisplayNameTouched(false);
+    setAvatarTouched(false);
     setProfileError(null);
     setProfileStatus(null);
+  }
+
+  async function handleManualRefresh() {
+    setProfileError(null);
+    setProfileStatus(null);
+    try {
+      await Promise.all([
+        refreshProfile(new AbortController().signal),
+        refreshNow(),
+      ]);
+      setProfileStatus('Updated just now');
+    } catch {
+      setProfileError('Refresh failed');
+    }
   }
 
   async function handleCreateTopUp() {
@@ -410,6 +487,11 @@ export function ProfilePageClient({
           {profileError ? (
             <div className="banner banner-error" style={{ marginTop: '8px' }}>{profileError}</div>
           ) : null}
+          {lastUpdatedAt && !profileError ? (
+            <div className="list-muted" style={{ marginTop: '8px', fontSize: '0.78rem' }}>
+              {error ? 'Refresh failed' : 'Updated just now'}
+            </div>
+          ) : null}
 
           {isEditingProfile ? (
             <form
@@ -428,7 +510,10 @@ export function ProfilePageClient({
                         src={avatarDraft}
                         alt=""
                         className={isEmojiAvatarUrl(avatarDraft) ? 'profile-avatar-preview__emoji' : 'profile-avatar-preview__img'}
-                        onError={() => setAvatarDraft('')}
+                        onError={() => {
+                          setAvatarTouched(true);
+                          setAvatarDraft('');
+                        }}
                       />
                     ) : (
                       <span className="profile-avatar-preview__initials">{initials}</span>
@@ -462,7 +547,10 @@ export function ProfilePageClient({
                           key={emoji}
                           type="button"
                           className={`avatar-emoji-btn${avatarDraft === emojiUrl ? ' avatar-emoji-btn--active' : ''}`}
-                          onClick={() => setAvatarDraft(emojiUrl)}
+                          onClick={() => {
+                            setAvatarTouched(true);
+                            setAvatarDraft(emojiUrl);
+                          }}
                           aria-label={emoji}
                         >
                           {emoji}
@@ -477,7 +565,10 @@ export function ProfilePageClient({
                     type="button"
                     className="btn-ghost"
                     style={{ marginTop: '2px', fontSize: '0.82rem', padding: '5px 12px' }}
-                    onClick={() => setAvatarDraft('')}
+                    onClick={() => {
+                      setAvatarTouched(true);
+                      setAvatarDraft('');
+                    }}
                   >
                     {tp.removeAvatar}
                   </button>
@@ -493,7 +584,10 @@ export function ProfilePageClient({
                     placeholder={s.account.displayNamePlaceholder}
                     type="text"
                     value={displayNameDraft}
-                    onChange={(e) => setDisplayNameDraft(e.target.value)}
+                    onChange={(e) => {
+                      setDisplayNameTouched(true);
+                      setDisplayNameDraft(e.target.value);
+                    }}
                   />
                 </label>
               </div>
@@ -545,11 +639,16 @@ export function ProfilePageClient({
                   onClick={() => {
                     setIsEditingProfile(true);
                     setAvatarDraft(profileState?.avatarUrl ?? '');
+                    setAvatarTouched(false);
+                    setDisplayNameTouched(false);
                     setProfileError(null);
                     setProfileStatus(null);
                   }}
                 >
                   {tp.editProfile}
+                </button>
+                <button className="btn-ghost" type="button" onClick={() => void handleManualRefresh()} disabled={isRefreshing || isSavingProfile}>
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
                 </button>
               </div>
             </>

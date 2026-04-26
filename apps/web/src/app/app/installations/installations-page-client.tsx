@@ -7,9 +7,10 @@ import {
   type ExtensionInstallationInventoryItem,
   type ExtensionInstallationInventorySnapshot,
 } from '@quizmind/contracts';
-import { useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { usePreferences } from '../../../lib/preferences';
+import { useAutoRefresh } from '../../../lib/use-auto-refresh';
 
 interface InstallationsPageClientProps {
   snapshot: ExtensionInstallationInventorySnapshot;
@@ -75,16 +76,41 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   const { t } = usePreferences();
   const ti = t.installs;
   const s = t.settings;
+  const [liveSnapshot, setLiveSnapshot] = useState(snapshot);
   const [pendingInstallationId, setPendingInstallationId] = useState<string | null>(null);
   const [cardMessages, setCardMessages] = useState<Record<string, { type: 'info' | 'error'; text: string }>>({});
   const [logoutAllStatusMessage, setLogoutAllStatusMessage] = useState<string | null>(null);
   const [logoutAllErrorMessage, setLogoutAllErrorMessage] = useState<string | null>(null);
   const [isRevokingEverywhere, setIsRevokingEverywhere] = useState(false);
-  const [, startTransition] = useTransition();
+  const refreshInstallations = useCallback(async (signal: AbortSignal) => {
+    const response = await fetch('/bff/extension/installations', { cache: 'no-store', signal });
+    const payload = (await response.json().catch(() => null)) as { ok: boolean; data?: ExtensionInstallationInventorySnapshot; error?: { message?: string } } | null;
+    if (!response.ok || !payload?.ok || !payload.data) {
+      throw new Error(payload?.error?.message ?? 'Refresh failed');
+    }
+    setLiveSnapshot(payload.data);
+  }, []);
 
-  const activeItems = snapshot.items.filter(isActiveInstallation);
+  const { isRefreshing, lastUpdatedAt, error, refreshNow } = useAutoRefresh({
+    enabled: true,
+    intervalMs: 20_000,
+    refresh: refreshInstallations,
+    pauseWhenHidden: true,
+  });
+
+  useEffect(() => {
+    setLiveSnapshot(snapshot);
+  }, [snapshot]);
+
+  const activeItems = liveSnapshot.items.filter(isActiveInstallation);
   const activeSessionCount = activeItems.reduce((sum, installation) => sum + installation.activeSessionCount, 0);
   const compatibilityWarningCount = activeItems.filter((i) => i.compatibility.status !== 'supported').length;
+  const refreshStatus = useMemo(() => {
+    if (error) return 'Refresh failed';
+    if (!lastUpdatedAt) return null;
+    const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
+    return seconds < 5 ? 'Updated just now' : `Updated ${seconds}s ago`;
+  }, [error, lastUpdatedAt]);
 
   function setCardMessage(installationId: string, type: 'info' | 'error', text: string) {
     setCardMessages((prev) => ({ ...prev, [installationId]: { type, text } }));
@@ -123,7 +149,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
       }
 
       setPendingInstallationId(null);
-      startTransition(() => { router.refresh(); });
+      await refreshNow();
     } catch {
       setPendingInstallationId(null);
       setCardMessage(installationId, 'error', ti.disconnectError);
@@ -146,10 +172,8 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         return;
       }
 
-      startTransition(() => {
-        router.push('/auth/login?next=/app/installations');
-        router.refresh();
-      });
+      router.push('/auth/login?next=/app/installations');
+      router.refresh();
     } catch {
       setIsRevokingEverywhere(false);
       setLogoutAllStatusMessage(null);
@@ -159,6 +183,19 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
   return (
     <>
+      <section className="panel" style={{ padding: '10px 14px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span className="micro-label">Live status</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button className="btn-ghost" type="button" onClick={() => void refreshNow()} disabled={isRefreshing} style={{ padding: '4px 10px', fontSize: '0.78rem' }}>
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            {refreshStatus ? (
+              <span className="list-muted" style={{ fontSize: '0.78rem' }}>{refreshStatus}</span>
+            ) : null}
+          </div>
+        </div>
+      </section>
       {activeItems.length === 0 ? (
         <section className="empty-state">
           <span className="micro-label">{ti.devicesLabel}</span>
