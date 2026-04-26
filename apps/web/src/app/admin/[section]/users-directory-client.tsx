@@ -15,10 +15,15 @@ interface UsersDirectoryClientProps {
   canManageUserAccess: boolean;
   currentUserId: string;
   isConnectedSession: boolean;
-  items: DirectoryUser[];
-  total: number;
-  page: number;
-  limit: number;
+  initialFilters: {
+    query?: string;
+    role: string;
+    banned: string;
+    verified: string;
+    sort: string;
+    page: number;
+    limit: number;
+  };
 }
 
 interface MutationRouteResponse {
@@ -30,6 +35,12 @@ interface MutationRouteResponse {
 interface DeleteRouteResponse {
   ok: boolean;
   data?: { userId: string };
+  error?: { message?: string };
+}
+
+interface ListRouteResponse {
+  ok: boolean;
+  data?: AdminUsersSnapshot;
   error?: { message?: string };
 }
 
@@ -414,10 +425,7 @@ export function UsersDirectoryClient({
   canManageUserAccess,
   currentUserId,
   isConnectedSession,
-  items: initialItems,
-  total: initialTotal,
-  page: initialPage,
-  limit: initialLimit,
+  initialFilters,
 }: UsersDirectoryClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -426,35 +434,29 @@ export function UsersDirectoryClient({
   const [, startTransition] = useTransition();
 
   // Local optimistic state: overrides applied after mutations until server refresh
-  const [localItems, setLocalItems] = useState<DirectoryUser[]>(initialItems);
+  const [localItems, setLocalItems] = useState<DirectoryUser[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(initialFilters.page);
+  const [limit, setLimit] = useState(initialFilters.limit);
+  const [isLoadingTable, setIsLoadingTable] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
   const [selectedUser, setSelectedUser] = useState<DirectoryUser | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
+  const requestSequenceRef = useRef(0);
 
   // Keep local items in sync when server sends new props (after navigation)
   // We use a key trick: items reference changes on every server render
-  const [prevInitialItems, setPrevInitialItems] = useState(initialItems);
-  if (prevInitialItems !== initialItems) {
-    setPrevInitialItems(initialItems);
-    setLocalItems(initialItems);
-    // Close drawer if the selected user is no longer visible
-    if (selectedUser) {
-      const still = initialItems.find((u) => u.id === selectedUser.id);
-      if (still) setSelectedUser(still);
-      else setSelectedUser(null);
-    }
-  }
-
   // ── Filter state (controlled, applied on Search / Enter / debounce) ─────────
-  const [draftQuery, setDraftQuery] = useState(searchParams.get('userQuery') ?? '');
-  const [draftRole, setDraftRole] = useState(searchParams.get('userRole') ?? 'all');
-  const [draftBanned, setDraftBanned] = useState(searchParams.get('userBanned') ?? 'all');
-  const [draftVerified, setDraftVerified] = useState(searchParams.get('userVerified') ?? 'all');
-  const [draftSort, setDraftSort] = useState(searchParams.get('userSort') ?? 'created-desc');
-  const [draftLimit, setDraftLimit] = useState(initialLimit);
+  const [draftQuery, setDraftQuery] = useState(searchParams.get('userQuery') ?? initialFilters.query ?? '');
+  const [draftRole, setDraftRole] = useState(searchParams.get('userRole') ?? initialFilters.role ?? 'all');
+  const [draftBanned, setDraftBanned] = useState(searchParams.get('userBanned') ?? initialFilters.banned ?? 'all');
+  const [draftVerified, setDraftVerified] = useState(searchParams.get('userVerified') ?? initialFilters.verified ?? 'all');
+  const [draftSort, setDraftSort] = useState(searchParams.get('userSort') ?? initialFilters.sort ?? 'created-desc');
+  const [draftLimit, setDraftLimit] = useState(Number(searchParams.get('userLimit') ?? initialFilters.limit ?? 25));
 
   // Stable refs so debounced callback always reads latest values
   const draftQueryRef = useRef(draftQuery);
@@ -469,6 +471,54 @@ export function UsersDirectoryClient({
     (searchParams.get('userVerified') && searchParams.get('userVerified') !== 'all') ||
     (searchParams.get('userSort') && searchParams.get('userSort') !== 'created-desc'),
   );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const requestId = ++requestSequenceRef.current;
+    const params = new URLSearchParams();
+    const query = searchParams.get('userQuery');
+    const role = searchParams.get('userRole');
+    const banned = searchParams.get('userBanned');
+    const verified = searchParams.get('userVerified');
+    const sort = searchParams.get('userSort');
+    const pageParam = searchParams.get('userPage');
+    const limitParam = searchParams.get('userLimit');
+
+    if (query) params.set('query', query);
+    if (role) params.set('role', role);
+    if (banned) params.set('banned', banned);
+    if (verified) params.set('verified', verified);
+    if (sort) params.set('sort', sort);
+    if (pageParam) params.set('page', pageParam);
+    if (limitParam) params.set('limit', limitParam);
+
+    setIsLoadingTable(true);
+    void fetch(`/bff/admin/users?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
+      .then(async (res) => {
+        if (requestId !== requestSequenceRef.current) return;
+        const payload = (await res.json().catch(() => null)) as ListRouteResponse | null;
+        if (!res.ok || !payload?.ok || !payload.data) {
+          throw new Error(payload?.error?.message ?? a.unavailableDesc);
+        }
+        setLocalItems(payload.data.items);
+        setTotal(payload.data.total);
+        setPage(payload.data.page);
+        setLimit(payload.data.limit);
+        setErrorMessage(null);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        if (requestId !== requestSequenceRef.current) return;
+        setErrorMessage(error instanceof Error ? error.message : a.unavailableDesc);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && requestId === requestSequenceRef.current) {
+          setIsLoadingTable(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [searchParams, a.unavailableDesc, refreshTick]);
 
   function buildParams(
     overrides: Record<string, string | number | undefined> = {},
@@ -552,7 +602,7 @@ export function UsersDirectoryClient({
   }
 
   function refresh() {
-    startTransition(() => { router.refresh(); });
+    setRefreshTick((value) => value + 1);
   }
 
   // ── Mutation helpers ──────────────────────────────────────────────────────
@@ -715,7 +765,11 @@ export function UsersDirectoryClient({
         onCreateUser={() => setShowCreateModal(true)}
       />
 
-      {localItems.length > 0 ? (
+      {isLoadingTable ? (
+        <section className="panel" style={{ padding: '14px 16px', fontSize: '0.82rem', color: 'var(--muted)' }}>
+          {t.common.loading}
+        </section>
+      ) : localItems.length > 0 ? (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
             <thead>
@@ -824,11 +878,11 @@ export function UsersDirectoryClient({
         </div>
       )}
 
-      {initialTotal > 0 ? (
+      {total > 0 ? (
         <Pagination
-          page={initialPage}
-          limit={initialLimit}
-          total={initialTotal}
+          page={page}
+          limit={limit}
+          total={total}
           onPage={goToPage}
         />
       ) : null}

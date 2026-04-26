@@ -422,6 +422,37 @@ test('PlatformController.listAdminLogs rejects missing bearer token in connected
   );
 });
 
+test('PlatformController.getAdminLogEntry uses connected session flow', async () => {
+  const session = createSession();
+  let capturedToken: string | null = null;
+  let capturedSession: CurrentSessionSnapshot | null = null;
+  let capturedId: string | null = null;
+
+  const authService = {
+    async getCurrentSession(accessToken: string) {
+      capturedToken = accessToken;
+      return session;
+    },
+  };
+  const platformService = {
+    async getAdminLogEntryForCurrentSession(inputSession: CurrentSessionSnapshot, id: string) {
+      capturedSession = inputSession;
+      capturedId = id;
+      return { id: 'audit:entry_1' };
+    },
+  };
+  const controller = new PlatformController(authService as any, platformService as any);
+  (controller as any).env = { runtimeMode: 'connected' };
+
+  const response = await controller.getAdminLogEntry('audit:entry_1', 'Bearer access-token-log-detail');
+
+  assert.equal(capturedToken, 'access-token-log-detail');
+  assert.equal(capturedSession, session);
+  assert.equal(capturedId, 'audit:entry_1');
+  assert.equal(response.ok, true);
+  assert.equal((response.data as { id: string }).id, 'audit:entry_1');
+});
+
 test('PlatformController.listAdminWebhooks requires connected runtime and does not expose persona fallback', async () => {
   const authService = {
     async getCurrentSession() {

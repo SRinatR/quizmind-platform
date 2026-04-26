@@ -15,13 +15,13 @@ import {
   type AdminLogSourceFilter,
 } from '@quizmind/contracts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type AdminLogsStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
 
 interface LogsExplorerClientProps {
-  snapshot: AdminLogsStateSnapshot;
+  initialFilters: AdminLogFilters;
   canExportLogs: boolean;
   isConnectedSession: boolean;
 }
@@ -31,6 +31,8 @@ interface MutationRouteResponse<T> {
   data?: T;
   error?: { message?: string };
 }
+
+type LogListRouteResponse = MutationRouteResponse<AdminLogsStateSnapshot>;
 
 // ── Datetime-local helpers ────────────────────────────────────────────────────
 
@@ -299,7 +301,7 @@ function DetailsDrawer({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function LogsExplorerClient({
-  snapshot,
+  initialFilters,
   canExportLogs,
   isConnectedSession,
 }: LogsExplorerClientProps) {
@@ -307,21 +309,86 @@ export function LogsExplorerClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [searchDraft, setSearchDraft] = useState(snapshot.filters.search ?? '');
-  const [fromDraft, setFromDraft] = useState(() => fromIsoToLocalInput(snapshot.filters.from));
-  const [toDraft, setToDraft] = useState(() => fromIsoToLocalInput(snapshot.filters.to));
-  const [eventTypeDraft, setEventTypeDraft] = useState(snapshot.filters.eventType ?? '');
+  const [snapshot, setSnapshot] = useState<AdminLogsStateSnapshot | null>(null);
+  const [isLoadingTable, setIsLoadingTable] = useState(true);
+  const [searchDraft, setSearchDraft] = useState(initialFilters.search ?? '');
+  const [fromDraft, setFromDraft] = useState(() => fromIsoToLocalInput(initialFilters.from));
+  const [toDraft, setToDraft] = useState(() => fromIsoToLocalInput(initialFilters.to));
+  const [eventTypeDraft, setEventTypeDraft] = useState(initialFilters.eventType ?? '');
   const [exportFormat, setExportFormat] = useState<AdminLogExportFormat>('json');
   const [isExporting, setIsExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<AdminLogEntry | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const listRequestSeqRef = useRef(0);
+  const detailRequestSeqRef = useRef(0);
+
+  const effectiveSnapshot = useMemo<AdminLogsStateSnapshot>(() => (
+    snapshot ?? {
+      personaKey: 'connected-user',
+      accessDecision: { allowed: true, reasons: [] },
+      exportDecision: { allowed: canExportLogs, reasons: [] },
+      filters: initialFilters,
+      items: [],
+      streamCounts: { audit: 0, activity: 0, security: 0, domain: 0 },
+      categoryCounts: { auth: 0, extension: 0, ai: 0, admin: 0, system: 0 },
+      total: 0,
+      hasNext: false,
+      permissions: [],
+    }
+  ), [snapshot, initialFilters, canExportLogs]);
 
   function pushFilters(next: Partial<AdminLogFilters>) {
     const params = buildNextSearchParams(searchParams, next);
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const requestId = ++listRequestSeqRef.current;
+    const params = new URLSearchParams();
+    const map: Record<string, string> = {
+      logStream: 'stream',
+      logSeverity: 'severity',
+      logSearch: 'search',
+      logLimit: 'limit',
+      logCategory: 'category',
+      logSource: 'source',
+      logStatus: 'status',
+      logEventType: 'eventType',
+      logFrom: 'from',
+      logTo: 'to',
+      logPage: 'page',
+    };
+    Object.entries(map).forEach(([urlKey, apiKey]) => {
+      const value = searchParams.get(urlKey);
+      if (value) params.set(apiKey, value);
+    });
+
+    setIsLoadingTable(true);
+    void fetch(`/bff/admin/logs?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
+      .then(async (res) => {
+        if (requestId !== listRequestSeqRef.current) return;
+        const payload = (await res.json().catch(() => null)) as LogListRouteResponse | null;
+        if (!res.ok || !payload?.ok || !payload.data) {
+          throw new Error(payload?.error?.message ?? 'Unable to load logs.');
+        }
+        setSnapshot(payload.data);
+        setErrorMessage(null);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        if (requestId !== listRequestSeqRef.current) return;
+        setErrorMessage(error instanceof Error ? error.message : 'Unable to load logs.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted && requestId === listRequestSeqRef.current) setIsLoadingTable(false);
+      });
+
+    return () => controller.abort();
+  }, [searchParams]);
 
   function applyAllFilters() {
     setErrorMessage(null);
@@ -392,17 +459,17 @@ export function LogsExplorerClient({
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          stream: snapshot.filters.stream,
-          severity: snapshot.filters.severity,
-          ...(snapshot.filters.search ? { search: snapshot.filters.search } : {}),
-          limit: snapshot.filters.limit,
+          stream: effectiveSnapshot.filters.stream,
+          severity: effectiveSnapshot.filters.severity,
+          ...(effectiveSnapshot.filters.search ? { search: effectiveSnapshot.filters.search } : {}),
+          limit: effectiveSnapshot.filters.limit,
           format: exportFormat,
-          ...(snapshot.filters.category ? { category: snapshot.filters.category } : {}),
-          ...(snapshot.filters.source ? { source: snapshot.filters.source } : {}),
-          ...(snapshot.filters.status ? { status: snapshot.filters.status } : {}),
-          ...(snapshot.filters.eventType ? { eventType: snapshot.filters.eventType } : {}),
-          ...(snapshot.filters.from ? { from: snapshot.filters.from } : {}),
-          ...(snapshot.filters.to ? { to: snapshot.filters.to } : {}),
+          ...(effectiveSnapshot.filters.category ? { category: effectiveSnapshot.filters.category } : {}),
+          ...(effectiveSnapshot.filters.source ? { source: effectiveSnapshot.filters.source } : {}),
+          ...(effectiveSnapshot.filters.status ? { status: effectiveSnapshot.filters.status } : {}),
+          ...(effectiveSnapshot.filters.eventType ? { eventType: effectiveSnapshot.filters.eventType } : {}),
+          ...(effectiveSnapshot.filters.from ? { from: effectiveSnapshot.filters.from } : {}),
+          ...(effectiveSnapshot.filters.to ? { to: effectiveSnapshot.filters.to } : {}),
         }),
       });
       const payload = (await response.json().catch(() => null)) as MutationRouteResponse<AdminLogExportResult> | null;
@@ -424,8 +491,29 @@ export function LogsExplorerClient({
     }
   }
 
-  const filters = snapshot.filters;
-  const counts = snapshot.categoryCounts;
+  async function handleViewEntry(item: AdminLogEntry) {
+    if (selectedEntry?.id === item.id) {
+      setSelectedEntry(null);
+      return;
+    }
+    setSelectedEntry(item);
+    setIsLoadingDetail(true);
+    const requestId = ++detailRequestSeqRef.current;
+    try {
+      const response = await fetch(`/bff/admin/logs/${encodeURIComponent(item.id)}`, { cache: 'no-store' });
+      const payload = (await response.json().catch(() => null)) as MutationRouteResponse<AdminLogEntry> | null;
+      if (requestId === detailRequestSeqRef.current && response.ok && payload?.ok && payload.data) {
+        setSelectedEntry(payload.data);
+      }
+    } finally {
+      if (requestId === detailRequestSeqRef.current) {
+        setIsLoadingDetail(false);
+      }
+    }
+  }
+
+  const filters = effectiveSnapshot.filters;
+  const counts = effectiveSnapshot.categoryCounts;
 
   return (
     <>
@@ -616,7 +704,7 @@ export function LogsExplorerClient({
       {counts ? (
         <div className="tag-row" style={{ padding: '0 2px' }}>
           <span className="tag-soft tag-soft--gray">
-            {snapshot.total} total{snapshot.items.length !== snapshot.total ? ` · ${snapshot.items.length} on page` : ''}
+            {effectiveSnapshot.total} total{effectiveSnapshot.items.length !== effectiveSnapshot.total ? ` · ${effectiveSnapshot.items.length} on page` : ''}
           </span>
           {(['auth', 'extension', 'ai', 'admin', 'system'] as const).map((cat) => (
             counts[cat] > 0 ? (
@@ -636,7 +724,9 @@ export function LogsExplorerClient({
 
       {/* ── Log table ── */}
       <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-        {snapshot.items.length > 0 ? (
+        {isLoadingTable ? (
+          <div style={{ padding: '20px', fontSize: '0.82rem', color: 'var(--muted)' }}>Loading…</div>
+        ) : effectiveSnapshot.items.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
               <thead>
@@ -661,10 +751,10 @@ export function LogsExplorerClient({
                 </tr>
               </thead>
               <tbody>
-                {snapshot.items.map((item) => (
+                {effectiveSnapshot.items.map((item) => (
                   <tr
                     key={item.id}
-                    onClick={() => setSelectedEntry(selectedEntry?.id === item.id ? null : item)}
+                    onClick={() => void handleViewEntry(item)}
                     style={{
                       borderBottom: '1px solid var(--border)',
                       cursor: 'pointer',
@@ -723,7 +813,7 @@ export function LogsExplorerClient({
       </section>
 
       {/* ── Pagination ── */}
-      {(snapshot.items.length > 0 || (filters.page ?? 1) > 1) ? (
+      {(effectiveSnapshot.items.length > 0 || (filters.page ?? 1) > 1) ? (
         <div className="tag-row" style={{ padding: '4px 0' }}>
           <button
             className="btn-ghost"
@@ -735,11 +825,11 @@ export function LogsExplorerClient({
             ← Prev
           </button>
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-            Page {filters.page ?? 1} · {snapshot.total} total
+            Page {filters.page ?? 1} · {effectiveSnapshot.total} total
           </span>
           <button
             className="btn-ghost"
-            disabled={!snapshot.hasNext}
+            disabled={!effectiveSnapshot.hasNext}
             onClick={() => pushFilters({ page: (filters.page ?? 1) + 1 })}
             type="button"
             style={{ fontSize: '0.8rem', padding: '4px 12px' }}
@@ -751,7 +841,10 @@ export function LogsExplorerClient({
 
       {/* ── Details drawer ── */}
       {selectedEntry ? (
-        <DetailsDrawer entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+        <>
+          {isLoadingDetail ? <div className="panel" style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 120, padding: '8px 10px', fontSize: '0.78rem' }}>Loading…</div> : null}
+          <DetailsDrawer entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+        </>
       ) : null}
     </>
   );
