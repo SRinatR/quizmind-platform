@@ -10,20 +10,18 @@ export class WorkerDomainEventRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   create(input: CreateWorkerDomainEventInput): Promise<{ id: string }> {
-    return this.prisma.$transaction(async (transaction) => {
+    return this.prisma.domainEvent.create({
       // Worker keeps an explicit local domain write + read-model upsert sequence.
-      // We intentionally do not import API helper modules here to keep worker isolated.
-      const domainEvent = await transaction.domainEvent.create({
-        data: {
-          eventType: input.eventType,
-          payloadJson: input.payloadJson as Prisma.InputJsonValue,
-          createdAt: input.createdAt,
-        },
-        select: {
-          id: true,
-        },
-      });
-
+      // Domain event commit must succeed even if read-model write later fails.
+      data: {
+        eventType: input.eventType,
+        payloadJson: input.payloadJson as Prisma.InputJsonValue,
+        createdAt: input.createdAt,
+      },
+      select: {
+        id: true,
+      },
+    }).then(async (domainEvent) => {
       try {
         const upsertData = buildAdminLogEventCreateInput({
           stream: 'domain',
@@ -32,7 +30,7 @@ export class WorkerDomainEventRepository {
           occurredAt: input.createdAt,
           payload: input.payloadJson,
         });
-        await transaction.adminLogEvent.upsert({
+        await this.prisma.adminLogEvent.upsert({
           where: { stream_sourceRecordId: { stream: 'domain', sourceRecordId: domainEvent.id } },
           create: upsertData,
           update: upsertData,

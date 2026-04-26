@@ -4,7 +4,11 @@ import { type TicketStatus } from '@quizmind/contracts';
 import { type StructuredLogEvent } from '@quizmind/logger';
 
 import { PrismaService } from '../database/prisma.service';
-import { createAuditLogWithReadModel } from '../logs/admin-log-write-path';
+import {
+  buildReadModelFromAuditRow,
+  createAuditLogWithReadModel,
+  upsertAdminLogEventsBestEffort,
+} from '../logs/admin-log-write-path';
 
 const recentSupportTicketInclude = {
   requester: {
@@ -164,7 +168,7 @@ export class SupportTicketRepository {
   }
 
   async updateWorkflow(input: UpdateSupportTicketWorkflowInput): Promise<RecentSupportTicketRecord> {
-    return this.prisma.$transaction(async (transaction) => {
+    const txResult = await this.prisma.$transaction(async (transaction) => {
       const updatedTicket = await transaction.supportTicket.update({
         where: {
           id: input.supportTicketId,
@@ -177,16 +181,19 @@ export class SupportTicketRepository {
         include: recentSupportTicketInclude,
       });
 
-      await createAuditLogWithReadModel(transaction, {
-          actorId: input.auditLog.actorId,
-          action: input.auditLog.eventType,
-          targetType: input.auditLog.targetType,
-          targetId: input.auditLog.targetId,
-          metadataJson: buildMetadataJson(input.auditLog),
-          createdAt: new Date(input.auditLog.occurredAt),
+      const auditRow = await createAuditLogWithReadModel(transaction, {
+        actorId: input.auditLog.actorId,
+        action: input.auditLog.eventType,
+        targetType: input.auditLog.targetType,
+        targetId: input.auditLog.targetId,
+        metadataJson: buildMetadataJson(input.auditLog),
+        createdAt: new Date(input.auditLog.occurredAt),
       });
 
-      return updatedTicket;
+      return { updatedTicket, readModelEvents: [buildReadModelFromAuditRow(auditRow)] };
     });
+
+    await upsertAdminLogEventsBestEffort(this.prisma, txResult.readModelEvents);
+    return txResult.updatedTicket;
   }
 }

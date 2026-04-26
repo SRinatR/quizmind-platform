@@ -14,6 +14,7 @@ const forbidden = [
   'securityEvent.createMany(',
   'domainEvent.createMany(',
 ];
+const disallowedReadModelUpsert = 'adminLogEvent.upsert(';
 
 async function walk(dir: string, acc: string[] = []) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -35,11 +36,15 @@ test('no direct legacy log create writes remain outside explicit write helper', 
   for (const file of files) {
     const rel = path.relative(process.cwd(), file).replaceAll('\\', '/');
     if (rel === 'src/logs/admin-log-write-path.ts') continue;
+    if (rel === 'src/logs/admin-log.backfill.ts') continue;
     const source = await readFile(file, 'utf8');
     for (const pattern of forbidden) {
       if (source.includes(pattern)) {
         violations.push(`${rel}: ${pattern}`);
       }
+    }
+    if (source.includes(disallowedReadModelUpsert)) {
+      violations.push(`${rel}: ${disallowedReadModelUpsert}`);
     }
   }
 

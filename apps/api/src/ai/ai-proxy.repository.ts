@@ -3,9 +3,14 @@ import { Prisma } from '@quizmind/database';
 
 import { PrismaService } from '../database/prisma.service';
 import {
+  buildReadModelFromActivityRow,
+  buildReadModelFromDomainRow,
+  buildReadModelFromSecurityRow,
   createActivityLogWithReadModel,
   createDomainEventWithReadModel,
   createSecurityEventWithReadModel,
+  upsertAdminLogEventsBestEffort,
+  type ReadModelUpsert,
 } from '../logs/admin-log-write-path';
 
 const quotaCounterSelect = {
@@ -143,7 +148,8 @@ export class AiProxyRepository {
   }
 
   async recordProxyEvent(input: RecordProxyEventInput): Promise<AiProxyQuotaCounterRecord | null> {
-    return this.prisma.$transaction(async (transaction) => {
+    const { result, readModelEvents } = await this.prisma.$transaction(async (transaction) => {
+      const readModelEvents: ReadModelUpsert[] = [];
       const metadata = {
         requestId: input.requestId,
         provider: input.provider,
@@ -180,31 +186,37 @@ export class AiProxyRepository {
         },
       });
 
-      await createActivityLogWithReadModel(transaction, {
+      const activityRow = await createActivityLogWithReadModel(transaction, {
         actorId: input.userId,
         eventType: 'ai.proxy.completed',
         metadataJson: metadata,
         createdAt: input.occurredAt,
       });
+      readModelEvents.push(buildReadModelFromActivityRow(activityRow));
 
-      await createDomainEventWithReadModel(transaction, {
+      const domainRow = await createDomainEventWithReadModel(transaction, {
         eventType: 'ai.proxy.completed',
         payloadJson: metadata,
         createdAt: input.occurredAt,
       });
+      readModelEvents.push(buildReadModelFromDomainRow(domainRow));
 
       if (input.keySource === 'user') {
-        await createSecurityEventWithReadModel(transaction, {
+        const securityRow = await createSecurityEventWithReadModel(transaction, {
           actorId: input.userId,
           eventType: 'ai.proxy.user_key_used',
           severity: 'info',
           metadataJson: toNullableJsonInput(metadata),
           createdAt: input.occurredAt,
         });
+        readModelEvents.push(buildReadModelFromSecurityRow(securityRow));
       }
 
-      return null;
+      return { result: null, readModelEvents };
     });
+
+    await upsertAdminLogEventsBestEffort(this.prisma, readModelEvents);
+    return result;
   }
 
   async recordProxyFailure(input: RecordProxyFailureInput): Promise<void> {
@@ -221,7 +233,8 @@ export class AiProxyRepository {
     } satisfies Prisma.InputJsonObject;
     const durationMs = normalizeDurationMs(input.durationMs);
 
-    await this.prisma.$transaction(async (transaction) => {
+    const readModelEvents = await this.prisma.$transaction(async (transaction) => {
+      const readModelEvents: ReadModelUpsert[] = [];
       await transaction.aiRequest.create({
         data: {
           userId: input.userId,
@@ -240,28 +253,35 @@ export class AiProxyRepository {
         },
       });
 
-      await createActivityLogWithReadModel(transaction, {
+      const activityRow = await createActivityLogWithReadModel(transaction, {
         actorId: input.userId,
         eventType: 'ai.proxy.failed',
         metadataJson: metadata,
         createdAt: input.occurredAt,
       });
+      readModelEvents.push(buildReadModelFromActivityRow(activityRow));
 
-      await createDomainEventWithReadModel(transaction, {
+      const domainRow = await createDomainEventWithReadModel(transaction, {
         eventType: 'ai.proxy.failed',
         payloadJson: metadata,
         createdAt: input.occurredAt,
       });
+      readModelEvents.push(buildReadModelFromDomainRow(domainRow));
 
       if (input.keySource === 'user') {
-        await createSecurityEventWithReadModel(transaction, {
+        const securityRow = await createSecurityEventWithReadModel(transaction, {
           actorId: input.userId,
           eventType: 'ai.proxy.user_key_failed',
           severity: 'warn',
           metadataJson: toNullableJsonInput(metadata),
           createdAt: input.occurredAt,
         });
+        readModelEvents.push(buildReadModelFromSecurityRow(securityRow));
       }
+
+      return readModelEvents;
     });
+
+    await upsertAdminLogEventsBestEffort(this.prisma, readModelEvents);
   }
 }

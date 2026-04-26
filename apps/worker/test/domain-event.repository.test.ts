@@ -6,16 +6,14 @@ import { WorkerDomainEventRepository } from '../src/repositories/domain-event.re
 test('WorkerDomainEventRepository creates domain event and upserts AdminLogEvent', async () => {
   let upsertCalled = false;
   const repo = new WorkerDomainEventRepository({
-    $transaction: async (fn: any) => fn({
-      domainEvent: {
-        create: async () => ({ id: 'dom_1' }),
+    domainEvent: {
+      create: async () => ({ id: 'dom_1' }),
+    },
+    adminLogEvent: {
+      upsert: async () => {
+        upsertCalled = true;
       },
-      adminLogEvent: {
-        upsert: async () => {
-          upsertCalled = true;
-        },
-      },
-    }),
+    },
   } as any);
 
   const result = await repo.create({

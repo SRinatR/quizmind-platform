@@ -5,41 +5,60 @@ function toMetadata(value: unknown): Record<string, unknown> | undefined {
   return value as Record<string, unknown>;
 }
 
-async function upsertReadModel(
-  transaction: Prisma.TransactionClient,
-  stream: 'audit' | 'activity' | 'security' | 'domain',
-  sourceRecordId: string,
-  create: Prisma.AdminLogEventCreateInput,
-) {
-  try {
-    await transaction.adminLogEvent.upsert({
-      where: { stream_sourceRecordId: { stream, sourceRecordId } },
-      create,
-      update: create,
-    });
-  } catch (error) {
-    console.warn('[admin-log-events] explicit dual-write failed', {
-      stream,
-      sourceRecordId,
-      error: error instanceof Error ? error.message : String(error),
-    });
-  }
+function withActorMetadata(metadata: Record<string, unknown> | undefined): Record<string, unknown> {
+  return {
+    ...(metadata ?? {}),
+    ...(typeof metadata?.actorEmail === 'string' ? { actorEmail: metadata.actorEmail } : {}),
+    ...(typeof metadata?.actorDisplayName === 'string' ? { actorDisplayName: metadata.actorDisplayName } : {}),
+  };
 }
 
-export async function createAuditLogWithReadModel(
-  transaction: Prisma.TransactionClient,
-  data: Prisma.AuditLogUncheckedCreateInput,
-) {
-  const row = await transaction.auditLog.create({
-    data,
-    select: { id: true, action: true, actorId: true, targetType: true, targetId: true, metadataJson: true, createdAt: true },
-  });
+export type ReadModelUpsert = {
+  stream: 'audit' | 'activity' | 'security' | 'domain';
+  sourceRecordId: string;
+  data: Prisma.AdminLogEventCreateInput;
+};
 
-  await upsertReadModel(
-    transaction,
-    'audit',
-    row.id,
-    buildAdminLogEventCreateInput({
+export type CreatedAuditLogRow = {
+  id: string;
+  action: string;
+  actorId: string | null;
+  targetType: string;
+  targetId: string;
+  metadataJson: unknown;
+  createdAt: Date;
+};
+
+export type CreatedActivityLogRow = {
+  id: string;
+  eventType: string;
+  actorId: string | null;
+  metadataJson: unknown;
+  createdAt: Date;
+};
+
+export type CreatedSecurityEventRow = {
+  id: string;
+  eventType: string;
+  actorId: string | null;
+  severity: Prisma.EventSeverity;
+  metadataJson: unknown;
+  createdAt: Date;
+};
+
+export type CreatedDomainEventRow = {
+  id: string;
+  eventType: string;
+  payloadJson: unknown;
+  createdAt: Date;
+};
+
+export function buildReadModelFromAuditRow(row: CreatedAuditLogRow): ReadModelUpsert {
+  const metadata = toMetadata(row.metadataJson);
+  return {
+    stream: 'audit',
+    sourceRecordId: row.id,
+    data: buildAdminLogEventCreateInput({
       stream: 'audit',
       sourceRecordId: row.id,
       eventType: row.action,
@@ -47,84 +66,115 @@ export async function createAuditLogWithReadModel(
       actorId: row.actorId,
       targetType: row.targetType,
       targetId: row.targetId,
-      metadata: toMetadata(row.metadataJson),
+      metadata: withActorMetadata(metadata),
     }),
-  );
-
-  return row;
+  };
 }
 
-export async function createActivityLogWithReadModel(
-  transaction: Prisma.TransactionClient,
-  data: Prisma.ActivityLogUncheckedCreateInput,
-) {
-  const row = await transaction.activityLog.create({
-    data,
-    select: { id: true, eventType: true, actorId: true, metadataJson: true, createdAt: true },
-  });
-  await upsertReadModel(
-    transaction,
-    'activity',
-    row.id,
-    buildAdminLogEventCreateInput({
+export function buildReadModelFromActivityRow(row: CreatedActivityLogRow): ReadModelUpsert {
+  const metadata = toMetadata(row.metadataJson);
+  return {
+    stream: 'activity',
+    sourceRecordId: row.id,
+    data: buildAdminLogEventCreateInput({
       stream: 'activity',
       sourceRecordId: row.id,
       eventType: row.eventType,
       occurredAt: row.createdAt,
       actorId: row.actorId,
-      metadata: toMetadata(row.metadataJson),
+      metadata: withActorMetadata(metadata),
     }),
-  );
-
-  return row;
+  };
 }
 
-export async function createSecurityEventWithReadModel(
-  transaction: Prisma.TransactionClient,
-  data: Prisma.SecurityEventUncheckedCreateInput,
-) {
-  const row = await transaction.securityEvent.create({
-    data,
-    select: { id: true, eventType: true, actorId: true, severity: true, metadataJson: true, createdAt: true },
-  });
-  await upsertReadModel(
-    transaction,
-    'security',
-    row.id,
-    buildAdminLogEventCreateInput({
+export function buildReadModelFromSecurityRow(row: CreatedSecurityEventRow): ReadModelUpsert {
+  const metadata = toMetadata(row.metadataJson);
+  return {
+    stream: 'security',
+    sourceRecordId: row.id,
+    data: buildAdminLogEventCreateInput({
       stream: 'security',
       sourceRecordId: row.id,
       eventType: row.eventType,
       occurredAt: row.createdAt,
       actorId: row.actorId,
       severity: row.severity,
-      metadata: toMetadata(row.metadataJson),
+      metadata: withActorMetadata(metadata),
     }),
-  );
-
-  return row;
+  };
 }
 
-export async function createDomainEventWithReadModel(
-  transaction: Prisma.TransactionClient,
-  data: Prisma.DomainEventUncheckedCreateInput,
-) {
-  const row = await transaction.domainEvent.create({
-    data,
-    select: { id: true, eventType: true, payloadJson: true, createdAt: true },
-  });
-  await upsertReadModel(
-    transaction,
-    'domain',
-    row.id,
-    buildAdminLogEventCreateInput({
+export function buildReadModelFromDomainRow(row: CreatedDomainEventRow): ReadModelUpsert {
+  return {
+    stream: 'domain',
+    sourceRecordId: row.id,
+    data: buildAdminLogEventCreateInput({
       stream: 'domain',
       sourceRecordId: row.id,
       eventType: row.eventType,
       occurredAt: row.createdAt,
       payload: toMetadata(row.payloadJson),
     }),
-  );
+  };
+}
 
-  return row;
+export async function upsertAdminLogEventsBestEffort(
+  prisma: Pick<PrismaClient, 'adminLogEvent'>,
+  events: ReadonlyArray<ReadModelUpsert>,
+): Promise<void> {
+  for (const event of events) {
+    try {
+      await prisma.adminLogEvent.upsert({
+        where: { stream_sourceRecordId: { stream: event.stream, sourceRecordId: event.sourceRecordId } },
+        create: event.data,
+        update: event.data,
+      });
+    } catch (error) {
+      console.warn('[admin-log-events] explicit dual-write failed', {
+        stream: event.stream,
+        sourceRecordId: event.sourceRecordId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+}
+
+export async function createAuditLogWithReadModel(
+  transaction: Prisma.TransactionClient,
+  data: Prisma.AuditLogUncheckedCreateInput,
+): Promise<CreatedAuditLogRow> {
+  return transaction.auditLog.create({
+    data,
+    select: { id: true, action: true, actorId: true, targetType: true, targetId: true, metadataJson: true, createdAt: true },
+  });
+}
+
+export async function createActivityLogWithReadModel(
+  transaction: Prisma.TransactionClient,
+  data: Prisma.ActivityLogUncheckedCreateInput,
+): Promise<CreatedActivityLogRow> {
+  return transaction.activityLog.create({
+    data,
+    select: { id: true, eventType: true, actorId: true, metadataJson: true, createdAt: true },
+  });
+}
+
+export async function createSecurityEventWithReadModel(
+  transaction: Prisma.TransactionClient,
+  data: Prisma.SecurityEventUncheckedCreateInput,
+): Promise<CreatedSecurityEventRow> {
+  return transaction.securityEvent.create({
+    data,
+    select: { id: true, eventType: true, actorId: true, severity: true, metadataJson: true, createdAt: true },
+  });
+}
+
+export async function createDomainEventWithReadModel(
+  transaction: Prisma.TransactionClient,
+  data: Prisma.DomainEventUncheckedCreateInput,
+): Promise<CreatedDomainEventRow> {
+  return transaction.domainEvent.create({
+    data,
+    select: { id: true, eventType: true, payloadJson: true, createdAt: true },
+  });
 }

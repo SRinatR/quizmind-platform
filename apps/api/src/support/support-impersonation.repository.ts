@@ -4,8 +4,12 @@ import { type StructuredLogEvent } from '@quizmind/logger';
 
 import { PrismaService } from '../database/prisma.service';
 import {
+  buildReadModelFromAuditRow,
+  buildReadModelFromSecurityRow,
   createAuditLogWithReadModel,
   createSecurityEventWithReadModel,
+  upsertAdminLogEventsBestEffort,
+  type ReadModelUpsert,
 } from '../logs/admin-log-write-path';
 
 const recentSupportImpersonationSessionInclude = {
@@ -89,7 +93,8 @@ export class SupportImpersonationRepository {
   async createSessionWithLogs(
     input: CreateSupportImpersonationSessionInput,
   ): Promise<void> {
-    return this.prisma.$transaction(async (transaction) => {
+    const readModelEvents = await this.prisma.$transaction(async (transaction) => {
+      const readModelEvents: ReadModelUpsert[] = [];
       await transaction.supportImpersonationSession.create({
         data: {
           id: input.impersonationSessionId,
@@ -103,7 +108,7 @@ export class SupportImpersonationRepository {
         },
       });
 
-      await createAuditLogWithReadModel(transaction, {
+      const auditRow = await createAuditLogWithReadModel(transaction, {
         actorId: input.supportActorId,
         action: input.auditLog.eventType,
         targetType: input.auditLog.targetType,
@@ -111,21 +116,28 @@ export class SupportImpersonationRepository {
         metadataJson: buildMetadataJson(input.auditLog),
         createdAt: input.createdAt,
       });
+      readModelEvents.push(buildReadModelFromAuditRow(auditRow));
 
-      await createSecurityEventWithReadModel(transaction, {
+      const securityRow = await createSecurityEventWithReadModel(transaction, {
         actorId: input.supportActorId,
         eventType: input.securityLog.eventType,
         severity: input.securityLog.severity,
         metadataJson: buildMetadataJson(input.securityLog),
         createdAt: input.createdAt,
       });
+      readModelEvents.push(buildReadModelFromSecurityRow(securityRow));
+
+      return readModelEvents;
     });
+
+    await upsertAdminLogEventsBestEffort(this.prisma, readModelEvents);
   }
 
   async endSessionWithLogs(
     input: EndSupportImpersonationSessionInput,
   ): Promise<RecentSupportImpersonationSessionRecord | null> {
-    return this.prisma.$transaction(async (transaction) => {
+    const txResult = await this.prisma.$transaction(async (transaction) => {
+      const readModelEvents: ReadModelUpsert[] = [];
       const existingSession = await transaction.supportImpersonationSession.findUnique({
         where: {
           id: input.impersonationSessionId,
@@ -134,11 +146,11 @@ export class SupportImpersonationRepository {
       });
 
       if (!existingSession) {
-        return null;
+        return { endedSession: null, readModelEvents };
       }
 
       if (existingSession.endedAt) {
-        return existingSession;
+        return { endedSession: existingSession, readModelEvents };
       }
 
       const endedSession = await transaction.supportImpersonationSession.update({
@@ -152,7 +164,7 @@ export class SupportImpersonationRepository {
         include: recentSupportImpersonationSessionInclude,
       });
 
-      await createAuditLogWithReadModel(transaction, {
+      const auditRow = await createAuditLogWithReadModel(transaction, {
         actorId: input.auditLog.actorId,
         action: input.auditLog.eventType,
         targetType: input.auditLog.targetType,
@@ -160,16 +172,21 @@ export class SupportImpersonationRepository {
         metadataJson: buildMetadataJson(input.auditLog),
         createdAt: input.endedAt,
       });
+      readModelEvents.push(buildReadModelFromAuditRow(auditRow));
 
-      await createSecurityEventWithReadModel(transaction, {
+      const securityRow = await createSecurityEventWithReadModel(transaction, {
         actorId: input.securityLog.actorId,
         eventType: input.securityLog.eventType,
         severity: input.securityLog.severity,
         metadataJson: buildMetadataJson(input.securityLog),
         createdAt: input.endedAt,
       });
+      readModelEvents.push(buildReadModelFromSecurityRow(securityRow));
 
-      return endedSession;
+      return { endedSession, readModelEvents };
     });
+
+    await upsertAdminLogEventsBestEffort(this.prisma, txResult.readModelEvents);
+    return txResult.endedSession;
   }
 }
