@@ -1,4 +1,4 @@
-CREATE TABLE "ai_request_attachments" (
+CREATE TABLE IF NOT EXISTS "ai_request_attachments" (
   "id" TEXT NOT NULL,
   "aiRequestEventId" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -15,17 +15,50 @@ CREATE TABLE "ai_request_attachments" (
   CONSTRAINT "ai_request_attachments_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "ai_request_attachments_aiRequestEventId_idx" ON "ai_request_attachments"("aiRequestEventId");
-CREATE INDEX "ai_request_attachments_expiresAt_deletedAt_idx" ON "ai_request_attachments"("expiresAt", "deletedAt");
+CREATE INDEX IF NOT EXISTS "ai_request_attachments_aiRequestEventId_idx" ON "ai_request_attachments"("aiRequestEventId");
+CREATE INDEX IF NOT EXISTS "ai_request_attachments_expiresAt_deletedAt_idx" ON "ai_request_attachments"("expiresAt", "deletedAt");
 
-ALTER TABLE "ai_request_attachments"
-  ADD CONSTRAINT "ai_request_attachments_aiRequestEventId_fkey"
-  FOREIGN KEY ("aiRequestEventId") REFERENCES "ai_request_events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'ai_request_attachments_aiRequestEventId_fkey'
+      AND conrelid = 'ai_request_attachments'::regclass
+  ) THEN
+    ALTER TABLE "ai_request_attachments"
+      ADD CONSTRAINT "ai_request_attachments_aiRequestEventId_fkey"
+      FOREIGN KEY ("aiRequestEventId") REFERENCES "ai_request_events"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
-ALTER TABLE "ai_request_attachments"
-  ADD CONSTRAINT "ai_request_attachments_userId_fkey"
-  FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'ai_request_attachments_userId_fkey'
+      AND conrelid = 'ai_request_attachments'::regclass
+  ) THEN
+    ALTER TABLE "ai_request_attachments"
+      ADD CONSTRAINT "ai_request_attachments_userId_fkey"
+      FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END
+$$;
 
-ALTER TABLE "ai_request_attachments"
-  ADD CONSTRAINT "ai_request_attachments_workspaceId_fkey"
-  FOREIGN KEY ("workspaceId") REFERENCES "workspaces"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'ai_request_attachments_workspaceId_fkey'
+      AND conrelid = 'ai_request_attachments'::regclass
+  ) THEN
+    ALTER TABLE "ai_request_attachments"
+      ADD CONSTRAINT "ai_request_attachments_workspaceId_fkey"
+      FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END
+$$;
