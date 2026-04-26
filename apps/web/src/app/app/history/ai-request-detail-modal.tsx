@@ -243,6 +243,8 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
     ? getPromptInstructionAndQuestion(parsed, imageAttachments.length > 0)
     : { mainText: '', promptInstruction: '', prefixRemoved: false, hideCopy: false };
   const displayPrompt = displayPromptResult.mainText;
+  const hasPromptText = displayPrompt.trim().length > 0;
+  const hasPromptImages = imageAttachments.length > 0;
   const rawRequestText = detail?.promptContentJson == null
     ? ''
     : typeof detail.promptContentJson === 'string'
@@ -305,24 +307,24 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
               <section style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span className="micro-label">Request / Question</span>
-                  {displayPrompt && !displayPromptResult.hideCopy && (
+                  {hasPromptText && !displayPromptResult.hideCopy && (
                     <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">Copy</button>
                   )}
                 </div>
-                {displayPrompt ? <pre style={codeBlockStyle}>{displayPrompt}</pre> : <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>No prompt content available.</p>}
-                {displayPromptResult.prefixRemoved && displayPromptResult.promptInstruction && (
-                  <ExpandableSection label="Prompt instruction" content={displayPromptResult.promptInstruction} />
-                )}
-                {parsed?.systemText && <ExpandableSection label="System" content={parsed.systemText} />}
-                {rawRequestText && <ExpandableSection label="Raw request" content={rawRequestText} />}
-
-                {imageAttachments.length > 0 && (
+                {hasPromptText ? <pre style={codeBlockStyle}>{displayPrompt}</pre> : null}
+                {hasPromptImages && (
                   <div style={{ marginTop: 12 }}>
                     {imageAttachments.map((attachment) => (
                       <ImageAttachmentCard key={attachment.id} attachment={attachment} onOpen={setPreviewUrl} />
                     ))}
                   </div>
                 )}
+                {!hasPromptText && !hasPromptImages && <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>No prompt content available.</p>}
+                {displayPromptResult.prefixRemoved && displayPromptResult.promptInstruction && (
+                  <ExpandableSection label="Prompt instruction" content={displayPromptResult.promptInstruction} />
+                )}
+                {parsed?.systemText && <ExpandableSection label="System" content={parsed.systemText} />}
+                {rawRequestText && <ExpandableSection label="Raw request" content={rawRequestText} />}
               </section>
 
               <section>
