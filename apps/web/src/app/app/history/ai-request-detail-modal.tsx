@@ -30,6 +30,14 @@ interface ParsedPrompt {
   fallbackText: string;
 }
 
+const QUICK_ANSWER_USER_PREFIX = 'Return only the final answer without solution steps. If options are labeled (letters or numbers), return ONLY correct labels separated by commas (for example: a, d). If the question has options but they are unlabeled, number from 1 and answer as: N) option text. If no options exist (free-text question), return ONLY the answer. Question:';
+
+interface DisplayPromptResult {
+  mainText: string;
+  promptInstruction: string;
+  prefixRemoved: boolean;
+}
+
 function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedPrompt {
   if (Array.isArray(json)) {
     const msgs = json as Array<Record<string, unknown>>;
@@ -59,6 +67,24 @@ function parsePrompt(json: unknown, excerpt: string | null | undefined): ParsedP
   else fallback = excerpt ?? '';
   fallback = fallback.replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, '[image attachment omitted]');
   return { userText: '', systemText: '', fallbackText: fallback };
+}
+
+function getPromptInstructionAndQuestion(parsed: ParsedPrompt): DisplayPromptResult {
+  const basePrompt = parsed.userText || parsed.fallbackText;
+  if (!parsed.userText) {
+    return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false };
+  }
+
+  if (parsed.userText.startsWith(QUICK_ANSWER_USER_PREFIX)) {
+    const mainText = parsed.userText.slice(QUICK_ANSWER_USER_PREFIX.length).trim();
+    return {
+      mainText,
+      promptInstruction: QUICK_ANSWER_USER_PREFIX,
+      prefixRemoved: true,
+    };
+  }
+
+  return { mainText: basePrompt, promptInstruction: '', prefixRemoved: false };
 }
 
 function extractFinalAnswer(json: unknown): string {
@@ -183,7 +209,15 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
   }, [id]);
 
   const parsed = detail ? parsePrompt(detail.promptContentJson, detail.promptExcerpt) : null;
-  const displayPrompt = parsed ? (parsed.userText || parsed.fallbackText) : '';
+  const displayPromptResult = parsed
+    ? getPromptInstructionAndQuestion(parsed)
+    : { mainText: '', promptInstruction: '', prefixRemoved: false };
+  const displayPrompt = displayPromptResult.mainText;
+  const rawRequestText = detail?.promptContentJson == null
+    ? ''
+    : typeof detail.promptContentJson === 'string'
+      ? detail.promptContentJson
+      : JSON.stringify(detail.promptContentJson, null, 2);
 
   const rawResponseText = detail ? extractResponseText(detail.responseContentJson, detail.responseExcerpt) : '';
   const finalAnswer = detail ? extractFinalAnswer(detail.responseContentJson) : '';
@@ -244,13 +278,17 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
 
               <section style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span className="micro-label">Request / Prompt</span>
+                  <span className="micro-label">Request / Question</span>
                   {displayPrompt && (
                     <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">Copy</button>
                   )}
                 </div>
                 {displayPrompt ? <pre style={codeBlockStyle}>{displayPrompt}</pre> : <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>No prompt content available.</p>}
+                {displayPromptResult.prefixRemoved && displayPromptResult.promptInstruction && (
+                  <ExpandableSection label="Prompt instruction" content={displayPromptResult.promptInstruction} />
+                )}
                 {parsed?.systemText && <ExpandableSection label="System" content={parsed.systemText} />}
+                {rawRequestText && <ExpandableSection label="Raw request" content={rawRequestText} />}
 
                 {imageAttachments.length > 0 && (
                   <div style={{ marginTop: 12 }}>
