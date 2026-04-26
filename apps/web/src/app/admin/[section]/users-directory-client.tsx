@@ -136,9 +136,9 @@ function Toolbar({
         value={sort}
       >
         <option value="created-desc">{a.newestFirst}</option>
-        <option value="created-asc">Oldest first</option>
-        <option value="login-desc">Recent login</option>
-        <option value="email-asc">Email A→Z</option>
+        <option value="created-asc">{a.oldestFirst}</option>
+        <option value="login-desc">{a.recentLogin}</option>
+        <option value="email-asc">{a.emailAZ}</option>
       </select>
       <select
         onChange={(e) => onLimitChange(Number(e.target.value))}
@@ -154,7 +154,7 @@ function Toolbar({
       </button>
       {isFiltered ? (
         <button className="btn-ghost" onClick={onReset} style={{ fontSize: '0.85rem', padding: '5px 12px' }} type="button">
-          Reset
+          {a.reset}
         </button>
       ) : null}
       {canManage ? (
@@ -184,7 +184,7 @@ function Pagination({ page, limit, total, onPage }: PaginationProps) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 0 4px', fontSize: '0.82rem', color: 'var(--muted)' }}>
-      <span>{from}–{to} of {total}</span>
+      <span>{from}–{to} {a.of} {total}</span>
       <button
         className="btn-ghost"
         disabled={page <= 1}
@@ -192,7 +192,7 @@ function Pagination({ page, limit, total, onPage }: PaginationProps) {
         style={{ fontSize: '0.8rem', padding: '3px 10px' }}
         type="button"
       >
-        Prev
+        {a.prev}
       </button>
       <span style={{ minWidth: '60px', textAlign: 'center' }}>
         {page} / {totalPages}
@@ -204,7 +204,7 @@ function Pagination({ page, limit, total, onPage }: PaginationProps) {
         style={{ fontSize: '0.8rem', padding: '3px 10px' }}
         type="button"
       >
-        Next
+        {a.next}
       </button>
     </div>
   );
@@ -261,7 +261,7 @@ function UserDrawer({ user, canManage, isSelf, busy, onClose, onToggleAdmin, onT
           </span>
           {user.suspendedAt ? <span className="tag-soft tag-soft--orange">{a.banned}</span> : <span className="tag-soft tag-soft--gray">{a.notBanned}</span>}
           {isAdmin(user) ? <span className="tag-soft">{a.admin}</span> : <span className="tag-soft tag-soft--gray">{a.user}</span>}
-          {isSelf ? <span className="tag-soft tag-soft--gray">you</span> : null}
+          {isSelf ? <span className="tag-soft tag-soft--gray">{a.you}</span> : null}
         </div>
 
         <table style={{ fontSize: '0.82rem', borderCollapse: 'collapse', width: '100%' }}>
@@ -356,21 +356,21 @@ function CreateUserModal({ busy, onClose, onSubmit }: CreateUserModalProps) {
           />
         </label>
         <label className="form-field">
-          <span className="form-field__label">Password</span>
+          <span className="form-field__label">{a.password}</span>
           <input
             disabled={busy}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 8 characters"
+            placeholder={a.atLeast8Chars}
             type="password"
             value={password}
           />
         </label>
         <label className="form-field">
-          <span className="form-field__label">Display name <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optional)</span></span>
+          <span className="form-field__label">{a.displayName} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({a.optional})</span></span>
           <input
             disabled={busy}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Optional"
+            placeholder={a.optionalShort}
             type="text"
             value={displayName}
           />
@@ -576,14 +576,14 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to update role.');
+        setErrorMessage(payload?.error?.message ?? a.unableToUpdateRole);
       } else {
         applyOptimisticMutation(payload.data.user);
         setStatusMessage(`${makeAdmin ? a.makeAdmin : a.removeAdmin}: ${user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the update-access route.');
+      setErrorMessage(a.unableToReachUpdate);
     } finally {
       setBusy(false);
     }
@@ -603,14 +603,14 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to update ban state.');
+        setErrorMessage(payload?.error?.message ?? a.unableToUpdateBan);
       } else {
         applyOptimisticMutation(payload.data.user);
         setStatusMessage(`${ban ? a.ban : a.unban}: ${user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the update-access route.');
+      setErrorMessage(a.unableToReachUpdate);
     } finally {
       setBusy(false);
     }
@@ -629,15 +629,15 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as DeleteRouteResponse | null;
       if (!res.ok || !payload?.ok) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to delete user.');
+        setErrorMessage(payload?.error?.message ?? a.unableToDeleteUser);
       } else {
         setLocalItems((curr) => curr.filter((u) => u.id !== user.id));
         setSelectedUser(null);
-        setStatusMessage(`Deleted account for ${user.email}.`);
+        setStatusMessage(`${a.deletedAccountFor} ${user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the delete route.');
+      setErrorMessage(a.unableToReachDelete);
     } finally {
       setBusy(false);
     }
@@ -652,7 +652,7 @@ export function UsersDirectoryClient({
   }) => {
     if (!isConnectedSession || !canManageUserAccess) return;
     if (!data.email.trim() || !data.password.trim()) {
-      setErrorMessage(`${a.email} + password required.`);
+      setErrorMessage(`${a.password} ${a.passwordRequired}`);
       return;
     }
     setCreatingUser(true);
@@ -671,14 +671,14 @@ export function UsersDirectoryClient({
       });
       const payload = (await res.json().catch(() => null)) as MutationRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setErrorMessage(payload?.error?.message ?? 'Unable to create user.');
+        setErrorMessage(payload?.error?.message ?? a.unableToCreateUser);
       } else {
         setShowCreateModal(false);
-        setStatusMessage(`${a.createUser}: ${payload.data.user.email}.`);
+        setStatusMessage(`${a.createdUser}: ${payload.data.user.email}.`);
         refresh();
       }
     } catch {
-      setErrorMessage('Unable to reach the create route.');
+      setErrorMessage(a.unableToReachCreate);
     } finally {
       setCreatingUser(false);
     }
@@ -747,7 +747,7 @@ export function UsersDirectoryClient({
                   >
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
                       <span style={{ fontWeight: 500 }}>{user.displayName ?? <span style={{ color: 'var(--muted)' }}>—</span>}</span>
-                      {isSelf ? <span className="tag-soft tag-soft--gray" style={{ marginLeft: '6px', fontSize: '0.7rem' }}>you</span> : null}
+                      {isSelf ? <span className="tag-soft tag-soft--gray" style={{ marginLeft: '6px', fontSize: '0.7rem' }}>{a.you}</span> : null}
                     </td>
                     <td style={{ padding: '7px 10px' }}>{user.email}</td>
                     <td style={{ padding: '7px 10px', whiteSpace: 'nowrap' }}>
@@ -811,16 +811,16 @@ export function UsersDirectoryClient({
         </div>
       ) : hasActiveFilters ? (
         <div className="empty-state" style={{ padding: '40px 0' }}>
-          <span className="micro-label">No results</span>
-          <h2>No users match the current filters</h2>
+          <span className="micro-label">{a.noResults}</span>
+          <h2>{a.noUsersMatchFilters}</h2>
           <div className="link-row" style={{ justifyContent: 'center', marginTop: '12px' }}>
-            <button className="btn-ghost" onClick={resetFilters} type="button">Reset filters</button>
+            <button className="btn-ghost" onClick={resetFilters} type="button">{a.resetFilters}</button>
           </div>
         </div>
       ) : (
         <div className="empty-state" style={{ padding: '40px 0' }}>
-          <span className="micro-label">No users</span>
-          <h2>No users in this environment yet</h2>
+          <span className="micro-label">{a.noUsers}</span>
+          <h2>{a.noUsersInEnvironment}</h2>
         </div>
       )}
 

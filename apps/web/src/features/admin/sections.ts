@@ -67,7 +67,7 @@ export const adminSections: AdminSection[] = [
     navLabel: 'Settings',
     href: '/admin/settings',
     description: 'Appearance preferences for your admin workspace.',
-    requirement: { permission: 'installations:read' },
+    requirement: { permission: 'users:read', requireSystemRole: 'admin' },
     group: 'preferences',
     groupLabel: 'Preferences',
   },
