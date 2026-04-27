@@ -3,6 +3,12 @@ import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './adm
 import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
 
 type Stream = 'audit' | 'activity' | 'security' | 'domain';
+const skippedAiProxyDomainEventTypes = new Set([
+  'ai.proxy.completed',
+  'ai.proxy.failed',
+  'ai.proxy.quota_exceeded',
+  'ai.proxy.timeout',
+]);
 
 function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
   if (status === 'success') return 'success';
@@ -113,12 +119,22 @@ export class AdminLogBackfillService {
     if (this.shouldRun(scope, 'domain')) await this.backfillDomain(scope);
   }
 
+  private shouldSkipDomainProjection(eventType: string): boolean {
+    return skippedAiProxyDomainEventTypes.has(eventType);
+  }
+
   async verifyCounts(): Promise<AdminLogBackfillVerification> {
-    const [auditSource, activitySource, securitySource, domainSource, auditRead, activityRead, securityRead, domainRead] = await Promise.all([
+    const [auditSource, activitySource, securitySource, domainSourceProjected, auditRead, activityRead, securityRead, domainRead] = await Promise.all([
       this.prisma.auditLog.count(),
       this.prisma.activityLog.count(),
       this.prisma.securityEvent.count(),
-      this.prisma.domainEvent.count(),
+      this.prisma.domainEvent.count({
+        where: {
+          eventType: {
+            notIn: Array.from(skippedAiProxyDomainEventTypes),
+          },
+        },
+      }),
       this.prisma.adminLogEvent.count({ where: { stream: 'audit' } }),
       this.prisma.adminLogEvent.count({ where: { stream: 'activity' } }),
       this.prisma.adminLogEvent.count({ where: { stream: 'security' } }),
@@ -129,7 +145,11 @@ export class AdminLogBackfillService {
       audit: { sourceCount: auditSource, readModelCount: auditRead, missing: Math.max(auditSource - auditRead, 0) },
       activity: { sourceCount: activitySource, readModelCount: activityRead, missing: Math.max(activitySource - activityRead, 0) },
       security: { sourceCount: securitySource, readModelCount: securityRead, missing: Math.max(securitySource - securityRead, 0) },
-      domain: { sourceCount: domainSource, readModelCount: domainRead, missing: Math.max(domainSource - domainRead, 0) },
+      domain: {
+        sourceCount: domainSourceProjected,
+        readModelCount: domainRead,
+        missing: Math.max(domainSourceProjected - domainRead, 0),
+      },
     };
   }
 
@@ -239,10 +259,7 @@ export class AdminLogBackfillService {
       });
       if (rows.length === 0) break;
       await this.upsertBatch(rows
-        .filter((row) => !(
-          row.eventType.startsWith('ai.proxy.')
-          && (row.eventType === 'ai.proxy.completed' || row.eventType === 'ai.proxy.failed' || row.eventType === 'ai.proxy.quota_exceeded' || row.eventType === 'ai.proxy.timeout')
-        ))
+        .filter((row) => !this.shouldSkipDomainProjection(row.eventType))
         .map((row) => ({
         stream: 'domain' as const,
         sourceRecordId: row.id,

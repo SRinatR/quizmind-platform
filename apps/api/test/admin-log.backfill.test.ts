@@ -35,17 +35,23 @@ test('AdminLogBackfillService processes bounded batches and supports rerun idemp
 });
 
 test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', async () => {
+  const domainCountCalls: any[] = [];
   const service = new AdminLogBackfillService({
     auditLog: { count: async () => 10 },
     activityLog: { count: async () => 20 },
     securityEvent: { count: async () => 30 },
-    domainEvent: { count: async () => 40 },
+    domainEvent: {
+      count: async (args: any) => {
+        domainCountCalls.push(args);
+        return 36;
+      },
+    },
     adminLogEvent: {
       count: async ({ where }: any) => {
         if (where.stream === 'audit') return 8;
         if (where.stream === 'activity') return 20;
         if (where.stream === 'security') return 29;
-        return 40;
+        return 35;
       },
     },
   } as any, 1);
@@ -54,7 +60,45 @@ test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', asy
   assert.equal(result.audit.missing, 2);
   assert.equal(result.activity.missing, 0);
   assert.equal(result.security.missing, 1);
+  assert.equal(result.domain.sourceCount, 36);
+  assert.equal(result.domain.readModelCount, 35);
+  assert.equal(result.domain.missing, 1);
+  assert.deepEqual(domainCountCalls[0]?.where?.eventType?.notIn, [
+    'ai.proxy.completed',
+    'ai.proxy.failed',
+    'ai.proxy.quota_exceeded',
+    'ai.proxy.timeout',
+  ]);
+});
+
+test('AdminLogBackfillService.verifyCounts excludes skipped AI proxy domain events from missing totals', async () => {
+  const service = new AdminLogBackfillService({
+    auditLog: { count: async () => 1 },
+    activityLog: { count: async () => 4 },
+    securityEvent: { count: async () => 1 },
+    domainEvent: {
+      count: async ({ where }: any) => {
+        assert.deepEqual(where.eventType.notIn, [
+          'ai.proxy.completed',
+          'ai.proxy.failed',
+          'ai.proxy.quota_exceeded',
+          'ai.proxy.timeout',
+        ]);
+        return 2;
+      },
+    },
+    adminLogEvent: {
+      count: async ({ where }: any) => {
+        if (where.stream === 'domain') return 2;
+        if (where.stream === 'activity') return 4;
+        return 1;
+      },
+    },
+  } as any, 1);
+
+  const result = await service.verifyCounts();
   assert.equal(result.domain.missing, 0);
+  assert.equal(result.activity.missing, 0);
 });
 
 test('AdminLogBackfillService enriches AI read-model rows with AiRequestEvent estimated cost', async () => {
