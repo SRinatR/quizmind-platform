@@ -363,6 +363,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
                 from: adminLogFilters.from,
                 to: adminLogFilters.to,
                 page: adminLogFilters.page ?? 1,
+                cursor: adminLogFilters.cursor,
               }}
             />
           </>
