@@ -291,7 +291,11 @@ export class AdminLogRepository {
     const whereOr: Prisma.AdminLogEventWhereInput[] = [
       { stream: 'activity', occurredAt: { lt: cutoff(retentionDays.activity) }, NOT: { category: 'admin' } },
       { stream: 'domain', occurredAt: { lt: cutoff(retentionDays.domain) }, NOT: { category: 'admin' } },
-      { category: 'system', occurredAt: { lt: cutoff(retentionDays.system) }, NOT: { category: 'admin' } },
+      {
+        category: 'system',
+        occurredAt: { lt: cutoff(retentionDays.system) },
+        NOT: [{ category: 'admin' }, { stream: 'audit' }, { stream: 'security' }],
+      },
     ];
 
     if (includeSensitive && sensitiveEnabled) {

@@ -10,6 +10,22 @@ type Row = {
   occurredAt: Date;
 };
 
+function matchesCondition(row: Row, condition: any): boolean {
+  if (condition.category) return row.category === condition.category;
+  if (condition.stream) return row.stream === condition.stream;
+  if (condition.occurredAt?.lt) return row.occurredAt < condition.occurredAt.lt;
+  return true;
+}
+
+function matchesClause(row: Row, clause: any): boolean {
+  const streamOk = clause.stream ? row.stream === clause.stream : true;
+  const categoryOk = clause.category ? row.category === clause.category : true;
+  const occurredAtOk = clause.occurredAt?.lt ? row.occurredAt < clause.occurredAt.lt : true;
+  const notClauses = Array.isArray(clause.NOT) ? clause.NOT : clause.NOT ? [clause.NOT] : [];
+  const notOk = notClauses.every((item: any) => !matchesCondition(row, item));
+  return streamOk && categoryOk && occurredAtOk && notOk;
+}
+
 function createRepository(seedRows: Row[]) {
   const rows = [...seedRows];
   const calls: { findMany: any[]; deleteMany: any[] } = { findMany: [], deleteMany: [] };
@@ -18,15 +34,7 @@ function createRepository(seedRows: Row[]) {
       findMany: async (args: any) => {
         calls.findMany.push(args);
         const matched = rows
-          .filter((row) =>
-            args.where.OR.some((clause: any) => {
-              const streamOk = clause.stream ? row.stream === clause.stream : true;
-              const categoryOk = clause.category ? row.category === clause.category : true;
-              const occurredAtOk = clause.occurredAt?.lt ? row.occurredAt < clause.occurredAt.lt : true;
-              const notAdmin = clause.NOT?.category ? row.category !== clause.NOT.category : true;
-              return streamOk && categoryOk && occurredAtOk && notAdmin;
-            }),
-          )
+          .filter((row) => args.where.OR.some((clause: any) => matchesClause(row, clause)))
           .sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime() || a.id.localeCompare(b.id))
           .slice(0, args.take);
         return matched.map((row) => ({ id: row.id, stream: row.stream, category: row.category }));
@@ -146,6 +154,44 @@ test('sensitive rows are protected unless both include-sensitive and sensitive e
   assert.equal(resultSensitive.deletedByStream.audit, 1);
   assert.equal(resultSensitive.deletedByStream.security, 1);
   assert.equal(resultSensitive.deletedByCategory.admin, 2);
+});
+
+test('audit/security rows with category=system remain protected unless sensitive mode is explicitly enabled', async () => {
+  const now = new Date('2026-04-27T00:00:00.000Z');
+  const seed: Row[] = [
+    { id: 'evt_audit_system_old', stream: 'audit', category: 'system', occurredAt: new Date('2024-01-01T00:00:00.000Z') },
+    { id: 'evt_security_system_old', stream: 'security', category: 'system', occurredAt: new Date('2024-01-02T00:00:00.000Z') },
+    { id: 'evt_activity_system_old', stream: 'activity', category: 'system', occurredAt: new Date('2026-01-03T00:00:00.000Z') },
+    { id: 'evt_domain_system_old', stream: 'domain', category: 'system', occurredAt: new Date('2026-01-04T00:00:00.000Z') },
+  ];
+
+  const protectedRun = createRepository(seed);
+  const resultProtected = await protectedRun.repo.pruneExpiredReadModel({
+    now,
+    enabled: true,
+    dryRun: false,
+    includeSensitive: false,
+    sensitiveEnabled: false,
+    retentionDays: { activity: 30, domain: 30, system: 30, audit: 365, security: 365 },
+  });
+  assert.equal(resultProtected.deleted, 2);
+  assert.equal(resultProtected.deletedByStream.activity, 1);
+  assert.equal(resultProtected.deletedByStream.domain, 1);
+  assert.equal(resultProtected.deletedByStream.audit ?? 0, 0);
+  assert.equal(resultProtected.deletedByStream.security ?? 0, 0);
+
+  const sensitiveRun = createRepository(seed);
+  const resultSensitive = await sensitiveRun.repo.pruneExpiredReadModel({
+    now,
+    enabled: true,
+    dryRun: false,
+    includeSensitive: true,
+    sensitiveEnabled: true,
+    retentionDays: { activity: 30, domain: 30, system: 30, audit: 365, security: 365 },
+  });
+  assert.equal(resultSensitive.deleted, 4);
+  assert.equal(resultSensitive.deletedByStream.audit, 1);
+  assert.equal(resultSensitive.deletedByStream.security, 1);
 });
 
 test('retention respects batch limit and only touches AdminLogEvent read model', async () => {
