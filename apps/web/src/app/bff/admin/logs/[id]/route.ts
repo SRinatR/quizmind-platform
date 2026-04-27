@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { type AdminLogEntry } from '@quizmind/contracts';
 
 import { API_URL, type ApiEnvelope } from '../../../../../lib/api';
 import { getAccessTokenFromCookies } from '../../../../../lib/auth-session';
@@ -42,7 +43,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
   });
 
   const payload = (await response.json().catch(() => null)) as
-    | ApiEnvelope<unknown>
+    | ApiEnvelope<AdminLogEntry>
     | { message?: string | string[] }
     | null;
 
@@ -54,5 +55,16 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
     return badRequest(fallbackMessage ?? 'Unable to load admin log entry right now.', response.status || 500);
   }
 
-  return NextResponse.json({ ok: true, data: payload.data }, { status: response.status });
+  const data = payload.data;
+  const aiRequest = data.aiRequest
+    ? {
+        ...data.aiRequest,
+        attachments: (data.aiRequest.attachments ?? []).map((attachment) => ({
+          ...attachment,
+          viewUrl: `/bff/admin/logs/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachment.id)}/view`,
+          downloadUrl: `/bff/admin/logs/${encodeURIComponent(id)}/attachments/${encodeURIComponent(attachment.id)}/download`,
+        })),
+      }
+    : undefined;
+  return NextResponse.json({ ok: true, data: { ...data, ...(aiRequest ? { aiRequest } : {}) } }, { status: response.status });
 }

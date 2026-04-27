@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { readFile } from 'node:fs/promises';
+
+test('logs explorer Event column renders only summary in table rows', async () => {
+  const source = await readFile(new URL('../src/app/admin/[section]/logs-explorer-client.tsx', import.meta.url), 'utf8');
+  assert.match(source, /<div style=\{\{ fontSize: '0\.76rem', lineHeight: 1\.25 \}\}>\{item\.summary\}<\/div>/);
+  assert.doesNotMatch(source, /\{item\.eventType\}<\/div>/);
+});

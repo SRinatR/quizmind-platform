@@ -1,4 +1,19 @@
-import { Body, Controller, Get, Headers, Inject, Param, Patch, Post, Query, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  GoneException,
+  Headers,
+  Inject,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Query,
+  ServiceUnavailableException,
+  StreamableFile,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { parseBearerToken } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 import { type ApiSuccess } from '@quizmind/contracts';
@@ -183,6 +198,38 @@ export class PlatformController {
   ) {
     const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.getAdminLogEntryForCurrentSession(session, id));
+  }
+
+  @Get('admin/logs/:id/attachments/:attachmentId/view')
+  async getAdminLogAttachmentView(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    const attachment = await this.platformService.getAdminLogAttachmentForCurrentSession(session, id, attachmentId);
+    if (!attachment) throw new NotFoundException('Attachment not found.');
+    if (attachment.expired) throw new GoneException('Attachment expired after retention window.');
+    return new StreamableFile(attachment.bytes, {
+      type: attachment.mimeType || 'application/octet-stream',
+      disposition: 'inline',
+    });
+  }
+
+  @Get('admin/logs/:id/attachments/:attachmentId/download')
+  async getAdminLogAttachmentDownload(
+    @Param('id') id: string,
+    @Param('attachmentId') attachmentId: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    const attachment = await this.platformService.getAdminLogAttachmentForCurrentSession(session, id, attachmentId);
+    if (!attachment) throw new NotFoundException('Attachment not found.');
+    if (attachment.expired) throw new GoneException('Attachment expired after retention window.');
+    return new StreamableFile(attachment.bytes, {
+      type: attachment.mimeType || 'application/octet-stream',
+      disposition: `attachment; filename="${attachment.originalName.replace(/"/g, '')}"`,
+    });
   }
 
   @Get('admin/security')
