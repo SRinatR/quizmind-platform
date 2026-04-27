@@ -163,6 +163,7 @@ import {
   type RecentExtensionInstallationSessionRecord,
 } from './extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
+import { collectAdminAiRequestCandidateIds } from './logs/admin-log-ai-request-candidates';
 import { AdminLogRepository } from './logs/admin-log.repository';
 import { QueueDispatchService } from './queue/queue-dispatch.service';
 import { RemoteConfigRepository } from './remote-config/remote-config.repository';
@@ -3002,12 +3003,12 @@ export class PlatformService {
     item: Awaited<ReturnType<AdminLogRepository['listPage']>>['items'][number],
     metadata?: Record<string, unknown>,
   ): string[] {
-    const ids = new Set<string>();
-    const metadataRequestId = typeof metadata?.requestId === 'string' ? metadata.requestId : undefined;
-    if (item.targetType === 'ai_request' && item.targetId) ids.add(item.targetId);
-    if (metadataRequestId) ids.add(metadataRequestId);
-    if (item.sourceRecordId) ids.add(item.sourceRecordId);
-    return Array.from(ids);
+    return collectAdminAiRequestCandidateIds({
+      targetType: item.targetType,
+      targetId: item.targetId,
+      sourceRecordId: item.sourceRecordId,
+      metadata,
+    });
   }
 
   private resolveAiContentAvailability(promptContentJson: unknown, responseContentJson: unknown): 'available' | 'expired' | 'missing' {

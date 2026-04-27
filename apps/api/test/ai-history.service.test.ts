@@ -348,6 +348,51 @@ test('AiHistoryService.getDetail reads blobs only for selected item', async () =
   assert.deepEqual(detail?.promptContentJson, { key: 'requests/evt_1/prompt.json' });
 });
 
+test('AiHistoryService exposes consistent estimatedCostUsd between list and detail for same event', async () => {
+  const eventRow = {
+    id: 'evt_cost_1',
+    userId: 'user_1',
+    installationId: null,
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    keySource: 'platform',
+    status: 'success',
+    errorCode: null,
+    promptTokens: 11,
+    completionTokens: 22,
+    totalTokens: 33,
+    durationMs: 44,
+    requestType: 'text',
+    estimatedCostUsd: 0.003778,
+    promptExcerpt: 'prompt',
+    responseExcerpt: 'response',
+    occurredAt: new Date('2026-04-26T10:00:00.000Z'),
+    content: {
+      fileMetadataJson: null,
+      expiresAt: new Date('2026-04-29T10:00:00.000Z'),
+      deletedAt: null,
+      promptBlobKey: null,
+      responseBlobKey: null,
+      fileBlobKey: null,
+    },
+    attachments: [],
+  } as any;
+
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async () => [eventRow],
+      countEventsForUser: async () => 1,
+      getEventDetailForUser: async () => eventRow,
+    },
+  });
+
+  const list = await service.listHistory('user_1', { limit: 10, offset: 0 });
+  const detail = await service.getDetail('evt_cost_1', 'user_1');
+
+  assert.equal(list.items[0]?.estimatedCostUsd, 0.003778);
+  assert.equal(detail?.estimatedCostUsd, 0.003778);
+});
+
 test('AiHistoryService.getDetail returns safe message for expired/deleted content', async () => {
   const { service } = createService({
     repository: {

@@ -79,3 +79,115 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
   assert.equal(updates[0].targetId, 'act_1');
   assert.equal(updates[0].costUsd, 0.0034);
 });
+
+test('AdminLogRepairService maps ai request tokens and cost when aiRequestEventId metadata is present', async () => {
+  const updates: any[] = [];
+  let emitted = false;
+  const prisma = {
+    adminLogEvent: {
+      findMany: async () => {
+        if (emitted) return [];
+        emitted = true;
+        return [{
+        id: 'evt_2',
+        stream: 'activity',
+        sourceRecordId: 'activity_2',
+        eventType: 'ai.proxy.completed',
+        occurredAt: new Date('2026-04-26T09:00:00.000Z'),
+        severity: null,
+        actorId: null,
+        actorEmail: null,
+        actorDisplayName: null,
+        targetType: null,
+        targetId: null,
+        summary: 'ai.proxy.completed',
+        source: null,
+        category: null,
+        searchText: null,
+        provider: null,
+        model: null,
+        durationMs: null,
+        costUsd: null,
+        promptTokens: null,
+        completionTokens: null,
+        totalTokens: null,
+        metadataJson: { aiRequestEventId: 'req_meta_1' },
+        payloadJson: null,
+      }];
+      },
+      update: async ({ data }: any) => { updates.push(data); },
+    },
+    user: { findMany: async () => [] },
+    aiRequestEvent: {
+      findMany: async () => [{
+        id: 'req_meta_1',
+        provider: 'openai',
+        model: 'openai/gpt-4o',
+        durationMs: 480,
+        estimatedCostUsd: 0.00166,
+        promptTokens: 88,
+        completionTokens: 55,
+        totalTokens: 143,
+        promptExcerpt: 'prompt',
+      }],
+    },
+  } as any;
+
+  const service = new AdminLogRepairService(prisma, 100);
+  await service.repairReadModel();
+
+  assert.equal(updates[0].costUsd, 0.00166);
+  assert.equal(updates[0].promptTokens, 88);
+  assert.equal(updates[0].completionTokens, 55);
+  assert.equal(updates[0].totalTokens, 143);
+});
+
+test('AdminLogRepairService keeps missing ai request usage fields absent instead of zero', async () => {
+  const updates: any[] = [];
+  let emitted = false;
+  const prisma = {
+    adminLogEvent: {
+      findMany: async () => {
+        if (emitted) return [];
+        emitted = true;
+        return [{
+        id: 'evt_3',
+        stream: 'activity',
+        sourceRecordId: 'activity_3',
+        eventType: 'ai.proxy.completed',
+        occurredAt: new Date('2026-04-26T09:00:00.000Z'),
+        severity: null,
+        actorId: null,
+        actorEmail: null,
+        actorDisplayName: null,
+        targetType: null,
+        targetId: null,
+        summary: 'ai.proxy.completed',
+        source: null,
+        category: null,
+        searchText: null,
+        provider: null,
+        model: null,
+        durationMs: null,
+        costUsd: null,
+        promptTokens: null,
+        completionTokens: null,
+        totalTokens: null,
+        metadataJson: { aiRequestId: 'missing_req' },
+        payloadJson: null,
+      }];
+      },
+      update: async ({ data }: any) => { updates.push(data); },
+    },
+    user: { findMany: async () => [] },
+    aiRequestEvent: { findMany: async () => [] },
+  } as any;
+
+  const service = new AdminLogRepairService(prisma, 100);
+  await service.repairReadModel();
+
+  assert.equal(updates[0].costUsd, null);
+  assert.equal(updates[0].promptTokens, null);
+  assert.equal(updates[0].completionTokens, null);
+  assert.equal(updates[0].totalTokens, null);
+});

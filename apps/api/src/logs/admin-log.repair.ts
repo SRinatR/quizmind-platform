@@ -1,5 +1,6 @@
 import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
+import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
 
 interface RepairCursor {
   occurredAt: Date;
@@ -65,12 +66,13 @@ export class AdminLogRepairService {
       const aiRequestIds = Array.from(new Set(rows.flatMap((row) => {
         const metadata = this.toObject(row.metadataJson);
         const payload = this.toObject(row.payloadJson);
-        return [
-          row.targetType === 'ai_request' ? row.targetId : null,
-          typeof metadata?.requestId === 'string' ? metadata.requestId : null,
-          typeof payload?.requestId === 'string' ? payload.requestId : null,
-          row.sourceRecordId,
-        ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+        return collectAdminAiRequestCandidateIds({
+          targetType: row.targetType,
+          targetId: row.targetId,
+          sourceRecordId: row.sourceRecordId,
+          metadata,
+          payload,
+        });
       })));
       const aiRequestRows = aiRequestIds.length > 0
         ? await this.prisma.aiRequestEvent.findMany({
@@ -107,12 +109,13 @@ export class AdminLogRepairService {
         });
 
         const identity = row.actorId ? actorDirectory.get(row.actorId) : undefined;
-        const aiRequest = [
-          row.targetType === 'ai_request' ? row.targetId : null,
-          typeof metadata?.requestId === 'string' ? metadata.requestId : null,
-          typeof payload?.requestId === 'string' ? payload.requestId : null,
-          row.sourceRecordId,
-        ]
+        const aiRequest = collectAdminAiRequestCandidateIds({
+          targetType: row.targetType,
+          targetId: row.targetId,
+          sourceRecordId: row.sourceRecordId,
+          metadata,
+          payload,
+        })
           .map((candidate) => (candidate ? aiRequestById.get(candidate) : undefined))
           .find(Boolean);
         const nextActorEmail = rebuilt.actorEmail ?? identity?.email ?? null;

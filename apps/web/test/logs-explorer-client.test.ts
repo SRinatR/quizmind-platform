@@ -7,3 +7,10 @@ test('logs explorer Event column renders only summary in table rows', async () =
   assert.match(source, /<div style=\{\{ fontSize: '0\.76rem', lineHeight: 1\.25 \}\}>\{item\.summary\}<\/div>/);
   assert.doesNotMatch(source, /\{item\.eventType\}<\/div>/);
 });
+
+test('admin detail uses history prompt display and keeps technical metadata collapsed', async () => {
+  const source = await readFile(new URL('../src/app/admin/[section]/logs-explorer-client.tsx', import.meta.url), 'utf8');
+  assert.match(source, /buildHistoryPromptDisplay\(\{/);
+  assert.match(source, /Technical log metadata/);
+  assert.match(source, /Image expired after retention window\./);
+});

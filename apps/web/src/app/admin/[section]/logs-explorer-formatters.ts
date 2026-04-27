@@ -8,7 +8,7 @@ export function shortId(value?: string | null): string {
 
 export function formatCost(usd?: number): string {
   if (usd === undefined || usd === null) return '—';
-  if (usd < 0.001) return '<$0.001';
+  if (usd > 0 && usd < 0.001) return '<$0.001';
   return `$${usd.toFixed(4)}`;
 }
 

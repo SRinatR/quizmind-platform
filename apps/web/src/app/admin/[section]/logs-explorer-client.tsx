@@ -15,7 +15,7 @@ import {
   type AdminLogSourceFilter,
 } from '@quizmind/contracts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { buildHistoryPromptDisplay } from '../../app/history/history-prompt-display';
 import { getReadableModelName } from '../../app/history/history-model-display';
 
@@ -144,6 +144,49 @@ function formatDuration(ms?: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
+const codeBlockStyle: CSSProperties = {
+  background: 'var(--surface-2)',
+  borderRadius: 6,
+  padding: '10px',
+  fontSize: '0.78rem',
+  whiteSpace: 'pre-wrap',
+  wordBreak: 'break-word',
+  maxHeight: '280px',
+  overflow: 'auto',
+  margin: 0,
+};
+
+function extractFinalAnswer(json: unknown): string {
+  if (!json || typeof json !== 'object') return '';
+  const choices = (json as Record<string, unknown>).choices;
+  if (!Array.isArray(choices) || choices.length === 0) return '';
+  const first = choices[0] as Record<string, unknown>;
+  const message = first?.message as Record<string, unknown> | undefined;
+  return typeof message?.content === 'string' ? message.content : '';
+}
+
+function extractResponseText(json: unknown, excerpt?: string | null): string {
+  if (typeof json === 'string') return json;
+  if (json !== null && json !== undefined) return JSON.stringify(json, null, 2);
+  return excerpt ?? '';
+}
+
+function copyText(text: string) {
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+function ExpandableSection({ label, content }: { label: string; content: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button className="btn-ghost" type="button" onClick={() => setOpen((value) => !value)} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+        {open ? '▾' : '▸'} {label}
+      </button>
+      {open ? <pre style={{ ...codeBlockStyle, marginTop: 6 }}>{content}</pre> : null}
+    </div>
+  );
+}
+
 // ── Details drawer ────────────────────────────────────────────────────────────
 
 function DetailsDrawer({
@@ -154,6 +197,7 @@ function DetailsDrawer({
   onClose: () => void;
 }) {
   const aiRequest = entry.aiRequest;
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const promptDisplay = aiRequest
     ? buildHistoryPromptDisplay({
         promptContentJson: aiRequest.promptContentJson,
@@ -181,8 +225,10 @@ function DetailsDrawer({
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
         <div>
-          <span className="micro-label">Event detail</span>
-          <h3 style={{ margin: '4px 0 0', fontSize: '0.95rem', wordBreak: 'break-all' }}>{entry.eventType}</h3>
+          <span className="micro-label">{aiRequest ? 'AI request detail' : 'Event detail'}</span>
+          <h3 style={{ margin: '4px 0 0', fontSize: '0.95rem', wordBreak: 'break-word' }}>
+            {aiRequest ? getReadableModelName(aiRequest.model) : entry.eventType}
+          </h3>
         </div>
         <button
           className="btn-ghost"
@@ -194,107 +240,42 @@ function DetailsDrawer({
         </button>
       </div>
 
-      <div className="kv-list">
-        <div className="kv-row">
-          <span className="kv-row__key">Time</span>
-          <span className="kv-row__value">{formatUtcDateTime(entry.occurredAt)}</span>
-        </div>
-        <div className="kv-row">
-          <span className="kv-row__key">Category</span>
-          <span className="kv-row__value">
-            <span className={categoryBadgeClass(entry.category)}>{entry.category ?? '—'}</span>
-          </span>
-        </div>
-        <div className="kv-row">
-          <span className="kv-row__key">Stream</span>
-          <span className="kv-row__value">{entry.stream}</span>
-        </div>
-        {entry.source ? (
-          <div className="kv-row">
-            <span className="kv-row__key">Source</span>
-            <span className="kv-row__value">{entry.source}</span>
-          </div>
-        ) : null}
-        <div className="kv-row">
-          <span className="kv-row__key">Status</span>
-          <span className="kv-row__value">
-            <span className={statusBadgeClass(entry.status)}>{entry.status ?? '—'}</span>
-          </span>
-        </div>
-        {entry.severity ? (
-          <div className="kv-row">
-            <span className="kv-row__key">Severity</span>
-            <span className="kv-row__value">{entry.severity}</span>
-          </div>
-        ) : null}
-      </div>
-
-      {entry.actor ? (
-        <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>Actor</p>
-          <div className="kv-list">
-            <div className="kv-row"><span className="kv-row__key">ID</span><span className="kv-row__value" style={{ wordBreak: 'break-all' }}>{entry.actor.id}</span></div>
-            {entry.actor.email ? <div className="kv-row"><span className="kv-row__key">Email</span><span className="kv-row__value">{entry.actor.email}</span></div> : null}
-            {entry.actor.displayName ? <div className="kv-row"><span className="kv-row__key">Name</span><span className="kv-row__value">{entry.actor.displayName}</span></div> : null}
-          </div>
-        </>
-      ) : null}
-
-      {(entry.targetType || entry.targetId) ? (
-        <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>Target</p>
-          <div className="kv-list">
-            {entry.targetType ? <div className="kv-row"><span className="kv-row__key">Type</span><span className="kv-row__value">{entry.targetType}</span></div> : null}
-            {entry.targetId ? <div className="kv-row"><span className="kv-row__key">ID</span><span className="kv-row__value" style={{ wordBreak: 'break-all' }}>{entry.targetId}</span></div> : null}
-          </div>
-        </>
-      ) : null}
-
-      {(entry.installationId || entry.provider || entry.model || entry.durationMs !== undefined || entry.costUsd !== undefined || entry.promptTokens !== undefined) ? (
-        <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>Request</p>
-          <div className="kv-list">
-            {entry.installationId ? <div className="kv-row"><span className="kv-row__key">Installation</span><span className="kv-row__value" style={{ wordBreak: 'break-all' }}>{entry.installationId}</span></div> : null}
-            {entry.provider ? <div className="kv-row"><span className="kv-row__key">Provider</span><span className="kv-row__value">{entry.provider}</span></div> : null}
-            {entry.model ? <div className="kv-row"><span className="kv-row__key">Model</span><span className="kv-row__value">{entry.model}</span></div> : null}
-            {entry.durationMs !== undefined ? <div className="kv-row"><span className="kv-row__key">Duration</span><span className="kv-row__value">{formatDuration(entry.durationMs)}</span></div> : null}
-            {entry.costUsd !== undefined ? <div className="kv-row"><span className="kv-row__key">Cost</span><span className="kv-row__value">{formatCost(entry.costUsd)}</span></div> : null}
-            {entry.promptTokens !== undefined ? <div className="kv-row"><span className="kv-row__key">Prompt tokens</span><span className="kv-row__value">{entry.promptTokens}</span></div> : null}
-            {entry.completionTokens !== undefined ? <div className="kv-row"><span className="kv-row__key">Completion tokens</span><span className="kv-row__value">{entry.completionTokens}</span></div> : null}
-            {entry.totalTokens !== undefined ? <div className="kv-row"><span className="kv-row__key">Total tokens</span><span className="kv-row__value">{entry.totalTokens}</span></div> : null}
-          </div>
-        </>
-      ) : null}
       {aiRequest ? (
         <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>AI request</p>
-          <div className="kv-list">
-            <div className="kv-row"><span className="kv-row__key">Model</span><span className="kv-row__value">{getReadableModelName(aiRequest.model)}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Provider</span><span className="kv-row__value">{aiRequest.provider}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Type</span><span className="kv-row__value">{aiRequest.requestType}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Status</span><span className="kv-row__value">{aiRequest.status}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Cost</span><span className="kv-row__value">{formatCost(aiRequest.estimatedCostUsd ?? undefined)}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Prompt tokens</span><span className="kv-row__value">{aiRequest.promptTokens}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Completion tokens</span><span className="kv-row__value">{aiRequest.completionTokens}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Total tokens</span><span className="kv-row__value">{aiRequest.totalTokens}</span></div>
-            <div className="kv-row"><span className="kv-row__key">Duration</span><span className="kv-row__value">{formatDuration(aiRequest.durationMs ?? undefined)}</span></div>
+          <div className="tag-row" style={{ marginBottom: 10, gap: 6, flexWrap: 'wrap' }}>
+            <span className={statusBadgeClass(aiRequest.status)}>{aiRequest.status}</span>
+            <span className="tag-soft tag-soft--gray">{aiRequest.requestType}</span>
+            {typeof aiRequest.totalTokens === 'number' ? <span className="tag-soft tag-soft--gray">{aiRequest.totalTokens} tokens</span> : null}
+            <span className="tag-soft tag-soft--gray">{formatCost(aiRequest.estimatedCostUsd ?? undefined)}</span>
+            <span className="tag-soft tag-soft--gray">{formatDuration(aiRequest.durationMs ?? undefined)}</span>
           </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: 12 }}>
+            {formatUtcDateTime(entry.occurredAt)}
+          </div>
+          {(typeof aiRequest.promptTokens === 'number' || typeof aiRequest.completionTokens === 'number') ? (
+            <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginBottom: 14 }}>
+              {typeof aiRequest.promptTokens === 'number' ? aiRequest.promptTokens : '—'} prompt tokens · {typeof aiRequest.completionTokens === 'number' ? aiRequest.completionTokens : '—'} completion tokens
+            </div>
+          ) : null}
           {aiRequest.contentMessage ? <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 8 }}>{aiRequest.contentMessage}</p> : null}
           {promptDisplay?.hasPromptText ? (
             <>
-              <p className="micro-label" style={{ marginTop: '12px', marginBottom: '6px' }}>Prompt</p>
-              <pre style={{ fontSize: '0.75rem', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{promptDisplay.cleanQuestionText}</pre>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <p className="micro-label" style={{ margin: 0 }}>Request / Question</p>
+                <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }} onClick={() => copyText(promptDisplay.cleanQuestionText)}>Copy</button>
+              </div>
+              <pre style={codeBlockStyle}>{promptDisplay.cleanQuestionText}</pre>
             </>
           ) : null}
-          {aiRequest.responseExcerpt ? (
-            <>
-              <p className="micro-label" style={{ marginTop: '12px', marginBottom: '6px' }}>Response excerpt</p>
-              <pre style={{ fontSize: '0.75rem', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{aiRequest.responseExcerpt}</pre>
-            </>
-          ) : null}
+          {promptDisplay?.promptInstructionText ? <ExpandableSection label="Prompt instruction" content={promptDisplay.promptInstructionText} /> : null}
+          {promptDisplay?.systemText ? <ExpandableSection label="System" content={promptDisplay.systemText} /> : null}
+          {aiRequest.promptContentJson ? <ExpandableSection label="Raw request" content={typeof aiRequest.promptContentJson === 'string' ? aiRequest.promptContentJson : JSON.stringify(aiRequest.promptContentJson, null, 2)} /> : null}
           {promptDisplay?.imageAttachments?.map((attachment) => (
             <div key={attachment.id} style={{ marginTop: 10, border: '1px solid var(--border)', borderRadius: 6, padding: 8 }}>
-              {attachment.viewUrl && !attachment.expired && !attachment.deleted ? <img src={attachment.viewUrl} alt={attachment.originalName ?? 'attachment'} style={{ width: '100%', borderRadius: 4 }} /> : <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>Image expired after retention window.</div>}
+              {attachment.viewUrl && !attachment.expired && !attachment.deleted ? <img src={attachment.viewUrl} alt={attachment.originalName ?? 'attachment'} style={{ width: '100%', borderRadius: 4, cursor: 'pointer' }} onClick={() => setPreviewUrl(attachment.viewUrl!)} /> : <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>Image expired after retention window.</div>}
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 6 }}>
+                {attachment.originalName ?? attachment.id} · {(attachment.sizeBytes / 1024).toFixed(0)} KB
+              </div>
               {attachment.viewUrl && !attachment.expired && !attachment.deleted ? (
                 <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
                   <a className="btn-ghost" href={attachment.viewUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>Open</a>
@@ -303,6 +284,22 @@ function DetailsDrawer({
               ) : null}
             </div>
           ))}
+          {(() => {
+            const rawResponseText = extractResponseText(aiRequest.responseContentJson, aiRequest.responseExcerpt);
+            const finalAnswer = extractFinalAnswer(aiRequest.responseContentJson);
+            const displayResponse = finalAnswer || rawResponseText;
+            if (!displayResponse) return null;
+            return (
+              <section style={{ marginTop: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <p className="micro-label" style={{ margin: 0 }}>Response</p>
+                  <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }} onClick={() => copyText(displayResponse)}>Copy</button>
+                </div>
+                <pre style={codeBlockStyle}>{displayResponse}</pre>
+                <ExpandableSection label="Raw response" content={rawResponseText} />
+              </section>
+            );
+          })()}
         </>
       ) : null}
 
@@ -322,13 +319,23 @@ function DetailsDrawer({
         </>
       ) : null}
 
-      {entry.metadata && Object.keys(entry.metadata).length > 0 ? (
-        <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>Metadata</p>
-          <pre style={{ fontSize: '0.75rem', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, maxHeight: '240px', overflow: 'auto' }}>
-            {JSON.stringify(entry.metadata, null, 2)}
-          </pre>
-        </>
+      <details style={{ marginTop: 16 }}>
+        <summary className="micro-label" style={{ cursor: 'pointer' }}>Technical log metadata</summary>
+        <div className="kv-list" style={{ marginTop: 8 }}>
+          <div className="kv-row"><span className="kv-row__key">Time</span><span className="kv-row__value">{formatUtcDateTime(entry.occurredAt)}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Category</span><span className="kv-row__value">{entry.category ?? '—'}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Stream</span><span className="kv-row__value">{entry.stream}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Source</span><span className="kv-row__value">{entry.source ?? '—'}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Event type</span><span className="kv-row__value">{entry.eventType}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Source record</span><span className="kv-row__value">{entry.id}</span></div>
+          {(entry.targetType || entry.targetId) ? <div className="kv-row"><span className="kv-row__key">Target</span><span className="kv-row__value">{entry.targetType ?? '—'} {entry.targetId ?? ''}</span></div> : null}
+          {entry.metadata && Object.keys(entry.metadata).length > 0 ? <pre style={codeBlockStyle}>{JSON.stringify(entry.metadata, null, 2)}</pre> : null}
+        </div>
+      </details>
+      {previewUrl ? (
+        <div onClick={() => setPreviewUrl(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <img alt="Prompt image" src={previewUrl} style={{ maxWidth: '95vw', maxHeight: '92vh', borderRadius: 8 }} />
+        </div>
       ) : null}
     </div>
   );
