@@ -13,6 +13,7 @@ import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
 import { formatUsdAmountByPreference } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
 import { useAutoRefresh } from '../../../lib/use-auto-refresh';
+import { formatHistoryDuration } from '../history/history-duration';
 
 interface UsagePageClientProps {
   session: SessionSnapshot | null;
@@ -233,7 +234,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
             {statCard('Successful', String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} failed`)}
             {statCard('Total tokens', formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} prompt · ${formatTokens(filteredTotals.totalCompletionTokens)} completion`)}
             {statCard('Est. cost', formatUsdAmountByPreference(filteredTotals.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
-            {filteredTotals.avgDurationMs !== null ? statCard('Avg latency', `${Math.round(filteredTotals.avgDurationMs)}ms`) : null}
+            {filteredTotals.avgDurationMs !== null ? statCard('Avg latency', formatHistoryDuration(filteredTotals.avgDurationMs) ?? '—') : null}
             {mostUsedModel ? statCard('Most used model', mostUsedModel.displayName, `${mostUsedModel.requestCount} requests`) : null}
             {highestCostModel ? statCard('Highest cost model', highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
           </div>
@@ -269,7 +270,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
                             {formatUsdAmountByPreference(row.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}
                           </td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{row.avgDurationMs !== null ? `${Math.round(row.avgDurationMs)}ms` : '—'}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatHistoryDuration(row.avgDurationMs) ?? '—'}</td>
                         </tr>
                       );
                     })}
