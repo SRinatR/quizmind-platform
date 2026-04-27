@@ -109,6 +109,27 @@ function deriveSummary(eventType: string): string {
   return toTitleCase(eventType.replace(/[._-]+/g, ' '));
 }
 
+function deriveStatus(eventType: string, explicitStatus?: string): 'success' | 'failure' | undefined {
+  if (explicitStatus === 'success' || explicitStatus === 'failure') {
+    return explicitStatus;
+  }
+
+  const normalizedEventType = eventType.toLowerCase();
+  if (normalizedEventType === 'ai.proxy.completed') {
+    return 'success';
+  }
+  if (
+    normalizedEventType === 'ai.proxy.failed'
+    || normalizedEventType === 'ai.proxy.timeout'
+    || normalizedEventType === 'ai.proxy.quota_exceeded'
+    || normalizedEventType === 'ai.proxy.user_key_failed'
+  ) {
+    return 'failure';
+  }
+
+  return undefined;
+}
+
 export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): Prisma.AdminLogEventCreateInput {
   const metadata = input.metadata;
   const payload = input.payload;
@@ -120,7 +141,7 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
   const severity = input.severity ?? (severityCandidate === 'debug' || severityCandidate === 'info' || severityCandidate === 'warn' || severityCandidate === 'error'
     ? (severityCandidate as EventSeverity)
     : undefined);
-  const status = statusCandidate === 'success' || statusCandidate === 'failure' ? statusCandidate : undefined;
+  const status = deriveStatus(input.eventType, statusCandidate);
   const category = deriveCategory(input.eventType, input.stream, rich);
   const source = deriveSource(input.eventType, rich);
   const actorEmail = toText((rich as Record<string, unknown> | undefined)?.actorEmail);

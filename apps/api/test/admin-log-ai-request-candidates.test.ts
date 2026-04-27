@@ -12,7 +12,7 @@ test('collectAdminAiRequestCandidateIds includes target, source and metadata ali
     payload: { aiRequestEventId: 'req_payload' },
   });
 
-  assert.deepEqual(ids, ['req_target', 'activity_1', 'req_meta', 'req_alias', 'req_payload']);
+  assert.deepEqual(ids, ['req_target', 'req_meta', 'req_alias', 'req_payload', 'activity_1']);
 });
 
 test('collectAdminAiRequestCandidateIds includes nested requestMetadata aliases', () => {

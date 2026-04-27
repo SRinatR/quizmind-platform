@@ -35,17 +35,23 @@ test('AdminLogBackfillService processes bounded batches and supports rerun idemp
 });
 
 test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', async () => {
+  const domainCountCalls: any[] = [];
   const service = new AdminLogBackfillService({
     auditLog: { count: async () => 10 },
     activityLog: { count: async () => 20 },
     securityEvent: { count: async () => 30 },
-    domainEvent: { count: async () => 40 },
+    domainEvent: {
+      count: async (args: any) => {
+        domainCountCalls.push(args);
+        return 36;
+      },
+    },
     adminLogEvent: {
       count: async ({ where }: any) => {
         if (where.stream === 'audit') return 8;
         if (where.stream === 'activity') return 20;
         if (where.stream === 'security') return 29;
-        return 40;
+        return 35;
       },
     },
   } as any, 1);
@@ -54,7 +60,45 @@ test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', asy
   assert.equal(result.audit.missing, 2);
   assert.equal(result.activity.missing, 0);
   assert.equal(result.security.missing, 1);
+  assert.equal(result.domain.sourceCount, 36);
+  assert.equal(result.domain.readModelCount, 35);
+  assert.equal(result.domain.missing, 1);
+  assert.deepEqual(domainCountCalls[0]?.where?.eventType?.notIn, [
+    'ai.proxy.completed',
+    'ai.proxy.failed',
+    'ai.proxy.quota_exceeded',
+    'ai.proxy.timeout',
+  ]);
+});
+
+test('AdminLogBackfillService.verifyCounts excludes skipped AI proxy domain events from missing totals', async () => {
+  const service = new AdminLogBackfillService({
+    auditLog: { count: async () => 1 },
+    activityLog: { count: async () => 4 },
+    securityEvent: { count: async () => 1 },
+    domainEvent: {
+      count: async ({ where }: any) => {
+        assert.deepEqual(where.eventType.notIn, [
+          'ai.proxy.completed',
+          'ai.proxy.failed',
+          'ai.proxy.quota_exceeded',
+          'ai.proxy.timeout',
+        ]);
+        return 2;
+      },
+    },
+    adminLogEvent: {
+      count: async ({ where }: any) => {
+        if (where.stream === 'domain') return 2;
+        if (where.stream === 'activity') return 4;
+        return 1;
+      },
+    },
+  } as any, 1);
+
+  const result = await service.verifyCounts();
   assert.equal(result.domain.missing, 0);
+  assert.equal(result.activity.missing, 0);
 });
 
 test('AdminLogBackfillService enriches AI read-model rows with AiRequestEvent estimated cost', async () => {
@@ -136,6 +180,36 @@ test('AdminLogBackfillService keeps cost null when matching AiRequestEvent is mi
 
   await service.run({ stream: 'activity' });
   assert.equal(capturedCreate.costUsd, undefined);
+});
+
+test('AdminLogBackfillService skips AI proxy domain rows but keeps non-AI domain events visible', async () => {
+  const created: Array<{ stream: string; eventType: string }> = [];
+  let domainCalls = 0;
+  const service = new AdminLogBackfillService({
+    user: { findMany: async () => [] },
+    auditLog: { findMany: async () => [] },
+    activityLog: { findMany: async () => [] },
+    securityEvent: { findMany: async () => [] },
+    domainEvent: {
+      findMany: async () => {
+        domainCalls += 1;
+        if (domainCalls > 1) return [];
+        return [
+          { id: 'domain_ai', eventType: 'ai.proxy.completed', payloadJson: { requestId: 'req_1' }, createdAt: new Date('2026-04-26T09:00:00.000Z') },
+          { id: 'domain_non_ai', eventType: 'extension.installation_created', payloadJson: {}, createdAt: new Date('2026-04-26T09:00:01.000Z') },
+        ];
+      },
+    },
+    aiRequestEvent: { findMany: async () => [] },
+    adminLogEvent: {
+      upsert: async ({ create }: any) => {
+        created.push({ stream: create.stream, eventType: create.eventType });
+      },
+    },
+  } as any, 100);
+
+  await service.run({ stream: 'domain' });
+  assert.deepEqual(created, [{ stream: 'domain', eventType: 'extension.installation_created' }]);
 });
 
 

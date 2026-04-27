@@ -110,6 +110,7 @@ test('create input derives readable summary and source when metadata summary is 
 
   assert.equal(input.summary, 'AI request completed');
   assert.equal(input.source, 'api');
+  assert.equal(input.status, 'success');
   assert.equal(input.costUsd, undefined);
 });
 
@@ -136,6 +137,20 @@ test('create input maps ai history cost and tokens from estimatedCostUsd/usage m
   assert.equal(input.promptTokens, 111);
   assert.equal(input.completionTokens, 222);
   assert.equal(input.totalTokens, 333);
+});
+
+test('create input derives failure status for ai proxy failure events', () => {
+  const input = buildAdminLogEventCreateInput({
+    stream: 'activity',
+    sourceRecordId: 'evt_failed',
+    eventType: 'ai.proxy.failed',
+    occurredAt: new Date('2026-04-26T00:00:00.000Z'),
+    metadata: {
+      requestId: 'req_failed',
+    },
+  });
+
+  assert.equal(input.status, 'failure');
 });
 
 test('best-effort read-model upsert enriches missing actor email/displayName from actorId', async () => {
@@ -179,7 +194,7 @@ test('best-effort read-model upsert enriches cost from ai request resolved via n
         findMany: async () => [],
       },
       aiRequestEvent: {
-        findFirst: async () => ({
+        findMany: async () => [{
           id: 'req_nested',
           provider: 'openai',
           model: 'openai/gpt-4o',
@@ -189,7 +204,8 @@ test('best-effort read-model upsert enriches cost from ai request resolved via n
           completionTokens: 12,
           totalTokens: 22,
           promptExcerpt: 'hello',
-        }),
+          status: 'error',
+        }],
       },
       adminLogEvent: {
         upsert: async ({ create }: any) => {
@@ -220,4 +236,5 @@ test('best-effort read-model upsert enriches cost from ai request resolved via n
   assert.equal(created[0].promptTokens, 10);
   assert.equal(created[0].completionTokens, 12);
   assert.equal(created[0].totalTokens, 22);
+  assert.equal(created[0].status, 'success');
 });

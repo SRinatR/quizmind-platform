@@ -4,7 +4,6 @@ import { Prisma } from '@quizmind/database';
 import { PrismaService } from '../database/prisma.service';
 import {
   buildReadModelFromActivityRow,
-  buildReadModelFromDomainRow,
   buildReadModelFromSecurityRow,
   createActivityLogWithReadModel,
   createDomainEventWithReadModel,
@@ -153,9 +152,11 @@ export class AiProxyRepository {
       const metadata = {
         source: 'api',
         requestId: input.requestId,
+        aiRequestEventId: input.requestId,
         provider: input.provider,
         model: input.model,
         keySource: input.keySource,
+        status: 'success',
         messageCount: input.messageCount,
         usage: input.usage ?? null,
         responseId: input.responseId ?? null,
@@ -196,12 +197,11 @@ export class AiProxyRepository {
       });
       readModelEvents.push(buildReadModelFromActivityRow(activityRow));
 
-      const domainRow = await createDomainEventWithReadModel(transaction, {
+      await createDomainEventWithReadModel(transaction, {
         eventType: 'ai.proxy.completed',
         payloadJson: metadata,
         createdAt: input.occurredAt,
       });
-      readModelEvents.push(buildReadModelFromDomainRow(domainRow));
 
       if (input.keySource === 'user') {
         const securityRow = await createSecurityEventWithReadModel(transaction, {
@@ -225,6 +225,7 @@ export class AiProxyRepository {
     const metadata = {
       source: 'api',
       requestId: input.requestId,
+      aiRequestEventId: input.requestId,
       provider: input.provider,
       model: input.model,
       keySource: input.keySource,
@@ -264,12 +265,11 @@ export class AiProxyRepository {
       });
       readModelEvents.push(buildReadModelFromActivityRow(activityRow));
 
-      const domainRow = await createDomainEventWithReadModel(transaction, {
+      await createDomainEventWithReadModel(transaction, {
         eventType: 'ai.proxy.failed',
         payloadJson: metadata,
         createdAt: input.occurredAt,
       });
-      readModelEvents.push(buildReadModelFromDomainRow(domainRow));
 
       if (input.keySource === 'user') {
         const securityRow = await createSecurityEventWithReadModel(transaction, {
