@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { buildAdminLogEventCreateInput } from '@quizmind/database';
+
 import {
   createActivityLogWithReadModel,
   createAuditLogWithReadModel,
@@ -68,4 +70,24 @@ test('best-effort read-model upsert suppresses failures', async () => {
   );
 
   assert.equal(calls, 1);
+});
+
+test('create input maps actor identity fields and includes them in search text', () => {
+  const input = buildAdminLogEventCreateInput({
+    stream: 'audit',
+    sourceRecordId: 'a3',
+    eventType: 'support.login',
+    occurredAt: new Date('2026-04-26T00:00:00.000Z'),
+    actorId: 'u3',
+    metadata: {
+      actorEmail: 'agent@example.com',
+      actorDisplayName: 'Support Agent',
+      summary: 'Agent logged in',
+    },
+  });
+
+  assert.equal(input.actorEmail, 'agent@example.com');
+  assert.equal(input.actorDisplayName, 'Support Agent');
+  assert.match(input.searchText ?? '', /\bagent@example\.com\b/);
+  assert.match(input.searchText ?? '', /\bsupport agent\b/);
 });

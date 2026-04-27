@@ -71,12 +71,16 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
   const status = statusCandidate === 'success' || statusCandidate === 'failure' ? statusCandidate : undefined;
   const category = deriveCategory(input.eventType, input.stream, rich);
   const source = deriveSource(input.eventType, rich);
+  const actorEmail = toText((rich as Record<string, unknown> | undefined)?.actorEmail);
+  const actorDisplayName = toText((rich as Record<string, unknown> | undefined)?.actorDisplayName);
 
   const searchable = [
     input.stream,
     input.eventType,
     summary,
     input.actorId,
+    actorEmail,
+    actorDisplayName,
     input.targetType,
     input.targetId,
     toText((rich as Record<string, unknown> | undefined)?.provider),
@@ -94,6 +98,8 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
     ...(severity ? { severity } : {}),
     ...(status ? { status } : {}),
     ...(input.actorId ? { actorId: input.actorId } : {}),
+    ...(actorEmail ? { actorEmail } : {}),
+    ...(actorDisplayName ? { actorDisplayName } : {}),
     ...(input.targetType ? { targetType: input.targetType } : {}),
     ...(input.targetId ? { targetId: input.targetId } : {}),
     category,
