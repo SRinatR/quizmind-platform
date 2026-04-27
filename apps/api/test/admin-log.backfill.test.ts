@@ -7,6 +7,9 @@ test('AdminLogBackfillService processes bounded batches and supports rerun idemp
   let auditCalls = 0;
   let upsertCalls = 0;
   const service = new AdminLogBackfillService({
+    user: {
+      findMany: async () => [{ id: 'user_1', email: 'viewer@example.com', displayName: 'Viewer' }],
+    },
     auditLog: {
       findMany: async () => {
         auditCalls += 1;

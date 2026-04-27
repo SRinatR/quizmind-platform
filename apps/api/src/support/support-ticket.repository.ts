@@ -59,6 +59,7 @@ export interface ListSupportTicketsInput {
 function buildMetadataJson(event: StructuredLogEvent): Prisma.InputJsonValue {
   return {
     ...((event.metadata ?? {}) as Prisma.InputJsonObject),
+    source: 'web',
     eventId: event.eventId,
     severity: event.severity,
     ...(event.status ? { status: event.status } : {}),

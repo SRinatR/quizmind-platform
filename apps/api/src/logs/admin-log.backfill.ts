@@ -1,4 +1,5 @@
 import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
+import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 
 type Stream = 'audit' | 'activity' | 'security' | 'domain';
 
@@ -23,11 +24,28 @@ export class AdminLogBackfillService {
   }
 
   private async upsertBatch(rows: Array<{ stream: Stream; sourceRecordId: string; data: any }>) {
+    const actorDirectory = await resolveActorIdentities(
+      this.prisma,
+      rows.map((row) => row.data.actorId ?? '').filter(Boolean),
+    );
+
     for (const row of rows) {
+      const actorId = row.data.actorId as string | undefined;
+      const actorIdentity = actorId ? actorDirectory.get(actorId) : undefined;
       await this.prisma.adminLogEvent.upsert({
         where: { stream_sourceRecordId: { stream: row.stream, sourceRecordId: row.sourceRecordId } },
-        create: row.data,
-        update: row.data,
+        create: {
+          ...row.data,
+          actorEmail: row.data.actorEmail ?? actorIdentity?.email,
+          actorDisplayName: row.data.actorDisplayName ?? actorIdentity?.displayName ?? undefined,
+          searchText: enrichSearchTextWithActorIdentity(row.data.searchText, actorIdentity),
+        },
+        update: {
+          ...row.data,
+          actorEmail: row.data.actorEmail ?? actorIdentity?.email,
+          actorDisplayName: row.data.actorDisplayName ?? actorIdentity?.displayName ?? undefined,
+          searchText: enrichSearchTextWithActorIdentity(row.data.searchText, actorIdentity),
+        },
       });
     }
   }

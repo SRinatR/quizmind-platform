@@ -46,6 +46,9 @@ test('best-effort read-model upsert suppresses failures', async () => {
   let calls = 0;
   await upsertAdminLogEventsBestEffort(
     {
+      user: {
+        findMany: async () => [],
+      },
       adminLogEvent: {
         upsert: async () => {
           calls += 1;
@@ -90,4 +93,55 @@ test('create input maps actor identity fields and includes them in search text',
   assert.equal(input.actorDisplayName, 'Support Agent');
   assert.match(input.searchText ?? '', /\bagent@example\.com\b/);
   assert.match(input.searchText ?? '', /\bsupport agent\b/);
+});
+
+test('create input derives readable summary and source when metadata summary is missing', () => {
+  const input = buildAdminLogEventCreateInput({
+    stream: 'activity',
+    sourceRecordId: 'evt_1',
+    eventType: 'ai.proxy.completed',
+    occurredAt: new Date('2026-04-26T00:00:00.000Z'),
+    actorId: 'u3',
+    metadata: {
+      provider: 'openai',
+      model: 'gpt-5-mini',
+    },
+  });
+
+  assert.equal(input.summary, 'AI request completed');
+  assert.equal(input.source, 'api');
+  assert.equal(input.costUsd, undefined);
+});
+
+test('best-effort read-model upsert enriches missing actor email/displayName from actorId', async () => {
+  const created: any[] = [];
+  await upsertAdminLogEventsBestEffort(
+    {
+      user: {
+        findMany: async () => [{ id: 'user_22', email: 'person@example.com', displayName: 'Readable Name' }],
+      },
+      adminLogEvent: {
+        upsert: async ({ create }: any) => {
+          created.push(create);
+        },
+      },
+    } as any,
+    [
+      {
+        stream: 'activity',
+        sourceRecordId: 'act_22',
+        data: buildAdminLogEventCreateInput({
+          stream: 'activity',
+          sourceRecordId: 'act_22',
+          eventType: 'auth.login_success',
+          occurredAt: new Date('2026-04-26T00:00:00.000Z'),
+          actorId: 'user_22',
+        }),
+      },
+    ],
+  );
+
+  assert.equal(created[0].actorEmail, 'person@example.com');
+  assert.equal(created[0].actorDisplayName, 'Readable Name');
+  assert.match(created[0].searchText, /\blogin successful\b/);
 });

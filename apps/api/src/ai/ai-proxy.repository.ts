@@ -151,6 +151,7 @@ export class AiProxyRepository {
     const { result, readModelEvents } = await this.prisma.$transaction(async (transaction) => {
       const readModelEvents: ReadModelUpsert[] = [];
       const metadata = {
+        source: 'api',
         requestId: input.requestId,
         provider: input.provider,
         model: input.model,
@@ -162,6 +163,7 @@ export class AiProxyRepository {
         quotaConsumed: false,
         quotaConsumedTotal: null,
         durationMs: normalizeDurationMs(input.durationMs),
+        // TODO(admin-logs): propagate a real costUsd value once pricing is recorded in the AI proxy request pipeline.
       } satisfies Prisma.InputJsonObject;
       const promptTokens = normalizeTokenCount(input.usage?.promptTokens);
       const completionTokens = normalizeTokenCount(input.usage?.completionTokens);
@@ -221,6 +223,7 @@ export class AiProxyRepository {
 
   async recordProxyFailure(input: RecordProxyFailureInput): Promise<void> {
     const metadata = {
+      source: 'api',
       requestId: input.requestId,
       provider: input.provider,
       model: input.model,

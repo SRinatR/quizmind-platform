@@ -19,6 +19,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type AdminLogsStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { actorLabel, formatCost, shortId, targetLabel } from './logs-explorer-formatters';
 
 interface LogsExplorerClientProps {
   initialFilters: AdminLogFilters;
@@ -139,23 +140,6 @@ function formatDuration(ms?: number): string {
   if (ms === undefined || ms === null) return '—';
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
-}
-
-function formatCost(usd?: number): string {
-  if (usd === undefined || usd === null) return '—';
-  if (usd < 0.001) return `<$0.001`;
-  return `$${usd.toFixed(4)}`;
-}
-
-function actorLabel(entry: AdminLogEntry): string {
-  return entry.actor?.displayName ?? entry.actor?.email ?? entry.actor?.id ?? '—';
-}
-
-function targetLabel(entry: AdminLogEntry): string {
-  if (entry.targetType && entry.targetId) return `${entry.targetType} ${entry.targetId}`;
-  if (entry.targetType) return entry.targetType;
-  if (entry.installationId) return `install ${entry.installationId}`;
-  return '—';
 }
 
 // ── Details drawer ────────────────────────────────────────────────────────────
@@ -777,10 +761,14 @@ export function LogsExplorerClient({
                       </span>
                     </td>
                     <td style={{ padding: '6px 10px', maxWidth: '220px' }}>
-                      <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>{item.eventType}</span>
+                      <div style={{ fontSize: '0.76rem', lineHeight: 1.25 }}>{item.summary}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: 'var(--muted)', wordBreak: 'break-all' }}>{item.eventType}</div>
                     </td>
                     <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {actorLabel(item)}
+                      {actorLabel(item) === '—' ? '—' : actorLabel(item)}
+                      {!item.actor?.displayName && !item.actor?.email && item.actor?.id ? (
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: 'var(--muted)' }}>{shortId(item.actor.id)}</div>
+                      ) : null}
                     </td>
                     <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
                       {item.source ? (
