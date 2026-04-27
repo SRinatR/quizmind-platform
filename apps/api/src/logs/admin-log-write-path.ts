@@ -1,5 +1,6 @@
 import { buildAdminLogEventCreateInput, Prisma, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
+import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
 
 function toMetadata(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -145,10 +146,16 @@ export async function upsertAdminLogEventsBestEffort(
 
   for (const event of events) {
     try {
-      const aiRequestId = typeof event.data.targetId === 'string' ? event.data.targetId : undefined;
-      const aiRequest = aiRequestId && (prisma as { aiRequestEvent?: PrismaClient['aiRequestEvent'] }).aiRequestEvent
-        ? await prisma.aiRequestEvent.findUnique({
-            where: { id: aiRequestId },
+      const aiRequestCandidates = collectAdminAiRequestCandidateIds({
+        targetType: event.data.targetType,
+        targetId: event.data.targetId,
+        sourceRecordId: event.sourceRecordId,
+        metadata: toMetadata(event.data.metadataJson),
+        payload: toMetadata(event.data.payloadJson),
+      });
+      const aiRequest = aiRequestCandidates.length > 0 && (prisma as { aiRequestEvent?: PrismaClient['aiRequestEvent'] }).aiRequestEvent
+        ? await prisma.aiRequestEvent.findFirst({
+            where: { id: { in: aiRequestCandidates } },
             select: {
               id: true,
               provider: true,

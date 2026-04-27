@@ -1,4 +1,7 @@
 import { type AdminLogEntry } from '@quizmind/contracts';
+import { type ExchangeRateSnapshot } from '../../../lib/exchange-rates';
+import { type BalanceDisplayCurrency } from '../../../lib/preferences';
+import { formatUsdAmountByPreference } from '../../../lib/money';
 
 export function shortId(value?: string | null): string {
   if (!value) return '—';
@@ -6,10 +9,13 @@ export function shortId(value?: string | null): string {
   return `${value.slice(0, 8)}…${value.slice(-6)}`;
 }
 
-export function formatCost(usd?: number): string {
+export function formatCost(
+  usd?: number,
+  currency: BalanceDisplayCurrency = 'USD',
+  exchangeRates: ExchangeRateSnapshot | null = null,
+): string {
   if (usd === undefined || usd === null) return '—';
-  if (usd > 0 && usd < 0.001) return '<$0.001';
-  return `$${usd.toFixed(4)}`;
+  return formatUsdAmountByPreference(usd, currency, exchangeRates);
 }
 
 export function actorLabel(entry: AdminLogEntry): string {
@@ -17,22 +23,10 @@ export function actorLabel(entry: AdminLogEntry): string {
 }
 
 export function targetLabel(entry: AdminLogEntry): string {
-  if (entry.installationId) return `Installation ${shortId(entry.installationId)}`;
-  const requestId = typeof entry.metadata?.requestId === 'string' ? entry.metadata.requestId : undefined;
-  if (entry.targetType === 'ai_request' || entry.category === 'ai') {
-    const fallbackRequestId = requestId ?? entry.targetId;
-    return fallbackRequestId ? `AI request ${shortId(fallbackRequestId)}` : 'AI request';
-  }
-  if (entry.provider && entry.model) return `${entry.provider} / ${entry.model}`;
-  if (entry.provider) return entry.provider;
-  if (entry.targetType === 'user') {
-    const targetDisplayName = typeof entry.metadata?.targetDisplayName === 'string' ? entry.metadata.targetDisplayName : undefined;
-    const targetEmail = typeof entry.metadata?.targetEmail === 'string' ? entry.metadata.targetEmail : undefined;
-    const readable = targetDisplayName ?? targetEmail;
-    return readable ? `User ${readable}` : `User ${entry.targetId ? shortId(entry.targetId) : ''}`.trim();
-  }
-  if (entry.targetType && entry.targetId) return `${entry.targetType} ${shortId(entry.targetId)}`;
-  if (entry.targetType) return entry.targetType;
-  if (entry.targetId) return shortId(entry.targetId);
+  if (entry.targetType === 'ai_request' || entry.category === 'ai') return 'AI request';
+  if (entry.installationId || entry.targetType === 'installation' || entry.targetType === 'extension_installation') return 'Installation';
+  if (entry.targetType === 'user') return 'User';
+  if (entry.targetType === 'http_request' || entry.targetType === 'http') return 'HTTP request';
+  if (entry.targetType) return entry.targetType.replaceAll('_', ' ');
   return '—';
 }

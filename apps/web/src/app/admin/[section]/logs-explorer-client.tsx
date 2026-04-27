@@ -21,12 +21,15 @@ import { getReadableModelName } from '../../app/history/history-model-display';
 
 import { type AdminLogsStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { type ExchangeRateSnapshot } from '../../../lib/exchange-rates';
+import { usePreferences } from '../../../lib/preferences';
 import { actorLabel, formatCost, shortId, targetLabel } from './logs-explorer-formatters';
 
 interface LogsExplorerClientProps {
   initialFilters: AdminLogFilters;
   canExportLogs: boolean;
   isConnectedSession: boolean;
+  exchangeRates: ExchangeRateSnapshot | null;
 }
 
 interface MutationRouteResponse<T> {
@@ -192,10 +195,13 @@ function ExpandableSection({ label, content }: { label: string; content: string 
 function DetailsDrawer({
   entry,
   onClose,
+  exchangeRates,
 }: {
   entry: AdminLogEntry;
   onClose: () => void;
+  exchangeRates: ExchangeRateSnapshot | null;
 }) {
+  const { prefs } = usePreferences();
   const aiRequest = entry.aiRequest;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const promptDisplay = aiRequest
@@ -246,7 +252,7 @@ function DetailsDrawer({
             <span className={statusBadgeClass(aiRequest.status)}>{aiRequest.status}</span>
             <span className="tag-soft tag-soft--gray">{aiRequest.requestType}</span>
             {typeof aiRequest.totalTokens === 'number' ? <span className="tag-soft tag-soft--gray">{aiRequest.totalTokens} tokens</span> : null}
-            <span className="tag-soft tag-soft--gray">{formatCost(aiRequest.estimatedCostUsd ?? undefined)}</span>
+            <span className="tag-soft tag-soft--gray">{formatCost(aiRequest.estimatedCostUsd ?? undefined, prefs.balanceDisplayCurrency, exchangeRates)}</span>
             <span className="tag-soft tag-soft--gray">{formatDuration(aiRequest.durationMs ?? undefined)}</span>
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: 12 }}>
@@ -327,8 +333,10 @@ function DetailsDrawer({
           <div className="kv-row"><span className="kv-row__key">Stream</span><span className="kv-row__value">{entry.stream}</span></div>
           <div className="kv-row"><span className="kv-row__key">Source</span><span className="kv-row__value">{entry.source ?? '—'}</span></div>
           <div className="kv-row"><span className="kv-row__key">Event type</span><span className="kv-row__value">{entry.eventType}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Source record</span><span className="kv-row__value">{entry.id}</span></div>
-          {(entry.targetType || entry.targetId) ? <div className="kv-row"><span className="kv-row__key">Target</span><span className="kv-row__value">{entry.targetType ?? '—'} {entry.targetId ?? ''}</span></div> : null}
+          <div className="kv-row"><span className="kv-row__key">Log record id</span><span className="kv-row__value">{entry.id}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Source record id</span><span className="kv-row__value">{typeof entry.metadata?.sourceRecordId === 'string' ? entry.metadata.sourceRecordId : '—'}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Target type</span><span className="kv-row__value">{typeof entry.metadata?.targetType === 'string' ? entry.metadata.targetType : (entry.targetType ?? '—')}</span></div>
+          <div className="kv-row"><span className="kv-row__key">Target id</span><span className="kv-row__value">{typeof entry.metadata?.targetId === 'string' ? entry.metadata.targetId : (entry.targetId ?? '—')}</span></div>
           {entry.metadata && Object.keys(entry.metadata).length > 0 ? <pre style={codeBlockStyle}>{JSON.stringify(entry.metadata, null, 2)}</pre> : null}
         </div>
       </details>
@@ -347,7 +355,9 @@ export function LogsExplorerClient({
   initialFilters,
   canExportLogs,
   isConnectedSession,
+  exchangeRates,
 }: LogsExplorerClientProps) {
+  const { prefs } = usePreferences();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -844,7 +854,7 @@ export function LogsExplorerClient({
                       {formatDuration(item.durationMs)}
                     </td>
                     <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', color: 'var(--muted)', fontSize: '0.75rem' }}>
-                      {formatCost(item.costUsd)}
+                      {formatCost(item.costUsd, prefs.balanceDisplayCurrency, exchangeRates)}
                     </td>
                     <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
                       <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
@@ -908,7 +918,7 @@ export function LogsExplorerClient({
       {selectedEntry ? (
         <>
           {isLoadingDetail ? <div className="panel" style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 120, padding: '8px 10px', fontSize: '0.78rem' }}>Loading…</div> : null}
-          <DetailsDrawer entry={selectedEntry} onClose={() => setSelectedEntry(null)} />
+          <DetailsDrawer entry={selectedEntry} exchangeRates={exchangeRates} onClose={() => setSelectedEntry(null)} />
         </>
       ) : null}
     </>

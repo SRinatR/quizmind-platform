@@ -170,3 +170,54 @@ test('best-effort read-model upsert enriches missing actor email/displayName fro
   assert.equal(created[0].actorDisplayName, 'Readable Name');
   assert.match(created[0].searchText, /\blogin successful\b/);
 });
+
+test('best-effort read-model upsert enriches cost from ai request resolved via nested requestMetadata id', async () => {
+  const created: any[] = [];
+  await upsertAdminLogEventsBestEffort(
+    {
+      user: {
+        findMany: async () => [],
+      },
+      aiRequestEvent: {
+        findFirst: async () => ({
+          id: 'req_nested',
+          provider: 'openai',
+          model: 'openai/gpt-4o',
+          durationMs: 321,
+          estimatedCostUsd: 0.0044,
+          promptTokens: 10,
+          completionTokens: 12,
+          totalTokens: 22,
+          promptExcerpt: 'hello',
+        }),
+      },
+      adminLogEvent: {
+        upsert: async ({ create }: any) => {
+          created.push(create);
+        },
+      },
+    } as any,
+    [
+      {
+        stream: 'activity',
+        sourceRecordId: 'act_nested',
+        data: buildAdminLogEventCreateInput({
+          stream: 'activity',
+          sourceRecordId: 'act_nested',
+          eventType: 'ai.proxy.completed',
+          occurredAt: new Date('2026-04-26T00:00:00.000Z'),
+          metadata: {
+            requestMetadata: {
+              requestId: 'req_nested',
+            },
+          },
+        }),
+      },
+    ],
+  );
+
+  assert.equal(created[0].costUsd, 0.0044);
+  assert.equal(created[0].promptTokens, 10);
+  assert.equal(created[0].completionTokens, 12);
+  assert.equal(created[0].totalTokens, 22);
+});

@@ -18,6 +18,12 @@ export function collectAdminAiRequestCandidateIds(input: {
     push(obj.requestId);
     push(obj.aiRequestId);
     push(obj.aiRequestEventId);
+    if (obj.requestMetadata && typeof obj.requestMetadata === 'object' && !Array.isArray(obj.requestMetadata)) {
+      const requestMetadata = obj.requestMetadata as Record<string, unknown>;
+      push(requestMetadata.requestId);
+      push(requestMetadata.aiRequestId);
+      push(requestMetadata.aiRequestEventId);
+    }
   }
 
   return Array.from(ids);
