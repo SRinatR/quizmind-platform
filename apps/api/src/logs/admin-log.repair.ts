@@ -46,6 +46,13 @@ export class AdminLogRepairService {
           source: true,
           category: true,
           searchText: true,
+          provider: true,
+          model: true,
+          durationMs: true,
+          costUsd: true,
+          promptTokens: true,
+          completionTokens: true,
+          totalTokens: true,
           metadataJson: true,
           payloadJson: true,
         },
@@ -55,6 +62,33 @@ export class AdminLogRepairService {
       totals.inspected += rows.length;
 
       const actorDirectory = await resolveActorIdentities(this.prisma, rows.map((row) => row.actorId ?? '').filter(Boolean));
+      const aiRequestIds = Array.from(new Set(rows.flatMap((row) => {
+        const metadata = this.toObject(row.metadataJson);
+        const payload = this.toObject(row.payloadJson);
+        return [
+          row.targetType === 'ai_request' ? row.targetId : null,
+          typeof metadata?.requestId === 'string' ? metadata.requestId : null,
+          typeof payload?.requestId === 'string' ? payload.requestId : null,
+          row.sourceRecordId,
+        ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+      })));
+      const aiRequestRows = aiRequestIds.length > 0
+        ? await this.prisma.aiRequestEvent.findMany({
+            where: { id: { in: aiRequestIds } },
+            select: {
+              id: true,
+              provider: true,
+              model: true,
+              durationMs: true,
+              estimatedCostUsd: true,
+              promptTokens: true,
+              completionTokens: true,
+              totalTokens: true,
+              promptExcerpt: true,
+            },
+          })
+        : [];
+      const aiRequestById = new Map(aiRequestRows.map((request) => [request.id, request]));
 
       for (const row of rows) {
         const metadata = this.toObject(row.metadataJson);
@@ -73,12 +107,32 @@ export class AdminLogRepairService {
         });
 
         const identity = row.actorId ? actorDirectory.get(row.actorId) : undefined;
+        const aiRequest = [
+          row.targetType === 'ai_request' ? row.targetId : null,
+          typeof metadata?.requestId === 'string' ? metadata.requestId : null,
+          typeof payload?.requestId === 'string' ? payload.requestId : null,
+          row.sourceRecordId,
+        ]
+          .map((candidate) => (candidate ? aiRequestById.get(candidate) : undefined))
+          .find(Boolean);
         const nextActorEmail = rebuilt.actorEmail ?? identity?.email ?? null;
         const nextActorDisplayName = rebuilt.actorDisplayName ?? identity?.displayName ?? null;
         const nextSummary = rebuilt.summary;
         const nextSource = rebuilt.source ?? null;
         const nextCategory = rebuilt.category ?? null;
-        const nextSearchText = enrichSearchTextWithActorIdentity(rebuilt.searchText ?? null, identity) ?? null;
+        const nextSearchText = enrichSearchTextWithActorIdentity(
+          [rebuilt.searchText, aiRequest?.promptExcerpt].filter(Boolean).join(' ').toLowerCase() || null,
+          identity,
+        ) ?? null;
+        const nextTargetType = rebuilt.targetType ?? (aiRequest ? 'ai_request' : null);
+        const nextTargetId = rebuilt.targetId ?? aiRequest?.id ?? null;
+        const nextProvider = rebuilt.provider ?? aiRequest?.provider ?? null;
+        const nextModel = rebuilt.model ?? aiRequest?.model ?? null;
+        const nextDurationMs = rebuilt.durationMs ?? aiRequest?.durationMs ?? null;
+        const nextCostUsd = rebuilt.costUsd ?? aiRequest?.estimatedCostUsd ?? null;
+        const nextPromptTokens = rebuilt.promptTokens ?? aiRequest?.promptTokens ?? null;
+        const nextCompletionTokens = rebuilt.completionTokens ?? aiRequest?.completionTokens ?? null;
+        const nextTotalTokens = rebuilt.totalTokens ?? aiRequest?.totalTokens ?? null;
 
         if (
           row.actorEmail !== nextActorEmail
@@ -87,6 +141,15 @@ export class AdminLogRepairService {
           || row.source !== nextSource
           || row.category !== nextCategory
           || row.searchText !== nextSearchText
+          || row.targetType !== nextTargetType
+          || row.targetId !== nextTargetId
+          || row.provider !== nextProvider
+          || row.model !== nextModel
+          || row.durationMs !== nextDurationMs
+          || row.costUsd !== nextCostUsd
+          || row.promptTokens !== nextPromptTokens
+          || row.completionTokens !== nextCompletionTokens
+          || row.totalTokens !== nextTotalTokens
         ) {
           await this.prisma.adminLogEvent.update({
             where: { id: row.id },
@@ -97,6 +160,15 @@ export class AdminLogRepairService {
               source: nextSource,
               category: nextCategory,
               searchText: nextSearchText,
+              targetType: nextTargetType,
+              targetId: nextTargetId,
+              provider: nextProvider,
+              model: nextModel,
+              durationMs: nextDurationMs,
+              costUsd: nextCostUsd,
+              promptTokens: nextPromptTokens,
+              completionTokens: nextCompletionTokens,
+              totalTokens: nextTotalTokens,
             },
           });
           totals.updated += 1;

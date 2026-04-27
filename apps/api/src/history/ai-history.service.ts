@@ -409,6 +409,75 @@ export class AiHistoryService {
     };
   }
 
+  async getDetailForAdminByAnyId(ids: string[]): Promise<AiHistoryDetail | null> {
+    const event = await this.repository.getEventDetailForAdminByAnyId({ ids });
+    if (!event) return null;
+
+    const listItem = toListItemFromEvent(event);
+    const content = event.content;
+    const attachments = event.attachments.map((attachment) => toAttachmentMetadata(attachment));
+    if (!content) {
+      return {
+        ...listItem,
+        promptContentJson: 'Full content not available.',
+        responseContentJson: 'Full content not available.',
+        attachments,
+      };
+    }
+    if (content.deletedAt || content.expiresAt < new Date()) {
+      return {
+        ...listItem,
+        promptContentJson: CONTENT_EXPIRED_MESSAGE,
+        responseContentJson: CONTENT_EXPIRED_MESSAGE,
+        attachments,
+      };
+    }
+
+    const [promptContent, responseContent] = await Promise.all([
+      content.promptBlobKey ? this.blobs.readJson(content.promptBlobKey) : Promise.resolve(null),
+      content.responseBlobKey ? this.blobs.readJson(content.responseBlobKey) : Promise.resolve(null),
+    ]);
+
+    return {
+      ...listItem,
+      promptContentJson: promptContent ?? 'Prompt content not available.',
+      responseContentJson: responseContent ?? 'Response content not available.',
+      attachments,
+    };
+  }
+
+  async getAttachmentForAdmin(input: {
+    aiRequestEventId: string;
+    attachmentId: string;
+  }): Promise<{
+    bytes: Buffer;
+    mimeType: string;
+    originalName: string;
+    expired: boolean;
+  } | null> {
+    const attachment = await this.repository.getAttachmentForAdmin(input);
+    if (!attachment) return null;
+
+    if (attachment.deletedAt || attachment.expiresAt < new Date()) {
+      return {
+        bytes: Buffer.alloc(0),
+        mimeType: attachment.mimeType,
+        originalName: attachment.originalName ?? `attachment-${attachment.id}`,
+        expired: true,
+      };
+    }
+
+    const bytes = await this.blobs.readBinary(attachment.blobKey);
+    if (!bytes) return null;
+
+    return {
+      bytes,
+      mimeType: attachment.mimeType,
+      originalName: attachment.originalName ?? `attachment-${attachment.id}`,
+      expired: false,
+    };
+  }
+
   async getAnalytics(userId: string, from: Date, to: Date): Promise<AiAnalyticsSnapshot> {
     const data = await this.repository.getAnalytics({ userId, from, to });
 

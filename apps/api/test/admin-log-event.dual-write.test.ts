@@ -113,6 +113,31 @@ test('create input derives readable summary and source when metadata summary is 
   assert.equal(input.costUsd, undefined);
 });
 
+test('create input maps ai history cost and tokens from estimatedCostUsd/usage metadata', () => {
+  const input = buildAdminLogEventCreateInput({
+    stream: 'activity',
+    sourceRecordId: 'evt_2',
+    eventType: 'ai.proxy.completed',
+    occurredAt: new Date('2026-04-26T00:00:00.000Z'),
+    metadata: {
+      requestId: 'req_1',
+      estimatedCostUsd: 0.0023,
+      usage: {
+        promptTokens: 111,
+        completionTokens: 222,
+        totalTokens: 333,
+      },
+    },
+  });
+
+  assert.equal(input.targetType, 'ai_request');
+  assert.equal(input.targetId, 'req_1');
+  assert.equal(input.costUsd, 0.0023);
+  assert.equal(input.promptTokens, 111);
+  assert.equal(input.completionTokens, 222);
+  assert.equal(input.totalTokens, 333);
+});
+
 test('best-effort read-model upsert enriches missing actor email/displayName from actorId', async () => {
   const created: any[] = [];
   await upsertAdminLogEventsBestEffort(

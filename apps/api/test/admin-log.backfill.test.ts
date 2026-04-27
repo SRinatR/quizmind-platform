@@ -57,6 +57,87 @@ test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', asy
   assert.equal(result.domain.missing, 0);
 });
 
+test('AdminLogBackfillService enriches AI read-model rows with AiRequestEvent estimated cost', async () => {
+  let capturedCreate: any;
+  let activityCalls = 0;
+  const service = new AdminLogBackfillService({
+    user: { findMany: async () => [] },
+    auditLog: { findMany: async () => [] },
+    activityLog: {
+      findMany: async () => {
+        activityCalls += 1;
+        if (activityCalls > 1) return [];
+        return [
+          {
+            id: 'act_1',
+            actorId: 'user_1',
+            eventType: 'ai.proxy.completed',
+            metadataJson: { requestId: 'req_1', provider: 'openai', model: 'openai/gpt-4o' },
+            createdAt: new Date('2026-04-26T09:00:00.000Z'),
+          },
+        ];
+      },
+    },
+    securityEvent: { findMany: async () => [] },
+    domainEvent: { findMany: async () => [] },
+    aiRequestEvent: {
+      findMany: async () => [{
+        id: 'req_1',
+        provider: 'openai',
+        model: 'openai/gpt-4o',
+        durationMs: 480,
+        estimatedCostUsd: 0.0042,
+        promptTokens: 123,
+        completionTokens: 456,
+        totalTokens: 579,
+        promptExcerpt: 'What is 2+2?',
+      }],
+    },
+    adminLogEvent: {
+      upsert: async ({ create }: any) => { capturedCreate = create; },
+    },
+  } as any, 100);
+
+  await service.run({ stream: 'activity' });
+
+  assert.equal(capturedCreate.costUsd, 0.0042);
+  assert.equal(capturedCreate.promptTokens, 123);
+  assert.equal(capturedCreate.totalTokens, 579);
+});
+
+test('AdminLogBackfillService keeps cost null when matching AiRequestEvent is missing', async () => {
+  let capturedCreate: any;
+  let activityCalls = 0;
+  const service = new AdminLogBackfillService({
+    user: { findMany: async () => [] },
+    auditLog: { findMany: async () => [] },
+    activityLog: {
+      findMany: async () => {
+        activityCalls += 1;
+        if (activityCalls > 1) return [];
+        return [
+          {
+            id: 'act_missing',
+            actorId: 'user_1',
+            eventType: 'ai.proxy.completed',
+            metadataJson: { requestId: 'req_missing' },
+            createdAt: new Date('2026-04-26T09:00:00.000Z'),
+          },
+        ];
+      },
+    },
+    securityEvent: { findMany: async () => [] },
+    domainEvent: { findMany: async () => [] },
+    aiRequestEvent: { findMany: async () => [] },
+    adminLogEvent: {
+      upsert: async ({ create }: any) => { capturedCreate = create; },
+    },
+  } as any, 100);
+
+  await service.run({ stream: 'activity' });
+  assert.equal(capturedCreate.costUsd, undefined);
+});
+
 
 test('admin log scripts initialize PrismaClient with explicit options', async () => {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));

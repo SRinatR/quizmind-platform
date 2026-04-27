@@ -16,6 +16,8 @@ import {
 } from '@quizmind/contracts';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { buildHistoryPromptDisplay } from '../../app/history/history-prompt-display';
+import { getReadableModelName } from '../../app/history/history-model-display';
 
 import { type AdminLogsStateSnapshot } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
@@ -151,6 +153,15 @@ function DetailsDrawer({
   entry: AdminLogEntry;
   onClose: () => void;
 }) {
+  const aiRequest = entry.aiRequest;
+  const promptDisplay = aiRequest
+    ? buildHistoryPromptDisplay({
+        promptContentJson: aiRequest.promptContentJson,
+        promptExcerpt: aiRequest.promptExcerpt,
+        requestType: aiRequest.requestType,
+        attachments: aiRequest.attachments,
+      })
+    : null;
   return (
     <div
       style={{
@@ -252,6 +263,46 @@ function DetailsDrawer({
             {entry.completionTokens !== undefined ? <div className="kv-row"><span className="kv-row__key">Completion tokens</span><span className="kv-row__value">{entry.completionTokens}</span></div> : null}
             {entry.totalTokens !== undefined ? <div className="kv-row"><span className="kv-row__key">Total tokens</span><span className="kv-row__value">{entry.totalTokens}</span></div> : null}
           </div>
+        </>
+      ) : null}
+      {aiRequest ? (
+        <>
+          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>AI request</p>
+          <div className="kv-list">
+            <div className="kv-row"><span className="kv-row__key">Model</span><span className="kv-row__value">{getReadableModelName(aiRequest.model)}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Provider</span><span className="kv-row__value">{aiRequest.provider}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Type</span><span className="kv-row__value">{aiRequest.requestType}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Status</span><span className="kv-row__value">{aiRequest.status}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Cost</span><span className="kv-row__value">{formatCost(aiRequest.estimatedCostUsd ?? undefined)}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Prompt tokens</span><span className="kv-row__value">{aiRequest.promptTokens}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Completion tokens</span><span className="kv-row__value">{aiRequest.completionTokens}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Total tokens</span><span className="kv-row__value">{aiRequest.totalTokens}</span></div>
+            <div className="kv-row"><span className="kv-row__key">Duration</span><span className="kv-row__value">{formatDuration(aiRequest.durationMs ?? undefined)}</span></div>
+          </div>
+          {aiRequest.contentMessage ? <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 8 }}>{aiRequest.contentMessage}</p> : null}
+          {promptDisplay?.hasPromptText ? (
+            <>
+              <p className="micro-label" style={{ marginTop: '12px', marginBottom: '6px' }}>Prompt</p>
+              <pre style={{ fontSize: '0.75rem', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{promptDisplay.cleanQuestionText}</pre>
+            </>
+          ) : null}
+          {aiRequest.responseExcerpt ? (
+            <>
+              <p className="micro-label" style={{ marginTop: '12px', marginBottom: '6px' }}>Response excerpt</p>
+              <pre style={{ fontSize: '0.75rem', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>{aiRequest.responseExcerpt}</pre>
+            </>
+          ) : null}
+          {promptDisplay?.imageAttachments?.map((attachment) => (
+            <div key={attachment.id} style={{ marginTop: 10, border: '1px solid var(--border)', borderRadius: 6, padding: 8 }}>
+              {attachment.viewUrl && !attachment.expired && !attachment.deleted ? <img src={attachment.viewUrl} alt={attachment.originalName ?? 'attachment'} style={{ width: '100%', borderRadius: 4 }} /> : <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>Image expired after retention window.</div>}
+              {attachment.viewUrl && !attachment.expired && !attachment.deleted ? (
+                <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
+                  <a className="btn-ghost" href={attachment.viewUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>Open</a>
+                  <a className="btn-ghost" href={attachment.downloadUrl} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>Download</a>
+                </div>
+              ) : null}
+            </div>
+          ))}
         </>
       ) : null}
 
@@ -762,7 +813,6 @@ export function LogsExplorerClient({
                     </td>
                     <td style={{ padding: '6px 10px', maxWidth: '220px' }}>
                       <div style={{ fontSize: '0.76rem', lineHeight: 1.25 }}>{item.summary}</div>
-                      <div style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: 'var(--muted)', wordBreak: 'break-all' }}>{item.eventType}</div>
                     </td>
                     <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {actorLabel(item) === '—' ? '—' : actorLabel(item)}
