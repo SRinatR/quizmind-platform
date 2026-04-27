@@ -37,6 +37,7 @@
     "start": "tsx src/main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "admin-logs:backfill": "tsx src/scripts/admin-logs-backfill.ts",
-    "admin-logs:verify-backfill": "tsx src/scripts/admin-logs-verify-backfill.ts"
+    "admin-logs:verify-backfill": "tsx src/scripts/admin-logs-verify-backfill.ts",
+    "admin-logs:prune-read-model": "tsx src/scripts/admin-logs-prune-read-model.ts"
   }
 }
