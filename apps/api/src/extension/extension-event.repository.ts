@@ -3,6 +3,16 @@ import { Prisma } from '@quizmind/database';
 import { type StructuredLogEvent } from '@quizmind/logger';
 
 import { PrismaService } from '../database/prisma.service';
+import {
+  buildReadModelFromAuditRow,
+  buildReadModelFromDomainRow,
+  buildReadModelFromSecurityRow,
+  createAuditLogWithReadModel,
+  createDomainEventWithReadModel,
+  createSecurityEventWithReadModel,
+  upsertAdminLogEventsBestEffort,
+  type ReadModelUpsert,
+} from '../logs/admin-log-write-path';
 
 interface RecordExtensionLifecycleEventInput {
   occurredAt: Date;
@@ -26,35 +36,37 @@ export class ExtensionEventRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async recordLifecycleEvent(input: RecordExtensionLifecycleEventInput): Promise<void> {
-    await this.prisma.$transaction(async (transaction) => {
-      await transaction.auditLog.create({
-        data: {
+    const readModelEvents = await this.prisma.$transaction(async (transaction) => {
+      const readModelEvents: ReadModelUpsert[] = [];
+      const auditRow = await createAuditLogWithReadModel(transaction, {
           actorId: input.auditLog.actorId || null,
           action: input.auditLog.eventType,
           targetType: input.auditLog.targetType,
           targetId: input.auditLog.targetId,
           metadataJson: buildMetadataJson(input.auditLog),
           createdAt: input.occurredAt,
-        },
       });
+      readModelEvents.push(buildReadModelFromAuditRow(auditRow));
 
-      await transaction.securityEvent.create({
-        data: {
+      const securityRow = await createSecurityEventWithReadModel(transaction, {
           actorId: input.securityLog.actorId || null,
           eventType: input.securityLog.eventType,
           severity: input.securityLog.severity,
           metadataJson: buildMetadataJson(input.securityLog),
           createdAt: input.occurredAt,
-        },
       });
+      readModelEvents.push(buildReadModelFromSecurityRow(securityRow));
 
-      await transaction.domainEvent.create({
-        data: {
+      const domainRow = await createDomainEventWithReadModel(transaction, {
           eventType: input.domainEventType,
           payloadJson: input.domainPayload,
           createdAt: input.occurredAt,
-        },
       });
+      readModelEvents.push(buildReadModelFromDomainRow(domainRow));
+
+      return readModelEvents;
     });
+
+    await upsertAdminLogEventsBestEffort(this.prisma, readModelEvents);
   }
 }

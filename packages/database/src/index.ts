@@ -46,3 +46,5 @@ export const databaseSchemas = {
   observability: ['audit_logs', 'activity_logs', 'domain_events', 'security_events', 'ai_requests'],
   support: ['support_tickets', 'support_impersonation_sessions'],
 } as const;
+
+export * from './admin-log-event';

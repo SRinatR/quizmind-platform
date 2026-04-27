@@ -26,10 +26,10 @@ test('admin logs bff forwards auth token and query params', async () => {
     },
   });
 
-  const response = await GET(new Request('http://localhost/bff/admin/logs?stream=audit&severity=error&page=3') as never);
+  const response = await GET(new Request('http://localhost/bff/admin/logs?stream=audit&severity=error&page=3&cursor=abc123') as never);
   const payload = await response.json() as { ok: boolean };
 
   assert.equal(response.status, 200);
   assert.equal(payload.ok, true);
-  assert.equal(capturedUrl, 'http://platform.internal:4000/admin/logs?stream=audit&severity=error&page=3');
+  assert.equal(capturedUrl, 'http://platform.internal:4000/admin/logs?stream=audit&severity=error&page=3&cursor=abc123');
 });

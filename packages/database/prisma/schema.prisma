@@ -612,6 +612,40 @@ model DomainEvent {
   createdAt   DateTime @default(now())
 }
 
+model AdminLogEvent {
+  id               String        @id @default(cuid())
+  stream           String
+  sourceRecordId   String
+  eventType        String
+  summary          String
+  occurredAt       DateTime
+  severity         EventSeverity?
+  status           String?
+  actorId          String?
+  actorEmail       String?
+  actorDisplayName String?
+  targetType       String?
+  targetId         String?
+  category         String?
+  source           String?
+  installationId   String?
+  provider         String?
+  model            String?
+  durationMs       Int?
+  costUsd          Float?
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  errorSummary     String?
+  searchText       String?
+  metadataJson     Json?
+  payloadJson      Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([stream, sourceRecordId])
+}
+
 model SupportTicket {
   id          String       @id @default(cuid())
   workspaceId String?

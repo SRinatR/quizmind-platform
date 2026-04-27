@@ -417,6 +417,7 @@ export const ModelName = {
   ActivityLog: 'ActivityLog',
   SecurityEvent: 'SecurityEvent',
   DomainEvent: 'DomainEvent',
+  AdminLogEvent: 'AdminLogEvent',
   SupportTicket: 'SupportTicket',
   SupportTicketPresetFavorite: 'SupportTicketPresetFavorite',
   SupportImpersonationSession: 'SupportImpersonationSession'
@@ -435,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "adminLogEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2881,6 +2882,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AdminLogEvent: {
+      payload: Prisma.$AdminLogEventPayload<ExtArgs>
+      fields: Prisma.AdminLogEventFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminLogEventFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminLogEventFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminLogEventFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminLogEventFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>
+        }
+        findMany: {
+          args: Prisma.AdminLogEventFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>[]
+        }
+        create: {
+          args: Prisma.AdminLogEventCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>
+        }
+        createMany: {
+          args: Prisma.AdminLogEventCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminLogEventCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminLogEventDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>
+        }
+        update: {
+          args: Prisma.AdminLogEventUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminLogEventDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminLogEventUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminLogEventUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminLogEventUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminLogEventPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminLogEventAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminLogEvent>
+        }
+        groupBy: {
+          args: Prisma.AdminLogEventGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminLogEventGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminLogEventCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminLogEventCountAggregateOutputType> | number
+        }
+      }
+    }
     SupportTicket: {
       payload: Prisma.$SupportTicketPayload<ExtArgs>
       fields: Prisma.SupportTicketFieldRefs
@@ -3643,6 +3718,41 @@ export const DomainEventScalarFieldEnum = {
 export type DomainEventScalarFieldEnum = (typeof DomainEventScalarFieldEnum)[keyof typeof DomainEventScalarFieldEnum]
 
 
+export const AdminLogEventScalarFieldEnum = {
+  id: 'id',
+  stream: 'stream',
+  sourceRecordId: 'sourceRecordId',
+  eventType: 'eventType',
+  summary: 'summary',
+  occurredAt: 'occurredAt',
+  severity: 'severity',
+  status: 'status',
+  actorId: 'actorId',
+  actorEmail: 'actorEmail',
+  actorDisplayName: 'actorDisplayName',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  category: 'category',
+  source: 'source',
+  installationId: 'installationId',
+  provider: 'provider',
+  model: 'model',
+  durationMs: 'durationMs',
+  costUsd: 'costUsd',
+  promptTokens: 'promptTokens',
+  completionTokens: 'completionTokens',
+  totalTokens: 'totalTokens',
+  errorSummary: 'errorSummary',
+  searchText: 'searchText',
+  metadataJson: 'metadataJson',
+  payloadJson: 'payloadJson',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdminLogEventScalarFieldEnum = (typeof AdminLogEventScalarFieldEnum)[keyof typeof AdminLogEventScalarFieldEnum]
+
+
 export const SupportTicketScalarFieldEnum = {
   id: 'id',
   workspaceId: 'workspaceId',
@@ -4124,6 +4234,7 @@ export type GlobalOmitConfig = {
   activityLog?: Prisma.ActivityLogOmit
   securityEvent?: Prisma.SecurityEventOmit
   domainEvent?: Prisma.DomainEventOmit
+  adminLogEvent?: Prisma.AdminLogEventOmit
   supportTicket?: Prisma.SupportTicketOmit
   supportTicketPresetFavorite?: Prisma.SupportTicketPresetFavoriteOmit
   supportImpersonationSession?: Prisma.SupportImpersonationSessionOmit

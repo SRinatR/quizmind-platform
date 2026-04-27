@@ -207,6 +207,11 @@ export type SecurityEvent = Prisma.SecurityEventModel
  */
 export type DomainEvent = Prisma.DomainEventModel
 /**
+ * Model AdminLogEvent
+ * 
+ */
+export type AdminLogEvent = Prisma.AdminLogEventModel
+/**
  * Model SupportTicket
  * 
  */

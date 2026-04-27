@@ -1366,25 +1366,44 @@ export class PlatformService {
       throw new ForbiddenException(accessDecision.reasons.join('; '));
     }
 
-    const records = await this.adminLogRepository.listRecent({
+    const records = await this.adminLogRepository.listPage({
       stream: normalizedFilters.stream,
       severity: normalizedFilters.severity,
+      search: normalizedFilters.search,
+      ...(normalizedFilters.category && normalizedFilters.category !== 'all' ? { category: normalizedFilters.category } : {}),
+      ...(normalizedFilters.source && normalizedFilters.source !== 'all' ? { source: normalizedFilters.source } : {}),
+      ...(normalizedFilters.status && normalizedFilters.status !== 'all' ? { status: normalizedFilters.status } : {}),
+      eventType: normalizedFilters.eventType,
       from: normalizedFilters.from,
       to: normalizedFilters.to,
+      limit: normalizedFilters.limit,
+      cursor: normalizedFilters.cursor,
     });
-    const baseItems = this.mapConnectedAdminLogEntries(records, { includeMetadata: false });
-    const filtered = this.filterAdminLogEntries(baseItems, normalizedFilters);
+    const items = records.items.map((item) => this.mapConnectedAdminLogListItem(item));
+    const streamCounts = {
+      audit: items.filter((item) => item.stream === 'audit').length,
+      activity: items.filter((item) => item.stream === 'activity').length,
+      security: items.filter((item) => item.stream === 'security').length,
+      domain: items.filter((item) => item.stream === 'domain').length,
+    };
+    const categoryCounts = {
+      auth: items.filter((item) => item.category === 'auth').length,
+      extension: items.filter((item) => item.category === 'extension').length,
+      ai: items.filter((item) => item.category === 'ai').length,
+      admin: items.filter((item) => item.category === 'admin').length,
+      system: items.filter((item) => item.category === 'system').length,
+    };
 
     return {
       personaKey: 'connected-user',
       accessDecision,
       exportDecision,
       filters: normalizedFilters,
-      items: filtered.items,
-      streamCounts: filtered.streamCounts,
-      categoryCounts: filtered.categoryCounts,
-      total: filtered.total,
-      hasNext: filtered.hasNext,
+      items,
+      streamCounts,
+      categoryCounts,
+      hasNext: records.hasNext,
+      nextCursor: records.nextCursor,
       permissions: session.permissions,
     };
   }
@@ -1424,13 +1443,7 @@ export class PlatformService {
       throw new NotFoundException('Log entry not found.');
     }
 
-    const entries = this.mapConnectedAdminLogEntries(result, { includeMetadata: true });
-    const entry = entries[0];
-    if (!entry) {
-      throw new NotFoundException('Log entry not found.');
-    }
-
-    return entry;
+    return this.mapConnectedAdminLogListItem(result.item, result.metadata);
   }
 
   listFeatureFlags(personaKey?: string) {
@@ -2788,6 +2801,7 @@ export class PlatformService {
       typeof filters?.page === 'number' && Number.isFinite(filters.page)
         ? Math.max(Math.trunc(filters.page), 1)
         : 1;
+    const cursor = filters?.cursor?.trim() || undefined;
 
     return {
       stream,
@@ -2801,6 +2815,7 @@ export class PlatformService {
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
       page,
+      ...(cursor ? { cursor } : {}),
     };
   }
 
@@ -2894,109 +2909,42 @@ export class PlatformService {
     ];
   }
 
-  private mapConnectedAdminLogEntries(
-    input: Awaited<ReturnType<AdminLogRepository['listRecent']>>,
-    options: { includeMetadata: boolean } = { includeMetadata: true },
-  ): AdminLogEntry[] {
-    const actorById = new Map(
-      input.actors.map((actor) => [
-        actor.id,
-        {
-          id: actor.id,
-          email: actor.email,
-          ...(actor.displayName ? { displayName: actor.displayName } : {}),
-        },
-      ]),
-    );
-
-    return [
-      ...input.audit.map((record) => {
-        const metadata = this.toAdminLogMetadata(record.metadataJson);
-        const severity = this.readAdminLogSeverity(metadata);
-        const status = this.readAdminLogStatus(metadata);
-        const category = this.deriveAdminLogCategory(record.action, 'audit', metadata);
-        const source = this.deriveAdminLogSource(record.action, metadata);
-        const richFields = this.extractAdminLogRichFields(metadata);
-
-        return {
-          id: `audit:${record.id}`,
-          stream: 'audit' as const,
-          eventType: record.action,
-          summary:
-            this.readAdminLogSummary(metadata) ??
-            `Audit event ${record.action} on ${record.targetType} ${record.targetId}.`,
-          occurredAt: record.createdAt.toISOString(),
-          category,
-          ...(source ? { source } : {}),
-          ...(severity ? { severity } : {}),
-          ...(status ? { status } : {}),
-          ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          targetType: record.targetType,
-          targetId: record.targetId,
-          ...(options.includeMetadata && metadata ? { metadata } : {}),
-          ...richFields,
-        };
-      }),
-      ...input.activity.map((record) => {
-        const metadata = this.toAdminLogMetadata(record.metadataJson);
-        const category = this.deriveAdminLogCategory(record.eventType, 'activity', metadata);
-        const source = this.deriveAdminLogSource(record.eventType, metadata);
-        const richFields = this.extractAdminLogRichFields(metadata);
-
-        return {
-          id: `activity:${record.id}`,
-          stream: 'activity' as const,
-          eventType: record.eventType,
-          summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
-          occurredAt: record.createdAt.toISOString(),
-          category,
-          ...(source ? { source } : {}),
-          ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(options.includeMetadata && metadata ? { metadata } : {}),
-          ...richFields,
-        };
-      }),
-      ...input.security.map((record) => {
-        const metadata = this.toAdminLogMetadata(record.metadataJson);
-        const status = this.readAdminLogStatus(metadata);
-        const category = this.deriveAdminLogCategory(record.eventType, 'security', metadata);
-        const source = this.deriveAdminLogSource(record.eventType, metadata);
-        const richFields = this.extractAdminLogRichFields(metadata);
-
-        return {
-          id: `security:${record.id}`,
-          stream: 'security' as const,
-          eventType: record.eventType,
-          summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
-          occurredAt: record.createdAt.toISOString(),
-          category,
-          ...(source ? { source } : {}),
-          severity: record.severity,
-          ...(status ? { status } : {}),
-          ...(record.actorId ? { actor: actorById.get(record.actorId) ?? { id: record.actorId } } : {}),
-          ...(options.includeMetadata && metadata ? { metadata } : {}),
-          ...richFields,
-        };
-      }),
-      ...input.domain.map((record) => {
-        const metadata = this.toAdminLogMetadata(record.payloadJson);
-        const category = this.deriveAdminLogCategory(record.eventType, 'domain', metadata);
-        const source = this.deriveAdminLogSource(record.eventType, metadata);
-        const richFields = this.extractAdminLogRichFields(metadata);
-
-        return {
-          id: `domain:${record.id}`,
-          stream: 'domain' as const,
-          eventType: record.eventType,
-          summary: this.readAdminLogSummary(metadata) ?? this.summarizeMetadataPayload(metadata, record.eventType),
-          occurredAt: record.createdAt.toISOString(),
-          category,
-          ...(source ? { source } : {}),
-          ...(options.includeMetadata && metadata ? { metadata } : {}),
-          ...richFields,
-        };
-      }),
-    ].sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime());
+  private mapConnectedAdminLogListItem(
+    item: Awaited<ReturnType<AdminLogRepository['listPage']>>['items'][number],
+    metadata?: Record<string, unknown>,
+  ): AdminLogEntry {
+    return {
+      id: item.id,
+      stream: item.stream,
+      eventType: item.eventType,
+      summary: item.summary,
+      occurredAt: item.occurredAt.toISOString(),
+      ...(item.severity ? { severity: item.severity } : {}),
+      ...(item.status ? { status: item.status } : {}),
+      ...(item.actorId
+        ? {
+            actor: {
+              id: item.actorId,
+              ...(item.actorEmail ? { email: item.actorEmail } : {}),
+              ...(item.actorDisplayName ? { displayName: item.actorDisplayName } : {}),
+            },
+          }
+        : {}),
+      ...(item.targetType ? { targetType: item.targetType } : {}),
+      ...(item.targetId ? { targetId: item.targetId } : {}),
+      ...(item.category ? { category: item.category } : {}),
+      ...(item.source ? { source: item.source } : {}),
+      ...(item.installationId ? { installationId: item.installationId } : {}),
+      ...(item.provider ? { provider: item.provider } : {}),
+      ...(item.model ? { model: item.model } : {}),
+      ...(typeof item.durationMs === 'number' ? { durationMs: item.durationMs } : {}),
+      ...(typeof item.costUsd === 'number' ? { costUsd: item.costUsd } : {}),
+      ...(typeof item.promptTokens === 'number' ? { promptTokens: item.promptTokens } : {}),
+      ...(typeof item.completionTokens === 'number' ? { completionTokens: item.completionTokens } : {}),
+      ...(typeof item.totalTokens === 'number' ? { totalTokens: item.totalTokens } : {}),
+      ...(item.errorSummary ? { errorSummary: item.errorSummary } : {}),
+      ...(metadata ? { metadata } : {}),
+    };
   }
 
   private filterAdminLogEntries(items: AdminLogEntry[], filters: AdminLogFilters): {
@@ -3081,7 +3029,7 @@ export class PlatformService {
       items: snapshot.items,
       streamCounts: snapshot.streamCounts,
       categoryCounts: snapshot.categoryCounts,
-      total: snapshot.total,
+      total: snapshot.total ?? snapshot.items.length,
       hasNext: snapshot.hasNext,
       findings: this.buildAdminSecurityFindings(snapshot.items),
       lifecycleTrend: this.buildAdminSecurityLifecycleTrend(snapshot.items),

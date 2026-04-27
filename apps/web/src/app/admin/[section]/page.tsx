@@ -244,6 +244,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     from: readSearchParam(resolvedSearchParams, 'logFrom'),
     to: readSearchParam(resolvedSearchParams, 'logTo'),
     page: readIntegerSearchParam(resolvedSearchParams, 'logPage'),
+    cursor: readSearchParam(resolvedSearchParams, 'logCursor'),
   };
 
   // ── Section-targeted data fetching ───────────────────────────────────────────

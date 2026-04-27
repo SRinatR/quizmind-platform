@@ -477,6 +477,7 @@ export interface AdminLogFilters {
   severity: AdminLogSeverityFilter;
   search?: string;
   limit: number;
+  cursor?: string;
   category?: AdminLogCategoryFilter;
   source?: AdminLogSourceFilter;
   status?: AdminLogStatusFilter;
@@ -536,8 +537,9 @@ export interface AdminLogsSnapshot {
   items: AdminLogEntry[];
   streamCounts: AdminLogStreamCounts;
   categoryCounts: AdminLogCategoryCounts;
-  total: number;
+  total?: number;
   hasNext: boolean;
+  nextCursor?: string | null;
   permissions: string[];
 }
 

@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@quizmind/database';
+import { buildAdminLogEventCreateInput, Prisma, PrismaClient } from '@quizmind/database';
 
 export interface CreateWorkerDomainEventInput {
   eventType: string;
@@ -11,6 +11,8 @@ export class WorkerDomainEventRepository {
 
   create(input: CreateWorkerDomainEventInput): Promise<{ id: string }> {
     return this.prisma.domainEvent.create({
+      // Worker keeps an explicit local domain write + read-model upsert sequence.
+      // Domain event commit must succeed even if read-model write later fails.
       data: {
         eventType: input.eventType,
         payloadJson: input.payloadJson as Prisma.InputJsonValue,
@@ -19,6 +21,25 @@ export class WorkerDomainEventRepository {
       select: {
         id: true,
       },
+    }).then(async (domainEvent) => {
+      try {
+        const upsertData = buildAdminLogEventCreateInput({
+          stream: 'domain',
+          sourceRecordId: domainEvent.id,
+          eventType: input.eventType,
+          occurredAt: input.createdAt,
+          payload: input.payloadJson,
+        });
+        await this.prisma.adminLogEvent.upsert({
+          where: { stream_sourceRecordId: { stream: 'domain', sourceRecordId: domainEvent.id } },
+          create: upsertData,
+          update: upsertData,
+        });
+      } catch {
+        // best effort read-model write: do not fail queue-domain writes
+      }
+
+      return domainEvent;
     });
   }
 }
