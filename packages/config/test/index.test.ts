@@ -133,7 +133,23 @@ test('validateApiEnv rejects negative trust proxy hops', () => {
   assert.ok(issues.some((issue) => issue.key === 'TRUST_PROXY_HOPS'));
 });
 
-test('validateWorkerEnv enforces email provider settings for production queue delivery', () => {
+test('validateWorkerEnv accepts EMAIL_PROVIDER=noop in production', () => {
+  const env = loadWorkerEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    API_URL: 'https://api.quizmind.dev',
+    DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/quizmind',
+    REDIS_URL: 'redis://localhost:6379',
+    EMAIL_PROVIDER: 'noop',
+    EMAIL_FROM: 'noreply@quizmind.dev',
+  });
+
+  const issues = validateWorkerEnv(env);
+
+  assert.equal(issues.length, 0);
+});
+
+test('validateWorkerEnv accepts EMAIL_PROVIDER=noop with local default sender in production', () => {
   const env = loadWorkerEnv({
     NODE_ENV: 'production',
     QUIZMIND_RUNTIME_MODE: 'connected',
@@ -146,8 +162,57 @@ test('validateWorkerEnv enforces email provider settings for production queue de
 
   const issues = validateWorkerEnv(env);
 
-  assert.ok(issues.some((issue) => issue.key === 'EMAIL_PROVIDER'));
+  assert.equal(issues.length, 0);
+});
+
+test('validateWorkerEnv rejects production resend mode without RESEND_API_KEY', () => {
+  const env = loadWorkerEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    API_URL: 'https://api.quizmind.dev',
+    DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/quizmind',
+    REDIS_URL: 'redis://localhost:6379',
+    EMAIL_PROVIDER: 'resend',
+    EMAIL_FROM: 'noreply@quizmind.dev',
+  });
+
+  const issues = validateWorkerEnv(env);
+
+  assert.ok(issues.some((issue) => issue.key === 'RESEND_API_KEY'));
+});
+
+test('validateWorkerEnv rejects production resend mode with local default sender', () => {
+  const env = loadWorkerEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    API_URL: 'https://api.quizmind.dev',
+    DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/quizmind',
+    REDIS_URL: 'redis://localhost:6379',
+    EMAIL_PROVIDER: 'resend',
+    RESEND_API_KEY: 'resend-key',
+    EMAIL_FROM: 'noreply@quizmind.local',
+  });
+
+  const issues = validateWorkerEnv(env);
+
   assert.ok(issues.some((issue) => issue.key === 'EMAIL_FROM'));
+});
+
+test('validateWorkerEnv accepts production resend mode with API key and real sender', () => {
+  const env = loadWorkerEnv({
+    NODE_ENV: 'production',
+    QUIZMIND_RUNTIME_MODE: 'connected',
+    API_URL: 'https://api.quizmind.dev',
+    DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/quizmind',
+    REDIS_URL: 'redis://localhost:6379',
+    EMAIL_PROVIDER: 'resend',
+    RESEND_API_KEY: 'resend-key',
+    EMAIL_FROM: 'noreply@quizmind.dev',
+  });
+
+  const issues = validateWorkerEnv(env);
+
+  assert.equal(issues.length, 0);
 });
 
 test('validateWorkerEnv rejects production mock mode and loopback API URL', () => {
