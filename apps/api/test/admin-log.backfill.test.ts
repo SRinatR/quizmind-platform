@@ -59,19 +59,24 @@ test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', asy
 
 test('AdminLogBackfillService enriches AI read-model rows with AiRequestEvent estimated cost', async () => {
   let capturedCreate: any;
+  let activityCalls = 0;
   const service = new AdminLogBackfillService({
     user: { findMany: async () => [] },
     auditLog: { findMany: async () => [] },
     activityLog: {
-      findMany: async () => [
-        {
-          id: 'act_1',
-          actorId: 'user_1',
-          eventType: 'ai.proxy.completed',
-          metadataJson: { requestId: 'req_1', provider: 'openai', model: 'openai/gpt-4o' },
-          createdAt: new Date('2026-04-26T09:00:00.000Z'),
-        },
-      ],
+      findMany: async () => {
+        activityCalls += 1;
+        if (activityCalls > 1) return [];
+        return [
+          {
+            id: 'act_1',
+            actorId: 'user_1',
+            eventType: 'ai.proxy.completed',
+            metadataJson: { requestId: 'req_1', provider: 'openai', model: 'openai/gpt-4o' },
+            createdAt: new Date('2026-04-26T09:00:00.000Z'),
+          },
+        ];
+      },
     },
     securityEvent: { findMany: async () => [] },
     domainEvent: { findMany: async () => [] },
@@ -102,19 +107,24 @@ test('AdminLogBackfillService enriches AI read-model rows with AiRequestEvent es
 
 test('AdminLogBackfillService keeps cost null when matching AiRequestEvent is missing', async () => {
   let capturedCreate: any;
+  let activityCalls = 0;
   const service = new AdminLogBackfillService({
     user: { findMany: async () => [] },
     auditLog: { findMany: async () => [] },
     activityLog: {
-      findMany: async () => [
-        {
-          id: 'act_missing',
-          actorId: 'user_1',
-          eventType: 'ai.proxy.completed',
-          metadataJson: { requestId: 'req_missing' },
-          createdAt: new Date('2026-04-26T09:00:00.000Z'),
-        },
-      ],
+      findMany: async () => {
+        activityCalls += 1;
+        if (activityCalls > 1) return [];
+        return [
+          {
+            id: 'act_missing',
+            actorId: 'user_1',
+            eventType: 'ai.proxy.completed',
+            metadataJson: { requestId: 'req_missing' },
+            createdAt: new Date('2026-04-26T09:00:00.000Z'),
+          },
+        ];
+      },
     },
     securityEvent: { findMany: async () => [] },
     domainEvent: { findMany: async () => [] },
