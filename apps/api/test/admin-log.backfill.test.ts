@@ -138,6 +138,36 @@ test('AdminLogBackfillService keeps cost null when matching AiRequestEvent is mi
   assert.equal(capturedCreate.costUsd, undefined);
 });
 
+test('AdminLogBackfillService skips AI proxy domain rows but keeps non-AI domain events visible', async () => {
+  const created: Array<{ stream: string; eventType: string }> = [];
+  let domainCalls = 0;
+  const service = new AdminLogBackfillService({
+    user: { findMany: async () => [] },
+    auditLog: { findMany: async () => [] },
+    activityLog: { findMany: async () => [] },
+    securityEvent: { findMany: async () => [] },
+    domainEvent: {
+      findMany: async () => {
+        domainCalls += 1;
+        if (domainCalls > 1) return [];
+        return [
+          { id: 'domain_ai', eventType: 'ai.proxy.completed', payloadJson: { requestId: 'req_1' }, createdAt: new Date('2026-04-26T09:00:00.000Z') },
+          { id: 'domain_non_ai', eventType: 'extension.installation_created', payloadJson: {}, createdAt: new Date('2026-04-26T09:00:01.000Z') },
+        ];
+      },
+    },
+    aiRequestEvent: { findMany: async () => [] },
+    adminLogEvent: {
+      upsert: async ({ create }: any) => {
+        created.push({ stream: create.stream, eventType: create.eventType });
+      },
+    },
+  } as any, 100);
+
+  await service.run({ stream: 'domain' });
+  assert.deepEqual(created, [{ stream: 'domain', eventType: 'extension.installation_created' }]);
+});
+
 
 test('admin log scripts initialize PrismaClient with explicit options', async () => {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));

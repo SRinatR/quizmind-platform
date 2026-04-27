@@ -7,6 +7,14 @@ function toMetadata(value: unknown): Record<string, unknown> | undefined {
   return value as Record<string, unknown>;
 }
 
+function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
+  if (status === 'success') return 'success';
+  if (status === 'error' || status === 'failed' || status === 'failure' || status === 'quota_exceeded' || status === 'timeout') {
+    return 'failure';
+  }
+  return undefined;
+}
+
 function withActorMetadata(metadata: Record<string, unknown> | undefined): Record<string, unknown> {
   return {
     ...(metadata ?? {}),
@@ -153,8 +161,8 @@ export async function upsertAdminLogEventsBestEffort(
         metadata: toMetadata(event.data.metadataJson),
         payload: toMetadata(event.data.payloadJson),
       });
-      const aiRequest = aiRequestCandidates.length > 0 && (prisma as { aiRequestEvent?: PrismaClient['aiRequestEvent'] }).aiRequestEvent
-        ? await prisma.aiRequestEvent.findFirst({
+      const aiRequests = aiRequestCandidates.length > 0 && (prisma as { aiRequestEvent?: PrismaClient['aiRequestEvent'] }).aiRequestEvent
+        ? await prisma.aiRequestEvent.findMany({
             where: { id: { in: aiRequestCandidates } },
             select: {
               id: true,
@@ -166,15 +174,21 @@ export async function upsertAdminLogEventsBestEffort(
               completionTokens: true,
               totalTokens: true,
               promptExcerpt: true,
+              status: true,
             },
           })
-        : null;
+        : [];
+      const aiRequestById = new Map(aiRequests.map((request) => [request.id, request]));
+      const aiRequest = aiRequestCandidates
+        .map((candidate) => aiRequestById.get(candidate))
+        .find(Boolean);
 
       const baseData = aiRequest
         ? {
             ...event.data,
             provider: event.data.provider ?? aiRequest.provider,
             model: event.data.model ?? aiRequest.model,
+            status: event.data.status ?? normalizeAdminStatus(aiRequest.status),
             durationMs: event.data.durationMs ?? aiRequest.durationMs ?? undefined,
             costUsd: event.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
             promptTokens: event.data.promptTokens ?? aiRequest.promptTokens,

@@ -4,6 +4,14 @@ import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candid
 
 type Stream = 'audit' | 'activity' | 'security' | 'domain';
 
+function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
+  if (status === 'success') return 'success';
+  if (status === 'error' || status === 'failed' || status === 'failure' || status === 'quota_exceeded' || status === 'timeout') {
+    return 'failure';
+  }
+  return undefined;
+}
+
 export interface AdminLogBackfillScope {
   stream?: Stream | 'all';
   from?: Date;
@@ -48,6 +56,7 @@ export class AdminLogBackfillService {
             completionTokens: true,
             totalTokens: true,
             promptExcerpt: true,
+            status: true,
           },
         })
       : [];
@@ -70,6 +79,7 @@ export class AdminLogBackfillService {
             targetId: row.data.targetId ?? aiRequest.id,
             provider: row.data.provider ?? aiRequest.provider,
             model: row.data.model ?? aiRequest.model,
+            status: row.data.status ?? normalizeAdminStatus(aiRequest.status),
             durationMs: row.data.durationMs ?? aiRequest.durationMs ?? undefined,
             costUsd: row.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
             promptTokens: row.data.promptTokens ?? aiRequest.promptTokens,
@@ -228,7 +238,12 @@ export class AdminLogBackfillService {
         select: { id: true, eventType: true, payloadJson: true, createdAt: true },
       });
       if (rows.length === 0) break;
-      await this.upsertBatch(rows.map((row) => ({
+      await this.upsertBatch(rows
+        .filter((row) => !(
+          row.eventType.startsWith('ai.proxy.')
+          && (row.eventType === 'ai.proxy.completed' || row.eventType === 'ai.proxy.failed' || row.eventType === 'ai.proxy.quota_exceeded' || row.eventType === 'ai.proxy.timeout')
+        ))
+        .map((row) => ({
         stream: 'domain' as const,
         sourceRecordId: row.id,
         data: buildAdminLogEventCreateInput({

@@ -10,6 +10,30 @@ interface RepairCursor {
 export interface AdminLogRepairResult {
   inspected: number;
   updated: number;
+  enrichedAi: number;
+  duplicateAiDomainDeleted: number;
+}
+
+const AI_PROXY_FAILURE_EVENT_TYPES = new Set([
+  'ai.proxy.failed',
+  'ai.proxy.timeout',
+  'ai.proxy.quota_exceeded',
+  'ai.proxy.user_key_failed',
+]);
+
+function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
+  if (status === 'success') return 'success';
+  if (status === 'error' || status === 'failed' || status === 'failure' || status === 'quota_exceeded' || status === 'timeout') {
+    return 'failure';
+  }
+  return undefined;
+}
+
+function deriveAiStatusFromEventType(eventType: string): 'success' | 'failure' | undefined {
+  const normalized = eventType.toLowerCase();
+  if (normalized === 'ai.proxy.completed') return 'success';
+  if (AI_PROXY_FAILURE_EVENT_TYPES.has(normalized)) return 'failure';
+  return undefined;
 }
 
 export class AdminLogRepairService {
@@ -17,7 +41,7 @@ export class AdminLogRepairService {
 
   async repairReadModel(): Promise<AdminLogRepairResult> {
     let cursor: RepairCursor | null = null;
-    const totals: AdminLogRepairResult = { inspected: 0, updated: 0 };
+    const totals: AdminLogRepairResult = { inspected: 0, updated: 0, enrichedAi: 0, duplicateAiDomainDeleted: 0 };
 
     while (true) {
       const rows = await this.prisma.adminLogEvent.findMany({
@@ -38,6 +62,7 @@ export class AdminLogRepairService {
           eventType: true,
           occurredAt: true,
           severity: true,
+          status: true,
           actorId: true,
           targetType: true,
           targetId: true,
@@ -87,11 +112,14 @@ export class AdminLogRepairService {
               completionTokens: true,
               totalTokens: true,
               promptExcerpt: true,
+              status: true,
             },
           })
         : [];
       const aiRequestById = new Map(aiRequestRows.map((request) => [request.id, request]));
 
+      const duplicateDomainRowIds: string[] = [];
+      const domainRequestIdByRowId = new Map<string, string>();
       for (const row of rows) {
         const metadata = this.toObject(row.metadataJson);
         const payload = this.toObject(row.payloadJson);
@@ -131,6 +159,7 @@ export class AdminLogRepairService {
         const nextTargetId = rebuilt.targetId ?? aiRequest?.id ?? null;
         const nextProvider = rebuilt.provider ?? aiRequest?.provider ?? null;
         const nextModel = rebuilt.model ?? aiRequest?.model ?? null;
+        const nextStatus = rebuilt.status ?? normalizeAdminStatus(aiRequest?.status) ?? deriveAiStatusFromEventType(row.eventType) ?? null;
         const nextDurationMs = rebuilt.durationMs ?? aiRequest?.durationMs ?? null;
         const nextCostUsd = rebuilt.costUsd ?? aiRequest?.estimatedCostUsd ?? null;
         const nextPromptTokens = rebuilt.promptTokens ?? aiRequest?.promptTokens ?? null;
@@ -148,6 +177,7 @@ export class AdminLogRepairService {
           || row.targetId !== nextTargetId
           || row.provider !== nextProvider
           || row.model !== nextModel
+          || row.status !== nextStatus
           || row.durationMs !== nextDurationMs
           || row.costUsd !== nextCostUsd
           || row.promptTokens !== nextPromptTokens
@@ -167,6 +197,7 @@ export class AdminLogRepairService {
               targetId: nextTargetId,
               provider: nextProvider,
               model: nextModel,
+              status: nextStatus,
               durationMs: nextDurationMs,
               costUsd: nextCostUsd,
               promptTokens: nextPromptTokens,
@@ -176,6 +207,39 @@ export class AdminLogRepairService {
           });
           totals.updated += 1;
         }
+
+        const rowIsAi = row.eventType.toLowerCase().startsWith('ai.proxy.');
+        if (rowIsAi && aiRequest && row.costUsd !== nextCostUsd) {
+          totals.enrichedAi += 1;
+        }
+        if (row.stream === 'domain' && rowIsAi && nextTargetId) {
+          domainRequestIdByRowId.set(row.id, nextTargetId);
+        }
+      }
+
+      const domainRequestIds = Array.from(new Set(domainRequestIdByRowId.values()));
+      if (domainRequestIds.length > 0) {
+        const activityRows = await this.prisma.adminLogEvent.findMany({
+          where: {
+            stream: 'activity',
+            eventType: { in: ['ai.proxy.completed', 'ai.proxy.failed', 'ai.proxy.timeout', 'ai.proxy.quota_exceeded'] },
+            targetId: { in: domainRequestIds },
+          },
+          select: { id: true, targetId: true },
+        });
+        const activityTargetIds = new Set(activityRows.map((activityRow) => activityRow.targetId).filter(Boolean));
+        for (const [rowId, requestId] of domainRequestIdByRowId.entries()) {
+          if (activityTargetIds.has(requestId)) {
+            duplicateDomainRowIds.push(rowId);
+          }
+        }
+      }
+
+      if (duplicateDomainRowIds.length > 0) {
+        const deleteResult = await this.prisma.adminLogEvent.deleteMany({
+          where: { id: { in: duplicateDomainRowIds } },
+        });
+        totals.duplicateAiDomainDeleted += deleteResult.count;
       }
 
       const last = rows[rows.length - 1]!;

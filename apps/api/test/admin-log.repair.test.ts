@@ -45,6 +45,7 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
       update: async ({ data }: any) => {
         updates.push(data);
       },
+      deleteMany: async () => ({ count: 0 }),
     },
     user: {
       findMany: async () => [{ id: 'user_1', email: 'user@example.com', displayName: 'Readable User' }],
@@ -60,6 +61,7 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
         completionTokens: 120,
         totalTokens: 219,
         promptExcerpt: 'Solve this quickly',
+        status: 'success',
       }],
     },
   } as any;
@@ -70,6 +72,7 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
 
   assert.equal(first.inspected, 1);
   assert.equal(first.updated, 1);
+  assert.equal(first.enrichedAi, 1);
   assert.equal(second.updated, 0);
   assert.equal(updates[0].actorEmail, 'user@example.com');
   assert.equal(updates[0].actorDisplayName, 'Readable User');
@@ -78,6 +81,7 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
   assert.equal(updates[0].targetType, 'ai_request');
   assert.equal(updates[0].targetId, 'act_1');
   assert.equal(updates[0].costUsd, 0.0034);
+  assert.equal(updates[0].status, 'success');
 });
 
 test('AdminLogRepairService maps ai request tokens and cost when aiRequestEventId metadata is present', async () => {
@@ -116,6 +120,7 @@ test('AdminLogRepairService maps ai request tokens and cost when aiRequestEventI
       }];
       },
       update: async ({ data }: any) => { updates.push(data); },
+      deleteMany: async () => ({ count: 0 }),
     },
     user: { findMany: async () => [] },
     aiRequestEvent: {
@@ -129,6 +134,7 @@ test('AdminLogRepairService maps ai request tokens and cost when aiRequestEventI
         completionTokens: 55,
         totalTokens: 143,
         promptExcerpt: 'prompt',
+        status: 'success',
       }],
     },
   } as any;
@@ -178,6 +184,7 @@ test('AdminLogRepairService keeps missing ai request usage fields absent instead
       }];
       },
       update: async ({ data }: any) => { updates.push(data); },
+      deleteMany: async () => ({ count: 0 }),
     },
     user: { findMany: async () => [] },
     aiRequestEvent: { findMany: async () => [] },
@@ -190,4 +197,59 @@ test('AdminLogRepairService keeps missing ai request usage fields absent instead
   assert.equal(updates[0].promptTokens, null);
   assert.equal(updates[0].completionTokens, null);
   assert.equal(updates[0].totalTokens, null);
+});
+
+test('AdminLogRepairService removes duplicate AI domain rows when an activity equivalent exists', async () => {
+  let pass = 0;
+  let deletedIds: string[] = [];
+  const prisma = {
+    adminLogEvent: {
+      findMany: async ({ where }: any) => {
+        if (where?.stream === 'activity') {
+          return [{ id: 'evt_activity', targetId: 'req_77' }];
+        }
+        if (pass > 0) return [];
+        pass += 1;
+        return [{
+          id: 'evt_domain',
+          stream: 'domain',
+          sourceRecordId: 'domain_77',
+          eventType: 'ai.proxy.completed',
+          occurredAt: new Date('2026-04-26T09:00:00.000Z'),
+          severity: null,
+          status: null,
+          actorId: null,
+          actorEmail: null,
+          actorDisplayName: null,
+          targetType: null,
+          targetId: null,
+          summary: 'ai.proxy.completed',
+          source: null,
+          category: null,
+          searchText: null,
+          provider: null,
+          model: null,
+          durationMs: null,
+          costUsd: null,
+          promptTokens: null,
+          completionTokens: null,
+          totalTokens: null,
+          metadataJson: { requestId: 'req_77' },
+          payloadJson: null,
+        }];
+      },
+      update: async () => undefined,
+      deleteMany: async ({ where }: any) => {
+        deletedIds = where.id.in;
+        return { count: deletedIds.length };
+      },
+    },
+    user: { findMany: async () => [] },
+    aiRequestEvent: { findMany: async () => [] },
+  } as any;
+
+  const service = new AdminLogRepairService(prisma, 100);
+  const result = await service.repairReadModel();
+  assert.deepEqual(deletedIds, ['evt_domain']);
+  assert.equal(result.duplicateAiDomainDeleted, 1);
 });

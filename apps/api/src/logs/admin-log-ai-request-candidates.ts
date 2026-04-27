@@ -11,20 +11,20 @@ export function collectAdminAiRequestCandidateIds(input: {
   };
 
   if (input.targetType === 'ai_request') push(input.targetId);
-  push(input.sourceRecordId);
 
   const objects = [input.metadata, input.payload].filter(Boolean) as Record<string, unknown>[];
   for (const obj of objects) {
+    push(obj.aiRequestEventId);
     push(obj.requestId);
     push(obj.aiRequestId);
-    push(obj.aiRequestEventId);
     if (obj.requestMetadata && typeof obj.requestMetadata === 'object' && !Array.isArray(obj.requestMetadata)) {
       const requestMetadata = obj.requestMetadata as Record<string, unknown>;
+      push(requestMetadata.aiRequestEventId);
       push(requestMetadata.requestId);
       push(requestMetadata.aiRequestId);
-      push(requestMetadata.aiRequestEventId);
     }
   }
+  push(input.sourceRecordId);
 
   return Array.from(ids);
 }
