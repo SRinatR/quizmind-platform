@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { type AiHistoryAttachment, type AiHistoryDetail } from '@quizmind/contracts';
 import { buildHistoryPromptDisplay } from './history-prompt-display';
 import { getReadableModelName } from './history-model-display';
+import { formatHistoryDuration } from './history-duration';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
 import { formatUsdAmountByPreference } from '../../../lib/money';
@@ -179,6 +180,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
   const rawResponseText = detail ? extractResponseText(detail.responseContentJson, detail.responseExcerpt) : '';
   const finalAnswer = detail ? extractFinalAnswer(detail.responseContentJson) : '';
   const displayResponse = finalAnswer || rawResponseText;
+  const formattedDuration = formatHistoryDuration(detail?.durationMs);
 
   return (
     <>
@@ -214,7 +216,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                 {detail.estimatedCostUsd > 0 && (
                   <span className="tag-soft tag-soft--gray">{formatUsdAmountByPreference(detail.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}</span>
                 )}
-                {detail.durationMs != null && <span className="tag-soft tag-soft--gray">{detail.durationMs} ms</span>}
+                {formattedDuration != null && <span className="tag-soft tag-soft--gray">{formattedDuration}</span>}
               </div>
 
               <div style={{ fontSize: '0.82rem', opacity: 0.65, marginBottom: '20px' }}>
