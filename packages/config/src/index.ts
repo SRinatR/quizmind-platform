@@ -645,14 +645,7 @@ export function validateWorkerEnv(env: WorkerEnv): EnvValidationIssue[] {
       issues.push({ key: 'API_URL', message: 'API_URL must not target localhost in production.' });
     }
 
-    if (env.emailProvider === 'noop') {
-      issues.push({
-        key: 'EMAIL_PROVIDER',
-        message: 'EMAIL_PROVIDER must be set to "resend" in production for worker queue delivery.',
-      });
-    }
-
-    if (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local') {
+    if (env.emailProvider === 'resend' && (isBlank(env.emailFrom) || env.emailFrom === 'noreply@quizmind.local')) {
       issues.push({
         key: 'EMAIL_FROM',
         message: 'EMAIL_FROM must be set to a real sender address in production for worker queue delivery.',
