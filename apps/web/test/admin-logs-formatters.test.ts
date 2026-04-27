@@ -18,5 +18,7 @@ test('targetLabel keeps values readable and compact', () => {
 test('shortId and formatCost remain safe for nulls', () => {
   assert.equal(shortId(undefined), '—');
   assert.equal(formatCost(undefined), '—');
+  assert.equal(formatCost(null as unknown as number), '—');
+  assert.equal(formatCost(0), '$0.0000');
   assert.equal(formatCost(0.0001), '<$0.001');
 });

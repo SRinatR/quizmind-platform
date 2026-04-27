@@ -1,5 +1,6 @@
 import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
+import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
 
 type Stream = 'audit' | 'activity' | 'security' | 'domain';
 
@@ -29,11 +30,11 @@ export class AdminLogBackfillService {
       rows.map((row) => row.data.actorId ?? '').filter(Boolean),
     );
 
-    const aiRequestIds = Array.from(new Set(
-      rows
-        .map((row) => (typeof row.data.targetType === 'string' && row.data.targetType === 'ai_request' ? row.data.targetId : undefined))
-        .filter((value): value is string => typeof value === 'string' && value.length > 0),
-    ));
+    const aiRequestIds = Array.from(new Set(rows.flatMap((row) => collectAdminAiRequestCandidateIds({
+      targetType: row.data.targetType,
+      targetId: row.data.targetId,
+      metadata: row.data as Record<string, unknown>,
+    }))));
     const aiRequestRows = aiRequestIds.length > 0
       ? await this.prisma.aiRequestEvent.findMany({
           where: { id: { in: aiRequestIds } },
@@ -55,7 +56,13 @@ export class AdminLogBackfillService {
     for (const row of rows) {
       const actorId = row.data.actorId as string | undefined;
       const actorIdentity = actorId ? actorDirectory.get(actorId) : undefined;
-      const aiRequest = typeof row.data.targetId === 'string' ? aiRequestById.get(row.data.targetId) : undefined;
+      const aiRequest = collectAdminAiRequestCandidateIds({
+        targetType: row.data.targetType,
+        targetId: row.data.targetId,
+        metadata: row.data as Record<string, unknown>,
+      })
+        .map((candidate) => aiRequestById.get(candidate))
+        .find(Boolean);
       const enrichedData = aiRequest
         ? {
             ...row.data,

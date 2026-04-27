@@ -281,7 +281,7 @@ test('AiHistoryService.listHistory includes promptContentJson for event list row
           promptExcerpt: 'prompt from db',
           responseExcerpt: 'response from db',
           occurredAt: new Date('2026-04-20T10:00:00.000Z'),
-          content: { fileMetadataJson: null, expiresAt: new Date('2026-04-27T10:00:00.000Z'), deletedAt: null, promptBlobKey: 'requests/evt_1/prompt.json', responseBlobKey: null, fileBlobKey: null },
+          content: { fileMetadataJson: null, expiresAt: new Date('2099-04-27T10:00:00.000Z'), deletedAt: null, promptBlobKey: 'requests/evt_1/prompt.json', responseBlobKey: null, fileBlobKey: null },
           attachments: [],
         } as any,
       ],
@@ -326,7 +326,7 @@ test('AiHistoryService.getDetail reads blobs only for selected item', async () =
         occurredAt: new Date('2026-04-20T10:00:00.000Z'),
         content: {
           fileMetadataJson: null,
-          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          expiresAt: new Date('2099-04-27T10:00:00.000Z'),
           deletedAt: null,
           promptBlobKey: 'requests/evt_1/prompt.json',
           responseBlobKey: 'requests/evt_1/response.json',
@@ -346,6 +346,51 @@ test('AiHistoryService.getDetail reads blobs only for selected item', async () =
   const detail = await service.getDetail('evt_1', 'user_1');
   assert.equal(reads, 2);
   assert.deepEqual(detail?.promptContentJson, { key: 'requests/evt_1/prompt.json' });
+});
+
+test('AiHistoryService exposes consistent estimatedCostUsd between list and detail for same event', async () => {
+  const eventRow = {
+    id: 'evt_cost_1',
+    userId: 'user_1',
+    installationId: null,
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    keySource: 'platform',
+    status: 'success',
+    errorCode: null,
+    promptTokens: 11,
+    completionTokens: 22,
+    totalTokens: 33,
+    durationMs: 44,
+    requestType: 'text',
+    estimatedCostUsd: 0.003778,
+    promptExcerpt: 'prompt',
+    responseExcerpt: 'response',
+    occurredAt: new Date('2026-04-26T10:00:00.000Z'),
+    content: {
+      fileMetadataJson: null,
+      expiresAt: new Date('2099-04-29T10:00:00.000Z'),
+      deletedAt: null,
+      promptBlobKey: null,
+      responseBlobKey: null,
+      fileBlobKey: null,
+    },
+    attachments: [],
+  } as any;
+
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async () => [eventRow],
+      countEventsForUser: async () => 1,
+      getEventDetailForUser: async () => eventRow,
+    },
+  });
+
+  const list = await service.listHistory('user_1', { limit: 10, offset: 0 });
+  const detail = await service.getDetail('evt_cost_1', 'user_1');
+
+  assert.equal(list.items[0]?.estimatedCostUsd, 0.003778);
+  assert.equal(detail?.estimatedCostUsd, 0.003778);
 });
 
 test('AiHistoryService.getDetail returns safe message for expired/deleted content', async () => {
@@ -444,7 +489,7 @@ test('AiHistoryService.getDetail includes attachment metadata for event detail',
         occurredAt: new Date('2026-04-20T10:00:00.000Z'),
         content: {
           fileMetadataJson: null,
-          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          expiresAt: new Date('2099-04-27T10:00:00.000Z'),
           deletedAt: null,
           promptBlobKey: 'requests/evt_1/prompt.json',
           responseBlobKey: 'requests/evt_1/response.json',
@@ -457,7 +502,7 @@ test('AiHistoryService.getDetail includes attachment metadata for event detail',
           mimeType: 'image/jpeg',
           originalName: 'image-1.jpg',
           sizeBytes: 5,
-          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          expiresAt: new Date('2099-04-27T10:00:00.000Z'),
           deletedAt: null,
           blobKey: 'requests/evt_1/attachments/att_1.bin',
         }],
@@ -487,7 +532,7 @@ test('AiHistoryService.getAttachmentForUser enforces ownership and expiry', asyn
           originalName: 'img.jpg',
           sizeBytes: 5,
           blobKey: 'requests/evt_1/attachments/att_1.bin',
-          expiresAt: new Date('2026-04-27T10:00:00.000Z'),
+          expiresAt: new Date('2099-04-27T10:00:00.000Z'),
           deletedAt: null,
           event: { id: 'evt_1', userId: 'user_1' },
         };

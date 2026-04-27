@@ -524,9 +524,9 @@ export interface AdminLogAiRequestDetail {
   requestType: AiRequestType;
   estimatedCostUsd?: number | null;
   durationMs?: number | null;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
   promptExcerpt?: string | null;
   responseExcerpt?: string | null;
   promptContentJson?: unknown;
