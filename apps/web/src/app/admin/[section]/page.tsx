@@ -19,6 +19,7 @@ import {
   resolvePersona,
 } from '../../../lib/api';
 import { ServerPrefsSync } from '../../../lib/preferences';
+import { getExchangeRates } from '../../../lib/exchange-rates';
 import { en } from '../../../lib/i18n/en';
 import { ru } from '../../../lib/i18n/ru';
 import type { Translations } from '../../../lib/i18n/en';
@@ -269,11 +270,13 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     adminProviderGovernance,
     compatibilityRules,
     remoteConfigState,
+    exchangeRates,
   ] = await Promise.all([
     needs.flags ? getFeatureFlags(persona, accessToken) : Promise.resolve(null),
     needs.aiRouting ? getAdminProviderGovernance(accessToken) : Promise.resolve(null),
     needs.compatibility ? getCompatibilityRules(persona, accessToken) : Promise.resolve(null),
     needs.remoteConfig ? getRemoteConfigState(persona, undefined, accessToken) : Promise.resolve(null),
+    getExchangeRates(),
   ]);
 
   const isConnectedSession = session?.personaKey === 'connected-user';
@@ -304,7 +307,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
       userDisplayName={session?.user.displayName ?? undefined}
       userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
-      {sec === 'settings' ? (
+      {session ? (
         <ServerPrefsSync serverPrefs={userProfile?.uiPreferences ?? null} />
       ) : null}
       {section && session ? (
@@ -346,6 +349,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
             />
             <LogsExplorerClient
               canExportLogs={canExportLogs}
+              exchangeRates={exchangeRates}
               isConnectedSession={isConnectedSession}
               initialFilters={{
                 stream: adminLogFilters.stream ?? 'all',

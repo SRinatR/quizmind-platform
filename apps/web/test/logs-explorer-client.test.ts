@@ -11,6 +11,9 @@ test('logs explorer Event column renders only summary in table rows', async () =
 test('admin detail uses history prompt display and keeps technical metadata collapsed', async () => {
   const source = await readFile(new URL('../src/app/admin/[section]/logs-explorer-client.tsx', import.meta.url), 'utf8');
   assert.match(source, /buildHistoryPromptDisplay\(\{/);
+  assert.match(source, /prefs\.balanceDisplayCurrency/);
   assert.match(source, /Technical log metadata/);
+  assert.match(source, /Source record id/);
+  assert.match(source, /Target id/);
   assert.match(source, /Image expired after retention window\./);
 });

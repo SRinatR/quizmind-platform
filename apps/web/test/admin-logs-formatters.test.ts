@@ -9,16 +9,19 @@ test('actorLabel prefers display name then email then shortened id', () => {
   assert.equal(actorLabel({ actor: { id: 'cmnp0hiuu00002vmlstfo1ucu' } } as any), 'cmnp0hiu…fo1ucu');
 });
 
-test('targetLabel keeps values readable and compact', () => {
-  assert.equal(targetLabel({ installationId: 'install_1234567890abcdef', category: 'extension' } as any), 'Installation install_…abcdef');
-  assert.equal(targetLabel({ category: 'ai', targetType: 'ai_request', targetId: 'req_1234567890abcdef' } as any), 'AI request req_1234…abcdef');
-  assert.equal(targetLabel({ targetType: 'user', targetId: 'cmnp0hiuu00002vmlstfo1ucu' } as any), 'User cmnp0hiu…fo1ucu');
+test('targetLabel hides technical ids in table labels', () => {
+  assert.equal(targetLabel({ category: 'ai', targetType: 'ai_request', targetId: 'req_1234567890abcdef' } as any), 'AI request');
+  assert.equal(targetLabel({ installationId: 'install_1234567890abcdef', category: 'extension' } as any), 'Installation');
+  assert.equal(targetLabel({ targetType: 'user', targetId: 'cmnp0hiuu00002vmlstfo1ucu' } as any), 'User');
+  assert.equal(targetLabel({ targetType: 'http_request', targetId: 'req_1' } as any), 'HTTP request');
+  assert.equal(targetLabel({} as any), '—');
 });
 
-test('shortId and formatCost remain safe for nulls', () => {
+test('formatCost respects selected balance display currency and nulls', () => {
   assert.equal(shortId(undefined), '—');
   assert.equal(formatCost(undefined), '—');
   assert.equal(formatCost(null as unknown as number), '—');
-  assert.equal(formatCost(0), '$0.0000');
-  assert.equal(formatCost(0.0001), '<$0.001');
+  assert.match(formatCost(1.25, 'USD', { USD: 100, EUR: 110 }), /\$/);
+  assert.match(formatCost(1.25, 'RUB', { USD: 100, EUR: 110 }), /₽/);
+  assert.match(formatCost(1.25, 'EUR', { USD: 100, EUR: 110 }), /€/);
 });

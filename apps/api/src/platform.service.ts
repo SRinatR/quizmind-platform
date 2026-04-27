@@ -1452,8 +1452,14 @@ export class PlatformService {
       throw new NotFoundException('Log entry not found.');
     }
 
-    const mapped = this.mapConnectedAdminLogListItem(result.item, result.metadata);
-    const candidates = this.resolveAdminAiRequestCandidateIds(result.item, result.metadata);
+    const technicalMetadata = {
+      ...(result.metadata ?? {}),
+      sourceRecordId: result.item.sourceRecordId,
+      targetType: result.item.targetType,
+      targetId: result.item.targetId,
+    };
+    const mapped = this.mapConnectedAdminLogListItem(result.item, technicalMetadata);
+    const candidates = this.resolveAdminAiRequestCandidateIds(result.item, technicalMetadata);
     if (candidates.length === 0) return mapped;
     const aiDetail = await this.aiHistoryService.getDetailForAdminByAnyId(candidates);
     if (!aiDetail) return mapped;

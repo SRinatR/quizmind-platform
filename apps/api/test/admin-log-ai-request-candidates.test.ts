@@ -14,3 +14,16 @@ test('collectAdminAiRequestCandidateIds includes target, source and metadata ali
 
   assert.deepEqual(ids, ['req_target', 'activity_1', 'req_meta', 'req_alias', 'req_payload']);
 });
+
+test('collectAdminAiRequestCandidateIds includes nested requestMetadata aliases', () => {
+  const ids = collectAdminAiRequestCandidateIds({
+    metadata: {
+      requestMetadata: {
+        requestId: 'req_nested',
+        aiRequestId: 'req_nested_alias',
+      },
+    },
+  });
+
+  assert.deepEqual(ids, ['req_nested', 'req_nested_alias']);
+});
