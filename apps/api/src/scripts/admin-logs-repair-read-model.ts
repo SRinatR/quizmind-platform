@@ -1,9 +1,10 @@
-import { PrismaClient } from '@quizmind/database';
+import { loadApiEnv } from '@quizmind/config';
+import { createPrismaClientOptions, PrismaClient } from '@quizmind/database';
 import { AdminLogRepairService } from '../logs/admin-log.repair';
 
-const prisma = new PrismaClient();
-
 async function main() {
+  const env = loadApiEnv();
+  const prisma = new PrismaClient(createPrismaClientOptions(env.databaseUrl));
   try {
     const batchSizeRaw = Number(process.env.BATCH_SIZE ?? '250');
     const batchSize = Number.isFinite(batchSizeRaw) && batchSizeRaw > 0 ? Math.floor(batchSizeRaw) : 250;

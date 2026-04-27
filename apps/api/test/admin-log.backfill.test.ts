@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { AdminLogBackfillService } from '../src/logs/admin-log.backfill';
 
@@ -52,4 +55,23 @@ test('AdminLogBackfillService.verifyCounts reports per-stream missing rows', asy
   assert.equal(result.activity.missing, 0);
   assert.equal(result.security.missing, 1);
   assert.equal(result.domain.missing, 0);
+});
+
+
+test('admin log scripts initialize PrismaClient with explicit options', async () => {
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const scriptsDir = path.resolve(currentDir, '../src/scripts');
+  const scriptNames = [
+    'admin-logs-backfill.ts',
+    'admin-logs-verify-backfill.ts',
+    'admin-logs-prune-read-model.ts',
+    'admin-logs-repair-read-model.ts',
+  ];
+
+  for (const scriptName of scriptNames) {
+    const scriptPath = path.join(scriptsDir, scriptName);
+    const source = await readFile(scriptPath, 'utf8');
+    assert.match(source, /new PrismaClient\(createPrismaClientOptions\(/, `${scriptName} must initialize Prisma with createPrismaClientOptions`);
+    assert.doesNotMatch(source, /new PrismaClient\(\)/, `${scriptName} must not call new PrismaClient() without options`);
+  }
 });
