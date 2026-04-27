@@ -75,6 +75,22 @@ const aiHistoryLegacyDetailSelect = {
   requestMetadata: true,
 } satisfies Prisma.AiRequestSelect;
 
+
+const aiAdminSyncSelect = {
+  id: true,
+  provider: true,
+  model: true,
+  durationMs: true,
+  estimatedCostUsd: true,
+  promptTokens: true,
+  completionTokens: true,
+  totalTokens: true,
+  promptExcerpt: true,
+  status: true,
+} satisfies Prisma.AiRequestEventSelect;
+
+export type AiHistoryAdminSyncRecord = Prisma.AiRequestEventGetPayload<{ select: typeof aiAdminSyncSelect }>;
+
 export type AiHistoryEventListRecord = Prisma.AiRequestEventGetPayload<{ select: typeof aiHistoryEventListSelect }>;
 export type AiHistoryEventDetailRecord = Prisma.AiRequestEventGetPayload<{ select: typeof aiHistoryEventDetailSelect }>;
 export type AiHistoryLegacyListRecord = Prisma.AiRequestGetPayload<{ select: typeof aiHistoryLegacyListSelect }>;
@@ -290,8 +306,8 @@ export class AiHistoryRepository {
     return this.prisma.aiRequest.findFirst({ where: { id, userId }, select: aiHistoryLegacyDetailSelect });
   }
 
-  async upsertEventContentAndRollup(input: UpsertEventAndContentInput): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+  async upsertEventContentAndRollup(input: UpsertEventAndContentInput): Promise<AiHistoryAdminSyncRecord> {
+    return this.prisma.$transaction(async (tx) => {
       const previousEvent = await tx.aiRequestEvent.findUnique({
         where: { id: input.eventId },
         select: {
@@ -308,8 +324,9 @@ export class AiHistoryRepository {
         },
       });
 
-      await tx.aiRequestEvent.upsert({
+      const nextEvent = await tx.aiRequestEvent.upsert({
         where: { id: input.eventId },
+        select: aiAdminSyncSelect,
         create: {
           id: input.eventId,
           userId: input.userId,
@@ -419,7 +436,7 @@ export class AiHistoryRepository {
 
       if (!previousEvent) {
         await this.applyRollupDelta(tx, nextBucket, nextContribution, input.modelDisplayName);
-        return;
+        return nextEvent;
       }
 
       const previousBucket = this.toRollupBucket({
@@ -454,6 +471,7 @@ export class AiHistoryRepository {
         input.modelDisplayName,
       );
       await this.applyRollupDelta(tx, nextBucket, nextContribution, input.modelDisplayName);
+      return nextEvent;
     });
   }
 

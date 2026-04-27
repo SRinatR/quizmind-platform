@@ -1,18 +1,11 @@
 import { buildAdminLogEventCreateInput, Prisma, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
+import { buildAdminAiLogPatchFromAiRequestEvent, normalizeAdminAiStatus } from './admin-log-ai-sync';
 
 function toMetadata(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   return value as Record<string, unknown>;
-}
-
-function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
-  if (status === 'success') return 'success';
-  if (status === 'error' || status === 'failed' || status === 'failure' || status === 'quota_exceeded' || status === 'timeout') {
-    return 'failure';
-  }
-  return undefined;
 }
 
 function withActorMetadata(metadata: Record<string, unknown> | undefined): Record<string, unknown> {
@@ -186,14 +179,15 @@ export async function upsertAdminLogEventsBestEffort(
       const baseData = aiRequest
         ? {
             ...event.data,
-            provider: event.data.provider ?? aiRequest.provider,
-            model: event.data.model ?? aiRequest.model,
-            status: event.data.status ?? normalizeAdminStatus(aiRequest.status),
+            ...buildAdminAiLogPatchFromAiRequestEvent(aiRequest),
+            provider: event.data.provider ?? aiRequest.provider ?? undefined,
+            model: event.data.model ?? aiRequest.model ?? undefined,
+            status: event.data.status ?? normalizeAdminAiStatus(aiRequest.status),
             durationMs: event.data.durationMs ?? aiRequest.durationMs ?? undefined,
             costUsd: event.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
-            promptTokens: event.data.promptTokens ?? aiRequest.promptTokens,
-            completionTokens: event.data.completionTokens ?? aiRequest.completionTokens,
-            totalTokens: event.data.totalTokens ?? aiRequest.totalTokens,
+            promptTokens: event.data.promptTokens ?? aiRequest.promptTokens ?? undefined,
+            completionTokens: event.data.completionTokens ?? aiRequest.completionTokens ?? undefined,
+            totalTokens: event.data.totalTokens ?? aiRequest.totalTokens ?? undefined,
             searchText: [event.data.searchText, aiRequest.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
           }
         : event.data;

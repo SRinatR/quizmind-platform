@@ -1,6 +1,7 @@
 import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
+import { buildAdminAiLogPatchFromAiRequestEvent, normalizeAdminAiStatus } from './admin-log-ai-sync';
 
 type Stream = 'audit' | 'activity' | 'security' | 'domain';
 const skippedAiProxyDomainEventTypes = new Set([
@@ -9,14 +10,6 @@ const skippedAiProxyDomainEventTypes = new Set([
   'ai.proxy.quota_exceeded',
   'ai.proxy.timeout',
 ]);
-
-function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
-  if (status === 'success') return 'success';
-  if (status === 'error' || status === 'failed' || status === 'failure' || status === 'quota_exceeded' || status === 'timeout') {
-    return 'failure';
-  }
-  return undefined;
-}
 
 export interface AdminLogBackfillScope {
   stream?: Stream | 'all';
@@ -81,16 +74,17 @@ export class AdminLogBackfillService {
       const enrichedData = aiRequest
         ? {
             ...row.data,
+            ...buildAdminAiLogPatchFromAiRequestEvent(aiRequest),
             targetType: row.data.targetType ?? 'ai_request',
             targetId: row.data.targetId ?? aiRequest.id,
-            provider: row.data.provider ?? aiRequest.provider,
-            model: row.data.model ?? aiRequest.model,
-            status: row.data.status ?? normalizeAdminStatus(aiRequest.status),
+            provider: row.data.provider ?? aiRequest.provider ?? undefined,
+            model: row.data.model ?? aiRequest.model ?? undefined,
+            status: row.data.status ?? normalizeAdminAiStatus(aiRequest.status),
             durationMs: row.data.durationMs ?? aiRequest.durationMs ?? undefined,
             costUsd: row.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
-            promptTokens: row.data.promptTokens ?? aiRequest.promptTokens,
-            completionTokens: row.data.completionTokens ?? aiRequest.completionTokens,
-            totalTokens: row.data.totalTokens ?? aiRequest.totalTokens,
+            promptTokens: row.data.promptTokens ?? aiRequest.promptTokens ?? undefined,
+            completionTokens: row.data.completionTokens ?? aiRequest.completionTokens ?? undefined,
+            totalTokens: row.data.totalTokens ?? aiRequest.totalTokens ?? undefined,
             searchText: [row.data.searchText, aiRequest.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
           }
         : row.data;

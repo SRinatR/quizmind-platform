@@ -1,6 +1,7 @@
 import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
+import { buildAdminAiLogPatchFromAiRequestEvent, normalizeAdminAiStatus } from './admin-log-ai-sync';
 
 interface RepairCursor {
   occurredAt: Date;
@@ -20,14 +21,6 @@ const AI_PROXY_FAILURE_EVENT_TYPES = new Set([
   'ai.proxy.quota_exceeded',
   'ai.proxy.user_key_failed',
 ]);
-
-function normalizeAdminStatus(status: string | null | undefined): 'success' | 'failure' | undefined {
-  if (status === 'success') return 'success';
-  if (status === 'error' || status === 'failed' || status === 'failure' || status === 'quota_exceeded' || status === 'timeout') {
-    return 'failure';
-  }
-  return undefined;
-}
 
 function deriveAiStatusFromEventType(eventType: string): 'success' | 'failure' | undefined {
   const normalized = eventType.toLowerCase();
@@ -155,11 +148,12 @@ export class AdminLogRepairService {
           [rebuilt.searchText, aiRequest?.promptExcerpt].filter(Boolean).join(' ').toLowerCase() || null,
           identity,
         ) ?? null;
-        const nextTargetType = rebuilt.targetType ?? (aiRequest ? 'ai_request' : null);
-        const nextTargetId = rebuilt.targetId ?? aiRequest?.id ?? null;
+        const aiPatch = aiRequest ? buildAdminAiLogPatchFromAiRequestEvent(aiRequest) : undefined;
+        const nextTargetType = rebuilt.targetType ?? (aiPatch?.targetType as string | undefined) ?? null;
+        const nextTargetId = rebuilt.targetId ?? (aiPatch?.targetId as string | undefined) ?? null;
         const nextProvider = rebuilt.provider ?? aiRequest?.provider ?? null;
         const nextModel = rebuilt.model ?? aiRequest?.model ?? null;
-        const nextStatus = rebuilt.status ?? normalizeAdminStatus(aiRequest?.status) ?? deriveAiStatusFromEventType(row.eventType) ?? null;
+        const nextStatus = rebuilt.status ?? normalizeAdminAiStatus(aiRequest?.status) ?? deriveAiStatusFromEventType(row.eventType) ?? null;
         const nextDurationMs = rebuilt.durationMs ?? aiRequest?.durationMs ?? null;
         const nextCostUsd = rebuilt.costUsd ?? aiRequest?.estimatedCostUsd ?? null;
         const nextPromptTokens = rebuilt.promptTokens ?? aiRequest?.promptTokens ?? null;
