@@ -23,6 +23,7 @@ import {
   type AiHistoryEventListRecord,
   type AiHistoryLegacyListRecord,
 } from './ai-history.repository';
+import { AdminLogAiSyncService } from '../logs/admin-log-ai-sync.service';
 
 export const HISTORY_RETENTION_DAYS = 7;
 const DEFAULT_LIST_LIMIT = 25;
@@ -261,6 +262,7 @@ export class AiHistoryService {
   constructor(
     @Inject(AiHistoryRepository) private readonly repository: AiHistoryRepository,
     @Inject(HistoryBlobService) private readonly blobs: HistoryBlobService,
+    @Inject(AdminLogAiSyncService) private readonly adminLogAiSync: AdminLogAiSyncService,
   ) {}
 
   async listHistory(userId: string, rawFilters: Partial<AiHistoryListFilters>): Promise<AiHistoryListResponse> {
@@ -560,7 +562,7 @@ export class AiHistoryService {
 
     const previousPromptAttachments = await this.repository.listPromptAttachmentsForEvent(eventId);
 
-    await this.repository.upsertEventContentAndRollup({
+    const persistedEvent = await this.repository.upsertEventContentAndRollup({
       eventId,
       userId: input.userId,
       workspaceId: input.workspaceId,
@@ -587,6 +589,14 @@ export class AiHistoryService {
       promptAttachments,
       ...(input.fileMetadata ? { fileMetadataJson: input.fileMetadata as Prisma.InputJsonValue } : {}),
     });
+    try {
+      await this.adminLogAiSync.syncFromAiRequestEvent(persistedEvent);
+    } catch (error) {
+      console.warn('[ai-history] admin log ai sync failed', {
+        aiRequestEventId: persistedEvent.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     await Promise.all(
       previousPromptAttachments

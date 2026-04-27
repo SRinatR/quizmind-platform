@@ -33,6 +33,7 @@ import { ExtensionInstallationRepository } from './extension/extension-installat
 import { ExtensionInstallationSessionRepository } from './extension/extension-installation-session.repository';
 import { FeatureFlagRepository } from './feature-flags/feature-flag.repository';
 import { AdminLogRepository } from './logs/admin-log.repository';
+import { AdminLogAiSyncService } from './logs/admin-log-ai-sync.service';
 import { PlatformController } from './platform.controller';
 import { PlatformService } from './platform.service';
 import { AiProviderPolicyRepository } from './providers/ai-provider-policy.repository';
@@ -85,6 +86,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     FeatureFlagRepository,
     InfrastructureHealthService,
     AdminLogRepository,
+    AdminLogAiSyncService,
     JwtAuthGuard,
     PasswordResetRepository,
     PlatformService,

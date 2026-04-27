@@ -6,10 +6,12 @@ import { AiHistoryRepository } from '../src/history/ai-history.repository';
 import { type AiHistoryRepository } from '../src/history/ai-history.repository';
 import { sanitizeAttachmentFilename } from '../src/history/ai-history.controller';
 import { type HistoryBlobService } from '../src/history/history-blob.service';
+import { type AdminLogAiSyncService } from '../src/logs/admin-log-ai-sync.service';
 
 function createService(overrides?: {
   repository?: Partial<AiHistoryRepository>;
   blobs?: Partial<HistoryBlobService>;
+  adminLogAiSync?: Partial<AdminLogAiSyncService>;
 }) {
   const repository: Partial<AiHistoryRepository> = {
     listEventsForUser: async () => [],
@@ -46,11 +48,20 @@ function createService(overrides?: {
     deleteByKey: async () => undefined,
     ...overrides?.blobs,
   };
+  const adminLogAiSync: Partial<AdminLogAiSyncService> = {
+    syncFromAiRequestEvent: async () => 0,
+    ...overrides?.adminLogAiSync,
+  };
 
   return {
-    service: new AiHistoryService(repository as AiHistoryRepository, blobs as HistoryBlobService),
+    service: new AiHistoryService(
+      repository as AiHistoryRepository,
+      blobs as HistoryBlobService,
+      adminLogAiSync as AdminLogAiSyncService,
+    ),
     repository,
     blobs,
+    adminLogAiSync,
   };
 }
 
@@ -86,6 +97,134 @@ test('AiHistoryService.persistContent dual-writes event/content/rollup', async (
   assert.equal(upsertInput.responseBlobKey, 'requests/req_1/response.json');
   assert.equal(upsertInput.promptExcerpt, 'hello');
   assert.equal(upsertInput.responseExcerpt, 'world');
+});
+
+test('AiHistoryService.persistContent syncs AdminLogEvent usage and cost after ai request upsert', async () => {
+  let synced: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async () => ({
+        id: 'req_sync_1',
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        durationMs: 321,
+        estimatedCostUsd: 0.002345,
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+        promptExcerpt: 'hello',
+        status: 'error',
+      } as any),
+    },
+    adminLogAiSync: {
+      syncFromAiRequestEvent: async (input: any) => {
+        synced = input;
+        return 1;
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_sync_1',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'text',
+    promptContent: [{ role: 'user', content: 'hello' }],
+  });
+
+  assert.equal(synced?.id, 'req_sync_1');
+  assert.equal(synced?.estimatedCostUsd, 0.002345);
+  assert.equal(synced?.promptTokens, 10);
+  assert.equal(synced?.completionTokens, 20);
+  assert.equal(synced?.totalTokens, 30);
+  assert.equal(synced?.durationMs, 321);
+  assert.equal(synced?.status, 'error');
+  assert.equal(synced?.provider, 'openrouter');
+  assert.equal(synced?.model, 'openai/gpt-4o-mini');
+});
+
+test('AiHistoryService.persistContent keeps null estimatedCostUsd as null during admin sync', async () => {
+  let synced: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async () => ({
+        id: 'req_sync_2',
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        durationMs: null,
+        estimatedCostUsd: null,
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        promptExcerpt: null,
+        status: 'success',
+      } as any),
+    },
+    adminLogAiSync: {
+      syncFromAiRequestEvent: async (input: any) => {
+        synced = input;
+        return 1;
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_sync_2',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'text',
+    promptContent: [{ role: 'user', content: 'hello' }],
+  });
+
+  assert.equal(synced?.estimatedCostUsd, null);
+});
+
+test('AiHistoryService.persistContent tolerates admin log sync failure', async () => {
+  const warnings: unknown[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    warnings.push(args);
+  };
+
+  try {
+    const { service } = createService({
+      repository: {
+        upsertEventContentAndRollup: async () => ({
+          id: 'req_sync_err_1',
+          provider: 'openrouter',
+          model: 'openai/gpt-4o-mini',
+          durationMs: 11,
+          estimatedCostUsd: 0.0001,
+          promptTokens: 1,
+          completionTokens: 1,
+          totalTokens: 2,
+          promptExcerpt: 'hello',
+          status: 'success',
+        } as any),
+      },
+      adminLogAiSync: {
+        syncFromAiRequestEvent: async () => {
+          throw new Error('sync unavailable');
+        },
+      },
+    });
+
+    await service.persistContent({
+      requestId: 'req_sync_err_1',
+      userId: 'user_1',
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      requestType: 'text',
+      promptContent: [{ role: 'user', content: 'hello' }],
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.equal(warnings.length, 1);
+  assert.equal((warnings[0] as unknown[])[0], '[ai-history] admin log ai sync failed');
 });
 
 test('AiHistoryService.persistContent extracts data URL image into attachment and strips base64 from prompt blob', async () => {
