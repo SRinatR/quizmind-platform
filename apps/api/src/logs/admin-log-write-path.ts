@@ -1,4 +1,5 @@
 import { buildAdminLogEventCreateInput, Prisma, type PrismaClient } from '@quizmind/database';
+import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 
 function toMetadata(value: unknown): Record<string, unknown> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
@@ -10,6 +11,21 @@ function withActorMetadata(metadata: Record<string, unknown> | undefined): Recor
     ...(metadata ?? {}),
     ...(typeof metadata?.actorEmail === 'string' ? { actorEmail: metadata.actorEmail } : {}),
     ...(typeof metadata?.actorDisplayName === 'string' ? { actorDisplayName: metadata.actorDisplayName } : {}),
+  };
+}
+
+function enrichReadModelActorFields(
+  data: Prisma.AdminLogEventCreateInput,
+  actorIdentity?: { email: string; displayName: string | null },
+): Prisma.AdminLogEventCreateInput {
+  if (!data.actorId || !actorIdentity) {
+    return data;
+  }
+  return {
+    ...data,
+    actorEmail: data.actorEmail ?? actorIdentity.email,
+    actorDisplayName: data.actorDisplayName ?? actorIdentity.displayName ?? undefined,
+    searchText: enrichSearchTextWithActorIdentity(data.searchText, actorIdentity),
   };
 }
 
@@ -119,15 +135,21 @@ export function buildReadModelFromDomainRow(row: CreatedDomainEventRow): ReadMod
 }
 
 export async function upsertAdminLogEventsBestEffort(
-  prisma: Pick<PrismaClient, 'adminLogEvent'>,
+  prisma: Pick<PrismaClient, 'adminLogEvent' | 'user'>,
   events: ReadonlyArray<ReadModelUpsert>,
 ): Promise<void> {
+  const actorDirectory = await resolveActorIdentities(
+    prisma,
+    events.map((event) => event.data.actorId ?? '').filter(Boolean),
+  );
+
   for (const event of events) {
     try {
+      const data = enrichReadModelActorFields(event.data, event.data.actorId ? actorDirectory.get(event.data.actorId) : undefined);
       await prisma.adminLogEvent.upsert({
         where: { stream_sourceRecordId: { stream: event.stream, sourceRecordId: event.sourceRecordId } },
-        create: event.data,
-        update: event.data,
+        create: data,
+        update: data,
       });
     } catch (error) {
       console.warn('[admin-log-events] explicit dual-write failed', {

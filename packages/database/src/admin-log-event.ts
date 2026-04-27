@@ -51,8 +51,57 @@ function deriveSource(eventType: string, metadata?: Record<string, unknown>): st
     if (value === 'webhook') return 'webhook';
   }
   const et = eventType.toLowerCase();
+  if (et.startsWith('ai.proxy.')) return 'api';
+  if (et.startsWith('extension.')) return 'extension';
   if (et.startsWith('webhook.') || et.includes('webhook_')) return 'webhook';
+  if (
+    et.startsWith('admin.')
+    || et.startsWith('support.')
+    || et.includes('impersonation')
+    || et.includes('provider_policy')
+    || et.includes('provider_credential')
+  ) {
+    return 'web';
+  }
+  if (et.startsWith('worker.') || et.startsWith('queue.') || et.includes('.worker_') || et.includes('.job_')) return 'worker';
   return undefined;
+}
+
+function toTitleCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((chunk) => `${chunk.charAt(0).toUpperCase()}${chunk.slice(1)}`)
+    .join(' ');
+}
+
+function deriveSummary(eventType: string): string {
+  const et = eventType.toLowerCase();
+  const explicit: Record<string, string> = {
+    'ai.proxy.completed': 'AI request completed',
+    'ai.proxy.failed': 'AI request failed',
+    'ai.proxy.user_key_used': 'User API key used',
+    'ai.proxy.user_key_failed': 'User API key failed',
+    'extension.installation_self_disconnected': 'Extension disconnected',
+    'extension.installation_session_revoked': 'Extension session revoked',
+    'auth.login_success': 'Login successful',
+    'auth.login_failed': 'Login failed',
+    'auth.password_reset_requested': 'Password reset requested',
+    'auth.password_reset_completed': 'Password reset completed',
+    'auth.session_revoked': 'Session revoked',
+    'auth.session_created': 'Session created',
+  };
+  const explicitMatch = explicit[et];
+  if (explicitMatch) return explicitMatch;
+
+  if (et.includes('provider_credential')) return 'Provider credential updated';
+  if (et.includes('provider_policy')) return 'Provider policy updated';
+  if (et.includes('support.') || et.includes('impersonation')) return 'Support action recorded';
+  if (et.startsWith('admin.')) return 'Admin action recorded';
+  if (et.includes('login')) return et.includes('failed') ? 'Login failed' : 'Login successful';
+  if (et.includes('password')) return 'Password event recorded';
+  if (et.includes('session')) return 'Session event recorded';
+  return toTitleCase(eventType.replace(/[._-]+/g, ' '));
 }
 
 export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): Prisma.AdminLogEventCreateInput {
@@ -60,9 +109,7 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
   const payload = input.payload;
   const rich = metadata ?? payload;
   const summary = toText((rich as Record<string, unknown> | undefined)?.summary) ??
-    (input.stream === 'audit' && input.targetType && input.targetId
-      ? `Audit event ${input.eventType} on ${input.targetType} ${input.targetId}.`
-      : input.eventType);
+    deriveSummary(input.eventType);
   const statusCandidate = toText((rich as Record<string, unknown> | undefined)?.status);
   const severityCandidate = toText((rich as Record<string, unknown> | undefined)?.severity);
   const severity = input.severity ?? (severityCandidate === 'debug' || severityCandidate === 'info' || severityCandidate === 'warn' || severityCandidate === 'error'
@@ -73,6 +120,9 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
   const source = deriveSource(input.eventType, rich);
   const actorEmail = toText((rich as Record<string, unknown> | undefined)?.actorEmail);
   const actorDisplayName = toText((rich as Record<string, unknown> | undefined)?.actorDisplayName);
+  const requestId = toText((rich as Record<string, unknown> | undefined)?.requestId);
+  const derivedTargetType = input.targetType ?? (requestId ? 'ai_request' : undefined);
+  const derivedTargetId = input.targetId ?? requestId;
 
   const searchable = [
     input.stream,
@@ -81,8 +131,8 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
     input.actorId,
     actorEmail,
     actorDisplayName,
-    input.targetType,
-    input.targetId,
+    derivedTargetType,
+    derivedTargetId,
     toText((rich as Record<string, unknown> | undefined)?.provider),
     toText((rich as Record<string, unknown> | undefined)?.model),
     toText((rich as Record<string, unknown> | undefined)?.errorSummary),
@@ -100,8 +150,8 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
     ...(input.actorId ? { actorId: input.actorId } : {}),
     ...(actorEmail ? { actorEmail } : {}),
     ...(actorDisplayName ? { actorDisplayName } : {}),
-    ...(input.targetType ? { targetType: input.targetType } : {}),
-    ...(input.targetId ? { targetId: input.targetId } : {}),
+    ...(derivedTargetType ? { targetType: derivedTargetType } : {}),
+    ...(derivedTargetId ? { targetId: derivedTargetId } : {}),
     category,
     ...(source ? { source } : {}),
     ...(toText((rich as Record<string, unknown> | undefined)?.installationId)
