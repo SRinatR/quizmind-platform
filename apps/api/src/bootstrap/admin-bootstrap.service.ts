@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { hashPassword } from '@quizmind/auth';
 import { loadApiEnv } from '@quizmind/config';
 
@@ -8,6 +8,46 @@ type UserRecord = {
   id: string;
   email: string;
   systemRoleAssignments?: Array<{ role: string }>;
+};
+
+type UserDelegate = {
+  findFirst?: (args: {
+    where: { systemRoleAssignments: { some: { role: 'admin' } } };
+    select: { id: true };
+  }) => Promise<{ id: string } | null>;
+  findUnique?: (args: {
+    where: { email: string };
+    select: {
+      id: true;
+      email: true;
+      systemRoleAssignments: { select: { role: true } };
+    };
+  }) => Promise<UserRecord | null>;
+  create?: (args: {
+    data: {
+      email: string;
+      passwordHash: string;
+      displayName?: string;
+      emailVerifiedAt: Date;
+      systemRoleAssignments: { create: { role: 'admin' } };
+    };
+  }) => Promise<unknown>;
+  update?: (args: {
+    where: { id: string };
+    data: {
+      systemRoleAssignments: {
+        connectOrCreate: {
+          where: {
+            userId_role: {
+              userId: string;
+              role: 'admin';
+            };
+          };
+          create: { role: 'admin' };
+        };
+      };
+    };
+  }) => Promise<unknown>;
 };
 
 type UserSystemRoleDelegate = {
@@ -23,11 +63,29 @@ type UserSystemRoleDelegate = {
 export class AdminBootstrapService implements OnApplicationBootstrap {
   private readonly env = loadApiEnv();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  private getUserDelegate(): UserDelegate | null {
+    const prismaValue = this.prisma as unknown as { user?: UserDelegate } | undefined;
+    return prismaValue?.user ?? null;
+  }
 
   private getUserSystemRoleDelegate(): UserSystemRoleDelegate | null {
     const prismaValue = this.prisma as unknown as { userSystemRole?: UserSystemRoleDelegate } | undefined;
     return prismaValue?.userSystemRole ?? null;
+  }
+
+  private hasUserDelegateMethods(user: UserDelegate | null): user is Required<Pick<UserDelegate, 'findFirst' | 'findUnique' | 'create' | 'update'>> {
+    return Boolean(user?.findFirst && user.findUnique && user.create && user.update);
+  }
+
+  private logDelegateWarning(delegate: 'user' | 'userSystemRole'): void {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        message: `admin-bootstrap: skipped — prisma.${delegate} delegate is unavailable in this runtime.`,
+      }),
+    );
   }
 
   private async ensureAdminRoleAssignment(userId: string): Promise<void> {
@@ -50,7 +108,13 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       return;
     }
 
-    await this.prisma.user.update({
+    const user = this.getUserDelegate();
+    if (!user?.update) {
+      this.logDelegateWarning('user');
+      return;
+    }
+
+    await user.update({
       where: { id: userId },
       data: {
         systemRoleAssignments: {
@@ -69,7 +133,6 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    // Skip in mock/test mode — no DB connection available.
     if (this.env.runtimeMode !== 'connected') {
       return;
     }
@@ -87,17 +150,27 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
       return;
     }
 
+    const user = this.getUserDelegate();
+    if (!this.hasUserDelegateMethods(user)) {
+      this.logDelegateWarning('user');
+      return;
+    }
+
+    const userSystemRole = this.getUserSystemRoleDelegate();
+    if (!userSystemRole) {
+      this.logDelegateWarning('userSystemRole');
+    }
+
     try {
       const displayName = this.env.adminBootstrapName?.trim() || undefined;
-      const userSystemRole = this.getUserSystemRoleDelegate();
       const existingAdminRole = userSystemRole?.findFirst
         ? await userSystemRole.findFirst({ where: { role: 'admin' } })
-        : await this.prisma.user.findFirst({
+        : await user.findFirst({
             where: { systemRoleAssignments: { some: { role: 'admin' } } },
             select: { id: true },
           });
 
-      const bootstrapUser = (await this.prisma.user.findUnique({
+      const bootstrapUser = await user.findUnique({
         where: { email },
         select: {
           id: true,
@@ -106,7 +179,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
             select: { role: true },
           },
         },
-      })) as UserRecord | null;
+      });
 
       if (!bootstrapUser) {
         if (existingAdminRole) {
@@ -115,7 +188,7 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
 
         const passwordHash = await hashPassword(password);
 
-        await this.prisma.user.create({
+        await user.create({
           data: {
             email,
             passwordHash,
@@ -143,8 +216,6 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
         await this.ensureAdminRoleAssignment(bootstrapUser.id);
       }
     } catch (error) {
-      // Non-fatal: log and continue startup. The operator can investigate and
-      // the next deploy will retry (idempotently) once the issue is resolved.
       console.error(
         JSON.stringify({
           level: 'error',
