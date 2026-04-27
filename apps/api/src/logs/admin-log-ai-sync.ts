@@ -40,7 +40,7 @@ export function buildAdminAiLogPatchFromAiRequestEvent(
 
 export function buildAdminAiLogSyncWhere(aiRequestEventId: string): Prisma.AdminLogEventWhereInput {
   const id = aiRequestEventId.trim();
-  return {
+  const aiAliasWhere: Prisma.AdminLogEventWhereInput = {
     OR: [
       { targetType: 'ai_request', targetId: id },
       { metadataJson: { path: ['aiRequestEventId'], equals: id } },
@@ -56,6 +56,17 @@ export function buildAdminAiLogSyncWhere(aiRequestEventId: string): Prisma.Admin
       { payloadJson: { path: ['requestMetadata', 'requestId'], equals: id } },
       { payloadJson: { path: ['requestMetadata', 'aiRequestId'], equals: id } },
       { sourceRecordId: id },
+    ],
+  };
+  return {
+    AND: [
+      {
+        OR: [
+          { category: 'ai' },
+          { eventType: { in: ['ai.proxy.completed', 'ai.proxy.failed', 'ai.proxy.quota_exceeded', 'ai.proxy.timeout'] } },
+        ],
+      },
+      aiAliasWhere,
     ],
   };
 }

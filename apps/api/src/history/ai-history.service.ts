@@ -589,7 +589,14 @@ export class AiHistoryService {
       promptAttachments,
       ...(input.fileMetadata ? { fileMetadataJson: input.fileMetadata as Prisma.InputJsonValue } : {}),
     });
-    await this.adminLogAiSync.syncFromAiRequestEvent(persistedEvent);
+    try {
+      await this.adminLogAiSync.syncFromAiRequestEvent(persistedEvent);
+    } catch (error) {
+      console.warn('[ai-history] admin log ai sync failed', {
+        aiRequestEventId: persistedEvent.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
 
     await Promise.all(
       previousPromptAttachments

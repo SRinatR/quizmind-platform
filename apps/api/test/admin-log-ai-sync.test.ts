@@ -38,7 +38,15 @@ test('buildAdminAiLogPatchFromAiRequestEvent preserves null cost and usage field
 
 test('buildAdminAiLogSyncWhere includes all ai request aliases across metadata/payload', () => {
   const where = buildAdminAiLogSyncWhere('req_alias_1');
-  const clauses = (where.OR ?? []) as Array<Record<string, unknown>>;
+  const guard = (where.AND ?? [])[0] as Record<string, unknown>;
+  const aliasBlock = (where.AND ?? [])[1] as Record<string, unknown>;
+  const clauses = (aliasBlock.OR ?? []) as Array<Record<string, unknown>>;
+  assert.deepEqual(guard, {
+    OR: [
+      { category: 'ai' },
+      { eventType: { in: ['ai.proxy.completed', 'ai.proxy.failed', 'ai.proxy.quota_exceeded', 'ai.proxy.timeout'] } },
+    ],
+  });
   assert.equal(clauses.length, 14);
   assert.deepEqual(clauses[0], { targetType: 'ai_request', targetId: 'req_alias_1' });
   assert.deepEqual(clauses[1], { metadataJson: { path: ['aiRequestEventId'], equals: 'req_alias_1' } });
@@ -76,4 +84,81 @@ test('syncAdminAiLogEventsFromAiRequestEvent patches matching admin rows', async
   assert.equal(captured.data.costUsd, 0.00123);
   assert.equal(captured.data.status, 'failure');
   assert.equal(captured.data.promptExcerpt, undefined);
+});
+
+test('syncAdminAiLogEventsFromAiRequestEvent keeps category/eventType guard to avoid unrelated rows', async () => {
+  let captured: any;
+  const prisma = {
+    adminLogEvent: {
+      updateMany: async (args: any) => {
+        captured = args;
+        return { count: 1 };
+      },
+    },
+  } as any;
+
+  await syncAdminAiLogEventsFromAiRequestEvent(prisma, {
+    id: 'req_guard_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    durationMs: 10,
+    estimatedCostUsd: 0.0001,
+    promptTokens: 1,
+    completionTokens: 2,
+    totalTokens: 3,
+    status: 'success',
+  });
+
+  const guard = (captured.where.AND ?? [])[0];
+  assert.deepEqual(guard, {
+    OR: [
+      { category: 'ai' },
+      { eventType: { in: ['ai.proxy.completed', 'ai.proxy.failed', 'ai.proxy.quota_exceeded', 'ai.proxy.timeout'] } },
+    ],
+  });
+});
+
+test('runtime sync intent targets ai row and excludes non-ai row with same request id', async () => {
+  const rows = [
+    { id: 'evt_ai', category: 'ai', eventType: 'ai.proxy.completed', metadataJson: { requestId: 'req_shared_1' }, costUsd: null },
+    { id: 'evt_security', category: 'security', eventType: 'auth.login_failed', metadataJson: { requestId: 'req_shared_1' }, costUsd: null },
+  ];
+  let updatedIds: string[] = [];
+  const prisma = {
+    adminLogEvent: {
+      updateMany: async ({ where, data }: any) => {
+        const guard = where.AND[0];
+        const aliases = where.AND[1].OR;
+        updatedIds = rows
+          .filter((row) => {
+            const inGuard = row.category === guard.OR[0].category
+              || guard.OR[1].eventType.in.includes(row.eventType);
+            const aliasMatch = aliases.some((alias: any) => alias.metadataJson?.path?.[0] === 'requestId'
+              && alias.metadataJson.equals === row.metadataJson.requestId);
+            return inGuard && aliasMatch;
+          })
+          .map((row) => row.id);
+        for (const row of rows) {
+          if (updatedIds.includes(row.id)) row.costUsd = data.costUsd;
+        }
+        return { count: updatedIds.length };
+      },
+    },
+  } as any;
+
+  await syncAdminAiLogEventsFromAiRequestEvent(prisma, {
+    id: 'req_shared_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    durationMs: 1,
+    estimatedCostUsd: 0.002,
+    promptTokens: 1,
+    completionTokens: 2,
+    totalTokens: 3,
+    status: 'success',
+  });
+
+  assert.deepEqual(updatedIds, ['evt_ai']);
+  assert.equal(rows[0]?.costUsd, 0.002);
+  assert.equal(rows[1]?.costUsd, null);
 });

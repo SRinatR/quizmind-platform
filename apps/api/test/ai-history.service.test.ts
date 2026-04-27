@@ -181,6 +181,52 @@ test('AiHistoryService.persistContent keeps null estimatedCostUsd as null during
   assert.equal(synced?.estimatedCostUsd, null);
 });
 
+test('AiHistoryService.persistContent tolerates admin log sync failure', async () => {
+  const warnings: unknown[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    warnings.push(args);
+  };
+
+  try {
+    const { service } = createService({
+      repository: {
+        upsertEventContentAndRollup: async () => ({
+          id: 'req_sync_err_1',
+          provider: 'openrouter',
+          model: 'openai/gpt-4o-mini',
+          durationMs: 11,
+          estimatedCostUsd: 0.0001,
+          promptTokens: 1,
+          completionTokens: 1,
+          totalTokens: 2,
+          promptExcerpt: 'hello',
+          status: 'success',
+        } as any),
+      },
+      adminLogAiSync: {
+        syncFromAiRequestEvent: async () => {
+          throw new Error('sync unavailable');
+        },
+      },
+    });
+
+    await service.persistContent({
+      requestId: 'req_sync_err_1',
+      userId: 'user_1',
+      provider: 'openrouter',
+      model: 'openai/gpt-4o-mini',
+      requestType: 'text',
+      promptContent: [{ role: 'user', content: 'hello' }],
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.equal(warnings.length, 1);
+  assert.equal((warnings[0] as unknown[])[0], '[ai-history] admin log ai sync failed');
+});
+
 test('AiHistoryService.persistContent extracts data URL image into attachment and strips base64 from prompt blob', async () => {
   let persistedPrompt: unknown;
   let upsertInput: any;
