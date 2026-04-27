@@ -29,22 +29,61 @@ export class AdminLogBackfillService {
       rows.map((row) => row.data.actorId ?? '').filter(Boolean),
     );
 
+    const aiRequestIds = Array.from(new Set(
+      rows
+        .map((row) => (typeof row.data.targetType === 'string' && row.data.targetType === 'ai_request' ? row.data.targetId : undefined))
+        .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    ));
+    const aiRequestRows = aiRequestIds.length > 0
+      ? await this.prisma.aiRequestEvent.findMany({
+          where: { id: { in: aiRequestIds } },
+          select: {
+            id: true,
+            provider: true,
+            model: true,
+            durationMs: true,
+            estimatedCostUsd: true,
+            promptTokens: true,
+            completionTokens: true,
+            totalTokens: true,
+            promptExcerpt: true,
+          },
+        })
+      : [];
+    const aiRequestById = new Map(aiRequestRows.map((row) => [row.id, row]));
+
     for (const row of rows) {
       const actorId = row.data.actorId as string | undefined;
       const actorIdentity = actorId ? actorDirectory.get(actorId) : undefined;
+      const aiRequest = typeof row.data.targetId === 'string' ? aiRequestById.get(row.data.targetId) : undefined;
+      const enrichedData = aiRequest
+        ? {
+            ...row.data,
+            targetType: row.data.targetType ?? 'ai_request',
+            targetId: row.data.targetId ?? aiRequest.id,
+            provider: row.data.provider ?? aiRequest.provider,
+            model: row.data.model ?? aiRequest.model,
+            durationMs: row.data.durationMs ?? aiRequest.durationMs ?? undefined,
+            costUsd: row.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
+            promptTokens: row.data.promptTokens ?? aiRequest.promptTokens,
+            completionTokens: row.data.completionTokens ?? aiRequest.completionTokens,
+            totalTokens: row.data.totalTokens ?? aiRequest.totalTokens,
+            searchText: [row.data.searchText, aiRequest.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
+          }
+        : row.data;
       await this.prisma.adminLogEvent.upsert({
         where: { stream_sourceRecordId: { stream: row.stream, sourceRecordId: row.sourceRecordId } },
         create: {
-          ...row.data,
-          actorEmail: row.data.actorEmail ?? actorIdentity?.email,
-          actorDisplayName: row.data.actorDisplayName ?? actorIdentity?.displayName ?? undefined,
-          searchText: enrichSearchTextWithActorIdentity(row.data.searchText, actorIdentity),
+          ...enrichedData,
+          actorEmail: enrichedData.actorEmail ?? actorIdentity?.email,
+          actorDisplayName: enrichedData.actorDisplayName ?? actorIdentity?.displayName ?? undefined,
+          searchText: enrichSearchTextWithActorIdentity(enrichedData.searchText, actorIdentity),
         },
         update: {
-          ...row.data,
-          actorEmail: row.data.actorEmail ?? actorIdentity?.email,
-          actorDisplayName: row.data.actorDisplayName ?? actorIdentity?.displayName ?? undefined,
-          searchText: enrichSearchTextWithActorIdentity(row.data.searchText, actorIdentity),
+          ...enrichedData,
+          actorEmail: enrichedData.actorEmail ?? actorIdentity?.email,
+          actorDisplayName: enrichedData.actorDisplayName ?? actorIdentity?.displayName ?? undefined,
+          searchText: enrichSearchTextWithActorIdentity(enrichedData.searchText, actorIdentity),
         },
       });
     }

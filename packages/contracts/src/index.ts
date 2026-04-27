@@ -512,6 +512,28 @@ export interface AdminLogEntry {
   completionTokens?: number;
   totalTokens?: number;
   errorSummary?: string;
+  aiRequest?: AdminLogAiRequestDetail;
+}
+
+export interface AdminLogAiRequestDetail {
+  id: string;
+  provider: string;
+  model: string;
+  modelDisplayName?: string | null;
+  status: AiRequestStatus;
+  requestType: AiRequestType;
+  estimatedCostUsd?: number | null;
+  durationMs?: number | null;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  promptExcerpt?: string | null;
+  responseExcerpt?: string | null;
+  promptContentJson?: unknown;
+  responseContentJson?: unknown;
+  contentAvailability?: 'available' | 'expired' | 'missing';
+  contentMessage?: string;
+  attachments?: AiHistoryAttachment[];
 }
 
 export interface AdminLogStreamCounts {

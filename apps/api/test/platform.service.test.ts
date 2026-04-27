@@ -21,6 +21,7 @@ import { type SupportTicketPresetFavoriteRepository } from '../src/support/suppo
 import { type SupportTicketRepository } from '../src/support/support-ticket.repository';
 import { type UsageRepository } from '../src/usage/usage.repository';
 import { type WorkspaceRepository } from '../src/workspaces/workspace.repository';
+import { type AiHistoryService } from '../src/history/ai-history.service';
 
 function createPlatformService() {
   const infrastructureHealthService = {} as InfrastructureHealthService;
@@ -57,6 +58,7 @@ function createPlatformService() {
       attempts: request.attempts ?? 1,
     }),
   } as QueueDispatchService;
+  const aiHistoryService = {} as AiHistoryService;
   const service = new PlatformService(
     infrastructureHealthService,
     subscriptionRepository,
@@ -74,6 +76,7 @@ function createPlatformService() {
     supportImpersonationRepository,
     usageRepository as UsageRepository,
     queueDispatchService,
+    aiHistoryService,
   );
 
   return {
