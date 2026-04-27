@@ -189,6 +189,11 @@ const maxProfileDisplayNameLength = 120;
 const maxProfileLocaleLength = 32;
 const maxProfileTimezoneLength = 100;
 const maxProfileAvatarUrlLength = 2048;
+
+export function normalizeAdminAiEstimatedCostUsd(value: number | null | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return undefined;
+  return value;
+}
 const defaultUsageHistoryLimit = 25;
 const maxUsageHistoryLimit = 200;
 const validUsageHistorySources = new Set<UsageHistorySourceFilter>(['all', 'telemetry', 'activity', 'ai']);
@@ -1461,7 +1466,7 @@ export class PlatformService {
         model: aiDetail.model,
         status: aiDetail.status,
         requestType: aiDetail.requestType,
-        estimatedCostUsd: aiDetail.estimatedCostUsd,
+        estimatedCostUsd: normalizeAdminAiEstimatedCostUsd(aiDetail.estimatedCostUsd),
         durationMs: aiDetail.durationMs,
         promptTokens: aiDetail.promptTokens,
         completionTokens: aiDetail.completionTokens,
