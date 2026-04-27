@@ -135,7 +135,7 @@ export function buildReadModelFromDomainRow(row: CreatedDomainEventRow): ReadMod
 }
 
 export async function upsertAdminLogEventsBestEffort(
-  prisma: Pick<PrismaClient, 'adminLogEvent' | 'user'>,
+  prisma: Pick<PrismaClient, 'adminLogEvent' | 'user' | 'aiRequestEvent'>,
   events: ReadonlyArray<ReadModelUpsert>,
 ): Promise<void> {
   const actorDirectory = await resolveActorIdentities(
@@ -145,7 +145,38 @@ export async function upsertAdminLogEventsBestEffort(
 
   for (const event of events) {
     try {
-      const data = enrichReadModelActorFields(event.data, event.data.actorId ? actorDirectory.get(event.data.actorId) : undefined);
+      const aiRequestId = typeof event.data.targetId === 'string' ? event.data.targetId : undefined;
+      const aiRequest = aiRequestId && (prisma as { aiRequestEvent?: PrismaClient['aiRequestEvent'] }).aiRequestEvent
+        ? await prisma.aiRequestEvent.findUnique({
+            where: { id: aiRequestId },
+            select: {
+              id: true,
+              provider: true,
+              model: true,
+              durationMs: true,
+              estimatedCostUsd: true,
+              promptTokens: true,
+              completionTokens: true,
+              totalTokens: true,
+              promptExcerpt: true,
+            },
+          })
+        : null;
+
+      const baseData = aiRequest
+        ? {
+            ...event.data,
+            provider: event.data.provider ?? aiRequest.provider,
+            model: event.data.model ?? aiRequest.model,
+            durationMs: event.data.durationMs ?? aiRequest.durationMs ?? undefined,
+            costUsd: event.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
+            promptTokens: event.data.promptTokens ?? aiRequest.promptTokens,
+            completionTokens: event.data.completionTokens ?? aiRequest.completionTokens,
+            totalTokens: event.data.totalTokens ?? aiRequest.totalTokens,
+            searchText: [event.data.searchText, aiRequest.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
+          }
+        : event.data;
+      const data = enrichReadModelActorFields(baseData, event.data.actorId ? actorDirectory.get(event.data.actorId) : undefined);
       await prisma.adminLogEvent.upsert({
         where: { stream_sourceRecordId: { stream: event.stream, sourceRecordId: event.sourceRecordId } },
         create: data,

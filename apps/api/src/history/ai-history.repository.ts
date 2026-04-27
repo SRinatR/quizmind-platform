@@ -165,6 +165,10 @@ export interface AiHistoryPromptAttachmentBlobRecord {
   blobKey: string;
 }
 
+export interface AdminAiRequestLookupInput {
+  ids: string[];
+}
+
 interface RollupBucketKey {
   userId: string;
   date: Date;
@@ -266,6 +270,20 @@ export class AiHistoryRepository {
 
   getEventDetailForUser(id: string, userId: string): Promise<AiHistoryEventDetailRecord | null> {
     return this.prisma.aiRequestEvent.findFirst({ where: { id, userId }, select: aiHistoryEventDetailSelect });
+  }
+
+  getEventDetailForAdminById(id: string): Promise<AiHistoryEventDetailRecord | null> {
+    return this.prisma.aiRequestEvent.findUnique({ where: { id }, select: aiHistoryEventDetailSelect });
+  }
+
+  async getEventDetailForAdminByAnyId(input: AdminAiRequestLookupInput): Promise<AiHistoryEventDetailRecord | null> {
+    const ids = Array.from(new Set(input.ids.map((id) => id.trim()).filter(Boolean)));
+    if (ids.length === 0) return null;
+    return this.prisma.aiRequestEvent.findFirst({
+      where: { id: { in: ids } },
+      orderBy: [{ occurredAt: 'desc' }, { createdAt: 'desc' }],
+      select: aiHistoryEventDetailSelect,
+    });
   }
 
   getLegacyDetailForUser(id: string, userId: string): Promise<AiHistoryLegacyDetailRecord | null> {
@@ -449,6 +467,36 @@ export class AiHistoryRepository {
         id: input.attachmentId,
         aiRequestEventId: input.aiRequestEventId,
         userId: input.userId,
+      },
+      select: {
+        id: true,
+        aiRequestEventId: true,
+        role: true,
+        kind: true,
+        mimeType: true,
+        originalName: true,
+        sizeBytes: true,
+        blobKey: true,
+        expiresAt: true,
+        deletedAt: true,
+        event: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
+      },
+    });
+  }
+
+  getAttachmentForAdmin(input: {
+    attachmentId: string;
+    aiRequestEventId: string;
+  }): Promise<AiHistoryAttachmentAccessRecord | null> {
+    return this.prisma.aiRequestAttachment.findFirst({
+      where: {
+        id: input.attachmentId,
+        aiRequestEventId: input.aiRequestEventId,
       },
       select: {
         id: true,

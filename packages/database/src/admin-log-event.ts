@@ -23,6 +23,11 @@ function toNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
+function toUsageNumber(value: unknown, key: string): number | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  return toNumber((value as Record<string, unknown>)[key]);
+}
+
 function deriveCategory(eventType: string, stream: LegacyAdminLogStream, metadata?: Record<string, unknown>): string {
   const et = eventType.toLowerCase();
   if (et.startsWith('auth.') || et.includes('login') || et.includes('password') || et.includes('session') || et.includes('.mfa') || et.includes('.otp')) {
@@ -121,6 +126,14 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
   const actorEmail = toText((rich as Record<string, unknown> | undefined)?.actorEmail);
   const actorDisplayName = toText((rich as Record<string, unknown> | undefined)?.actorDisplayName);
   const requestId = toText((rich as Record<string, unknown> | undefined)?.requestId);
+  const promptTokens = toNumber((rich as Record<string, unknown> | undefined)?.promptTokens)
+    ?? toUsageNumber((rich as Record<string, unknown> | undefined)?.usage, 'promptTokens');
+  const completionTokens = toNumber((rich as Record<string, unknown> | undefined)?.completionTokens)
+    ?? toUsageNumber((rich as Record<string, unknown> | undefined)?.usage, 'completionTokens');
+  const totalTokens = toNumber((rich as Record<string, unknown> | undefined)?.totalTokens)
+    ?? toUsageNumber((rich as Record<string, unknown> | undefined)?.usage, 'totalTokens');
+  const costUsd = toNumber((rich as Record<string, unknown> | undefined)?.costUsd)
+    ?? toNumber((rich as Record<string, unknown> | undefined)?.estimatedCostUsd);
   const derivedTargetType = input.targetType ?? (requestId ? 'ai_request' : undefined);
   const derivedTargetId = input.targetId ?? requestId;
 
@@ -135,6 +148,7 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
     derivedTargetId,
     toText((rich as Record<string, unknown> | undefined)?.provider),
     toText((rich as Record<string, unknown> | undefined)?.model),
+    toText((rich as Record<string, unknown> | undefined)?.promptExcerpt),
     toText((rich as Record<string, unknown> | undefined)?.errorSummary),
     toText((rich as Record<string, unknown> | undefined)?.errorMessage),
   ].filter(Boolean).join(' ').toLowerCase();
@@ -166,17 +180,17 @@ export function buildAdminLogEventCreateInput(input: BuildAdminLogEventInput): P
     ...(toNumber((rich as Record<string, unknown> | undefined)?.durationMs) !== undefined
       ? { durationMs: toNumber((rich as Record<string, unknown>).durationMs)! }
       : {}),
-    ...(toNumber((rich as Record<string, unknown> | undefined)?.costUsd) !== undefined
-      ? { costUsd: toNumber((rich as Record<string, unknown>).costUsd)! }
+    ...(costUsd !== undefined
+      ? { costUsd }
       : {}),
-    ...(toNumber((rich as Record<string, unknown> | undefined)?.promptTokens) !== undefined
-      ? { promptTokens: toNumber((rich as Record<string, unknown>).promptTokens)! }
+    ...(promptTokens !== undefined
+      ? { promptTokens }
       : {}),
-    ...(toNumber((rich as Record<string, unknown> | undefined)?.completionTokens) !== undefined
-      ? { completionTokens: toNumber((rich as Record<string, unknown>).completionTokens)! }
+    ...(completionTokens !== undefined
+      ? { completionTokens }
       : {}),
-    ...(toNumber((rich as Record<string, unknown> | undefined)?.totalTokens) !== undefined
-      ? { totalTokens: toNumber((rich as Record<string, unknown>).totalTokens)! }
+    ...(totalTokens !== undefined
+      ? { totalTokens }
       : {}),
     ...(toText((rich as Record<string, unknown> | undefined)?.errorSummary) || toText((rich as Record<string, unknown> | undefined)?.errorMessage)
       ? { errorSummary: (toText((rich as Record<string, unknown> | undefined)?.errorSummary) ?? toText((rich as Record<string, unknown> | undefined)?.errorMessage))!.slice(0, 200) }

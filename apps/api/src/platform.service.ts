@@ -172,6 +172,7 @@ import { SupportTicketRepository } from './support/support-ticket.repository';
 import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 import { compareSemver, evaluateCompatibility } from '@quizmind/extension';
+import { AiHistoryService } from './history/ai-history.service';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
@@ -558,6 +559,8 @@ export class PlatformService {
     private readonly usageRepository: UsageRepository,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
+    @Inject(AiHistoryService)
+    private readonly aiHistoryService: AiHistoryService,
   ) {}
 
   async getHealth() {
@@ -1443,7 +1446,55 @@ export class PlatformService {
       throw new NotFoundException('Log entry not found.');
     }
 
-    return this.mapConnectedAdminLogListItem(result.item, result.metadata);
+    const mapped = this.mapConnectedAdminLogListItem(result.item, result.metadata);
+    const candidates = this.resolveAdminAiRequestCandidateIds(result.item, result.metadata);
+    if (candidates.length === 0) return mapped;
+    const aiDetail = await this.aiHistoryService.getDetailForAdminByAnyId(candidates);
+    if (!aiDetail) return mapped;
+
+    return {
+      ...mapped,
+      aiRequest: {
+        id: aiDetail.id,
+        provider: aiDetail.provider,
+        model: aiDetail.model,
+        status: aiDetail.status,
+        requestType: aiDetail.requestType,
+        estimatedCostUsd: aiDetail.estimatedCostUsd,
+        durationMs: aiDetail.durationMs,
+        promptTokens: aiDetail.promptTokens,
+        completionTokens: aiDetail.completionTokens,
+        totalTokens: aiDetail.totalTokens,
+        promptExcerpt: aiDetail.promptExcerpt,
+        responseExcerpt: aiDetail.responseExcerpt,
+        promptContentJson: aiDetail.promptContentJson,
+        responseContentJson: aiDetail.responseContentJson,
+        contentAvailability: this.resolveAiContentAvailability(aiDetail.promptContentJson, aiDetail.responseContentJson),
+        contentMessage: this.resolveAiContentMessage(aiDetail.promptContentJson, aiDetail.responseContentJson),
+        attachments: aiDetail.attachments,
+      },
+    };
+  }
+
+  async getAdminLogAttachmentForCurrentSession(
+    session: CurrentSessionSnapshot,
+    id: string,
+    attachmentId: string,
+  ): Promise<{ bytes: Buffer; mimeType: string; originalName: string; expired: boolean } | null> {
+    const accessDecision = canReadAuditLogs(session.principal as SessionPrincipal);
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+    const result = await this.adminLogRepository.findOne(id);
+    if (!result) throw new NotFoundException('Log entry not found.');
+    const candidates = this.resolveAdminAiRequestCandidateIds(result.item, result.metadata);
+    if (candidates.length === 0) return null;
+    const aiDetail = await this.aiHistoryService.getDetailForAdminByAnyId(candidates);
+    if (!aiDetail?.id) return null;
+    return this.aiHistoryService.getAttachmentForAdmin({
+      aiRequestEventId: aiDetail.id,
+      attachmentId,
+    });
   }
 
   listFeatureFlags(personaKey?: string) {
@@ -2945,6 +2996,36 @@ export class PlatformService {
       ...(item.errorSummary ? { errorSummary: item.errorSummary } : {}),
       ...(metadata ? { metadata } : {}),
     };
+  }
+
+  private resolveAdminAiRequestCandidateIds(
+    item: Awaited<ReturnType<AdminLogRepository['listPage']>>['items'][number],
+    metadata?: Record<string, unknown>,
+  ): string[] {
+    const ids = new Set<string>();
+    const metadataRequestId = typeof metadata?.requestId === 'string' ? metadata.requestId : undefined;
+    if (item.targetType === 'ai_request' && item.targetId) ids.add(item.targetId);
+    if (metadataRequestId) ids.add(metadataRequestId);
+    if (item.sourceRecordId) ids.add(item.sourceRecordId);
+    return Array.from(ids);
+  }
+
+  private resolveAiContentAvailability(promptContentJson: unknown, responseContentJson: unknown): 'available' | 'expired' | 'missing' {
+    const text = [promptContentJson, responseContentJson]
+      .filter((value) => typeof value === 'string')
+      .join(' ')
+      .toLowerCase();
+    if (text.includes('expired after the retention window')) return 'expired';
+    if (text.includes('not available')) return 'missing';
+    return 'available';
+  }
+
+  private resolveAiContentMessage(promptContentJson: unknown, responseContentJson: unknown): string | undefined {
+    if (typeof promptContentJson === 'string' && promptContentJson.includes('retention window')) return promptContentJson;
+    if (typeof responseContentJson === 'string' && responseContentJson.includes('retention window')) return responseContentJson;
+    if (typeof promptContentJson === 'string' && promptContentJson.includes('not available')) return promptContentJson;
+    if (typeof responseContentJson === 'string' && responseContentJson.includes('not available')) return responseContentJson;
+    return undefined;
   }
 
   private filterAdminLogEntries(items: AdminLogEntry[], filters: AdminLogFilters): {

@@ -21,6 +21,13 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
       source: null,
       category: null,
       searchText: 'ai.proxy.completed',
+      provider: null,
+      model: null,
+      durationMs: null,
+      costUsd: null,
+      promptTokens: null,
+      completionTokens: null,
+      totalTokens: null,
       metadataJson: {},
       payloadJson: null,
     },
@@ -42,6 +49,19 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
     user: {
       findMany: async () => [{ id: 'user_1', email: 'user@example.com', displayName: 'Readable User' }],
     },
+    aiRequestEvent: {
+      findMany: async () => [{
+        id: 'act_1',
+        provider: 'openai',
+        model: 'openai/gpt-4o',
+        durationMs: 410,
+        estimatedCostUsd: 0.0034,
+        promptTokens: 99,
+        completionTokens: 120,
+        totalTokens: 219,
+        promptExcerpt: 'Solve this quickly',
+      }],
+    },
   } as any;
 
   const service = new AdminLogRepairService(prisma, 100);
@@ -55,4 +75,7 @@ test('AdminLogRepairService repairs readable fields and remains idempotent', asy
   assert.equal(updates[0].actorDisplayName, 'Readable User');
   assert.equal(updates[0].summary, 'AI request completed');
   assert.equal(updates[0].source, 'api');
+  assert.equal(updates[0].targetType, 'ai_request');
+  assert.equal(updates[0].targetId, 'act_1');
+  assert.equal(updates[0].costUsd, 0.0034);
 });
