@@ -3879,6 +3879,133 @@ code {
   gap: 14px;
 }
 
+.pricing-page {
+  display: grid;
+  gap: 14px;
+}
+
+.pricing-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.pricing-card__header {
+  display: grid;
+  gap: 6px;
+}
+
+.pricing-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pricing-card__desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.pricing-field-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pricing-field {
+  display: grid;
+  gap: 6px;
+}
+
+.pricing-field__label {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pricing-field__desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.pricing-field input,
+.pricing-card select {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.91rem;
+}
+
+.pricing-input-with-suffix {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.pricing-input-with-suffix span {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.pricing-toggle-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-strong) 85%, transparent);
+}
+
+.pricing-toggle-row__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.pricing-toggle-row__control input {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+.pricing-callout {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
+}
+
+.pricing-callout--warning {
+  border-color: rgba(184, 92, 56, 0.28);
+  background: rgba(184, 92, 56, 0.08);
+}
+
+.pricing-preview dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.pricing-preview dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pricing-preview dd {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
 .retention-page__header {
   display: grid;
   gap: 4px;
@@ -4036,7 +4163,8 @@ code {
 
 @media (max-width: 1080px) {
   .retention-field-grid,
-  .retention-field-grid--auth {
+  .retention-field-grid--auth,
+  .pricing-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -4044,7 +4172,9 @@ code {
 @media (max-width: 760px) {
   .retention-field-grid,
   .retention-field-grid--auth,
-  .retention-toggle-row {
+  .retention-toggle-row,
+  .pricing-field-grid,
+  .pricing-toggle-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
