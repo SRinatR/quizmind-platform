@@ -50,18 +50,20 @@ const NAV_LABEL_KEYS: Record<string, 'profile' | 'usage' | 'history' | 'installa
   '/app/settings':      'settings',
 };
 
-const ADMIN_GROUP_LABEL_KEYS: Record<string, 'people' | 'operations' | 'controlPlane' | 'preferences'> = {
+const ADMIN_GROUP_LABEL_KEYS: Record<string, 'people' | 'operations' | 'controlPlane' | 'billingData' | 'preferences'> = {
   People: 'people',
   Operations: 'operations',
   'Control Plane': 'controlPlane',
+  'Billing & Data': 'billingData',
   Preferences: 'preferences',
 };
 
-const ADMIN_ITEM_LABEL_KEYS: Record<string, 'users' | 'logs' | 'extensionControl' | 'aiRouting' | 'dataRetention' | 'settings'> = {
+const ADMIN_ITEM_LABEL_KEYS: Record<string, 'users' | 'logs' | 'extensionControl' | 'aiRouting' | 'pricingBilling' | 'dataRetention' | 'settings'> = {
   '/admin/users': 'users',
   '/admin/logs': 'logs',
   '/admin/extension-control': 'extensionControl',
   '/admin/ai-routing': 'aiRouting',
+  '/admin/pricing-billing': 'pricingBilling',
   '/admin/data-retention': 'dataRetention',
   '/admin/settings': 'settings',
 };

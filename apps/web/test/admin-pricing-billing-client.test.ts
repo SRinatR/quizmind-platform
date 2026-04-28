@@ -48,6 +48,12 @@ test('pricing billing client handles missing exchange rates and API failures wit
   assert.match(source, /onClick=\{\(\) => void loadPricingSettings\(\)\}/);
 });
 
+test('pricing billing reset to defaults action uses ghost button style (not secondary)', async () => {
+  const source = await readFile(pricingClientPath, 'utf8');
+  assert.match(source, /<button className="btn-ghost" type="button" disabled=\{saving\} onClick=\{onResetDefaults\}>\{pricingT\.resetDefaults\}<\/button>/);
+  assert.doesNotMatch(source, /<button className="btn-secondary" type="button" disabled=\{saving\} onClick=\{onResetDefaults\}>\{pricingT\.resetDefaults\}<\/button>/);
+});
+
 test('currency conversion helpers round-trip RUB/EUR display values through USD policy values', () => {
   const rates = { USD: 90, EUR: 100 };
   const rubFromUsd = convertUsdToDisplayCurrency(1, 'RUB', rates);

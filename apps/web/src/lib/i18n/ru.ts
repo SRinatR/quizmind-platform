@@ -479,6 +479,7 @@ export const ru: Translations = {
         people: 'Люди',
         operations: 'Операции',
         controlPlane: 'Панель управления',
+        billingData: 'Биллинг и данные',
         preferences: 'Настройки',
       },
       items: {

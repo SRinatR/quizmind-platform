@@ -1,7 +1,7 @@
 import { type AccessRequirement } from '@quizmind/contracts';
 import { type AdminNavGroup, type NavigationItem } from '@quizmind/ui';
 
-export type AdminSectionGroup = 'people' | 'operations' | 'control-plane' | 'preferences';
+export type AdminSectionGroup = 'people' | 'operations' | 'control-plane' | 'billing-data' | 'preferences';
 
 export interface AdminSection {
   id: string;
@@ -68,8 +68,8 @@ export const adminSections: AdminSection[] = [
     href: '/admin/pricing-billing',
     description: 'AI request pricing, commission, and charging behavior.',
     requirement: { requireSystemRole: 'admin' },
-    group: 'control-plane',
-    groupLabel: 'Control Plane',
+    group: 'billing-data',
+    groupLabel: 'Billing & Data',
   },
 
   {
@@ -79,8 +79,8 @@ export const adminSections: AdminSection[] = [
     href: '/admin/data-retention',
     description: 'Platform-wide retention controls for AI history, logs, and auth/session records.',
     requirement: { requireSystemRole: 'admin' },
-    group: 'control-plane',
-    groupLabel: 'Control Plane',
+    group: 'billing-data',
+    groupLabel: 'Billing & Data',
   },
 
   {
@@ -97,12 +97,13 @@ export const adminSections: AdminSection[] = [
 
 // ── Group order and labels ────────────────────────────────────────────────────
 
-const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'control-plane', 'preferences'];
+const GROUP_ORDER: AdminSectionGroup[] = ['people', 'operations', 'control-plane', 'billing-data', 'preferences'];
 
 const GROUP_LABELS: Record<AdminSectionGroup, string> = {
   people: 'People',
   operations: 'Operations',
   'control-plane': 'Control Plane',
+  'billing-data': 'Billing & Data',
   preferences: 'Preferences',
 };
 
