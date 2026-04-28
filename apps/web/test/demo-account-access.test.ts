@@ -5,7 +5,7 @@ import { type AccessContext } from '@quizmind/contracts';
 
 import { adminSections } from '../src/features/admin/sections';
 import { demoAccounts } from '../src/features/auth/demo-accounts';
-import { getVisibleAdminSections } from '../src/features/navigation/visibility';
+import { buildVisibleAdminNavGroups, getVisibleAdminSections } from '../src/features/navigation/visibility';
 import { isAdminEmail } from '../src/lib/admin-guard';
 
 function createContext(systemRoleList: AccessContext['systemRoles']): AccessContext {
@@ -89,6 +89,43 @@ test('data-retention section is visible for admin role and hidden for non-admin 
 
   assert.equal(adminVisible, true, 'data-retention must be visible for admin role');
   assert.equal(userVisible, false, 'data-retention must be hidden for non-admin');
+});
+
+test('admin nav places Pricing & Billing and Data Retention in Billing & Data after Control Plane and before Preferences', () => {
+  const groups = buildVisibleAdminNavGroups(createContext(['admin']));
+  const labels = groups.map((group) => group.label);
+  const controlPlaneIndex = labels.indexOf('Control Plane');
+  const billingDataIndex = labels.indexOf('Billing & Data');
+  const preferencesIndex = labels.indexOf('Preferences');
+
+  assert.ok(controlPlaneIndex >= 0, 'Control Plane group must exist');
+  assert.ok(billingDataIndex >= 0, 'Billing & Data group must exist');
+  assert.ok(preferencesIndex >= 0, 'Preferences group must exist');
+  assert.ok(controlPlaneIndex < billingDataIndex, 'Billing & Data must appear after Control Plane');
+  assert.ok(billingDataIndex < preferencesIndex, 'Billing & Data must appear before Preferences');
+
+  const controlPlane = groups[controlPlaneIndex];
+  const billingData = groups[billingDataIndex];
+
+  const controlPlaneHrefs = new Set(controlPlane.items.map((item) => item.href));
+  assert.equal(controlPlaneHrefs.has('/admin/pricing-billing'), false, 'pricing-billing must not be in Control Plane');
+  assert.equal(controlPlaneHrefs.has('/admin/data-retention'), false, 'data-retention must not be in Control Plane');
+
+  const billingDataHrefs = new Set(billingData.items.map((item) => item.href));
+  assert.equal(billingDataHrefs.has('/admin/pricing-billing'), true, 'pricing-billing must be in Billing & Data');
+  assert.equal(billingDataHrefs.has('/admin/data-retention'), true, 'data-retention must be in Billing & Data');
+});
+
+test('admin nav keeps pricing-billing and data-retention links active-targetable and hidden for non-admin users', () => {
+  const adminGroups = buildVisibleAdminNavGroups(createContext(['admin']));
+  const adminHrefs = new Set(adminGroups.flatMap((group) => group.items.map((item) => item.href)));
+  assert.equal(adminHrefs.has('/admin/pricing-billing'), true, 'pricing-billing route must remain in admin nav');
+  assert.equal(adminHrefs.has('/admin/data-retention'), true, 'data-retention route must remain in admin nav');
+
+  const userGroups = buildVisibleAdminNavGroups(createContext([]));
+  const userHrefs = new Set(userGroups.flatMap((group) => group.items.map((item) => item.href)));
+  assert.equal(userHrefs.has('/admin/pricing-billing'), false, 'pricing-billing must remain hidden for non-admin');
+  assert.equal(userHrefs.has('/admin/data-retention'), false, 'data-retention must remain hidden for non-admin');
 });
 
 test('isAdminEmail returns false for unknown emails', () => {

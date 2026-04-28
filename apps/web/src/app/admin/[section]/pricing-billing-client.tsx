@@ -438,7 +438,7 @@ export function PricingBillingAdminClient({ exchangeRates }: PricingBillingAdmin
       <div className="retention-actions">
         <button className="btn-primary" disabled={saving || !isDirty} onClick={onSave}>{saving ? t.settings.account.saving : pricingT.save}</button>
         <button className="btn-ghost" type="button" disabled={!isDirty || saving} onClick={onCancel}>{pricingT.cancel}</button>
-        <button className="btn-secondary" type="button" disabled={saving} onClick={onResetDefaults}>{pricingT.resetDefaults}</button>
+        <button className="btn-ghost" type="button" disabled={saving} onClick={onResetDefaults}>{pricingT.resetDefaults}</button>
       </div>
 
       <p className="pricing-field__desc">{pricingT.currencyStorageNote}</p>

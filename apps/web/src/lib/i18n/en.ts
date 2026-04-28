@@ -477,6 +477,7 @@ export const en = {
         people: 'People',
         operations: 'Operations',
         controlPlane: 'Control Plane',
+        billingData: 'Billing & Data',
         preferences: 'Preferences',
       },
       items: {
