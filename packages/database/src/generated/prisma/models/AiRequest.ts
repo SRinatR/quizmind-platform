@@ -32,6 +32,9 @@ export type AiRequestAvgAggregateOutputType = {
   totalTokens: number | null
   durationMs: number | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
 }
 
 export type AiRequestSumAggregateOutputType = {
@@ -40,6 +43,9 @@ export type AiRequestSumAggregateOutputType = {
   totalTokens: number | null
   durationMs: number | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
 }
 
 export type AiRequestMinAggregateOutputType = {
@@ -58,6 +64,9 @@ export type AiRequestMinAggregateOutputType = {
   durationMs: number | null
   requestType: string | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
   expiresAt: Date | null
   occurredAt: Date | null
   createdAt: Date | null
@@ -79,6 +88,9 @@ export type AiRequestMaxAggregateOutputType = {
   durationMs: number | null
   requestType: string | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
   expiresAt: Date | null
   occurredAt: Date | null
   createdAt: Date | null
@@ -102,6 +114,9 @@ export type AiRequestCountAggregateOutputType = {
   requestType: number
   fileMetadataJson: number
   estimatedCostUsd: number
+  providerCostUsd: number
+  platformFeeUsd: number
+  chargedCostUsd: number
   expiresAt: number
   occurredAt: number
   createdAt: number
@@ -115,6 +130,9 @@ export type AiRequestAvgAggregateInputType = {
   totalTokens?: true
   durationMs?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
 }
 
 export type AiRequestSumAggregateInputType = {
@@ -123,6 +141,9 @@ export type AiRequestSumAggregateInputType = {
   totalTokens?: true
   durationMs?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
 }
 
 export type AiRequestMinAggregateInputType = {
@@ -141,6 +162,9 @@ export type AiRequestMinAggregateInputType = {
   durationMs?: true
   requestType?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
   expiresAt?: true
   occurredAt?: true
   createdAt?: true
@@ -162,6 +186,9 @@ export type AiRequestMaxAggregateInputType = {
   durationMs?: true
   requestType?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
   expiresAt?: true
   occurredAt?: true
   createdAt?: true
@@ -185,6 +212,9 @@ export type AiRequestCountAggregateInputType = {
   requestType?: true
   fileMetadataJson?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
   expiresAt?: true
   occurredAt?: true
   createdAt?: true
@@ -295,6 +325,9 @@ export type AiRequestGroupByOutputType = {
   requestType: string | null
   fileMetadataJson: runtime.JsonValue | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
   expiresAt: Date | null
   occurredAt: Date
   createdAt: Date
@@ -341,6 +374,9 @@ export type AiRequestWhereInput = {
   requestType?: Prisma.StringNullableFilter<"AiRequest"> | string | null
   fileMetadataJson?: Prisma.JsonNullableFilter<"AiRequest">
   estimatedCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  providerCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
   expiresAt?: Prisma.DateTimeNullableFilter<"AiRequest"> | Date | string | null
   occurredAt?: Prisma.DateTimeFilter<"AiRequest"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"AiRequest"> | Date | string
@@ -366,6 +402,9 @@ export type AiRequestOrderByWithRelationInput = {
   requestType?: Prisma.SortOrderInput | Prisma.SortOrder
   fileMetadataJson?: Prisma.SortOrderInput | Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   occurredAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -394,6 +433,9 @@ export type AiRequestWhereUniqueInput = Prisma.AtLeast<{
   requestType?: Prisma.StringNullableFilter<"AiRequest"> | string | null
   fileMetadataJson?: Prisma.JsonNullableFilter<"AiRequest">
   estimatedCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  providerCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
   expiresAt?: Prisma.DateTimeNullableFilter<"AiRequest"> | Date | string | null
   occurredAt?: Prisma.DateTimeFilter<"AiRequest"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"AiRequest"> | Date | string
@@ -419,6 +461,9 @@ export type AiRequestOrderByWithAggregationInput = {
   requestType?: Prisma.SortOrderInput | Prisma.SortOrder
   fileMetadataJson?: Prisma.SortOrderInput | Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
   occurredAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -450,6 +495,9 @@ export type AiRequestScalarWhereWithAggregatesInput = {
   requestType?: Prisma.StringNullableWithAggregatesFilter<"AiRequest"> | string | null
   fileMetadataJson?: Prisma.JsonNullableWithAggregatesFilter<"AiRequest">
   estimatedCostUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequest"> | number | null
+  providerCostUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequest"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequest"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequest"> | number | null
   expiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"AiRequest"> | Date | string | null
   occurredAt?: Prisma.DateTimeWithAggregatesFilter<"AiRequest"> | Date | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"AiRequest"> | Date | string
@@ -471,6 +519,9 @@ export type AiRequestCreateInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -496,6 +547,9 @@ export type AiRequestUncheckedCreateInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -517,6 +571,9 @@ export type AiRequestUpdateInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -542,6 +599,9 @@ export type AiRequestUncheckedUpdateInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -565,6 +625,9 @@ export type AiRequestCreateManyInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -586,6 +649,9 @@ export type AiRequestUpdateManyMutationInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -609,6 +675,9 @@ export type AiRequestUncheckedUpdateManyInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -642,6 +711,9 @@ export type AiRequestCountOrderByAggregateInput = {
   requestType?: Prisma.SortOrder
   fileMetadataJson?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   occurredAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -653,6 +725,9 @@ export type AiRequestAvgOrderByAggregateInput = {
   totalTokens?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
 }
 
 export type AiRequestMaxOrderByAggregateInput = {
@@ -671,6 +746,9 @@ export type AiRequestMaxOrderByAggregateInput = {
   durationMs?: Prisma.SortOrder
   requestType?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   occurredAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -692,6 +770,9 @@ export type AiRequestMinOrderByAggregateInput = {
   durationMs?: Prisma.SortOrder
   requestType?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   occurredAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -703,6 +784,9 @@ export type AiRequestSumOrderByAggregateInput = {
   totalTokens?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
 }
 
 export type AiRequestCreateNestedManyWithoutUserInput = {
@@ -821,6 +905,9 @@ export type AiRequestCreateWithoutUserInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -844,6 +931,9 @@ export type AiRequestUncheckedCreateWithoutUserInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -896,6 +986,9 @@ export type AiRequestScalarWhereInput = {
   requestType?: Prisma.StringNullableFilter<"AiRequest"> | string | null
   fileMetadataJson?: Prisma.JsonNullableFilter<"AiRequest">
   estimatedCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  providerCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableFilter<"AiRequest"> | number | null
   expiresAt?: Prisma.DateTimeNullableFilter<"AiRequest"> | Date | string | null
   occurredAt?: Prisma.DateTimeFilter<"AiRequest"> | Date | string
   createdAt?: Prisma.DateTimeFilter<"AiRequest"> | Date | string
@@ -917,6 +1010,9 @@ export type AiRequestCreateWithoutWorkspaceInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -940,6 +1036,9 @@ export type AiRequestUncheckedCreateWithoutWorkspaceInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -988,6 +1087,9 @@ export type AiRequestCreateManyUserInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -1009,6 +1111,9 @@ export type AiRequestUpdateWithoutUserInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1032,6 +1137,9 @@ export type AiRequestUncheckedUpdateWithoutUserInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1054,6 +1162,9 @@ export type AiRequestUncheckedUpdateManyWithoutUserInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1076,6 +1187,9 @@ export type AiRequestCreateManyWorkspaceInput = {
   requestType?: string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
   expiresAt?: Date | string | null
   occurredAt?: Date | string
   createdAt?: Date | string
@@ -1097,6 +1211,9 @@ export type AiRequestUpdateWithoutWorkspaceInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1120,6 +1237,9 @@ export type AiRequestUncheckedUpdateWithoutWorkspaceInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1142,6 +1262,9 @@ export type AiRequestUncheckedUpdateManyWithoutWorkspaceInput = {
   requestType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileMetadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurredAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1167,6 +1290,9 @@ export type AiRequestSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   requestType?: boolean
   fileMetadataJson?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
   expiresAt?: boolean
   occurredAt?: boolean
   createdAt?: boolean
@@ -1192,6 +1318,9 @@ export type AiRequestSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   requestType?: boolean
   fileMetadataJson?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
   expiresAt?: boolean
   occurredAt?: boolean
   createdAt?: boolean
@@ -1217,6 +1346,9 @@ export type AiRequestSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   requestType?: boolean
   fileMetadataJson?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
   expiresAt?: boolean
   occurredAt?: boolean
   createdAt?: boolean
@@ -1242,12 +1374,15 @@ export type AiRequestSelectScalar = {
   requestType?: boolean
   fileMetadataJson?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
   expiresAt?: boolean
   occurredAt?: boolean
   createdAt?: boolean
 }
 
-export type AiRequestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "workspaceId" | "installationId" | "provider" | "model" | "promptTokens" | "completionTokens" | "totalTokens" | "keySource" | "status" | "errorCode" | "durationMs" | "requestMetadata" | "requestType" | "fileMetadataJson" | "estimatedCostUsd" | "expiresAt" | "occurredAt" | "createdAt", ExtArgs["result"]["aiRequest"]>
+export type AiRequestOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "workspaceId" | "installationId" | "provider" | "model" | "promptTokens" | "completionTokens" | "totalTokens" | "keySource" | "status" | "errorCode" | "durationMs" | "requestMetadata" | "requestType" | "fileMetadataJson" | "estimatedCostUsd" | "providerCostUsd" | "platformFeeUsd" | "chargedCostUsd" | "expiresAt" | "occurredAt" | "createdAt", ExtArgs["result"]["aiRequest"]>
 export type AiRequestInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   workspace?: boolean | Prisma.AiRequest$workspaceArgs<ExtArgs>
@@ -1285,6 +1420,9 @@ export type $AiRequestPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     requestType: string | null
     fileMetadataJson: runtime.JsonValue | null
     estimatedCostUsd: number | null
+    providerCostUsd: number | null
+    platformFeeUsd: number | null
+    chargedCostUsd: number | null
     expiresAt: Date | null
     occurredAt: Date
     createdAt: Date
@@ -1730,6 +1868,9 @@ export interface AiRequestFieldRefs {
   readonly requestType: Prisma.FieldRef<"AiRequest", 'String'>
   readonly fileMetadataJson: Prisma.FieldRef<"AiRequest", 'Json'>
   readonly estimatedCostUsd: Prisma.FieldRef<"AiRequest", 'Float'>
+  readonly providerCostUsd: Prisma.FieldRef<"AiRequest", 'Float'>
+  readonly platformFeeUsd: Prisma.FieldRef<"AiRequest", 'Float'>
+  readonly chargedCostUsd: Prisma.FieldRef<"AiRequest", 'Float'>
   readonly expiresAt: Prisma.FieldRef<"AiRequest", 'DateTime'>
   readonly occurredAt: Prisma.FieldRef<"AiRequest", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"AiRequest", 'DateTime'>

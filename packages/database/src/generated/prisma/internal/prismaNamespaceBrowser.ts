@@ -237,10 +237,12 @@ export const WalletLedgerEntryScalarFieldEnum = {
   id: 'id',
   walletId: 'walletId',
   topUpId: 'topUpId',
+  idempotencyKey: 'idempotencyKey',
   type: 'type',
   deltaKopecks: 'deltaKopecks',
   balanceAfterKopecks: 'balanceAfterKopecks',
   description: 'description',
+  metadataJson: 'metadataJson',
   createdAt: 'createdAt'
 } as const
 
@@ -331,6 +333,9 @@ export const AiRequestScalarFieldEnum = {
   requestType: 'requestType',
   fileMetadataJson: 'fileMetadataJson',
   estimatedCostUsd: 'estimatedCostUsd',
+  providerCostUsd: 'providerCostUsd',
+  platformFeeUsd: 'platformFeeUsd',
+  chargedCostUsd: 'chargedCostUsd',
   expiresAt: 'expiresAt',
   occurredAt: 'occurredAt',
   createdAt: 'createdAt'
@@ -355,6 +360,14 @@ export const AiRequestEventScalarFieldEnum = {
   completionTokens: 'completionTokens',
   totalTokens: 'totalTokens',
   estimatedCostUsd: 'estimatedCostUsd',
+  providerCostUsd: 'providerCostUsd',
+  platformFeeUsd: 'platformFeeUsd',
+  chargedCostUsd: 'chargedCostUsd',
+  chargedCurrency: 'chargedCurrency',
+  chargedAmountMinor: 'chargedAmountMinor',
+  pricingSource: 'pricingSource',
+  pricingPolicySnapshotJson: 'pricingPolicySnapshotJson',
+  walletLedgerEntryId: 'walletLedgerEntryId',
   durationMs: 'durationMs',
   promptExcerpt: 'promptExcerpt',
   responseExcerpt: 'responseExcerpt',

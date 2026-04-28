@@ -245,10 +245,12 @@ model WalletLedgerEntry {
   id                  String                @id @default(cuid())
   walletId            String
   topUpId             String?
+  idempotencyKey      String?               @unique
   type                WalletLedgerEntryType
   deltaKopecks        Int
   balanceAfterKopecks Int
   description         String?
+  metadataJson        Json?
   createdAt           DateTime              @default(now())
   wallet              Wallet                @relation(fields: [walletId], references: [id], onDelete: Cascade)
   topUp               WalletTopUp?          @relation(fields: [topUpId], references: [id], onDelete: SetNull)
@@ -336,6 +338,9 @@ model AiRequest {
   requestType        String?
   fileMetadataJson   Json?
   estimatedCostUsd   Float?
+  providerCostUsd    Float?
+  platformFeeUsd     Float?
+  chargedCostUsd     Float?
   expiresAt          DateTime?
   occurredAt         DateTime   @default(now())
   createdAt          DateTime   @default(now())
@@ -365,6 +370,14 @@ model AiRequestEvent {
   completionTokens Int               @default(0)
   totalTokens      Int               @default(0)
   estimatedCostUsd Float?
+  providerCostUsd  Float?
+  platformFeeUsd   Float?
+  chargedCostUsd   Float?
+  chargedCurrency  String?
+  chargedAmountMinor Int?
+  pricingSource    String?
+  pricingPolicySnapshotJson Json?
+  walletLedgerEntryId String?
   durationMs       Int?
   promptExcerpt    String?
   responseExcerpt  String?

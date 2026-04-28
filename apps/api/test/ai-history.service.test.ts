@@ -1101,3 +1101,102 @@ test('AiHistoryService.persistContent falls back to default prompt image limits 
 
   assert.equal(upsertInput.promptAttachments.length, 8);
 });
+
+test('AiHistoryService.persistContent does not perform wallet debit side effects', async () => {
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_no_debit',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openrouter/auto',
+    requestType: 'text',
+    promptContent: [{ role: 'user', content: 'hello' }],
+    responseContent: { choices: [{ message: { content: 'world' } }] },
+    promptTokens: 10,
+    completionTokens: 10,
+  });
+
+  assert.equal(upsertInput.walletLedgerEntryId, null);
+  assert.equal(upsertInput.chargedAmountMinor, null);
+});
+
+test('AiHistoryService.listHistory exposes chargedCostUsd when available', async () => {
+  const occurredAt = new Date('2026-04-20T10:00:00.000Z');
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async () => ([{
+        id: 'evt_charged',
+        requestType: 'text',
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        keySource: 'platform',
+        status: 'success',
+        errorCode: null,
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        durationMs: 100,
+        estimatedCostUsd: 0.001,
+        chargedCostUsd: 0.002,
+        chargedCurrency: 'RUB',
+        chargedAmountMinor: 15,
+        promptExcerpt: 'hi',
+        responseExcerpt: 'ok',
+        occurredAt,
+        content: null,
+        attachments: [],
+      }] as any),
+      countEventsForUser: async () => 1,
+      listLegacyForUserExcludingEventIds: async () => [],
+      countLegacyForUserExcludingEventIds: async () => 0,
+    },
+  });
+
+  const result = await service.listHistory('user_1', { limit: 10, offset: 0 });
+  assert.equal(result.items[0]?.chargedCostUsd, 0.002);
+});
+
+test('AiHistoryService.listHistory falls back to estimatedCostUsd when chargedCostUsd is absent', async () => {
+  const occurredAt = new Date('2026-04-20T10:00:00.000Z');
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async () => ([{
+        id: 'evt_estimated',
+        requestType: 'text',
+        provider: 'openrouter',
+        model: 'openrouter/auto',
+        keySource: 'platform',
+        status: 'success',
+        errorCode: null,
+        promptTokens: 1,
+        completionTokens: 2,
+        totalTokens: 3,
+        durationMs: 100,
+        estimatedCostUsd: 0.003,
+        chargedCostUsd: null,
+        chargedCurrency: null,
+        chargedAmountMinor: null,
+        promptExcerpt: 'hi',
+        responseExcerpt: 'ok',
+        occurredAt,
+        content: null,
+        attachments: [],
+      }] as any),
+      countEventsForUser: async () => 1,
+      listLegacyForUserExcludingEventIds: async () => [],
+      countLegacyForUserExcludingEventIds: async () => 0,
+    },
+  });
+
+  const result = await service.listHistory('user_1', { limit: 10, offset: 0 });
+  assert.equal(result.items[0]?.chargedCostUsd, null);
+  assert.equal(result.items[0]?.estimatedCostUsd, 0.003);
+});

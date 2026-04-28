@@ -213,8 +213,15 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                 <span className={statusBadgeClass(detail.status)}>{detail.status}</span>
                 <span className="tag-soft tag-soft--gray">{detail.requestType}</span>
                 {detail.totalTokens > 0 && <span className="tag-soft tag-soft--gray">{detail.totalTokens} tokens</span>}
-                {detail.estimatedCostUsd > 0 && (
-                  <span className="tag-soft tag-soft--gray">{formatUsdAmountByPreference(detail.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}</span>
+                {(detail.chargedCostUsd ?? detail.estimatedCostUsd) > 0 && (
+                  <span className="tag-soft tag-soft--gray">
+                    {detail.chargedCostUsd && detail.chargedCostUsd > 0 ? 'Charged: ' : ''}
+                    {formatUsdAmountByPreference(
+                      detail.chargedCostUsd && detail.chargedCostUsd > 0 ? detail.chargedCostUsd : detail.estimatedCostUsd,
+                      prefs.balanceDisplayCurrency,
+                      exchangeRates,
+                    )}
+                  </span>
                 )}
                 {formattedDuration != null && <span className="tag-soft tag-soft--gray">{formattedDuration}</span>}
               </div>

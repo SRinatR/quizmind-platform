@@ -227,6 +227,9 @@ function toListItemFromEvent(record: AiHistoryEventListRecord, promptContentJson
     totalTokens: record.totalTokens,
     durationMs: record.durationMs,
     estimatedCostUsd: record.estimatedCostUsd ?? 0,
+    chargedCostUsd: record.chargedCostUsd ?? null,
+    chargedCurrency: record.chargedCurrency ?? null,
+    chargedAmountMinor: record.chargedAmountMinor ?? null,
     promptContentJson,
     promptExcerpt: record.promptExcerpt,
     responseExcerpt: record.responseExcerpt,
@@ -251,6 +254,9 @@ function toListItemFromLegacy(record: AiHistoryLegacyListRecord, promptContentJs
     totalTokens: record.totalTokens,
     durationMs: record.durationMs,
     estimatedCostUsd: record.estimatedCostUsd ?? 0,
+    chargedCostUsd: record.chargedCostUsd ?? null,
+    chargedCurrency: null,
+    chargedAmountMinor: null,
     promptContentJson,
     fileMetadata: parseFileMetadata(record.fileMetadataJson),
     occurredAt: record.occurredAt.toISOString(),
@@ -532,6 +538,7 @@ export class AiHistoryService {
       totalCompletionTokens: row.totalCompletionTokens,
       totalTokens: row.totalTokens,
       estimatedCostUsd: Math.round(row.totalCostUsd * 1_000_000) / 1_000_000,
+      chargedCostUsd: Math.round((row.totalChargedCostUsd ?? row.totalCostUsd) * 1_000_000) / 1_000_000,
       avgDurationMs: row.avgDurationMs,
     }));
 
@@ -545,6 +552,7 @@ export class AiHistoryService {
       totalCompletionTokens: data.totalCompletionTokens,
       totalTokens: data.totalTokens,
       estimatedCostUsd: Math.round(data.totalCostUsd * 1_000_000) / 1_000_000,
+      chargedCostUsd: Math.round((data.totalChargedCostUsd ?? data.totalCostUsd) * 1_000_000) / 1_000_000,
       avgDurationMs: data.avgDurationMs,
       byModel,
     };
@@ -575,6 +583,14 @@ export class AiHistoryService {
     promptTokens?: number;
     completionTokens?: number;
     durationMs?: number;
+    providerCostUsd?: number | null;
+    platformFeeUsd?: number | null;
+    chargedCostUsd?: number | null;
+    chargedCurrency?: string | null;
+    chargedAmountMinor?: number | null;
+    pricingSource?: 'provider' | 'estimated' | null;
+    pricingPolicySnapshotJson?: Prisma.InputJsonValue;
+    walletLedgerEntryId?: string | null;
   }): Promise<void> {
     const retention = await this.resolveHistoryRetentionDays();
     const expiresAt = new Date();
@@ -598,8 +614,10 @@ export class AiHistoryService {
     const promptExcerpt = extractPromptExcerpt(sanitizedPromptContent);
     const responseExcerpt = extractResponseExcerpt(input.responseContent);
 
-    const cost = extractProviderCostUsd(input.responseContent)
+    const estimatedCostUsd = extractProviderCostUsd(input.responseContent)
       ?? estimateRequestCostUsd(input.model, input.promptTokens ?? 0, input.completionTokens ?? 0);
+    const resolvedPricingSource: 'provider' | 'estimated' =
+      input.pricingSource ?? (extractProviderCostUsd(input.responseContent) !== null ? 'provider' : 'estimated');
 
     const previousPromptAttachments = await this.repository.listPromptAttachmentsForEvent(eventId);
 
@@ -618,7 +636,15 @@ export class AiHistoryService {
       promptTokens: input.promptTokens ?? 0,
       completionTokens: input.completionTokens ?? 0,
       totalTokens: (input.promptTokens ?? 0) + (input.completionTokens ?? 0),
-      estimatedCostUsd: cost,
+      estimatedCostUsd,
+      providerCostUsd: input.providerCostUsd ?? estimatedCostUsd,
+      platformFeeUsd: input.platformFeeUsd ?? null,
+      chargedCostUsd: input.chargedCostUsd ?? null,
+      chargedCurrency: input.chargedCurrency ?? null,
+      chargedAmountMinor: input.chargedAmountMinor ?? null,
+      pricingSource: resolvedPricingSource,
+      pricingPolicySnapshotJson: input.pricingPolicySnapshotJson,
+      walletLedgerEntryId: input.walletLedgerEntryId ?? null,
       durationMs: input.durationMs,
       promptExcerpt,
       responseExcerpt,

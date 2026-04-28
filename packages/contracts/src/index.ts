@@ -466,6 +466,28 @@ export interface PlatformRetentionPolicySnapshot {
   updatedById?: string | null;
 }
 
+export type ChargeFailedRequestsMode = 'never' | 'provider_cost_only' | 'minimum_fee';
+export type ChargeUserKeyRequestsMode = 'never' | 'platform_fee_only' | 'full_price';
+
+export interface PlatformAiPricingPolicy {
+  enabled: boolean;
+  markupPercent: number;
+  minimumFeeUsd: number;
+  roundingUsd: number;
+  maxChargeUsd?: number | null;
+  chargeFailedRequests: ChargeFailedRequestsMode;
+  chargeUserKeyRequests: ChargeUserKeyRequestsMode;
+  displayEstimatedPriceToUser: boolean;
+}
+
+export type PlatformAiPricingPolicyUpdateRequest = Partial<PlatformAiPricingPolicy>;
+
+export interface PlatformAiPricingPolicySnapshot {
+  policy: PlatformAiPricingPolicy;
+  updatedAt?: string | null;
+  updatedById?: string | null;
+}
+
 export interface WorkspaceSummary {
   id: string;
   slug: string;
@@ -1816,6 +1838,9 @@ export interface AiHistoryListItem {
   totalTokens: number;
   durationMs?: number | null;
   estimatedCostUsd: number;
+  chargedCostUsd?: number | null;
+  chargedCurrency?: string | null;
+  chargedAmountMinor?: number | null;
   /** Full serialized prompt messages used for timeline preview (without inlined attachment bytes). */
   promptContentJson?: unknown;
   /** Short excerpt of the prompt text (first ~300 chars). */
@@ -1867,6 +1892,7 @@ export interface AiAnalyticsModelBreakdown {
   totalCompletionTokens?: number;
   totalTokens: number;
   estimatedCostUsd: number;
+  chargedCostUsd?: number;
   avgDurationMs?: number | null;
 }
 
@@ -1883,6 +1909,7 @@ export interface AiAnalyticsSnapshot {
   totalTokens: number;
   /** Model/provider-aware cost estimate in USD. */
   estimatedCostUsd: number;
+  chargedCostUsd?: number;
   avgDurationMs: number | null;
   byModel: AiAnalyticsModelBreakdown[];
 }

@@ -13,6 +13,7 @@ import { normalizeRouterAiCatalogPayload, type RouterAiCatalogService } from '..
 import { type AiHistoryService } from '../src/history/ai-history.service';
 import { type AiProviderPolicyService } from '../src/providers/ai-provider-policy.service';
 import { type WalletRepository } from '../src/wallet/wallet.repository';
+import { type AiPricingService } from '../src/ai/ai-pricing.service';
 
 function createSession(): CurrentSessionSnapshot {
   return {
@@ -66,6 +67,10 @@ function createPolicy(overrides?: Partial<AiProviderPolicySnapshot>): AiProvider
 function createService(
   repositoryOverrides?: Partial<AiProxyRepository>,
   policyOverrides?: Partial<AiProviderPolicySnapshot>,
+  overrides?: {
+    walletRepository?: Partial<WalletRepository>;
+    aiPricingService?: Partial<AiPricingService>;
+  },
 ) {
   const repository: Partial<AiProxyRepository> = {
     findWorkspacePlanCode: async () => 'pro',
@@ -111,6 +116,51 @@ function createService(
   };
   const walletRepository: Partial<WalletRepository> = {
     findBalanceForUser: async () => 1000,
+    findOrCreateWalletForUser: async () => ({
+      id: 'wallet_1',
+      userId: 'user_1',
+      currency: 'RUB',
+      balanceKopecks: 1000,
+      createdAt: new Date('2026-03-24T12:00:00.000Z'),
+      updatedAt: new Date('2026-03-24T12:00:00.000Z'),
+    }),
+    debitUsage: async () => ({
+      ledgerEntryId: 'ledger_1',
+      newBalanceKopecks: 900,
+      alreadyProcessed: false,
+    }),
+    ...overrides?.walletRepository,
+  };
+  const aiPricingService: Partial<AiPricingService> = {
+    getEffectivePolicy: async () => ({
+      enabled: false,
+      markupPercent: 25,
+      minimumFeeUsd: 0.0005,
+      roundingUsd: 0.000001,
+      maxChargeUsd: null,
+      chargeFailedRequests: 'never',
+      chargeUserKeyRequests: 'platform_fee_only',
+      displayEstimatedPriceToUser: false,
+    }),
+    calculate: async () => ({
+      providerCostUsd: 0,
+      platformFeeUsd: 0,
+      chargedCostUsd: 0,
+      pricingSource: 'estimated',
+      policySnapshot: {
+        enabled: false,
+        markupPercent: 25,
+        minimumFeeUsd: 0.0005,
+        roundingUsd: 0.000001,
+        maxChargeUsd: null,
+        chargeFailedRequests: 'never',
+        chargeUserKeyRequests: 'platform_fee_only',
+        displayEstimatedPriceToUser: false,
+      },
+      chargeable: false,
+      reason: 'pricing_disabled',
+    }),
+    ...overrides?.aiPricingService,
   };
   const service = new AiProxyService(
     aiProviderPolicyService as AiProviderPolicyService,
@@ -119,6 +169,7 @@ function createService(
     openRouterCatalogService as OpenRouterCatalogService,
     routerAiCatalogService as RouterAiCatalogService,
     walletRepository as WalletRepository,
+    aiPricingService as AiPricingService,
   );
 
   (service as any).env = {
@@ -930,7 +981,124 @@ test('AiProxyService.listModelsForCurrentSession returns plan-aware models filte
   assert.equal(result.defaultModel, 'openrouter/auto');
   assert.deepEqual(
     result.models.map((entry) => entry.modelId),
-    ['openrouter/auto', 'gpt-4.1-mini'],
+    ['openrouter/auto', 'gpt-4.1-mini', 'claude-sonnet-4'],
+  );
+});
+
+test('AiProxyService converts USD charges into RUB kopecks before wallet debit', async (t) => {
+  let debitInput: any;
+  const previousRate = process.env.BILLING_USD_TO_RUB_RATE;
+  process.env.BILLING_USD_TO_RUB_RATE = '100';
+  t.after(() => {
+    process.env.BILLING_USD_TO_RUB_RATE = previousRate;
+  });
+
+  const { service } = createService(
+    {},
+    { providers: ['openrouter'] },
+    {
+      aiPricingService: {
+        getEffectivePolicy: async () => ({
+          enabled: true,
+          markupPercent: 25,
+          minimumFeeUsd: 0.0005,
+          roundingUsd: 0.000001,
+          maxChargeUsd: null,
+          chargeFailedRequests: 'never',
+          chargeUserKeyRequests: 'platform_fee_only',
+          displayEstimatedPriceToUser: false,
+        }),
+        calculate: async () => ({
+          providerCostUsd: 0.01,
+          platformFeeUsd: 0.005,
+          chargedCostUsd: 0.015,
+          pricingSource: 'estimated',
+          policySnapshot: {
+            enabled: true,
+            markupPercent: 25,
+            minimumFeeUsd: 0.0005,
+            roundingUsd: 0.000001,
+            maxChargeUsd: null,
+            chargeFailedRequests: 'never',
+            chargeUserKeyRequests: 'platform_fee_only',
+            displayEstimatedPriceToUser: false,
+          },
+          chargeable: true,
+        }),
+      },
+      walletRepository: {
+        findOrCreateWalletForUser: async () => ({
+          id: 'wallet_1',
+          userId: 'user_1',
+          currency: 'RUB',
+          balanceKopecks: 5000,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+        debitUsage: async (input: any) => {
+          debitInput = input;
+          return { ledgerEntryId: 'ledger_1', newBalanceKopecks: 4900, alreadyProcessed: false };
+        },
+      },
+    },
+  );
+
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ id: 'resp_1', choices: [{ message: { content: 'ok' } }] }), { status: 200 })) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = previousFetch;
+  });
+
+  await service.proxyForCurrentSession(createSession(), {
+    model: 'openrouter/auto',
+    messages: [{ role: 'user', content: 'Hello!' }],
+  });
+
+  assert.equal(debitInput.amountKopecks, 150);
+  assert.equal(debitInput.currency, 'RUB');
+});
+
+test('AiProxyService does not debit wallet when pricing is disabled', async (t) => {
+  let debitCalled = false;
+  const { service } = createService({}, { providers: ['openrouter'] }, {
+    walletRepository: {
+      debitUsage: async () => {
+        debitCalled = true;
+        return { ledgerEntryId: 'l', newBalanceKopecks: 0, alreadyProcessed: false };
+      },
+    },
+  });
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ id: 'resp_1', choices: [{ message: { content: 'ok' } }] }), { status: 200 })) as typeof fetch;
+  t.after(() => { globalThis.fetch = previousFetch; });
+
+  await service.proxyForCurrentSession(createSession(), { model: 'openrouter/auto', messages: [{ role: 'user', content: 'Hello!' }] });
+  assert.equal(debitCalled, false);
+});
+
+test('AiProxyService blocks after provider response when calculated charge exceeds wallet balance', async (t) => {
+  const { service } = createService({}, { providers: ['openrouter'] }, {
+    aiPricingService: {
+      getEffectivePolicy: async () => ({
+        enabled: true, markupPercent: 25, minimumFeeUsd: 0.0005, roundingUsd: 0.000001, maxChargeUsd: null, chargeFailedRequests: 'never', chargeUserKeyRequests: 'platform_fee_only', displayEstimatedPriceToUser: false,
+      }),
+      calculate: async () => ({
+        providerCostUsd: 10, platformFeeUsd: 2.5, chargedCostUsd: 12.5, pricingSource: 'provider',
+        policySnapshot: { enabled: true, markupPercent: 25, minimumFeeUsd: 0.0005, roundingUsd: 0.000001, maxChargeUsd: null, chargeFailedRequests: 'never', chargeUserKeyRequests: 'platform_fee_only', displayEstimatedPriceToUser: false },
+        chargeable: true,
+      }),
+    },
+    walletRepository: {
+      findOrCreateWalletForUser: async () => ({ id: 'wallet_1', userId: 'user_1', currency: 'RUB', balanceKopecks: 1, createdAt: new Date(), updatedAt: new Date() }),
+    },
+  });
+  const previousFetch = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ id: 'resp_1', usage: { cost: 10 }, choices: [{ message: { content: 'ok' } }] }), { status: 200 })) as typeof fetch;
+  t.after(() => { globalThis.fetch = previousFetch; });
+
+  await assert.rejects(
+    () => service.proxyForCurrentSession(createSession(), { model: 'openrouter/auto', messages: [{ role: 'user', content: 'Hello!' }] }),
+    /Insufficient balance/i,
   );
 });
 

@@ -115,6 +115,18 @@ function normalizeDurationMs(value: number | undefined): number | null {
 export class AiProxyRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  async findUsageLimit(_quotaKey: string): Promise<number | undefined> {
+    return undefined;
+  }
+
+  async findActiveQuotaCounter(_quotaKey: string, _periodStart: Date, _periodEnd: Date): Promise<AiProxyQuotaCounterRecord | null> {
+    return null;
+  }
+
+  async findWorkspacePlanCode(): Promise<string | undefined> {
+    return undefined;
+  }
+
   async findBestUserCredential(input: FindUserCredentialInput): Promise<AiProxyCredentialRecord | null> {
     const candidates = await this.prisma.providerCredential.findMany({
       where: {

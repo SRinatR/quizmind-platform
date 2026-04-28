@@ -35,6 +35,7 @@ import {
   type SupportTicketQueuePresetFavoriteRequest,
   type SupportTicketWorkflowUpdateRequest,
   type PlatformRetentionPolicyUpdateRequest,
+  type PlatformAiPricingPolicyUpdateRequest,
   type UserProfileUpdateRequest,
   type UsageExportRequest,
   type UsageHistoryRequest,
@@ -265,6 +266,21 @@ export class PlatformController {
   ) {
     const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.updateRetentionPolicyForCurrentSession(session, request));
+  }
+
+  @Get('admin/settings/ai-pricing')
+  async getAdminAiPricingSettings(@Headers('authorization') authorization?: string) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.getAiPricingPolicyForCurrentSession(session));
+  }
+
+  @Patch('admin/settings/ai-pricing')
+  async patchAdminAiPricingSettings(
+    @Body() request?: Partial<PlatformAiPricingPolicyUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.updateAiPricingPolicyForCurrentSession(session, request));
   }
 
   @Get('admin/webhooks')

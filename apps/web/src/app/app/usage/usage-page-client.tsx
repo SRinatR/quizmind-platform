@@ -166,6 +166,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
         acc.totalCompletionTokens += row.totalCompletionTokens;
         acc.totalTokens += row.totalTokens;
         acc.estimatedCostUsd += row.estimatedCostUsd;
+        acc.chargedCostUsd += row.chargedCostUsd ?? row.estimatedCostUsd;
 
         if (typeof row.avgDurationMs === 'number' && Number.isFinite(row.avgDurationMs)) {
           acc.durationWeightedSum += row.avgDurationMs * row.requestCount;
@@ -182,6 +183,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
         totalCompletionTokens: 0,
         totalTokens: 0,
         estimatedCostUsd: 0,
+        chargedCostUsd: 0,
         durationWeightedSum: 0,
         durationWeight: 0,
       },
@@ -198,7 +200,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
     : null;
 
   const highestCostModel = filteredRows.length > 0
-    ? [...filteredRows].sort((a, b) => b.estimatedCostUsd - a.estimatedCostUsd)[0]
+    ? [...filteredRows].sort((a, b) => (b.chargedCostUsd ?? b.estimatedCostUsd) - (a.chargedCostUsd ?? a.estimatedCostUsd))[0]
     : null;
 
   const refreshStatus = error
@@ -233,10 +235,10 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
             {statCard('Total requests', String(filteredTotals.totalRequests))}
             {statCard('Successful', String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} failed`)}
             {statCard('Total tokens', formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} prompt · ${formatTokens(filteredTotals.totalCompletionTokens)} completion`)}
-            {statCard('Est. cost', formatUsdAmountByPreference(filteredTotals.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
+            {statCard('Spend', formatUsdAmountByPreference(filteredTotals.chargedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
             {filteredTotals.avgDurationMs !== null ? statCard('Avg latency', formatHistoryDuration(filteredTotals.avgDurationMs) ?? '—') : null}
             {mostUsedModel ? statCard('Most used model', mostUsedModel.displayName, `${mostUsedModel.requestCount} requests`) : null}
-            {highestCostModel ? statCard('Highest cost model', highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
+            {highestCostModel ? statCard('Highest cost model', highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.chargedCostUsd ?? highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
           </div>
 
           {filteredRows.length > 0 ? (
@@ -268,7 +270,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatPercent(successRate)}</td>
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatTokens(row.totalTokens)}</td>
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
-                            {formatUsdAmountByPreference(row.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}
+                            {formatUsdAmountByPreference(row.chargedCostUsd ?? row.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}
                           </td>
                           <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatHistoryDuration(row.avgDurationMs) ?? '—'}</td>
                         </tr>

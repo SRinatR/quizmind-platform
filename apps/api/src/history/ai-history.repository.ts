@@ -16,6 +16,11 @@ const aiHistoryEventListSelect = {
   durationMs: true,
   requestType: true,
   estimatedCostUsd: true,
+  providerCostUsd: true,
+  platformFeeUsd: true,
+  chargedCostUsd: true,
+  chargedCurrency: true,
+  chargedAmountMinor: true,
   promptExcerpt: true,
   responseExcerpt: true,
   occurredAt: true,
@@ -64,6 +69,9 @@ const aiHistoryLegacyListSelect = {
   requestType: true,
   fileMetadataJson: true,
   estimatedCostUsd: true,
+  providerCostUsd: true,
+  platformFeeUsd: true,
+  chargedCostUsd: true,
   occurredAt: true,
   expiresAt: true,
 } satisfies Prisma.AiRequestSelect;
@@ -82,6 +90,9 @@ const aiAdminSyncSelect = {
   model: true,
   durationMs: true,
   estimatedCostUsd: true,
+  providerCostUsd: true,
+  platformFeeUsd: true,
+  chargedCostUsd: true,
   promptTokens: true,
   completionTokens: true,
   totalTokens: true,
@@ -124,6 +135,14 @@ export interface UpsertEventAndContentInput {
   completionTokens: number;
   totalTokens: number;
   estimatedCostUsd: number;
+  providerCostUsd?: number | null;
+  platformFeeUsd?: number | null;
+  chargedCostUsd?: number | null;
+  chargedCurrency?: string | null;
+  chargedAmountMinor?: number | null;
+  pricingSource?: string | null;
+  pricingPolicySnapshotJson?: Prisma.InputJsonValue;
+  walletLedgerEntryId?: string | null;
   durationMs?: number;
   promptExcerpt?: string | null;
   responseExcerpt?: string | null;
@@ -156,6 +175,7 @@ export interface AiAnalyticsRow {
   totalCompletionTokens: number;
   totalTokens: number;
   totalCostUsd: number;
+  totalChargedCostUsd?: number;
   avgDurationMs: number | null;
 }
 
@@ -319,6 +339,7 @@ export class AiHistoryRepository {
           completionTokens: true,
           totalTokens: true,
           estimatedCostUsd: true,
+          chargedCostUsd: true,
           durationMs: true,
           occurredAt: true,
         },
@@ -343,6 +364,14 @@ export class AiHistoryRepository {
           completionTokens: input.completionTokens,
           totalTokens: input.totalTokens,
           estimatedCostUsd: input.estimatedCostUsd,
+          providerCostUsd: input.providerCostUsd ?? null,
+          platformFeeUsd: input.platformFeeUsd ?? null,
+          chargedCostUsd: input.chargedCostUsd ?? null,
+          chargedCurrency: input.chargedCurrency ?? null,
+          chargedAmountMinor: input.chargedAmountMinor ?? null,
+          pricingSource: input.pricingSource ?? null,
+          pricingPolicySnapshotJson: input.pricingPolicySnapshotJson ?? Prisma.JsonNull,
+          walletLedgerEntryId: input.walletLedgerEntryId ?? null,
           durationMs: input.durationMs,
           promptExcerpt: input.promptExcerpt,
           responseExcerpt: input.responseExcerpt,
@@ -362,6 +391,14 @@ export class AiHistoryRepository {
           completionTokens: input.completionTokens,
           totalTokens: input.totalTokens,
           estimatedCostUsd: input.estimatedCostUsd,
+          providerCostUsd: input.providerCostUsd ?? null,
+          platformFeeUsd: input.platformFeeUsd ?? null,
+          chargedCostUsd: input.chargedCostUsd ?? null,
+          chargedCurrency: input.chargedCurrency ?? null,
+          chargedAmountMinor: input.chargedAmountMinor ?? null,
+          pricingSource: input.pricingSource ?? null,
+          pricingPolicySnapshotJson: input.pricingPolicySnapshotJson ?? Prisma.JsonNull,
+          walletLedgerEntryId: input.walletLedgerEntryId ?? null,
           durationMs: input.durationMs,
           promptExcerpt: input.promptExcerpt,
           responseExcerpt: input.responseExcerpt,
@@ -558,6 +595,7 @@ export class AiHistoryRepository {
     totalCompletionTokens: number;
     totalTokens: number;
     totalCostUsd: number;
+    totalChargedCostUsd: number;
     avgDurationMs: number | null;
     byModel: AiAnalyticsRow[];
   }> {
@@ -592,6 +630,17 @@ export class AiHistoryRepository {
       }),
       this.prisma.aiRequestEvent.count({ where: eventWhere }),
     ]);
+    const chargedRows = await this.prisma.aiRequestEvent.findMany({
+      where: eventWhere,
+      select: { model: true, chargedCostUsd: true, estimatedCostUsd: true },
+    });
+    const chargedByModel = new Map<string, number>();
+    let totalChargedCostUsd = 0;
+    for (const row of chargedRows) {
+      const effective = row.chargedCostUsd ?? row.estimatedCostUsd ?? 0;
+      totalChargedCostUsd += effective;
+      chargedByModel.set(row.model, (chargedByModel.get(row.model) ?? 0) + effective);
+    }
     const rollupDayKeys = new Set(rollups.map((row) => row.date.toISOString().slice(0, 10)));
     const rollupRequestCount = rollups.reduce((acc, row) => acc + row.requestCount, 0);
     const coverageComplete = rollups.length > 0 && eventDays.every(
@@ -653,7 +702,11 @@ export class AiHistoryRepository {
         totalTokens,
         totalCostUsd,
         avgDurationMs: totalRequests > 0 ? durationTotal / totalRequests : null,
-        byModel: [...byModelMap.values()].sort((a, b) => b.requestCount - a.requestCount).slice(0, 20),
+        byModel: [...byModelMap.values()].map((row) => ({
+          ...row,
+          totalChargedCostUsd: chargedByModel.get(row.model) ?? row.totalCostUsd,
+        })).sort((a, b) => b.requestCount - a.requestCount).slice(0, 20),
+        totalChargedCostUsd,
       };
     }
 
@@ -699,6 +752,7 @@ export class AiHistoryRepository {
       existing.totalCompletionTokens += row._sum.completionTokens ?? 0;
       existing.totalTokens += row._sum.totalTokens ?? 0;
       existing.totalCostUsd += row._sum.estimatedCostUsd ?? 0;
+      existing.totalChargedCostUsd = chargedByModel.get(row.model) ?? existing.totalCostUsd;
       existing.avgDurationMs = existing.requestCount > 0
         ? ((existing.avgDurationMs ?? 0) * (existing.requestCount - row._count.id) + (row._sum.durationMs ?? 0)) / existing.requestCount
         : null;
@@ -714,8 +768,12 @@ export class AiHistoryRepository {
       totalCompletionTokens: aggregates._sum.completionTokens ?? 0,
       totalTokens: aggregates._sum.totalTokens ?? 0,
       totalCostUsd: aggregates._sum.estimatedCostUsd ?? 0,
+      totalChargedCostUsd,
       avgDurationMs: total > 0 ? (aggregates._sum.durationMs ?? 0) / total : null,
-      byModel: [...byModelMap.values()].sort((a, b) => b.requestCount - a.requestCount).slice(0, 20),
+      byModel: [...byModelMap.values()].map((row) => ({
+        ...row,
+        totalChargedCostUsd: chargedByModel.get(row.model) ?? row.totalCostUsd,
+      })).sort((a, b) => b.requestCount - a.requestCount).slice(0, 20),
     };
   }
 
