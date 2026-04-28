@@ -3874,6 +3874,185 @@ code {
   line-height: 1.5;
 }
 
+.retention-page {
+  display: grid;
+  gap: 14px;
+}
+
+.retention-page__header {
+  display: grid;
+  gap: 4px;
+}
+
+.retention-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.retention-card__header {
+  display: grid;
+  gap: 6px;
+}
+
+.retention-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retention-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.retention-card__desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.55;
+  max-width: 88ch;
+}
+
+.retention-field-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.retention-field-grid--auth {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.retention-field {
+  display: grid;
+  gap: 6px;
+}
+
+.retention-field__label {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.retention-field__desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.retention-field input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(31, 41, 51, 0.14);
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.91rem;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.retention-field input:focus {
+  outline: none;
+  border-color: rgba(184, 92, 56, 0.4);
+  box-shadow: 0 0 0 3px rgba(184, 92, 56, 0.1);
+}
+
+.retention-toggle-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-strong) 85%, transparent);
+}
+
+.retention-toggle-row__copy {
+  display: grid;
+  gap: 4px;
+}
+
+.retention-toggle-row__control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.retention-toggle-row__control input {
+  inline-size: 16px;
+  block-size: 16px;
+}
+
+.retention-callout {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-strong) 82%, transparent);
+}
+
+.retention-callout p,
+.retention-callout h5 {
+  margin: 0;
+}
+
+.retention-callout h5 {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.retention-callout--warning {
+  border-color: rgba(184, 92, 56, 0.28);
+  background: rgba(184, 92, 56, 0.08);
+}
+
+.retention-readonly-row {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px dashed rgba(31, 41, 51, 0.18);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.retention-readonly-row strong {
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.retention-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+@media (max-width: 1080px) {
+  .retention-field-grid,
+  .retention-field-grid--auth {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .retention-field-grid,
+  .retention-field-grid--auth,
+  .retention-toggle-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .retention-toggle-row__control {
+    justify-content: flex-start;
+  }
+}
+
 
 /* ══════════════════════════════════════════════════════════════════
    Settings tabs
