@@ -22,7 +22,6 @@ const retentionFieldConfig = {
   adminLogAdminDays: { min: 30, max: 3650, step: 1 },
   accessTokenLifetimeMinutes: { min: 5, max: 1440, step: 1 },
   refreshTokenLifetimeDays: { min: 1, max: 365, step: 1 },
-  emailVerificationLifetimeHours: { min: 1, max: 168, step: 1 },
   passwordResetLifetimeHours: { min: 1, max: 24, step: 1 },
 } as const;
 
@@ -39,15 +38,35 @@ const RETENTION_DEFAULTS: PlatformRetentionPolicyUpdateRequest = {
   adminLogSensitiveRetentionEnabled: false,
   accessTokenLifetimeMinutes: 15,
   refreshTokenLifetimeDays: 30,
-  emailVerificationLifetimeHours: 24,
   passwordResetLifetimeHours: 1,
 };
 
+
+
+type EditableRetentionDraft = PlatformRetentionPolicyUpdateRequest;
+
+function toEditableRetentionDraft(policy: PlatformRetentionPolicySnapshot['policy']): EditableRetentionDraft {
+  return {
+    aiHistoryContentDays: policy.aiHistoryContentDays,
+    aiHistoryAttachmentDays: policy.aiHistoryAttachmentDays,
+    adminLogRetentionEnabled: policy.adminLogRetentionEnabled,
+    adminLogActivityDays: policy.adminLogActivityDays,
+    adminLogDomainDays: policy.adminLogDomainDays,
+    adminLogSystemDays: policy.adminLogSystemDays,
+    adminLogAuditDays: policy.adminLogAuditDays,
+    adminLogSecurityDays: policy.adminLogSecurityDays,
+    adminLogAdminDays: policy.adminLogAdminDays,
+    adminLogSensitiveRetentionEnabled: policy.adminLogSensitiveRetentionEnabled,
+    accessTokenLifetimeMinutes: policy.accessTokenLifetimeMinutes,
+    refreshTokenLifetimeDays: policy.refreshTokenLifetimeDays,
+    passwordResetLifetimeHours: policy.passwordResetLifetimeHours,
+  };
+}
 export function DataRetentionAdminClient() {
   const { t } = usePreferences();
   const adminT = t.admin;
   const [retentionState, setRetentionState] = useState<PlatformRetentionPolicySnapshot | null>(null);
-  const [retentionDraft, setRetentionDraft] = useState<PlatformRetentionPolicyUpdateRequest | null>(null);
+  const [retentionDraft, setRetentionDraft] = useState<EditableRetentionDraft | null>(null);
   const [retentionStatus, setRetentionStatus] = useState<string | null>(null);
   const [retentionError, setRetentionError] = useState<string | null>(null);
   const [isSavingRetention, setIsSavingRetention] = useState(false);
@@ -59,7 +78,7 @@ export function DataRetentionAdminClient() {
       throw new Error(payload?.error?.message ?? adminT.settings.retention.loadFailed);
     }
     setRetentionState(payload.data);
-    setRetentionDraft(payload.data.policy);
+    setRetentionDraft(toEditableRetentionDraft(payload.data.policy));
   }
 
   useEffect(() => {
@@ -68,7 +87,7 @@ export function DataRetentionAdminClient() {
 
   const isDirty = useMemo(() => {
     if (!retentionState || !retentionDraft) return false;
-    return JSON.stringify(retentionState.policy) !== JSON.stringify(retentionDraft);
+    return JSON.stringify(toEditableRetentionDraft(retentionState.policy)) !== JSON.stringify(retentionDraft);
   }, [retentionDraft, retentionState]);
 
   async function handleRetentionSave() {
@@ -99,7 +118,7 @@ export function DataRetentionAdminClient() {
     }
 
     setRetentionState(payload.data);
-    setRetentionDraft(payload.data.policy);
+    setRetentionDraft(toEditableRetentionDraft(payload.data.policy));
     setRetentionStatus(t.settings.account.savedMessage);
     setIsSavingRetention(false);
   }
@@ -171,7 +190,7 @@ export function DataRetentionAdminClient() {
             <p style={{ marginTop: 0 }}>{adminT.settings.retention.authSectionDesc}</p>
             <p style={{ marginTop: 0 }}>{adminT.settings.retention.authIssuedOnlyNote}</p>
             <div className="form-grid">
-              {(['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'emailVerificationLifetimeHours', 'passwordResetLifetimeHours'] as const).map((field) => (
+              {(['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'passwordResetLifetimeHours'] as const).map((field) => (
                 <label className="form-field" key={field}>
                   <span className="form-field__label">{adminT.settings.retention[field]}</span>
                   <small>{adminT.settings.retention[`${field}Desc`]}</small>
@@ -186,6 +205,10 @@ export function DataRetentionAdminClient() {
                 </label>
               ))}
             </div>
+            <div style={{ marginTop: '10px' }}>
+              <span className="form-field__label">{adminT.settings.retention.emailVerificationLifetimeHours}</span>
+              <div>{retentionState?.policy.emailVerificationLifetimeHours}h — {adminT.settings.retention.emailVerificationFutureNote}</div>
+            </div>
           </>
         ) : null}
 
@@ -193,7 +216,7 @@ export function DataRetentionAdminClient() {
           <button className="btn-primary" type="button" onClick={() => void handleRetentionSave()} disabled={isSavingRetention || !isDirty}>
             {isSavingRetention ? t.settings.account.saving : t.common.save}
           </button>
-          <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(retentionState?.policy ?? null)} disabled={isSavingRetention || !isDirty}>
+          <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(retentionState ? toEditableRetentionDraft(retentionState.policy) : null)} disabled={isSavingRetention || !isDirty}>
             {t.common.cancel}
           </button>
           <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(RETENTION_DEFAULTS)} disabled={isSavingRetention}>

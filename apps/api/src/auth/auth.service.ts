@@ -98,7 +98,6 @@ export class AuthService {
       emailVerifiedAt: verifiedAt,
     });
 
-    await this.getEmailVerificationLifetimeHours();
     const sessionResult = await this.issueSession(user, metadata);
 
     this.logSecurityEvent('auth.register_success', user.id, {
@@ -415,14 +414,6 @@ export class AuthService {
     }
   }
 
-  private async getEmailVerificationLifetimeHours(): Promise<number> {
-    try {
-      const policy = await this.retentionSettingsService.getEffectiveRetentionPolicy();
-      return policy.emailVerificationLifetimeHours;
-    } catch {
-      return 24;
-    }
-  }
 
   async listSessions(userId: string, currentSessionId?: string): Promise<AuthSessionsPayload> {
     this.assertConnectedMode();

@@ -19,6 +19,13 @@ test('/admin/data-retention client loads and saves through BFF routes', async ()
   assert.match(source, /body: JSON\.stringify\(retentionDraft\)/);
 });
 
+test('data retention client keeps email verification TTL read-only/future and not editable in patch draft', async () => {
+  const source = await readFile(retentionClientPath, 'utf8');
+  assert.match(source, /emailVerificationFutureNote/);
+  assert.match(source, /toEditableRetentionDraft/);
+  assert.doesNotMatch(source, /\['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'emailVerificationLifetimeHours', 'passwordResetLifetimeHours'\]/);
+});
+
 test('data retention client renders auth/session warning and sensitive logs warning', async () => {
   const source = await readFile(retentionClientPath, 'utf8');
   assert.match(source, /adminT\.settings\.retention\.authIssuedOnlyNote/);

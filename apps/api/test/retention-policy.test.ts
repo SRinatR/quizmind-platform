@@ -18,7 +18,6 @@ test('parseAndNormalizeRetentionPolicy rejects out-of-range values', () => {
   assert.throws(() => parseAndNormalizeRetentionPolicy({ adminLogAuditDays: 10 }), /between 30 and 3650/);
   assert.throws(() => parseAndNormalizeRetentionPolicy({ accessTokenLifetimeMinutes: 4 }), /between 5 and 1440/);
   assert.throws(() => parseAndNormalizeRetentionPolicy({ refreshTokenLifetimeDays: 366 }), /between 1 and 365/);
-  assert.throws(() => parseAndNormalizeRetentionPolicy({ emailVerificationLifetimeHours: 0 }), /between 1 and 168/);
   assert.throws(() => parseAndNormalizeRetentionPolicy({ passwordResetLifetimeHours: 25 }), /between 1 and 24/);
 });
 
@@ -35,6 +34,14 @@ test('parseRetentionPolicyPatch rejects legacyAiRequestDays updates (read-only)'
   assert.throws(
     () => parseRetentionPolicyPatch({ legacyAiRequestDays: 30 }),
     /read-only/,
+  );
+});
+
+
+test('parseRetentionPolicyPatch rejects emailVerificationLifetimeHours updates (future flow)', () => {
+  assert.throws(
+    () => parseRetentionPolicyPatch({ emailVerificationLifetimeHours: 12 }),
+    /reserved for a future email verification flow/,
   );
 });
 

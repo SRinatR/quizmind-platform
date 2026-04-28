@@ -36,7 +36,6 @@ type EditableNumericField = keyof Pick<
   | 'adminLogAdminDays'
   | 'accessTokenLifetimeMinutes'
   | 'refreshTokenLifetimeDays'
-  | 'emailVerificationLifetimeHours'
   | 'passwordResetLifetimeHours'
 >;
 
@@ -56,7 +55,6 @@ export const retentionPolicyRanges: Record<EditableNumericField, { min: number; 
   adminLogAdminDays: { min: 30, max: 3650, step: 1 },
   accessTokenLifetimeMinutes: { min: 5, max: 1440, step: 1 },
   refreshTokenLifetimeDays: { min: 1, max: 365, step: 1 },
-  emailVerificationLifetimeHours: { min: 1, max: 168, step: 1 },
   passwordResetLifetimeHours: { min: 1, max: 24, step: 1 },
 };
 
@@ -122,6 +120,9 @@ export function parseRetentionPolicyPatch(input: unknown): PlatformRetentionPoli
   for (const key of Object.keys(input)) {
     if (key === 'legacyAiRequestDays') {
       throw new Error('legacyAiRequestDays is read-only for legacy rows and cannot be updated.');
+    }
+    if (key === 'emailVerificationLifetimeHours') {
+      throw new Error('emailVerificationLifetimeHours is reserved for a future email verification flow and cannot be updated yet.');
     }
     if (!editableFields.has(key)) {
       throw new Error(`Unknown retention field: ${key}.`);

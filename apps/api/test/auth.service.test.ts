@@ -36,8 +36,11 @@ function createAuthService() {
       };
     },
   } as any;
+  let retentionPolicyLookupCalls = 0;
   const retentionSettingsService = {
-    getEffectiveRetentionPolicy: async () => ({
+    getEffectiveRetentionPolicy: async () => {
+      retentionPolicyLookupCalls += 1;
+      return ({
       aiHistoryContentDays: 7,
       aiHistoryAttachmentDays: 7,
       legacyAiRequestDays: 7,
@@ -53,7 +56,8 @@ function createAuthService() {
       refreshTokenLifetimeDays: 30,
       emailVerificationLifetimeHours: 24,
       passwordResetLifetimeHours: 1,
-    }),
+      });
+    },
   } as any;
 
   const service = new AuthService(
@@ -88,7 +92,7 @@ function createAuthService() {
 
   service['logSecurityEvent'] = () => {};
 
-  return { service, sessionRepository, userRepository, passwordResetRepository, queueDispatchCalls, retentionSettingsService };
+  return { service, sessionRepository, userRepository, passwordResetRepository, queueDispatchCalls, retentionSettingsService, getRetentionPolicyLookupCalls: () => retentionPolicyLookupCalls };
 }
 
 test('AuthService.getCurrentSession keeps the mock-compatible session shape in connected mode', async () => {
@@ -466,4 +470,37 @@ test('AuthService.requestPasswordReset falls back to auth defaults when retentio
 
   const result = await service.requestPasswordReset({ email: 'owner@quizmind.dev' });
   assert.equal(result.expiresInMinutes, 60);
+});
+
+
+test('AuthService.register does not perform extra email verification retention lookup', async () => {
+  const { service, userRepository, sessionRepository, getRetentionPolicyLookupCalls } = createAuthService();
+
+  userRepository.findByEmail = async () => null as any;
+  userRepository.create = async (input: Record<string, unknown>) => ({
+    id: 'user_1',
+    email: input.email,
+    displayName: input.displayName,
+    emailVerifiedAt: new Date(),
+    systemRoleAssignments: [{ role: 'admin' }],
+    memberships: [],
+  }) as any;
+  sessionRepository.create = async (input: Record<string, unknown>) => ({
+    id: 'session_1',
+    userId: input.userId,
+    tokenHash: input.tokenHash,
+    expiresAt: input.expiresAt,
+    revokedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    user: null,
+  }) as any;
+
+  await service.register({
+    email: 'owner@quizmind.dev',
+    password: 'new-password-123',
+    displayName: 'Owner',
+  });
+
+  assert.equal(getRetentionPolicyLookupCalls(), 2, 'register should only lookup retention settings for refresh/access token issuance');
 });

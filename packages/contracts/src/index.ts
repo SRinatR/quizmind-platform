@@ -435,7 +435,6 @@ export type PlatformRetentionPolicyUpdateRequest = Partial<
     | 'adminLogSensitiveRetentionEnabled'
     | 'accessTokenLifetimeMinutes'
     | 'refreshTokenLifetimeDays'
-    | 'emailVerificationLifetimeHours'
     | 'passwordResetLifetimeHours'
   >
 >;
