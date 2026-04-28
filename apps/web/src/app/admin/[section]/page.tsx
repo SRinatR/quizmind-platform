@@ -155,7 +155,7 @@ function getLocalizedSectionTitle(section: AdminSection, adminI18n: AdminI18n): 
     case 'ai-routing': return adminI18n.nav.items.aiRouting;
     case 'settings': return adminI18n.nav.items.settings;
     case 'data-retention': return adminI18n.nav.items.dataRetention;
-    case 'pricing-billing': return 'Pricing & Billing';
+    case 'pricing-billing': return adminI18n.nav.items.pricingBilling;
     default: return section.title;
   }
 }
@@ -178,7 +178,7 @@ function getLocalizedSectionDescription(section: AdminSection, adminI18n: AdminI
     case 'ai-routing': return adminI18n.nav.descriptions.aiRouting;
     case 'settings': return adminI18n.nav.descriptions.settings;
     case 'data-retention': return adminI18n.nav.descriptions.dataRetention;
-    case 'pricing-billing': return 'AI request pricing, markup, and billing behavior controls.';
+    case 'pricing-billing': return adminI18n.nav.descriptions.pricingBilling;
     default: return section.description;
   }
 }
@@ -441,7 +441,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         section.id === 'data-retention' ? (
           <DataRetentionAdminClient />
         ) : section.id === 'pricing-billing' ? (
-          <PricingBillingAdminClient />
+          <PricingBillingAdminClient exchangeRates={exchangeRates} />
         ) : // ── Preferences: Settings ─────────────────────────────────────────────
         section.id === 'settings' ? (
           <AdminSettingsClient
