@@ -41,8 +41,6 @@ const RETENTION_DEFAULTS: PlatformRetentionPolicyUpdateRequest = {
   passwordResetLifetimeHours: 1,
 };
 
-
-
 type EditableRetentionDraft = PlatformRetentionPolicyUpdateRequest;
 
 function toEditableRetentionDraft(policy: PlatformRetentionPolicySnapshot['policy']): EditableRetentionDraft {
@@ -62,6 +60,7 @@ function toEditableRetentionDraft(policy: PlatformRetentionPolicySnapshot['polic
     passwordResetLifetimeHours: policy.passwordResetLifetimeHours,
   };
 }
+
 export function DataRetentionAdminClient() {
   const { t } = usePreferences();
   const adminT = t.admin;
@@ -124,25 +123,27 @@ export function DataRetentionAdminClient() {
   }
 
   return (
-    <section className="settings-section">
-      <div className="settings-section__header">
+    <section className="retention-page">
+      <header className="retention-page__header">
         <h3 className="settings-section__title">{adminT.settings.retention.title}</h3>
         <p className="settings-section__desc">{adminT.settings.retention.desc}</p>
-      </div>
+      </header>
 
-      <article className="panel settings-card">
-        {retentionStatus ? <div className="banner banner-info" style={{ marginBottom: '8px' }}>{retentionStatus}</div> : null}
-        {retentionError ? <div className="banner banner-error" style={{ marginBottom: '8px' }}>{retentionError}</div> : null}
+      {retentionStatus ? <div className="banner banner-info">{retentionStatus}</div> : null}
+      {retentionError ? <div className="banner banner-error">{retentionError}</div> : null}
 
-        {retentionDraft ? (
-          <>
-            <div className="micro-label" style={{ marginBottom: '8px' }}>{adminT.settings.retention.aiSectionTitle}</div>
-            <p style={{ marginTop: 0 }}>{adminT.settings.retention.aiSectionDesc}</p>
-            <div className="form-grid">
+      {retentionDraft ? (
+        <>
+          <article className="panel retention-card">
+            <div className="retention-card__header">
+              <h4 className="retention-card__title">{adminT.settings.retention.aiSectionTitle}</h4>
+              <p className="retention-card__desc">{adminT.settings.retention.aiSectionDesc}</p>
+            </div>
+            <div className="retention-field-grid">
               {(['aiHistoryContentDays', 'aiHistoryAttachmentDays'] as const).map((field) => (
-                <label className="form-field" key={field}>
-                  <span className="form-field__label">{adminT.settings.retention[field]}</span>
-                  <small>{adminT.settings.retention[`${field}Desc`]}</small>
+                <label className="retention-field" key={field}>
+                  <span className="retention-field__label">{adminT.settings.retention[field]}</span>
+                  <span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span>
                   <input
                     type="number"
                     value={String(retentionDraft[field] ?? '')}
@@ -154,21 +155,36 @@ export function DataRetentionAdminClient() {
                 </label>
               ))}
             </div>
-            <div style={{ marginTop: '10px' }}>
-              <span className="form-field__label">{adminT.settings.retention.legacyAiRequestDays}</span>
-              <div>{adminT.settings.retention.legacySummary.replace('{days}', String(retentionState?.policy.legacyAiRequestDays ?? 7))}</div>
+            <div className="retention-readonly-row">
+              <span className="retention-field__label">{adminT.settings.retention.legacyAiRequestDays}</span>
+              <strong>{adminT.settings.retention.daysSummary.replace('{days}', String(retentionState?.policy.legacyAiRequestDays ?? 7))}</strong>
+              <span className="retention-field__desc">{adminT.settings.retention.legacySummary}</span>
             </div>
+          </article>
 
-            <div className="micro-label" style={{ marginTop: '18px', marginBottom: '8px' }}>{adminT.settings.retention.adminLogsSectionTitle}</div>
-            <p style={{ marginTop: 0 }}>{adminT.settings.retention.adminLogsSectionDesc}</p>
-            <div className="form-grid">
-              <label className="form-field">
-                <span className="form-field__label">{adminT.settings.retention.enableCleanup}</span>
-                <input type="checkbox" checked={Boolean(retentionDraft.adminLogRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogRetentionEnabled: e.target.checked }))} />
-              </label>
+          <article className="panel retention-card">
+            <div className="retention-card__header">
+              <h4 className="retention-card__title">{adminT.settings.retention.adminLogsSectionTitle}</h4>
+              <p className="retention-card__desc">{adminT.settings.retention.adminLogsSectionDesc}</p>
+            </div>
+            <label className="retention-toggle-row">
+              <span className="retention-toggle-row__copy">
+                <span className="retention-field__label">{adminT.settings.retention.enableCleanup}</span>
+                <span className="retention-field__desc">{adminT.settings.retention.enableCleanupDesc}</span>
+              </span>
+              <span className="retention-toggle-row__control">
+                <input
+                  type="checkbox"
+                  checked={Boolean(retentionDraft.adminLogRetentionEnabled)}
+                  onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogRetentionEnabled: e.target.checked }))}
+                />
+              </span>
+            </label>
+
+            <div className="retention-field-grid">
               {(['adminLogActivityDays', 'adminLogDomainDays', 'adminLogSystemDays', 'adminLogAuditDays', 'adminLogSecurityDays', 'adminLogAdminDays'] as const).map((field) => (
-                <label className="form-field" key={field}>
-                  <span className="form-field__label">{adminT.settings.retention[field]}</span>
+                <label className="retention-field" key={field}>
+                  <span className="retention-field__label">{adminT.settings.retention[field]}</span>
                   <input
                     type="number"
                     value={String(retentionDraft[field] ?? '')}
@@ -179,21 +195,42 @@ export function DataRetentionAdminClient() {
                   />
                 </label>
               ))}
-              <label className="form-field">
-                <span className="form-field__label">{adminT.settings.retention.enableSensitiveCleanup}</span>
-                <input type="checkbox" checked={Boolean(retentionDraft.adminLogSensitiveRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogSensitiveRetentionEnabled: e.target.checked }))} />
-                <small>{adminT.settings.retention.sensitiveWarning}</small>
+            </div>
+
+            <div className="retention-callout retention-callout--warning">
+              <h5>{adminT.settings.retention.sensitiveCleanupTitle}</h5>
+              <p>{adminT.settings.retention.sensitiveWarning}</p>
+              <label className="retention-toggle-row">
+                <span className="retention-toggle-row__copy">
+                  <span className="retention-field__label">{adminT.settings.retention.enableSensitiveCleanup}</span>
+                  <span className="retention-field__desc">{adminT.settings.retention.enableSensitiveCleanupDesc}</span>
+                </span>
+                <span className="retention-toggle-row__control">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(retentionDraft.adminLogSensitiveRetentionEnabled)}
+                    onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogSensitiveRetentionEnabled: e.target.checked }))}
+                  />
+                </span>
               </label>
             </div>
+          </article>
 
-            <div className="micro-label" style={{ marginTop: '18px', marginBottom: '8px' }}>{adminT.settings.retention.authSectionTitle}</div>
-            <p style={{ marginTop: 0 }}>{adminT.settings.retention.authSectionDesc}</p>
-            <p style={{ marginTop: 0 }}>{adminT.settings.retention.authIssuedOnlyNote}</p>
-            <div className="form-grid">
+          <article className="panel retention-card">
+            <div className="retention-card__header">
+              <h4 className="retention-card__title">{adminT.settings.retention.authSectionTitle}</h4>
+              <p className="retention-card__desc">{adminT.settings.retention.authSectionDesc}</p>
+            </div>
+
+            <div className="retention-callout">
+              <p>{adminT.settings.retention.authIssuedOnlyNote}</p>
+            </div>
+
+            <div className="retention-field-grid retention-field-grid--auth">
               {(['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'passwordResetLifetimeHours'] as const).map((field) => (
-                <label className="form-field" key={field}>
-                  <span className="form-field__label">{adminT.settings.retention[field]}</span>
-                  <small>{adminT.settings.retention[`${field}Desc`]}</small>
+                <label className="retention-field" key={field}>
+                  <span className="retention-field__label">{adminT.settings.retention[field]}</span>
+                  <span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span>
                   <input
                     type="number"
                     value={String(retentionDraft[field] ?? '')}
@@ -205,25 +242,33 @@ export function DataRetentionAdminClient() {
                 </label>
               ))}
             </div>
-            <div style={{ marginTop: '10px' }}>
-              <span className="form-field__label">{adminT.settings.retention.emailVerificationLifetimeHours}</span>
-              <div>{retentionState?.policy.emailVerificationLifetimeHours}h — {adminT.settings.retention.emailVerificationFutureNote}</div>
-            </div>
-          </>
-        ) : null}
+          </article>
 
-        <div className="settings-inline-actions" style={{ marginTop: '14px' }}>
-          <button className="btn-primary" type="button" onClick={() => void handleRetentionSave()} disabled={isSavingRetention || !isDirty}>
-            {isSavingRetention ? t.settings.account.saving : t.common.save}
-          </button>
-          <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(retentionState ? toEditableRetentionDraft(retentionState.policy) : null)} disabled={isSavingRetention || !isDirty}>
-            {t.common.cancel}
-          </button>
-          <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(RETENTION_DEFAULTS)} disabled={isSavingRetention}>
-            {adminT.settings.retention.resetDefaults}
-          </button>
-        </div>
-      </article>
+          <article className="panel retention-card">
+            <div className="retention-card__header">
+              <h4 className="retention-card__title">{adminT.settings.retention.readOnlySectionTitle}</h4>
+              <p className="retention-card__desc">{adminT.settings.retention.readOnlySectionDesc}</p>
+            </div>
+            <div className="retention-readonly-row">
+              <span className="retention-field__label">{adminT.settings.retention.emailVerificationLifetimeHours}</span>
+              <strong>{adminT.settings.retention.hoursSummary.replace('{hours}', String(retentionState?.policy.emailVerificationLifetimeHours ?? 24))}</strong>
+              <span className="retention-field__desc">{adminT.settings.retention.emailVerificationFutureNote}</span>
+            </div>
+          </article>
+        </>
+      ) : null}
+
+      <div className="retention-actions">
+        <button className="btn-primary" type="button" onClick={() => void handleRetentionSave()} disabled={isSavingRetention || !isDirty}>
+          {isSavingRetention ? t.settings.account.saving : t.common.save}
+        </button>
+        <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(retentionState ? toEditableRetentionDraft(retentionState.policy) : null)} disabled={isSavingRetention || !isDirty}>
+          {t.common.cancel}
+        </button>
+        <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(RETENTION_DEFAULTS)} disabled={isSavingRetention}>
+          {adminT.settings.retention.resetDefaults}
+        </button>
+      </div>
     </section>
   );
 }
