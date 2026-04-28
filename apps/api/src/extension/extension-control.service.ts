@@ -56,6 +56,7 @@ import {
 import { FeatureFlagRepository } from '../feature-flags/feature-flag.repository';
 import { RemoteConfigRepository } from '../remote-config/remote-config.repository';
 import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
+import { RetentionSettingsService } from '../settings/retention-settings.service';
 
 function normalizeCapabilities(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -185,6 +186,8 @@ export class ExtensionControlService {
     private readonly aiProviderPolicyService: AiProviderPolicyService,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
+    @Inject(RetentionSettingsService)
+    private readonly retentionSettingsService: RetentionSettingsService,
   ) {}
 
   async bindInstallationForCurrentSession(
@@ -215,7 +218,7 @@ export class ExtensionControlService {
       environment: normalizedRequest.environment,
       handshake: normalizedRequest.handshake,
       issuedAt: occurredAt.toISOString(),
-      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
     });
     const result: ExtensionInstallationBindResult = {
       installation: {
@@ -232,7 +235,7 @@ export class ExtensionControlService {
       session: {
         token: sessionToken,
         expiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
       },
       bootstrap,
     };
@@ -336,12 +339,12 @@ export class ExtensionControlService {
         installation,
         environment,
         handshake,
-        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
       });
     } catch (error) {
       console.error('Failed to build extension bootstrap payload. Serving degraded bootstrap payload.', error);
 
-      return this.buildDegradedBootstrapPayload({
+      return await this.buildDegradedBootstrapPayload({
         installation,
         environment,
         handshake,
@@ -450,11 +453,11 @@ export class ExtensionControlService {
     };
   }
 
-  private buildDegradedBootstrapPayload(input: {
+  private async buildDegradedBootstrapPayload(input: {
     installation: ExtensionInstallationRecord;
     environment: string;
     handshake: CompatibilityHandshake;
-  }): ExtensionBootstrapPayloadV2 {
+  }): Promise<ExtensionBootstrapPayloadV2> {
     return buildExtensionBootstrapV2({
       installationId: input.installation.installationId,
       handshake: input.handshake,
@@ -476,7 +479,7 @@ export class ExtensionControlService {
         userId: input.installation.userId,
         buildId: input.handshake.buildId,
       },
-      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
     });
   }
 
@@ -757,7 +760,7 @@ export class ExtensionControlService {
         reason,
         revokedSessionCount,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
       },
       domainEventType: 'extension.installation_session_rotated',
       domainPayload: {
@@ -777,7 +780,7 @@ export class ExtensionControlService {
       session: {
         token: sessionToken,
         expiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
       },
     };
   }
@@ -805,7 +808,7 @@ export class ExtensionControlService {
         installationId: installationSession.installation.installationId,
         previousSessionId: installationSession.id,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
       },
       domainEventType: 'extension.installation_session_refreshed',
       domainPayload: {
@@ -820,7 +823,7 @@ export class ExtensionControlService {
       installationId: installationSession.installation.installationId,
       installationToken: sessionToken,
       tokenExpiresAt: tokenRecord.expiresAt.toISOString(),
-      refreshAfterSeconds: this.resolveRefreshAfterSeconds(),
+      refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
       status: 'refreshed' as const,
     };
   }
@@ -1161,7 +1164,8 @@ export class ExtensionControlService {
     userId: string,
   ): Promise<{ sessionToken: string; tokenRecord: ExtensionInstallationSessionRecord }> {
     const sessionToken = createOpaqueToken();
-    const expiresAt = new Date(Date.now() + this.env.extensionSessionTtlMinutes * 60 * 1000);
+    const lifetimeHours = await this.resolveExtensionSessionLifetimeHours();
+    const expiresAt = new Date(Date.now() + lifetimeHours * 60 * 60 * 1000);
     const tokenRecord = await this.extensionInstallationSessionRepository.create({
       extensionInstallationId: installation.id,
       userId,
@@ -1175,7 +1179,25 @@ export class ExtensionControlService {
     };
   }
 
-  private resolveRefreshAfterSeconds(): number {
-    return Math.max(60, Math.floor((this.env.extensionSessionTtlMinutes * 60) / 2));
+  private async resolveExtensionSessionLifetimeHours(): Promise<number> {
+    const fallbackHours = Math.max(1, Math.floor(this.env.extensionSessionTtlMinutes / 60));
+
+    try {
+      const snapshot = await this.retentionSettingsService.getRetentionPolicy();
+      return snapshot.policy.extensionSessionLifetimeHours;
+    } catch {
+      return fallbackHours;
+    }
+  }
+
+  private async resolveRefreshAfterSeconds(): Promise<number> {
+    const fallbackSeconds = Math.max(60, Math.floor((this.env.extensionSessionTtlMinutes * 60) / 2));
+
+    try {
+      const snapshot = await this.retentionSettingsService.getRetentionPolicy();
+      return snapshot.policy.extensionSessionRefreshAfterSeconds;
+    } catch {
+      return fallbackSeconds;
+    }
   }
 }

@@ -23,8 +23,13 @@ test('/admin/data-retention renders separate retention cards for key sections', 
   const source = await readFile(retentionClientPath, 'utf8');
   assert.match(source, /className="panel retention-card"/);
   assert.match(source, /adminT\.settings\.retention\.aiSectionTitle/);
+  assert.match(source, /adminT\.settings\.retention\.aiUploadLimitsSectionTitle/);
   assert.match(source, /adminT\.settings\.retention\.adminLogsSectionTitle/);
+  assert.match(source, /adminT\.settings\.retention\.sourceLogsSectionTitle/);
   assert.match(source, /adminT\.settings\.retention\.authSectionTitle/);
+  assert.match(source, /adminT\.settings\.retention\.extensionSessionsSectionTitle/);
+  assert.match(source, /adminT\.settings\.retention\.queueHistorySectionTitle/);
+  assert.match(source, /adminT\.settings\.retention\.readOnlySectionTitle/);
 });
 
 test('data retention client keeps email verification TTL read-only/future and not editable in patch draft', async () => {
@@ -33,6 +38,8 @@ test('data retention client keeps email verification TTL read-only/future and no
   assert.match(source, /readOnlySectionTitle/);
   assert.match(source, /hoursSummary/);
   assert.match(source, /toEditableRetentionDraft/);
+  assert.match(source, /extensionSessionLifetimeHours/);
+  assert.match(source, /maxPromptImageAttachments/);
   assert.doesNotMatch(source, /\['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'emailVerificationLifetimeHours', 'passwordResetLifetimeHours'\]/);
 });
 

@@ -285,6 +285,24 @@ export class AiHistoryService {
     }
   }
 
+  private async resolvePromptAttachmentLimits(): Promise<{ maxAttachments: number; maxAttachmentBytes: number }> {
+    try {
+      const policy = await this.retentionSettingsService.getEffectiveRetentionPolicy();
+      return {
+        maxAttachments: policy.maxPromptImageAttachments,
+        maxAttachmentBytes: policy.maxPromptImageAttachmentMegabytes * 1024 * 1024,
+      };
+    } catch (error) {
+      console.warn('[ai-history] upload limits unavailable, using defaults', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {
+        maxAttachments: MAX_PROMPT_IMAGE_ATTACHMENTS,
+        maxAttachmentBytes: MAX_PROMPT_IMAGE_ATTACHMENT_BYTES,
+      };
+    }
+  }
+
   async listHistory(userId: string, rawFilters: Partial<AiHistoryListFilters>): Promise<AiHistoryListResponse> {
     const limit = clampLimit(rawFilters.limit);
     const offset = clampOffset(rawFilters.offset);
@@ -636,6 +654,7 @@ export class AiHistoryService {
     output: PersistablePromptAttachment[],
   ): Promise<unknown> {
     if (!Array.isArray(promptContent)) return promptContent;
+    const limits = await this.resolvePromptAttachmentLimits();
 
     const cloned = structuredClone(promptContent) as Array<Record<string, unknown>>;
     for (const message of cloned) {
@@ -652,7 +671,7 @@ export class AiHistoryService {
 
         const dataUrlMimeType = this.extractDataUrlMimeType(imageUrlObj.url) ?? 'unknown';
         const estimatedDecodedBytes = estimateDataUrlDecodedBytes(imageUrlObj.url);
-        if (estimatedDecodedBytes > MAX_PROMPT_IMAGE_ATTACHMENT_BYTES) {
+        if (estimatedDecodedBytes > limits.maxAttachmentBytes) {
           this.replaceWithOmittedMarker(block, {
             reason: 'attachment_too_large',
             mimeType: dataUrlMimeType,
@@ -683,7 +702,7 @@ export class AiHistoryService {
           continue;
         }
 
-        if (parsed.buffer.byteLength > MAX_PROMPT_IMAGE_ATTACHMENT_BYTES) {
+        if (parsed.buffer.byteLength > limits.maxAttachmentBytes) {
           this.replaceWithOmittedMarker(block, {
             reason: 'attachment_too_large',
             mimeType: parsed.mimeType,
@@ -692,7 +711,7 @@ export class AiHistoryService {
           continue;
         }
 
-        if (output.length >= MAX_PROMPT_IMAGE_ATTACHMENTS) {
+        if (output.length >= limits.maxAttachments) {
           this.replaceWithOmittedMarker(block, {
             reason: 'attachment_limit_exceeded',
             mimeType: parsed.mimeType,

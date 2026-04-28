@@ -58,7 +58,9 @@ function createService(overrides?: {
     getEffectiveRetentionPolicy: async () => ({
       aiHistoryContentDays: 7,
       aiHistoryAttachmentDays: 7,
-    }),
+      maxPromptImageAttachments: 8,
+      maxPromptImageAttachmentMegabytes: 10,
+    } as any),
     ...overrides?.retentionSettingsService,
   };
 
@@ -371,6 +373,37 @@ test('AiHistoryService.persistContent caps prompt image attachments at 8', async
   const serialized = JSON.stringify(persistedPrompt);
   assert.equal(serialized.includes('data:image/jpeg;base64'), false);
   assert.match(serialized, /attachment_limit_exceeded/);
+});
+
+test('AiHistoryService.persistContent uses configured prompt image attachment limits', async () => {
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+    retentionSettingsService: {
+      getEffectiveRetentionPolicy: async () => ({
+        aiHistoryContentDays: 7,
+        aiHistoryAttachmentDays: 7,
+        maxPromptImageAttachments: 2,
+        maxPromptImageAttachmentMegabytes: 1,
+      } as any),
+    },
+  });
+
+  const blocks = Array.from({ length: 3 }, () => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,aGVsbG8=' } }));
+  await service.persistContent({
+    requestId: 'req_cap_configured',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [{ role: 'user', content: blocks }],
+  });
+
+  assert.equal(upsertInput.promptAttachments.length, 2);
 });
 
 test('AiHistoryService.persistContent deletes prior prompt attachment blobs after successful upsert', async () => {
@@ -1039,4 +1072,32 @@ test('AiHistoryService.persistContent falls back to 7 days when retention servic
 
   const days = Math.round((upsertInput.expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
   assert.ok(days >= 6 && days <= 7);
+});
+
+test('AiHistoryService.persistContent falls back to default prompt image limits when policy lookup fails', async () => {
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+    retentionSettingsService: {
+      getEffectiveRetentionPolicy: async () => {
+        throw new Error('db unavailable');
+      },
+    },
+  });
+
+  const blocks = Array.from({ length: 9 }, () => ({ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,aGVsbG8=' } }));
+  await service.persistContent({
+    requestId: 'req_limit_fallback',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [{ role: 'user', content: blocks }],
+  });
+
+  assert.equal(upsertInput.promptAttachments.length, 8);
 });

@@ -9,6 +9,8 @@ import { type PlatformRetentionPolicy, type PlatformRetentionPolicyUpdateRequest
 export const defaultRetentionPolicy: PlatformRetentionPolicy = {
   aiHistoryContentDays: 7,
   aiHistoryAttachmentDays: 7,
+  maxPromptImageAttachments: 8,
+  maxPromptImageAttachmentMegabytes: 10,
   legacyAiRequestDays: 7,
   adminLogRetentionEnabled: false,
   adminLogActivityDays: 30,
@@ -20,6 +22,8 @@ export const defaultRetentionPolicy: PlatformRetentionPolicy = {
   adminLogSensitiveRetentionEnabled: false,
   accessTokenLifetimeMinutes: ACCESS_TOKEN_LIFETIME_MINUTES,
   refreshTokenLifetimeDays: REFRESH_TOKEN_LIFETIME_DAYS,
+  extensionSessionLifetimeHours: 1,
+  extensionSessionRefreshAfterSeconds: 900,
   emailVerificationLifetimeHours: EMAIL_VERIFICATION_LIFETIME_HOURS,
   passwordResetLifetimeHours: PASSWORD_RESET_LIFETIME_HOURS,
 };
@@ -36,6 +40,10 @@ type EditableNumericField = keyof Pick<
   | 'adminLogAdminDays'
   | 'accessTokenLifetimeMinutes'
   | 'refreshTokenLifetimeDays'
+  | 'extensionSessionLifetimeHours'
+  | 'extensionSessionRefreshAfterSeconds'
+  | 'maxPromptImageAttachments'
+  | 'maxPromptImageAttachmentMegabytes'
   | 'passwordResetLifetimeHours'
 >;
 
@@ -55,6 +63,10 @@ export const retentionPolicyRanges: Record<EditableNumericField, { min: number; 
   adminLogAdminDays: { min: 30, max: 3650, step: 1 },
   accessTokenLifetimeMinutes: { min: 5, max: 1440, step: 1 },
   refreshTokenLifetimeDays: { min: 1, max: 365, step: 1 },
+  extensionSessionLifetimeHours: { min: 1, max: 720, step: 1 },
+  extensionSessionRefreshAfterSeconds: { min: 60, max: 86400, step: 1 },
+  maxPromptImageAttachments: { min: 1, max: 20, step: 1 },
+  maxPromptImageAttachmentMegabytes: { min: 1, max: 25, step: 1 },
   passwordResetLifetimeHours: { min: 1, max: 24, step: 1 },
 };
 
