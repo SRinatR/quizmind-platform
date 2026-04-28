@@ -78,30 +78,47 @@ export class RetentionSettingsService {
     session: CurrentSessionSnapshot,
     request?: Partial<PlatformRetentionPolicyUpdateRequest>,
   ): Promise<PlatformRetentionPolicySnapshot> {
+    let current: PlatformRetentionPolicySnapshot;
+    let patch: PlatformRetentionPolicyUpdateRequest;
+    let nextPolicy: PlatformRetentionPolicy;
     try {
-      const current = await this.getRetentionPolicy();
-      const patch = parseRetentionPolicyPatch(request ?? {});
-      const nextPolicy = mergeRetentionPolicy(current.policy, patch);
-      const changedFields = Object.keys(patch).filter((key) => {
-        const typedKey = key as keyof PlatformRetentionPolicy;
-        return current.policy[typedKey] !== nextPolicy[typedKey];
-      });
-      const row = await this.settingsRepository.upsertJson(
+      current = await this.getRetentionPolicy();
+      patch = parseRetentionPolicyPatch(request ?? {});
+      nextPolicy = mergeRetentionPolicy(current.policy, patch);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid retention policy payload.';
+      throw new BadRequestException(message);
+    }
+
+    const changedFields = Object.keys(patch).filter((key) => {
+      const typedKey = key as keyof PlatformRetentionPolicy;
+      return current.policy[typedKey] !== nextPolicy[typedKey];
+    });
+
+    let row: Awaited<ReturnType<PlatformSettingsRepository['upsertJson']>>;
+    try {
+      row = await this.settingsRepository.upsertJson(
         PLATFORM_RETENTION_POLICY_KEY,
         nextPolicy as unknown as Prisma.InputJsonValue,
         session.user.id,
       );
-      if (changedFields.length > 0) {
-        const occurredAt = new Date();
-        const sourceRecordId = `${session.user.id}:${occurredAt.toISOString()}`;
-        const metadata: Prisma.InputJsonObject = {
-          summary: 'Updated retention policy settings',
-          actorEmail: session.user.email,
-          actorDisplayName: session.user.displayName ?? null,
-          changedFields,
-          before: current.policy as unknown as Prisma.InputJsonValue,
-          after: nextPolicy as unknown as Prisma.InputJsonValue,
-        };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid retention policy payload.';
+      throw new BadRequestException(message);
+    }
+
+    if (changedFields.length > 0) {
+      const occurredAt = new Date();
+      const sourceRecordId = `${session.user.id}:${occurredAt.toISOString()}`;
+      const metadata: Prisma.InputJsonObject = {
+        summary: 'Updated retention policy settings',
+        actorEmail: session.user.email,
+        actorDisplayName: session.user.displayName ?? null,
+        changedFields,
+        before: current.policy as unknown as Prisma.InputJsonValue,
+        after: nextPolicy as unknown as Prisma.InputJsonValue,
+      };
+      try {
         await this.prisma.adminLogEvent.upsert({
           where: { stream_sourceRecordId: { stream: 'audit', sourceRecordId } },
           create: buildAdminLogEventCreateInput({
@@ -125,15 +142,19 @@ export class RetentionSettingsService {
             metadata: metadata as unknown as Record<string, unknown>,
           }),
         });
+      } catch (error) {
+        console.warn('[retention-settings] audit log write failed', {
+          actorId: session.user.id,
+          changedFields,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
-      return {
-        policy: parseAndNormalizeRetentionPolicy(row.valueJson),
-        updatedAt: row.updatedAt.toISOString(),
-        updatedById: row.updatedById,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Invalid retention policy payload.';
-      throw new BadRequestException(message);
     }
+
+    return {
+      policy: parseAndNormalizeRetentionPolicy(row.valueJson),
+      updatedAt: row.updatedAt.toISOString(),
+      updatedById: row.updatedById,
+    };
   }
 }

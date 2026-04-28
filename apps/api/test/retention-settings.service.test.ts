@@ -87,3 +87,79 @@ test('updateRetentionPolicy rejects invalid values and does not write', async ()
   );
   assert.equal(upsertCalls, 0);
 });
+
+test('updateRetentionPolicy still succeeds when audit log write fails', async () => {
+  let storedValue: any;
+  const repository = {
+    findByKey: async () => ({
+      key: 'platform.retention_policy',
+      valueJson: { aiHistoryContentDays: 7 },
+      updatedById: 'admin_0',
+      updatedAt: new Date('2026-04-01T00:00:00.000Z'),
+    }),
+    upsertJson: async (_key: string, valueJson: any) => {
+      storedValue = valueJson;
+      return {
+        key: 'platform.retention_policy',
+        valueJson,
+        updatedById: 'admin_1',
+        updatedAt: new Date('2026-04-28T00:00:00.000Z'),
+      };
+    },
+  };
+
+  const warnings: unknown[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => warnings.push(args);
+
+  try {
+    const prisma = {
+      adminLogEvent: {
+        upsert: async () => {
+          throw new Error('audit writer down');
+        },
+      },
+    };
+
+    const service = new RetentionSettingsService(repository as any, prisma as any);
+    const snapshot = await service.updateRetentionPolicy(createSession(), { aiHistoryContentDays: 15 });
+
+    assert.equal(snapshot.policy.aiHistoryContentDays, 15);
+    assert.equal(storedValue.aiHistoryContentDays, 15);
+    assert.equal(warnings.length, 1);
+    assert.equal((warnings[0] as unknown[])[0], '[retention-settings] audit log write failed');
+  } finally {
+    console.warn = originalWarn;
+  }
+});
+
+test('updateRetentionPolicy does not write audit event when no fields changed', async () => {
+  let auditCalls = 0;
+  const repository = {
+    findByKey: async () => ({
+      key: 'platform.retention_policy',
+      valueJson: { aiHistoryContentDays: 11 },
+      updatedById: 'admin_0',
+      updatedAt: new Date('2026-04-01T00:00:00.000Z'),
+    }),
+    upsertJson: async (_key: string, valueJson: any) => ({
+      key: 'platform.retention_policy',
+      valueJson,
+      updatedById: 'admin_1',
+      updatedAt: new Date('2026-04-28T00:00:00.000Z'),
+    }),
+  };
+
+  const prisma = {
+    adminLogEvent: {
+      upsert: async () => {
+        auditCalls += 1;
+        return null;
+      },
+    },
+  };
+
+  const service = new RetentionSettingsService(repository as any, prisma as any);
+  await service.updateRetentionPolicy(createSession(), { aiHistoryContentDays: 11 });
+  assert.equal(auditCalls, 0);
+});
