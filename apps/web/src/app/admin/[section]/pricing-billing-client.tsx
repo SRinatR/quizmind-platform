@@ -1,12 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { type PlatformAiPricingPolicySnapshot, type PlatformAiPricingPolicyUpdateRequest } from '@quizmind/contracts';
 
 interface ApiEnvelope<T> {
   ok: boolean;
   data?: T;
   error?: { message?: string };
+}
+
+const AI_PRICING_SETTINGS_ENDPOINT = '/bff/admin/settings/ai-pricing';
+
+function parseEnvelope<T>(value: unknown): ApiEnvelope<T> | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as ApiEnvelope<T>;
+  if (typeof candidate.ok !== 'boolean') return null;
+  return candidate;
+}
+
+function toRequestErrorMessage(responseStatus: number, fallback: string, payloadMessage?: string) {
+  if (payloadMessage) return payloadMessage;
+  if (responseStatus === 401) return 'Sign in to access AI pricing settings.';
+  if (responseStatus === 403) return 'You do not have permission to access AI pricing settings.';
+  if (responseStatus === 404) return 'AI pricing settings endpoint was not found.';
+  if (responseStatus >= 500) return 'AI pricing settings are temporarily unavailable.';
+  return fallback;
 }
 
 export function PricingBillingAdminClient() {
@@ -16,41 +34,74 @@ export function PricingBillingAdminClient() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      const res = await fetch('/app/bff/admin/settings/ai-pricing', { cache: 'no-store' });
-      const payload = (await res.json()) as ApiEnvelope<PlatformAiPricingPolicySnapshot>;
-      if (!res.ok || !payload.ok || !payload.data) {
-        setError(payload.error?.message ?? 'Failed to load pricing settings.');
-      } else {
-        setState(payload.data);
-        setDraft(payload.data.policy);
+  const loadPricingSettings = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(AI_PRICING_SETTINGS_ENDPOINT, { cache: 'no-store' });
+      const json = (await res.json().catch(() => null)) as unknown;
+      const payload = parseEnvelope<PlatformAiPricingPolicySnapshot>(json);
+
+      if (!res.ok || !payload?.ok || !payload.data) {
+        setState(null);
+        setError(toRequestErrorMessage(res.status, 'Failed to load pricing settings.', payload?.error?.message));
+        return;
       }
+
+      setState(payload.data);
+      setDraft(payload.data.policy);
+    } catch {
+      setState(null);
+      setError('Failed to load pricing settings. Please retry.');
+    } finally {
       setLoading(false);
-    })();
+    }
   }, []);
+
+  useEffect(() => {
+    void loadPricingSettings();
+  }, [loadPricingSettings]);
 
   async function onSave() {
     setSaving(true);
     setError(null);
-    const res = await fetch('/app/bff/admin/settings/ai-pricing', {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(draft),
-    });
-    const payload = (await res.json()) as ApiEnvelope<PlatformAiPricingPolicySnapshot>;
-    if (!res.ok || !payload.ok || !payload.data) {
-      setError(payload.error?.message ?? 'Failed to save pricing settings.');
-    } else {
+
+    try {
+      const res = await fetch(AI_PRICING_SETTINGS_ENDPOINT, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+
+      const json = (await res.json().catch(() => null)) as unknown;
+      const payload = parseEnvelope<PlatformAiPricingPolicySnapshot>(json);
+
+      if (!res.ok || !payload?.ok || !payload.data) {
+        setError(toRequestErrorMessage(res.status, 'Failed to save pricing settings.', payload?.error?.message));
+        return;
+      }
+
       setState(payload.data);
       setDraft(payload.data.policy);
+    } catch {
+      setError('Failed to save pricing settings. Please retry.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   if (loading) return <section className="panel"><p>Loading pricing & billing settings…</p></section>;
-  if (!state) return <section className="panel"><p>{error ?? 'Unavailable.'}</p></section>;
+  if (!state) {
+    return (
+      <section className="panel" style={{ display: 'grid', gap: 10 }}>
+        <p style={{ color: 'var(--danger)' }}>{error ?? 'Unable to load pricing settings.'}</p>
+        <button className="btn-secondary" type="button" onClick={() => void loadPricingSettings()}>
+          Retry
+        </button>
+      </section>
+    );
+  }
 
   return (
     <section className="panel" style={{ display: 'grid', gap: 14 }}>
