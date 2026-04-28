@@ -57,11 +57,12 @@ const ADMIN_GROUP_LABEL_KEYS: Record<string, 'people' | 'operations' | 'controlP
   Preferences: 'preferences',
 };
 
-const ADMIN_ITEM_LABEL_KEYS: Record<string, 'users' | 'logs' | 'extensionControl' | 'aiRouting' | 'settings'> = {
+const ADMIN_ITEM_LABEL_KEYS: Record<string, 'users' | 'logs' | 'extensionControl' | 'aiRouting' | 'dataRetention' | 'settings'> = {
   '/admin/users': 'users',
   '/admin/logs': 'logs',
   '/admin/extension-control': 'extensionControl',
   '/admin/ai-routing': 'aiRouting',
+  '/admin/data-retention': 'dataRetention',
   '/admin/settings': 'settings',
 };
 

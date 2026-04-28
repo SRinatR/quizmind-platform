@@ -414,10 +414,10 @@ export interface PlatformRetentionPolicy {
   adminLogSecurityDays: number;
   adminLogAdminDays: number;
   adminLogSensitiveRetentionEnabled: boolean;
-  authRefreshSessionDays: number;
-  passwordResetHours: number;
-  emailVerificationHours: number;
-  accessTokenMinutes: number;
+  accessTokenLifetimeMinutes: number;
+  refreshTokenLifetimeDays: number;
+  emailVerificationLifetimeHours: number;
+  passwordResetLifetimeHours: number;
 }
 
 export type PlatformRetentionPolicyUpdateRequest = Partial<
@@ -433,6 +433,9 @@ export type PlatformRetentionPolicyUpdateRequest = Partial<
     | 'adminLogSecurityDays'
     | 'adminLogAdminDays'
     | 'adminLogSensitiveRetentionEnabled'
+    | 'accessTokenLifetimeMinutes'
+    | 'refreshTokenLifetimeDays'
+    | 'passwordResetLifetimeHours'
   >
 >;
 

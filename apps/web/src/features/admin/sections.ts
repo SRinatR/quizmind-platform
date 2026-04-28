@@ -62,6 +62,17 @@ export const adminSections: AdminSection[] = [
   },
 
   {
+    id: 'data-retention',
+    title: 'Data Retention',
+    navLabel: 'Data Retention',
+    href: '/admin/data-retention',
+    description: 'Platform-wide retention controls for AI history, logs, and auth/session records.',
+    requirement: { requireSystemRole: 'admin' },
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
+  },
+
+  {
     id: 'settings',
     title: 'Settings',
     navLabel: 'Settings',

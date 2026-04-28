@@ -49,6 +49,7 @@ import { PasswordResetRepository } from './repositories/password-reset.repositor
 import { type CurrentSessionSnapshot, type RequestSessionMetadata } from './auth.types';
 import { createApiEmailAdapter } from '../email/email-adapter';
 import { QueueDispatchService } from '../queue/queue-dispatch.service';
+import { RetentionSettingsService } from '../settings/retention-settings.service';
 
 interface SessionIssueResult {
   payload: AuthSessionPayload;
@@ -69,6 +70,8 @@ export class AuthService {
     private readonly passwordResetRepository: PasswordResetRepository,
     @Inject(QueueDispatchService)
     private readonly queueDispatchService: QueueDispatchService,
+    @Inject(RetentionSettingsService)
+    private readonly retentionSettingsService: RetentionSettingsService,
   ) {}
 
   async register(request: AuthRegisterRequest, metadata: RequestSessionMetadata = {}): Promise<AuthExchangePayload> {
@@ -179,6 +182,8 @@ export class AuthService {
 
     const user = await this.userRepository.findByEmail(email);
 
+    const passwordResetLifetimeHours = await this.getPasswordResetLifetimeHours();
+
     if (!user?.passwordHash || user.suspendedAt) {
       this.logSecurityEvent('auth.password_reset_requested', user?.id ?? 'anonymous', {
         email,
@@ -190,13 +195,13 @@ export class AuthService {
 
       return {
         accepted: true,
-        expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+        expiresInMinutes: passwordResetLifetimeHours * 60,
       };
     }
 
     const resetToken = createOpaqueToken();
     const resetTokenHash = hashOpaqueToken(resetToken, this.env.jwtRefreshSecret);
-    const expiresAt = new Date(Date.now() + PASSWORD_RESET_LIFETIME_HOURS * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + passwordResetLifetimeHours * 60 * 60 * 1000);
 
     await this.passwordResetRepository.invalidateActiveForUser(user.id);
     await this.passwordResetRepository.create({
@@ -211,7 +216,7 @@ export class AuthService {
         productName: 'QuizMind',
         displayName: user.displayName ?? undefined,
         resetUrl: `${this.env.appUrl}/auth/reset-password?token=${resetToken}`,
-        expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+        expiresInMinutes: passwordResetLifetimeHours * 60,
       },
       fallbackTemplate: passwordResetTemplate,
       requestedByUserId: user.id,
@@ -226,7 +231,7 @@ export class AuthService {
 
     return {
       accepted: true,
-      expiresInMinutes: PASSWORD_RESET_LIFETIME_HOURS * 60,
+      expiresInMinutes: passwordResetLifetimeHours * 60,
     };
   }
 
@@ -382,6 +387,34 @@ export class AuthService {
     return this.buildCurrentSessionSnapshot(session.user);
   }
 
+  private async getAccessTokenLifetimeMinutes(): Promise<number> {
+    try {
+      const policy = await this.retentionSettingsService.getEffectiveRetentionPolicy();
+      return policy.accessTokenLifetimeMinutes;
+    } catch {
+      return ACCESS_TOKEN_LIFETIME_MINUTES;
+    }
+  }
+
+  private async getRefreshTokenLifetimeDays(): Promise<number> {
+    try {
+      const policy = await this.retentionSettingsService.getEffectiveRetentionPolicy();
+      return policy.refreshTokenLifetimeDays;
+    } catch {
+      return REFRESH_TOKEN_LIFETIME_DAYS;
+    }
+  }
+
+  private async getPasswordResetLifetimeHours(): Promise<number> {
+    try {
+      const policy = await this.retentionSettingsService.getEffectiveRetentionPolicy();
+      return policy.passwordResetLifetimeHours;
+    } catch {
+      return PASSWORD_RESET_LIFETIME_HOURS;
+    }
+  }
+
+
   async listSessions(userId: string, currentSessionId?: string): Promise<AuthSessionsPayload> {
     this.assertConnectedMode();
 
@@ -401,9 +434,12 @@ export class AuthService {
   }
 
   private async issueSession(user: AuthUserRecord, metadata: RequestSessionMetadata): Promise<SessionIssueResult> {
+    const refreshTokenLifetimeDays = await this.getRefreshTokenLifetimeDays();
+    const accessTokenLifetimeMinutes = await this.getAccessTokenLifetimeMinutes();
+
     const refreshToken = createOpaqueToken();
     const refreshTokenHash = hashOpaqueToken(refreshToken, this.env.jwtRefreshSecret);
-    const refreshExpiresAt = new Date(Date.now() + REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000);
+    const refreshExpiresAt = new Date(Date.now() + refreshTokenLifetimeDays * 24 * 60 * 60 * 1000);
 
     const session = await this.sessionRepository.create({
       userId: user.id,
@@ -421,7 +457,7 @@ export class AuthService {
       userId: user.id,
       email: user.email,
       roles: this.userRepository.getSystemRoles(user),
-      expiresInMinutes: ACCESS_TOKEN_LIFETIME_MINUTES,
+      expiresInMinutes: accessTokenLifetimeMinutes,
       issuer: this.env.jwtIssuer,
       audience: this.env.jwtAudience,
     });

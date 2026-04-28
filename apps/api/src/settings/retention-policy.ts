@@ -18,10 +18,10 @@ export const defaultRetentionPolicy: PlatformRetentionPolicy = {
   adminLogSecurityDays: 365,
   adminLogAdminDays: 365,
   adminLogSensitiveRetentionEnabled: false,
-  authRefreshSessionDays: REFRESH_TOKEN_LIFETIME_DAYS,
-  passwordResetHours: PASSWORD_RESET_LIFETIME_HOURS,
-  emailVerificationHours: EMAIL_VERIFICATION_LIFETIME_HOURS,
-  accessTokenMinutes: ACCESS_TOKEN_LIFETIME_MINUTES,
+  accessTokenLifetimeMinutes: ACCESS_TOKEN_LIFETIME_MINUTES,
+  refreshTokenLifetimeDays: REFRESH_TOKEN_LIFETIME_DAYS,
+  emailVerificationLifetimeHours: EMAIL_VERIFICATION_LIFETIME_HOURS,
+  passwordResetLifetimeHours: PASSWORD_RESET_LIFETIME_HOURS,
 };
 
 type EditableNumericField = keyof Pick<
@@ -34,6 +34,9 @@ type EditableNumericField = keyof Pick<
   | 'adminLogAuditDays'
   | 'adminLogSecurityDays'
   | 'adminLogAdminDays'
+  | 'accessTokenLifetimeMinutes'
+  | 'refreshTokenLifetimeDays'
+  | 'passwordResetLifetimeHours'
 >;
 
 type EditableBooleanField = keyof Pick<
@@ -50,6 +53,9 @@ export const retentionPolicyRanges: Record<EditableNumericField, { min: number; 
   adminLogAuditDays: { min: 30, max: 3650, step: 1 },
   adminLogSecurityDays: { min: 30, max: 3650, step: 1 },
   adminLogAdminDays: { min: 30, max: 3650, step: 1 },
+  accessTokenLifetimeMinutes: { min: 5, max: 1440, step: 1 },
+  refreshTokenLifetimeDays: { min: 1, max: 365, step: 1 },
+  passwordResetLifetimeHours: { min: 1, max: 24, step: 1 },
 };
 
 const editableNumericFields = Object.keys(retentionPolicyRanges) as EditableNumericField[];
@@ -114,6 +120,9 @@ export function parseRetentionPolicyPatch(input: unknown): PlatformRetentionPoli
   for (const key of Object.keys(input)) {
     if (key === 'legacyAiRequestDays') {
       throw new Error('legacyAiRequestDays is read-only for legacy rows and cannot be updated.');
+    }
+    if (key === 'emailVerificationLifetimeHours') {
+      throw new Error('emailVerificationLifetimeHours is reserved for a future email verification flow and cannot be updated yet.');
     }
     if (!editableFields.has(key)) {
       throw new Error(`Unknown retention field: ${key}.`);

@@ -8,6 +8,7 @@ import { PlatformSettingsRepository } from './platform-settings.repository';
 import { defaultRetentionPolicy, mergeRetentionPolicy, parseAndNormalizeRetentionPolicy, parseRetentionPolicyPatch } from './retention-policy';
 
 const PLATFORM_RETENTION_POLICY_KEY = 'platform.retention_policy';
+const EFFECTIVE_POLICY_CACHE_TTL_MS = 60_000;
 
 function readBooleanEnv(name: string, fallback: boolean): boolean {
   const value = process.env[name];
@@ -31,6 +32,8 @@ export class RetentionSettingsService {
     private readonly prisma: PrismaService,
   ) {}
 
+  private effectivePolicyCache: { value: PlatformRetentionPolicy; expiresAtMs: number } | null = null;
+
   private readEnvFallbackPolicy(): PlatformRetentionPolicy {
     return {
       ...defaultRetentionPolicy,
@@ -45,13 +48,36 @@ export class RetentionSettingsService {
     };
   }
 
+
+  private getCachedEffectivePolicy(): PlatformRetentionPolicy | null {
+    const now = Date.now();
+    if (!this.effectivePolicyCache || this.effectivePolicyCache.expiresAtMs <= now) {
+      return null;
+    }
+    return this.effectivePolicyCache.value;
+  }
+
+  private setCachedEffectivePolicy(policy: PlatformRetentionPolicy): void {
+    this.effectivePolicyCache = {
+      value: policy,
+      expiresAtMs: Date.now() + EFFECTIVE_POLICY_CACHE_TTL_MS,
+    };
+  }
+
   async getEffectiveRetentionPolicy(): Promise<PlatformRetentionPolicy> {
+    const cached = this.getCachedEffectivePolicy();
+    if (cached) {
+      return cached;
+    }
+
     const fallback = this.readEnvFallbackPolicy();
     try {
       const row = await this.settingsRepository.findByKey(PLATFORM_RETENTION_POLICY_KEY);
-      if (!row) return fallback;
-      return parseAndNormalizeRetentionPolicy(row.valueJson);
+      const effective = row ? parseAndNormalizeRetentionPolicy(row.valueJson) : fallback;
+      this.setCachedEffectivePolicy(effective);
+      return effective;
     } catch {
+      this.setCachedEffectivePolicy(fallback);
       return fallback;
     }
   }
@@ -67,8 +93,11 @@ export class RetentionSettingsService {
       };
     }
 
+    const normalizedPolicy = parseAndNormalizeRetentionPolicy(row.valueJson);
+    this.setCachedEffectivePolicy(normalizedPolicy);
+
     return {
-      policy: parseAndNormalizeRetentionPolicy(row.valueJson),
+      policy: normalizedPolicy,
       updatedAt: row.updatedAt.toISOString(),
       updatedById: row.updatedById,
     };
@@ -151,8 +180,11 @@ export class RetentionSettingsService {
       }
     }
 
+    const normalizedPolicy = parseAndNormalizeRetentionPolicy(row.valueJson);
+    this.setCachedEffectivePolicy(normalizedPolicy);
+
     return {
-      policy: parseAndNormalizeRetentionPolicy(row.valueJson),
+      policy: normalizedPolicy,
       updatedAt: row.updatedAt.toISOString(),
       updatedById: row.updatedById,
     };

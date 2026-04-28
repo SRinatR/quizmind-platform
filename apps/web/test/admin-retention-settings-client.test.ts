@@ -3,26 +3,31 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 
-const clientPath = path.resolve(process.cwd(), 'src/app/admin/[section]/admin-settings-client.tsx');
+const settingsClientPath = path.resolve(process.cwd(), 'src/app/admin/[section]/admin-settings-client.tsx');
+const retentionClientPath = path.resolve(process.cwd(), 'src/app/admin/[section]/data-retention-client.tsx');
 
-test('AdminSettingsClient exposes retention tab and warning text wiring', async () => {
-  const source = await readFile(clientPath, 'utf8');
-  assert.match(source, /type SettingsTab = 'profile' \| 'appearance' \| 'retention'/);
-  assert.match(source, /adminT\.settings\.retention\.tabLabel/);
-  assert.match(source, /adminT\.settings\.retention\.sensitiveWarning/);
+test('/admin/settings only keeps profile and appearance tabs', async () => {
+  const source = await readFile(settingsClientPath, 'utf8');
+  assert.match(source, /type SettingsTab = 'profile' \| 'appearance'/);
+  assert.doesNotMatch(source, /retention/);
 });
 
-test('Retention tab loads and saves through BFF routes', async () => {
-  const source = await readFile(clientPath, 'utf8');
+test('/admin/data-retention client loads and saves through BFF routes', async () => {
+  const source = await readFile(retentionClientPath, 'utf8');
   assert.match(source, /fetch\('\/bff\/admin\/settings\/retention', \{ cache: 'no-store' \}\)/);
   assert.match(source, /method: 'PATCH'/);
   assert.match(source, /body: JSON\.stringify\(retentionDraft\)/);
 });
 
-test('Retention numeric fields have range metadata and client-side validation guard', async () => {
-  const source = await readFile(clientPath, 'utf8');
-  assert.match(source, /const retentionFieldConfig = \{/);
-  assert.match(source, /min=\{retentionFieldConfig\[field\]\.min\}/);
-  assert.match(source, /max=\{retentionFieldConfig\[field\]\.max\}/);
-  assert.match(source, /setRetentionError\(adminT\.settings\.retention\.validationDays\)/);
+test('data retention client keeps email verification TTL read-only/future and not editable in patch draft', async () => {
+  const source = await readFile(retentionClientPath, 'utf8');
+  assert.match(source, /emailVerificationFutureNote/);
+  assert.match(source, /toEditableRetentionDraft/);
+  assert.doesNotMatch(source, /\['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'emailVerificationLifetimeHours', 'passwordResetLifetimeHours'\]/);
+});
+
+test('data retention client renders auth/session warning and sensitive logs warning', async () => {
+  const source = await readFile(retentionClientPath, 'utf8');
+  assert.match(source, /adminT\.settings\.retention\.authIssuedOnlyNote/);
+  assert.match(source, /adminT\.settings\.retention\.sensitiveWarning/);
 });

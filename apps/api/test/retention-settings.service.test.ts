@@ -25,6 +25,7 @@ test('updateRetentionPolicy PATCH merges current values instead of resetting omi
         aiHistoryContentDays: 22,
         aiHistoryAttachmentDays: 9,
         adminLogRetentionEnabled: true,
+        accessTokenLifetimeMinutes: 15,
       },
       updatedById: 'admin_0',
       updatedAt: new Date('2026-04-01T00:00:00.000Z'),
@@ -51,16 +52,18 @@ test('updateRetentionPolicy PATCH merges current values instead of resetting omi
   };
 
   const service = new RetentionSettingsService(repository as any, prisma as any);
-  const snapshot = await service.updateRetentionPolicy(createSession(), { aiHistoryContentDays: 30 });
+  const snapshot = await service.updateRetentionPolicy(createSession(), { aiHistoryContentDays: 30, accessTokenLifetimeMinutes: 25 });
 
   assert.equal(snapshot.policy.aiHistoryContentDays, 30);
   assert.equal(snapshot.policy.aiHistoryAttachmentDays, 9);
+  assert.equal(snapshot.policy.accessTokenLifetimeMinutes, 25);
   assert.equal(snapshot.policy.adminLogRetentionEnabled, true);
   assert.equal(storedValue.aiHistoryAttachmentDays, 9);
   assert.equal(auditEvent.create.eventType, 'admin.retention_policy_updated');
-  assert.deepEqual(auditEvent.create.metadataJson.changedFields, ['aiHistoryContentDays']);
+  assert.deepEqual(auditEvent.create.metadataJson.changedFields, ['aiHistoryContentDays', 'accessTokenLifetimeMinutes']);
   assert.equal(auditEvent.create.metadataJson.before.aiHistoryContentDays, 22);
   assert.equal(auditEvent.create.metadataJson.after.aiHistoryContentDays, 30);
+  assert.equal(auditEvent.create.metadataJson.after.accessTokenLifetimeMinutes, 25);
 });
 
 test('updateRetentionPolicy rejects invalid values and does not write', async () => {
