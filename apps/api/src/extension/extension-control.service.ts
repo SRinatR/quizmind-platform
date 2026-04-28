@@ -164,6 +164,11 @@ interface InvalidInstallationTokenLogState {
   suppressed: number;
 }
 
+interface ExtensionSessionPolicy {
+  lifetimeHours: number;
+  refreshAfterSeconds: number;
+}
+
 @Injectable()
 export class ExtensionControlService {
   private readonly env = loadApiEnv();
@@ -194,6 +199,7 @@ export class ExtensionControlService {
     session: CurrentSessionSnapshot,
     request?: Partial<ExtensionInstallationBindRequest>,
   ): Promise<ExtensionInstallationBindResult> {
+    const sessionPolicy = await this.resolveExtensionSessionPolicy();
     const normalizedRequest = this.normalizeBindRequest(request);
     const occurredAt = new Date();
     const existingInstallation = await this.extensionInstallationRepository.findByInstallationId(
@@ -212,13 +218,17 @@ export class ExtensionControlService {
       installation.id,
       occurredAt,
     );
-    const { sessionToken, tokenRecord } = await this.issueInstallationSession(installation, session.user.id);
+    const { sessionToken, tokenRecord } = await this.issueInstallationSession(
+      installation,
+      session.user.id,
+      sessionPolicy.lifetimeHours,
+    );
     const bootstrap = await this.buildBootstrapPayload({
       installation,
       environment: normalizedRequest.environment,
       handshake: normalizedRequest.handshake,
       issuedAt: occurredAt.toISOString(),
-      refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+      refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
     });
     const result: ExtensionInstallationBindResult = {
       installation: {
@@ -235,7 +245,7 @@ export class ExtensionControlService {
       session: {
         token: sessionToken,
         expiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       },
       bootstrap,
     };
@@ -303,6 +313,7 @@ export class ExtensionControlService {
     installationSession: ExtensionInstallationSessionRecord,
     request?: Partial<ExtensionBootstrapRequestV2>,
   ): Promise<ExtensionBootstrapPayloadV2> {
+    const sessionPolicy = await this.resolveExtensionSessionPolicy();
     const installationId = readRequiredString(
       request?.installationId ?? installationSession.installation.installationId,
       'installationId',
@@ -339,7 +350,7 @@ export class ExtensionControlService {
         installation,
         environment,
         handshake,
-        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       });
     } catch (error) {
       console.error('Failed to build extension bootstrap payload. Serving degraded bootstrap payload.', error);
@@ -348,6 +359,7 @@ export class ExtensionControlService {
         installation,
         environment,
         handshake,
+        refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       });
     }
   }
@@ -457,6 +469,7 @@ export class ExtensionControlService {
     installation: ExtensionInstallationRecord;
     environment: string;
     handshake: CompatibilityHandshake;
+    refreshAfterSeconds: number;
   }): Promise<ExtensionBootstrapPayloadV2> {
     return buildExtensionBootstrapV2({
       installationId: input.installation.installationId,
@@ -479,7 +492,7 @@ export class ExtensionControlService {
         userId: input.installation.userId,
         buildId: input.handshake.buildId,
       },
-      refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+      refreshAfterSeconds: input.refreshAfterSeconds,
     });
   }
 
@@ -724,6 +737,7 @@ export class ExtensionControlService {
     session: CurrentSessionSnapshot,
     request?: Partial<ExtensionInstallationRotateSessionRequest>,
   ): Promise<ExtensionInstallationRotateSessionResult> {
+    const sessionPolicy = await this.resolveExtensionSessionPolicy();
     const installationId = readRequiredString(request?.installationId, 'installationId');
     const accessDecision = canWriteExtensionInstallations(session.principal);
 
@@ -744,7 +758,11 @@ export class ExtensionControlService {
       installation.id,
       rotatedAt,
     );
-    const { sessionToken, tokenRecord } = await this.issueInstallationSession(installation, installation.userId);
+    const { sessionToken, tokenRecord } = await this.issueInstallationSession(
+      installation,
+      installation.userId,
+      sessionPolicy.lifetimeHours,
+    );
 
     await this.recordLifecycleEventSafely({
       actorId: session.user.id,
@@ -760,7 +778,7 @@ export class ExtensionControlService {
         reason,
         revokedSessionCount,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       },
       domainEventType: 'extension.installation_session_rotated',
       domainPayload: {
@@ -780,7 +798,7 @@ export class ExtensionControlService {
       session: {
         token: sessionToken,
         expiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       },
     };
   }
@@ -788,11 +806,13 @@ export class ExtensionControlService {
   async refreshInstallationSessionForToken(
     installationSession: ExtensionInstallationSessionRecord,
   ): Promise<ExtensionInstallationSessionRefreshResult> {
+    const sessionPolicy = await this.resolveExtensionSessionPolicy();
     const refreshedAt = new Date();
     await this.extensionInstallationSessionRepository.revoke(installationSession.id, refreshedAt);
     const { sessionToken, tokenRecord } = await this.issueInstallationSession(
       installationSession.installation,
       installationSession.installation.userId,
+      sessionPolicy.lifetimeHours,
     );
 
     await this.recordLifecycleEventSafely({
@@ -808,7 +828,7 @@ export class ExtensionControlService {
         installationId: installationSession.installation.installationId,
         previousSessionId: installationSession.id,
         sessionExpiresAt: tokenRecord.expiresAt.toISOString(),
-        refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+        refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       },
       domainEventType: 'extension.installation_session_refreshed',
       domainPayload: {
@@ -823,7 +843,7 @@ export class ExtensionControlService {
       installationId: installationSession.installation.installationId,
       installationToken: sessionToken,
       tokenExpiresAt: tokenRecord.expiresAt.toISOString(),
-      refreshAfterSeconds: await this.resolveRefreshAfterSeconds(),
+      refreshAfterSeconds: sessionPolicy.refreshAfterSeconds,
       status: 'refreshed' as const,
     };
   }
@@ -1162,9 +1182,9 @@ export class ExtensionControlService {
   private async issueInstallationSession(
     installation: ExtensionInstallationRecord,
     userId: string,
+    lifetimeHours: number,
   ): Promise<{ sessionToken: string; tokenRecord: ExtensionInstallationSessionRecord }> {
     const sessionToken = createOpaqueToken();
-    const lifetimeHours = await this.resolveExtensionSessionLifetimeHours();
     const expiresAt = new Date(Date.now() + lifetimeHours * 60 * 60 * 1000);
     const tokenRecord = await this.extensionInstallationSessionRepository.create({
       extensionInstallationId: installation.id,
@@ -1179,25 +1199,28 @@ export class ExtensionControlService {
     };
   }
 
-  private async resolveExtensionSessionLifetimeHours(): Promise<number> {
-    const fallbackHours = Math.max(1, Math.floor(this.env.extensionSessionTtlMinutes / 60));
-
-    try {
-      const snapshot = await this.retentionSettingsService.getRetentionPolicy();
-      return snapshot.policy.extensionSessionLifetimeHours;
-    } catch {
-      return fallbackHours;
-    }
+  private buildFallbackExtensionSessionPolicy(): ExtensionSessionPolicy {
+    const fallbackLifetimeHours = this.env.extensionSessionTtlMinutes / 60;
+    const fallbackSeconds = Math.max(60, Math.floor((this.env.extensionSessionTtlMinutes * 60) / 2));
+    return {
+      lifetimeHours: fallbackLifetimeHours,
+      refreshAfterSeconds: fallbackSeconds,
+    };
   }
 
-  private async resolveRefreshAfterSeconds(): Promise<number> {
-    const fallbackSeconds = Math.max(60, Math.floor((this.env.extensionSessionTtlMinutes * 60) / 2));
-
+  private async resolveExtensionSessionPolicy(): Promise<ExtensionSessionPolicy> {
+    const fallback = this.buildFallbackExtensionSessionPolicy();
     try {
       const snapshot = await this.retentionSettingsService.getRetentionPolicy();
-      return snapshot.policy.extensionSessionRefreshAfterSeconds;
+      if (!snapshot.updatedAt) {
+        return fallback;
+      }
+      return {
+        lifetimeHours: snapshot.policy.extensionSessionLifetimeHours,
+        refreshAfterSeconds: snapshot.policy.extensionSessionRefreshAfterSeconds,
+      };
     } catch {
-      return fallbackSeconds;
+      return fallback;
     }
   }
 }
