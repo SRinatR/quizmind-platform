@@ -79,6 +79,18 @@ test('admin settings section is visible for admin role and hidden for non-admin 
   assert.equal(userVisible, false, 'settings must be hidden for non-admin');
 });
 
+
+test('data-retention section is visible for admin role and hidden for non-admin role', () => {
+  const adminContext = createContext(['admin']);
+  const userContext = createContext([]);
+
+  const adminVisible = getVisibleAdminSections(adminContext).some((section) => section.id === 'data-retention');
+  const userVisible = getVisibleAdminSections(userContext).some((section) => section.id === 'data-retention');
+
+  assert.equal(adminVisible, true, 'data-retention must be visible for admin role');
+  assert.equal(userVisible, false, 'data-retention must be hidden for non-admin');
+});
+
 test('isAdminEmail returns false for unknown emails', () => {
   assert.equal(isAdminEmail('unknown@quizmind.dev'), false);
 });

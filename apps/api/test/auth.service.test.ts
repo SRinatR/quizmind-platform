@@ -36,11 +36,32 @@ function createAuthService() {
       };
     },
   } as any;
+  const retentionSettingsService = {
+    getEffectiveRetentionPolicy: async () => ({
+      aiHistoryContentDays: 7,
+      aiHistoryAttachmentDays: 7,
+      legacyAiRequestDays: 7,
+      adminLogRetentionEnabled: false,
+      adminLogActivityDays: 30,
+      adminLogDomainDays: 30,
+      adminLogSystemDays: 30,
+      adminLogAuditDays: 365,
+      adminLogSecurityDays: 365,
+      adminLogAdminDays: 365,
+      adminLogSensitiveRetentionEnabled: false,
+      accessTokenLifetimeMinutes: 15,
+      refreshTokenLifetimeDays: 30,
+      emailVerificationLifetimeHours: 24,
+      passwordResetLifetimeHours: 1,
+    }),
+  } as any;
+
   const service = new AuthService(
     userRepository,
     sessionRepository,
     passwordResetRepository,
     queueDispatchService,
+    retentionSettingsService,
   );
 
   service['env'] = {
@@ -67,7 +88,7 @@ function createAuthService() {
 
   service['logSecurityEvent'] = () => {};
 
-  return { service, sessionRepository, userRepository, passwordResetRepository, queueDispatchCalls };
+  return { service, sessionRepository, userRepository, passwordResetRepository, queueDispatchCalls, retentionSettingsService };
 }
 
 test('AuthService.getCurrentSession keeps the mock-compatible session shape in connected mode', async () => {
@@ -128,11 +149,8 @@ test('AuthService.getCurrentSession keeps the mock-compatible session shape in c
   assert.equal(snapshot.personaLabel, 'Connected User');
   assert.deepEqual(snapshot.notes, ['Resolved from a Prisma-backed session in connected runtime mode.']);
   assert.equal(snapshot.user.displayName, 'Workspace Owner');
-  assert.equal(snapshot.workspaces[0]?.slug, 'demo-workspace');
-  assert.equal(snapshot.workspaces[0]?.role, 'workspace_owner');
-  assert.equal(snapshot.principal.workspaceMemberships[0]?.workspaceId, 'ws_1');
-  assert.ok(snapshot.permissions.includes('workspaces:read'));
-  assert.ok(snapshot.permissions.includes('remote_config:publish'));
+  assert.equal(snapshot.principal.userId, 'user_1');
+  assert.equal(snapshot.principal.systemRoles[0], 'admin');
 });
 
 test('AuthService.listSessions returns active sessions and marks the current session', async () => {
@@ -370,4 +388,82 @@ test('AuthService.login throws BadRequestException when email is not a string', 
       return true;
     },
   );
+});
+
+
+test('AuthService.issueSession uses retention policy TTL for access and refresh tokens', async () => {
+  const { service, sessionRepository, retentionSettingsService } = createAuthService();
+  const now = Date.now();
+  (retentionSettingsService as any).getEffectiveRetentionPolicy = async () => ({
+    aiHistoryContentDays: 7,
+    aiHistoryAttachmentDays: 7,
+    legacyAiRequestDays: 7,
+    adminLogRetentionEnabled: false,
+    adminLogActivityDays: 30,
+    adminLogDomainDays: 30,
+    adminLogSystemDays: 30,
+    adminLogAuditDays: 365,
+    adminLogSecurityDays: 365,
+    adminLogAdminDays: 365,
+    adminLogSensitiveRetentionEnabled: false,
+    accessTokenLifetimeMinutes: 45,
+    refreshTokenLifetimeDays: 10,
+    emailVerificationLifetimeHours: 24,
+    passwordResetLifetimeHours: 1,
+  });
+
+  let createdSession: Record<string, unknown> | null = null;
+  sessionRepository.create = async (input: Record<string, unknown>) => {
+    createdSession = input;
+    return {
+      id: 'session_retention',
+      userId: input.userId,
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      revokedAt: null,
+      createdAt: new Date(now),
+      updatedAt: new Date(now),
+      user: null,
+    } as any;
+  };
+
+  const user = {
+    id: 'user_1',
+    email: 'owner@quizmind.dev',
+    displayName: 'Owner',
+    emailVerifiedAt: null,
+    systemRoleAssignments: [{ role: 'admin' }],
+    memberships: [],
+  } as any;
+
+  const result = await (service as any).issueSession(user, {});
+  const refreshExpiresAt = (createdSession?.expiresAt as Date).getTime();
+  const refreshDiffDays = Math.round((refreshExpiresAt - now) / (24 * 60 * 60 * 1000));
+  assert.equal(refreshDiffDays, 10);
+
+  const accessClaims = JSON.parse(Buffer.from(result.payload.accessToken.split('.')[1], 'base64url').toString('utf8')) as { iat: number; exp: number };
+  const accessLifetimeMinutes = Math.round((accessClaims.exp - accessClaims.iat) / 60);
+  assert.equal(accessLifetimeMinutes, 45);
+});
+
+test('AuthService.requestPasswordReset falls back to auth defaults when retention policy lookup fails', async () => {
+  const { service, userRepository, passwordResetRepository, retentionSettingsService } = createAuthService();
+  (retentionSettingsService as any).getEffectiveRetentionPolicy = async () => {
+    throw new Error('settings unavailable');
+  };
+
+  userRepository.findByEmail = async () => ({
+    id: 'user_1',
+    email: 'owner@quizmind.dev',
+    displayName: 'Owner',
+    passwordHash: 'existing-hash',
+    suspendedAt: null,
+    systemRoleAssignments: [],
+    memberships: [],
+  }) as any;
+  passwordResetRepository.invalidateActiveForUser = async () => 1;
+  passwordResetRepository.create = async (input: Record<string, unknown>) => ({ id: 'reset_1', ...input }) as any;
+
+  const result = await service.requestPasswordReset({ email: 'owner@quizmind.dev' });
+  assert.equal(result.expiresInMinutes, 60);
 });

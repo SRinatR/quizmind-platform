@@ -30,6 +30,7 @@ import { ExtensionControlAdminClient } from './extension-control-admin-client';
 import { UsersDirectoryClient } from './users-directory-client';
 import { LogsExplorerClient } from './logs-explorer-client';
 import { AdminSettingsClient } from './admin-settings-client';
+import { DataRetentionAdminClient } from './data-retention-client';
 
 type AdminI18n = Translations['admin'];
 
@@ -152,6 +153,7 @@ function getLocalizedSectionTitle(section: AdminSection, adminI18n: AdminI18n): 
     case 'extension-control': return adminI18n.nav.items.extensionControl;
     case 'ai-routing': return adminI18n.nav.items.aiRouting;
     case 'settings': return adminI18n.nav.items.settings;
+    case 'data-retention': return adminI18n.nav.items.dataRetention;
     default: return section.title;
   }
 }
@@ -173,6 +175,7 @@ function getLocalizedSectionDescription(section: AdminSection, adminI18n: AdminI
     case 'extension-control': return adminI18n.nav.descriptions.extensionControl;
     case 'ai-routing': return adminI18n.nav.descriptions.aiRouting;
     case 'settings': return adminI18n.nav.descriptions.settings;
+    case 'data-retention': return adminI18n.nav.descriptions.dataRetention;
     default: return section.description;
   }
 }
@@ -262,6 +265,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     logs:                {},
     'extension-control': { compatibility: true, flags: true, remoteConfig: true },
     'ai-routing':        { aiRouting: true },
+    'data-retention':    {},
   };
   const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
@@ -429,7 +433,10 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
               </section>
             )}
           </>
-        ) : // ── Control Plane: Settings ───────────────────────────────────────
+        ) : // ── Control Plane: Data Retention ─────────────────────────────────
+        section.id === 'data-retention' ? (
+          <DataRetentionAdminClient />
+        ) : // ── Preferences: Settings ─────────────────────────────────────────────
         section.id === 'settings' ? (
           <AdminSettingsClient
             isConnectedSession={isConnectedSession}
