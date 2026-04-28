@@ -25,8 +25,6 @@ import {
 } from './ai-history.repository';
 import { AdminLogAiSyncService } from '../logs/admin-log-ai-sync.service';
 import { RetentionSettingsService } from '../settings/retention-settings.service';
-import { AiPricingService } from '../ai/ai-pricing.service';
-import { WalletRepository } from '../wallet/wallet.repository';
 
 export const HISTORY_RETENTION_DAYS = 7;
 const DEFAULT_LIST_LIMIT = 25;
@@ -267,8 +265,6 @@ export class AiHistoryService {
     @Inject(HistoryBlobService) private readonly blobs: HistoryBlobService,
     @Inject(AdminLogAiSyncService) private readonly adminLogAiSync: AdminLogAiSyncService,
     @Inject(RetentionSettingsService) private readonly retentionSettingsService: RetentionSettingsService,
-    @Inject(AiPricingService) private readonly aiPricingService?: AiPricingService,
-    @Inject(WalletRepository) private readonly walletRepository?: WalletRepository,
   ) {}
 
   private async resolveHistoryRetentionDays(): Promise<{ contentDays: number; attachmentDays: number }> {
@@ -579,6 +575,14 @@ export class AiHistoryService {
     promptTokens?: number;
     completionTokens?: number;
     durationMs?: number;
+    providerCostUsd?: number | null;
+    platformFeeUsd?: number | null;
+    chargedCostUsd?: number | null;
+    chargedCurrency?: string | null;
+    chargedAmountMinor?: number | null;
+    pricingSource?: 'provider' | 'estimated' | null;
+    pricingPolicySnapshotJson?: Prisma.InputJsonValue;
+    walletLedgerEntryId?: string | null;
   }): Promise<void> {
     const retention = await this.resolveHistoryRetentionDays();
     const expiresAt = new Date();
@@ -602,51 +606,10 @@ export class AiHistoryService {
     const promptExcerpt = extractPromptExcerpt(sanitizedPromptContent);
     const responseExcerpt = extractResponseExcerpt(input.responseContent);
 
-    const cost = extractProviderCostUsd(input.responseContent)
+    const estimatedCostUsd = extractProviderCostUsd(input.responseContent)
       ?? estimateRequestCostUsd(input.model, input.promptTokens ?? 0, input.completionTokens ?? 0);
-    const pricingSource: 'provider' | 'estimated' = extractProviderCostUsd(input.responseContent) !== null ? 'provider' : 'estimated';
-    const pricingBreakdown = this.aiPricingService
-      ? await this.aiPricingService.calculate({
-        providerCostUsd: cost,
-        pricingSource,
-        keySource: input.keySource ?? 'platform',
-        status: input.status ?? 'success',
-      })
-      : {
-        providerCostUsd: cost,
-        platformFeeUsd: 0,
-        chargedCostUsd: 0,
-        pricingSource,
-        policySnapshot: null,
-        chargeable: false,
-        reason: 'pricing_service_unavailable',
-      };
-
-    let walletLedgerEntryId: string | null = null;
-    let chargedAmountMinor: number | null = null;
-    const chargedCurrency = 'USD';
-    if (pricingBreakdown.chargeable && this.walletRepository) {
-      const amountMinor = Math.ceil(pricingBreakdown.chargedCostUsd * 100);
-      if (amountMinor > 0) {
-        const debit = await this.walletRepository.debitUsage({
-          userId: input.userId,
-          amountKopecks: amountMinor,
-          currency: chargedCurrency,
-          description: `AI usage debit for request ${eventId}`,
-          idempotencyKey: `ai-usage:${eventId}`,
-          metadataJson: {
-            requestId: eventId,
-            provider: input.provider,
-            model: input.model,
-            providerCostUsd: pricingBreakdown.providerCostUsd,
-            platformFeeUsd: pricingBreakdown.platformFeeUsd,
-            chargedCostUsd: pricingBreakdown.chargedCostUsd,
-          },
-        });
-        walletLedgerEntryId = debit.ledgerEntryId;
-        chargedAmountMinor = amountMinor;
-      }
-    }
+    const resolvedPricingSource: 'provider' | 'estimated' =
+      input.pricingSource ?? (extractProviderCostUsd(input.responseContent) !== null ? 'provider' : 'estimated');
 
     const previousPromptAttachments = await this.repository.listPromptAttachmentsForEvent(eventId);
 
@@ -665,15 +628,15 @@ export class AiHistoryService {
       promptTokens: input.promptTokens ?? 0,
       completionTokens: input.completionTokens ?? 0,
       totalTokens: (input.promptTokens ?? 0) + (input.completionTokens ?? 0),
-      estimatedCostUsd: cost,
-      providerCostUsd: pricingBreakdown.providerCostUsd,
-      platformFeeUsd: pricingBreakdown.platformFeeUsd,
-      chargedCostUsd: pricingBreakdown.chargedCostUsd,
-      chargedCurrency,
-      chargedAmountMinor,
-      pricingSource: pricingBreakdown.pricingSource,
-      pricingPolicySnapshotJson: pricingBreakdown.policySnapshot as unknown as Prisma.InputJsonValue,
-      walletLedgerEntryId,
+      estimatedCostUsd,
+      providerCostUsd: input.providerCostUsd ?? estimatedCostUsd,
+      platformFeeUsd: input.platformFeeUsd ?? null,
+      chargedCostUsd: input.chargedCostUsd ?? null,
+      chargedCurrency: input.chargedCurrency ?? null,
+      chargedAmountMinor: input.chargedAmountMinor ?? null,
+      pricingSource: resolvedPricingSource,
+      pricingPolicySnapshotJson: input.pricingPolicySnapshotJson,
+      walletLedgerEntryId: input.walletLedgerEntryId ?? null,
       durationMs: input.durationMs,
       promptExcerpt,
       responseExcerpt,

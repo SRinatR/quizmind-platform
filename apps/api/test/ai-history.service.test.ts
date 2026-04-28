@@ -1101,3 +1101,29 @@ test('AiHistoryService.persistContent falls back to default prompt image limits 
 
   assert.equal(upsertInput.promptAttachments.length, 8);
 });
+
+test('AiHistoryService.persistContent does not perform wallet debit side effects', async () => {
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_no_debit',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openrouter/auto',
+    requestType: 'text',
+    promptContent: [{ role: 'user', content: 'hello' }],
+    responseContent: { choices: [{ message: { content: 'world' } }] },
+    promptTokens: 10,
+    completionTokens: 10,
+  });
+
+  assert.equal(upsertInput.walletLedgerEntryId, null);
+  assert.equal(upsertInput.chargedAmountMinor, null);
+});

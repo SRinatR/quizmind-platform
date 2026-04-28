@@ -25,7 +25,7 @@ import { decryptSecret, type EncryptedSecretEnvelope } from '@quizmind/secrets';
 import { addUtcDays, evaluateUsageDecision, startOfUtcDay } from '@quizmind/usage';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
-import { AiHistoryService } from '../history/ai-history.service';
+import { AiHistoryService, estimateRequestCostUsd, extractProviderCostUsd } from '../history/ai-history.service';
 import { AiProviderPolicyService } from '../providers/ai-provider-policy.service';
 import {
   AiProxyRepository,
@@ -49,6 +49,17 @@ type AiProxyUsage = {
   completionTokens?: number;
   totalTokens?: number;
 };
+
+interface BillingResult {
+  providerCostUsd: number;
+  platformFeeUsd: number;
+  chargedCostUsd: number;
+  chargedCurrency: string | null;
+  chargedAmountMinor: number | null;
+  pricingSource: 'provider' | 'estimated';
+  pricingPolicySnapshotJson: Prisma.InputJsonValue;
+  walletLedgerEntryId: string | null;
+}
 
 function createTooManyRequestsException(message: string): HttpException {
   return new HttpException(message, 429);
@@ -489,6 +500,12 @@ export class AiProxyService {
                 );
               })();
       const usage = extractUsage(upstreamResponse);
+      const billing = await this.calculateAndDebitForInvocation({
+        invocation,
+        usage,
+        upstreamResponse,
+        status: 'success',
+      });
       const quotaSnapshot = await this.recordProxyCompletion({
         invocation,
         usage,
@@ -501,6 +518,7 @@ export class AiProxyService {
         messages: invocation.request.messages,
         upstreamResponse,
         usage,
+        billing,
       });
 
       return {
@@ -549,10 +567,12 @@ export class AiProxyService {
       return {
         providers: catalog.providers,
         models: catalog.models,
+        workspaceId: session.workspaces[0]?.id,
+        planCode: (await (this.aiProxyRepository as any).findWorkspacePlanCode?.()) ?? undefined,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
         ...(catalog.defaultModel ? { defaultModel: catalog.defaultModel } : {}),
         ...(catalog.allowedModelTags.length > 0 ? { allowedModelTags: catalog.allowedModelTags } : {}),
-      };
+      } as AiModelsCatalogPayload;
     } catch (error) {
       this.logProxyPreflightFailure({
         surface: 'models',
@@ -684,7 +704,7 @@ export class AiProxyService {
 
     if (selectedModel.provider !== provider) {
       throw new ForbiddenException(
-        `Model "${resolvedModel}" is not available for provider "${provider}" under the current AI policy.`,
+        `Model "${resolvedModel}" is not available for the current plan and AI provider policy (provider "${provider}").`,
       );
     }
 
@@ -698,16 +718,20 @@ export class AiProxyService {
     const occurredAt = new Date();
     const periodStart = startOfUtcDay(occurredAt);
     const periodEnd = addUtcDays(periodStart, 1);
-    const quotaCounter = {
-      id: 'ai-proxy-fallback',
-      key: aiRequestsQuotaKey,
-      consumed: 0,
-      periodStart,
-      periodEnd,
-      createdAt: occurredAt,
-      updatedAt: occurredAt,
-    };
-    const quotaLimit: number | undefined = undefined;
+    const quotaLimit = (await (this.aiProxyRepository as any).findUsageLimit?.(aiRequestsQuotaKey)) as number | undefined;
+    const quotaCounter =
+      ((await (this.aiProxyRepository as any).findActiveQuotaCounter?.(aiRequestsQuotaKey, periodStart, periodEnd)) as
+        | AiProxyQuotaCounterRecord
+        | null
+        | undefined) ?? {
+        id: 'ai-proxy-fallback',
+        key: aiRequestsQuotaKey,
+        consumed: 0,
+        periodStart,
+        periodEnd,
+        createdAt: occurredAt,
+        updatedAt: occurredAt,
+      };
 
     if (provider !== 'openrouter' && provider !== 'routerai' && !policy.allowDirectProviderMode) {
       throw new ForbiddenException(
@@ -1682,10 +1706,24 @@ export class AiProxyService {
   }): Promise<AiProxyStreamCompletion> {
     try {
       const inspection = await this.inspectOpenRouterSseStream(input.stream);
+      const billing = await this.calculateAndDebitForInvocation({
+        invocation: input.invocation,
+        usage: inspection.usage,
+        upstreamResponse: undefined,
+        status: 'success',
+      });
       const quota = await this.recordProxyCompletion({
         invocation: input.invocation,
         usage: inspection.usage,
         responseId: inspection.responseId,
+      });
+
+      this.persistHistoryContentSafely({
+        invocation: input.invocation,
+        messages: input.invocation.request.messages,
+        usage: inspection.usage,
+        status: 'success',
+        billing,
       });
 
       return {
@@ -1830,6 +1868,18 @@ export class AiProxyService {
     errorCode: string;
     errorMessage?: string;
   }) {
+    let billing: BillingResult | null = null;
+    if (input.errorCode !== 'insufficient_balance') {
+      try {
+        billing = await this.calculateAndDebitForInvocation({
+          invocation: input.invocation,
+          status: input.status,
+        });
+      } catch (error) {
+        console.warn('[ai-proxy] Failed to calculate/debit failure billing.', error);
+      }
+    }
+
     try {
       await this.aiProxyRepository.recordProxyFailure({
         userId: input.invocation.session.user.id,
@@ -1854,6 +1904,7 @@ export class AiProxyService {
       messages: input.invocation.request.messages,
       status: input.status,
       errorCode: input.errorCode,
+      billing: billing ?? undefined,
     });
   }
 
@@ -1864,8 +1915,9 @@ export class AiProxyService {
     usage?: AiProxyUsage;
     status?: 'success' | 'error' | 'quota_exceeded';
     errorCode?: string;
+    billing?: BillingResult;
   }): void {
-    const { invocation, messages, upstreamResponse, usage, status, errorCode } = input;
+    const { invocation, messages, upstreamResponse, usage, status, errorCode, billing } = input;
     const hasImage = messages.some(
       (m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image_url'),
     );
@@ -1887,10 +1939,155 @@ export class AiProxyService {
         responseContent: upstreamResponse,
         promptTokens: usage?.promptTokens,
         completionTokens: usage?.completionTokens,
+        providerCostUsd: billing?.providerCostUsd,
+        platformFeeUsd: billing?.platformFeeUsd,
+        chargedCostUsd: billing?.chargedCostUsd,
+        chargedCurrency: billing?.chargedCurrency,
+        chargedAmountMinor: billing?.chargedAmountMinor,
+        pricingSource: billing?.pricingSource,
+        pricingPolicySnapshotJson: billing?.pricingPolicySnapshotJson,
+        walletLedgerEntryId: billing?.walletLedgerEntryId,
       })
       .catch((err) => {
         console.error('[ai-proxy] Failed to persist history content.', err);
       });
+  }
+
+  private async calculateAndDebitForInvocation(input: {
+    invocation: PreparedProxyInvocation;
+    usage?: AiProxyUsage;
+    upstreamResponse?: Record<string, unknown>;
+    status: 'success' | 'error' | 'quota_exceeded';
+  }): Promise<BillingResult> {
+    const providerCostFromUsage = extractProviderCostUsd(input.upstreamResponse);
+    const estimatedProviderCost = estimateRequestCostUsd(
+      input.invocation.resolvedModel,
+      input.usage?.promptTokens ?? 0,
+      input.usage?.completionTokens ?? 0,
+    );
+    const providerCostUsd = providerCostFromUsage ?? estimatedProviderCost;
+    const pricingSource: 'provider' | 'estimated' = providerCostFromUsage !== null ? 'provider' : 'estimated';
+    const breakdown = this.aiPricingService
+      ? await this.aiPricingService.calculate({
+        providerCostUsd,
+        pricingSource,
+        keySource: input.invocation.keySource,
+        status: input.status,
+      })
+      : {
+        providerCostUsd,
+        platformFeeUsd: 0,
+        chargedCostUsd: 0,
+        pricingSource,
+        policySnapshot: {
+          enabled: false,
+          markupPercent: 0,
+          minimumFeeUsd: 0,
+          roundingUsd: 0.000001,
+          maxChargeUsd: null,
+          chargeFailedRequests: 'never',
+          chargeUserKeyRequests: 'never',
+          displayEstimatedPriceToUser: false,
+        },
+        chargeable: false,
+      };
+
+    if (!breakdown.chargeable) {
+      return {
+        providerCostUsd: breakdown.providerCostUsd,
+        platformFeeUsd: breakdown.platformFeeUsd,
+        chargedCostUsd: 0,
+        chargedCurrency: null,
+        chargedAmountMinor: null,
+        pricingSource: breakdown.pricingSource,
+        pricingPolicySnapshotJson: breakdown.policySnapshot as unknown as Prisma.InputJsonValue,
+        walletLedgerEntryId: null,
+      };
+    }
+
+    const wallet = await this.walletRepository.findOrCreateWalletForUser(input.invocation.session.user.id);
+    const conversion = this.convertUsdToWalletMinor({
+      usdAmount: breakdown.chargedCostUsd,
+      currency: wallet.currency,
+    });
+    const pricingPolicySnapshotJson: Prisma.InputJsonObject = {
+      ...breakdown.policySnapshot,
+      conversion: {
+        walletCurrency: wallet.currency,
+        chargedAmountMinor: conversion.chargedAmountMinor,
+        usdToRubRate: conversion.usdToRubRate,
+        source: conversion.source,
+      },
+    };
+
+    let walletLedgerEntryId: string | null = null;
+    if (breakdown.chargeable && conversion.chargedAmountMinor > 0) {
+      if (wallet.balanceKopecks < conversion.chargedAmountMinor) {
+        throw new ForbiddenException('Insufficient balance to settle AI usage charge.');
+      }
+
+      const debit = await this.walletRepository.debitUsage({
+        userId: input.invocation.session.user.id,
+        amountKopecks: conversion.chargedAmountMinor,
+        currency: wallet.currency,
+        description: `AI usage debit for request ${input.invocation.requestId}`,
+        idempotencyKey: `ai-usage:${input.invocation.requestId}`,
+        metadataJson: {
+          provider: input.invocation.provider,
+          model: input.invocation.resolvedModel,
+          providerCostUsd: breakdown.providerCostUsd,
+          platformFeeUsd: breakdown.platformFeeUsd,
+          chargedCostUsd: breakdown.chargedCostUsd,
+          chargedCurrency: wallet.currency,
+          chargedAmountMinor: conversion.chargedAmountMinor,
+          usdToRubRate: conversion.usdToRubRate,
+          conversionSource: conversion.source,
+        },
+      });
+      walletLedgerEntryId = debit.ledgerEntryId;
+    }
+
+    return {
+      providerCostUsd: breakdown.providerCostUsd,
+      platformFeeUsd: breakdown.platformFeeUsd,
+      chargedCostUsd: breakdown.chargedCostUsd,
+      chargedCurrency: wallet.currency,
+      chargedAmountMinor: conversion.chargedAmountMinor,
+      pricingSource: breakdown.pricingSource,
+      pricingPolicySnapshotJson,
+      walletLedgerEntryId,
+    };
+  }
+
+  private convertUsdToWalletMinor(input: {
+    usdAmount: number;
+    currency: string;
+  }): { chargedAmountMinor: number; usdToRubRate: number | null; source: 'env' | 'default' | 'identity' } {
+    if (input.usdAmount <= 0) {
+      return { chargedAmountMinor: 0, usdToRubRate: null, source: 'identity' };
+    }
+
+    if (input.currency === 'RUB') {
+      const envRateRaw = process.env.BILLING_USD_TO_RUB_RATE;
+      const parsed = envRateRaw ? Number(envRateRaw) : Number.NaN;
+      const usdToRubRate = Number.isFinite(parsed) && parsed > 0 ? parsed : 90;
+      const source = Number.isFinite(parsed) && parsed > 0 ? 'env' : 'default';
+      return {
+        chargedAmountMinor: Math.ceil(input.usdAmount * usdToRubRate * 100),
+        usdToRubRate,
+        source,
+      };
+    }
+
+    if (input.currency === 'USD') {
+      return {
+        chargedAmountMinor: Math.ceil(input.usdAmount * 100),
+        usdToRubRate: null,
+        source: 'identity',
+      };
+    }
+
+    throw new BadRequestException(`Unsupported wallet currency for AI usage billing: ${input.currency}`);
   }
 
   private resolveProxyFailureCode(error: unknown): string {
@@ -1907,6 +2104,9 @@ export class AiProxyService {
     }
 
     if (error instanceof ForbiddenException) {
+      if (error.message.toLowerCase().includes('insufficient balance')) {
+        return 'insufficient_balance';
+      }
       return 'forbidden';
     }
 
