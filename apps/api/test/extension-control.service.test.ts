@@ -14,6 +14,7 @@ import { type FeatureFlagRepository } from '../src/feature-flags/feature-flag.re
 import { type AiProviderPolicyService } from '../src/providers/ai-provider-policy.service';
 import { type RemoteConfigRepository } from '../src/remote-config/remote-config.repository';
 import { type QueueDispatchService } from '../src/queue/queue-dispatch.service';
+import { type RetentionSettingsService } from '../src/settings/retention-settings.service';
 
 function createConnectedSession(): CurrentSessionSnapshot {
   return {
@@ -99,6 +100,14 @@ function createService() {
   const subscriptionRepository = {} as any;
   const usageRepository = {} as any;
   const queueDispatchService = {} as QueueDispatchService;
+  const retentionSettingsService = {
+    getRetentionPolicy: async () => ({
+      policy: {
+        extensionSessionLifetimeHours: 1,
+        extensionSessionRefreshAfterSeconds: 900,
+      },
+    }),
+  } as RetentionSettingsService;
   const service = new ExtensionControlService(
     extensionInstallationRepository,
     extensionInstallationSessionRepository,
@@ -108,6 +117,7 @@ function createService() {
     remoteConfigRepository,
     aiProviderPolicyService,
     queueDispatchService,
+    retentionSettingsService,
   );
 
   service['env'] = {
@@ -160,6 +170,7 @@ function createService() {
     subscriptionRepository,
     usageRepository,
     queueDispatchService,
+    retentionSettingsService,
   };
 }
 
@@ -527,6 +538,67 @@ test('ExtensionControlService.bootstrapInstallationSession refreshes bootstrap f
   assert.equal(result.installationId, 'inst_local_browser');
   assert.equal(result.compatibility.status, 'supported');
   assert.equal(result.refreshAfterSeconds, 900);
+});
+
+test('ExtensionControlService uses configured extension session lifetime and refresh values', async () => {
+  const { service, extensionInstallationRepository, extensionInstallationSessionRepository, extensionCompatibilityRepository, featureFlagRepository, remoteConfigRepository, retentionSettingsService } = createService();
+  let createdExpiresAt: Date | null = null;
+  retentionSettingsService.getRetentionPolicy = async () => ({
+    policy: {
+      extensionSessionLifetimeHours: 2,
+      extensionSessionRefreshAfterSeconds: 600,
+    },
+    updatedAt: '2026-04-28T00:00:00.000Z',
+    updatedById: 'admin_1',
+  } as any);
+  extensionInstallationRepository.findByInstallationId = async () => null as any;
+  extensionInstallationRepository.upsertBoundInstallation = async (input) => ({
+    id: 'inst_record_1',
+    userId: input.userId,
+    installationId: input.installationId,
+    browser: input.browser,
+    extensionVersion: input.extensionVersion,
+    schemaVersion: input.schemaVersion,
+    capabilitiesJson: input.capabilities,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSeenAt: new Date(),
+  }) as any;
+  extensionInstallationSessionRepository.create = async (input) => {
+    createdExpiresAt = input.expiresAt;
+    return {
+      id: 's1',
+      tokenHash: input.tokenHash,
+      expiresAt: input.expiresAt,
+      revokedAt: null,
+      createdAt: new Date(),
+      installation: {
+        id: 'inst_record_1',
+        userId: 'user_1',
+        installationId: 'inst_local_browser',
+        browser: 'chrome',
+        extensionVersion: '1.6.0',
+        schemaVersion: '2',
+        capabilitiesJson: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    } as any;
+  };
+  extensionCompatibilityRepository.findLatest = async () => null;
+  featureFlagRepository.findAll = async () => [];
+  remoteConfigRepository.findActiveLayers = async () => [];
+
+  const startedAt = Date.now();
+  const result = await service.bindInstallationForCurrentSession(createInstallationManagerSession(), {
+    installationId: 'inst_local_browser',
+    environment: 'prod',
+    handshake: { extensionVersion: '1.6.0', schemaVersion: '2', capabilities: ['quiz-capture'], browser: 'chrome' },
+  });
+  assert.equal(result.session.refreshAfterSeconds, 600);
+  assert.ok(createdExpiresAt);
+  const deltaMs = createdExpiresAt!.getTime() - startedAt;
+  assert.ok(deltaMs >= 7_000_000 && deltaMs <= 7_300_000);
 });
 
 test('ExtensionControlService.bootstrapInstallationSession falls back to persisted handshake fields when request handshake is partial', async () => {

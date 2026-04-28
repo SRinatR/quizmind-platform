@@ -405,6 +405,8 @@ export interface UserProfileUpdateRequest {
 export interface PlatformRetentionPolicy {
   aiHistoryContentDays: number;
   aiHistoryAttachmentDays: number;
+  maxPromptImageAttachments: number;
+  maxPromptImageAttachmentMegabytes: number;
   legacyAiRequestDays: number;
   adminLogRetentionEnabled: boolean;
   adminLogActivityDays: number;
@@ -416,6 +418,8 @@ export interface PlatformRetentionPolicy {
   adminLogSensitiveRetentionEnabled: boolean;
   accessTokenLifetimeMinutes: number;
   refreshTokenLifetimeDays: number;
+  extensionSessionLifetimeHours: number;
+  extensionSessionRefreshAfterSeconds: number;
   emailVerificationLifetimeHours: number;
   passwordResetLifetimeHours: number;
 }
@@ -435,6 +439,10 @@ export type PlatformRetentionPolicyUpdateRequest = Partial<
     | 'adminLogSensitiveRetentionEnabled'
     | 'accessTokenLifetimeMinutes'
     | 'refreshTokenLifetimeDays'
+    | 'extensionSessionLifetimeHours'
+    | 'extensionSessionRefreshAfterSeconds'
+    | 'maxPromptImageAttachments'
+    | 'maxPromptImageAttachmentMegabytes'
     | 'passwordResetLifetimeHours'
   >
 >;
