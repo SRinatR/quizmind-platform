@@ -15,6 +15,8 @@ test('default retention policy exposes expected defaults', () => {
   assert.equal(defaultRetentionPolicy.extensionSessionRefreshAfterSeconds, 900);
   assert.equal(defaultRetentionPolicy.emailVerificationLifetimeHours, 24);
   assert.equal(defaultRetentionPolicy.passwordResetLifetimeHours, 1);
+  assert.equal(defaultRetentionPolicy.queueHistory['billing-webhooks'].attempts, 10);
+  assert.equal(defaultRetentionPolicy.queueHistory['history-cleanup'].removeOnFail, 50);
 });
 
 test('parseAndNormalizeRetentionPolicy rejects out-of-range values', () => {
@@ -55,4 +57,42 @@ test('parseRetentionPolicyPatch rejects emailVerificationLifetimeHours updates (
 
 test('parseRetentionPolicyPatch rejects unknown fields', () => {
   assert.throws(() => parseRetentionPolicyPatch({ unknown: 1 } as any), /Unknown retention field/);
+});
+
+test('parseRetentionPolicyPatch supports queue history partial updates without resetting omitted fields', () => {
+  const base = parseAndNormalizeRetentionPolicy({
+    queueHistory: {
+      'billing-webhooks': { attempts: 10, removeOnComplete: 250, removeOnFail: 250 },
+      'usage-events': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+      emails: { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+      'quota-resets': { attempts: 3, removeOnComplete: 250, removeOnFail: 250 },
+      'config-publish': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+      'audit-exports': { attempts: 2, removeOnComplete: 50, removeOnFail: 250 },
+      'history-cleanup': { attempts: 3, removeOnComplete: 10, removeOnFail: 50 },
+    },
+  });
+  const patch = parseRetentionPolicyPatch({
+    queueHistory: {
+      'usage-events': { removeOnFail: 300 },
+    },
+  });
+  const merged = parseAndNormalizeRetentionPolicy({
+    ...base,
+    queueHistory: {
+      ...base.queueHistory,
+      'usage-events': { ...base.queueHistory['usage-events'], ...patch.queueHistory?.['usage-events'] },
+    },
+  });
+
+  assert.equal(merged.queueHistory['usage-events'].removeOnFail, 300);
+  assert.equal(merged.queueHistory['usage-events'].attempts, 5);
+  assert.equal(merged.queueHistory['billing-webhooks'].attempts, 10);
+});
+
+test('parseRetentionPolicyPatch rejects invalid and unknown queue history fields', () => {
+  assert.throws(() => parseRetentionPolicyPatch({ queueHistory: { unknown: { attempts: 5 } } }), /Unknown queue history field/);
+  assert.throws(() => parseRetentionPolicyPatch({ queueHistory: { emails: { attempts: 0 } } }), /between 1 and 20/);
+  assert.throws(() => parseRetentionPolicyPatch({ queueHistory: { emails: { removeOnComplete: 10001 } } }), /between 0 and 10000/);
+  assert.throws(() => parseRetentionPolicyPatch({ queueHistory: { emails: { removeOnFail: '12' } } as any }), /finite integer number/);
+  assert.throws(() => parseRetentionPolicyPatch({ queueHistory: { emails: { unexpected: 1 } } as any }), /Unknown queue history field/);
 });

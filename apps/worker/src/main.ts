@@ -8,11 +8,13 @@ import {
   type AuditExportJobPayload,
   type EmailQueueJobPayload,
   type HistoryCleanupJobPayload,
+  platformQueues,
+  type PlatformQueueHistoryPolicy,
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
 } from '@quizmind/contracts';
 import { createNoopEmailAdapter } from '@quizmind/email';
-import { queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
+import { QUEUE_HISTORY_DEFAULTS, getQueueRuntimeOptions, queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
 import { createLogEvent, type StructuredLogEvent } from '@quizmind/logger';
 import { type Job, Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
@@ -101,6 +103,53 @@ function readErrorMessage(error: unknown): string {
   }
 
   return 'Unknown error';
+}
+
+function parseQueuePolicyFromUnknown(input: unknown): PlatformQueueHistoryPolicy | undefined {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return undefined;
+  }
+
+  const source = input as Record<string, unknown>;
+  const parsed: PlatformQueueHistoryPolicy = { ...QUEUE_HISTORY_DEFAULTS };
+
+  for (const queueName of platformQueues) {
+    const queueEntry = source[queueName];
+    if (!queueEntry || typeof queueEntry !== 'object' || Array.isArray(queueEntry)) {
+      continue;
+    }
+    const item = queueEntry as Record<string, unknown>;
+    for (const field of ['attempts', 'removeOnComplete', 'removeOnFail'] as const) {
+      const value = item[field];
+      if (typeof value !== 'number' || !Number.isInteger(value) || !Number.isFinite(value)) {
+        continue;
+      }
+      if (field === 'attempts' && (value < 1 || value > 20)) continue;
+      if ((field === 'removeOnComplete' || field === 'removeOnFail') && (value < 0 || value > 10000)) continue;
+      parsed[queueName] = {
+        ...parsed[queueName],
+        [field]: value,
+      };
+    }
+  }
+
+  return parsed;
+}
+
+async function resolveWorkerQueuePolicy(prisma: PrismaClient): Promise<PlatformQueueHistoryPolicy | undefined> {
+  try {
+    const row = await prisma.platformSetting.findUnique({
+      where: { key: 'platform.retention_policy' },
+      select: { valueJson: true },
+    });
+    if (!row || !row.valueJson || typeof row.valueJson !== 'object' || Array.isArray(row.valueJson)) {
+      return undefined;
+    }
+    const queueHistory = (row.valueJson as Record<string, unknown>).queueHistory;
+    return parseQueuePolicyFromUnknown(queueHistory);
+  } catch {
+    return undefined;
+  }
 }
 
 async function persistDomainEvent(
@@ -219,10 +268,13 @@ async function bootstrap() {
       });
       await redisConnection.connect();
 
+      const queuePolicy = await resolveWorkerQueuePolicy(prisma).catch(() => undefined);
+
       const queueBindings = queueNames.map(
         (queueName) =>
           new Queue(queueName, {
             connection: redisConnectionOptions,
+            defaultJobOptions: getQueueRuntimeOptions(queueName, undefined, queuePolicy),
           }),
       );
       const historyCleanupQueue = queueBindings.find((queue) => queue.name === 'history-cleanup');
@@ -231,6 +283,7 @@ async function bootstrap() {
           'history-cleanup-hourly',
           { triggeredAt: new Date().toISOString() } satisfies HistoryCleanupJobPayload,
           {
+            ...getQueueRuntimeOptions('history-cleanup', undefined, queuePolicy),
             jobId: 'history-cleanup-hourly',
             repeat: { every: 60 * 60 * 1000 },
           },
