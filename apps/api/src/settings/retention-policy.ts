@@ -4,7 +4,15 @@ import {
   PASSWORD_RESET_LIFETIME_HOURS,
   REFRESH_TOKEN_LIFETIME_DAYS,
 } from '@quizmind/auth';
-import { type PlatformRetentionPolicy, type PlatformRetentionPolicyUpdateRequest } from '@quizmind/contracts';
+import {
+  platformQueues,
+  type PlatformQueue,
+  type PlatformQueueHistoryPolicy,
+  type PlatformQueueHistoryPolicyEntry,
+  type PlatformRetentionPolicy,
+  type PlatformRetentionPolicyUpdateRequest,
+} from '@quizmind/contracts';
+import { QUEUE_HISTORY_DEFAULTS } from '@quizmind/queue';
 
 export const defaultRetentionPolicy: PlatformRetentionPolicy = {
   aiHistoryContentDays: 7,
@@ -26,6 +34,7 @@ export const defaultRetentionPolicy: PlatformRetentionPolicy = {
   extensionSessionRefreshAfterSeconds: 900,
   emailVerificationLifetimeHours: EMAIL_VERIFICATION_LIFETIME_HOURS,
   passwordResetLifetimeHours: PASSWORD_RESET_LIFETIME_HOURS,
+  queueHistory: QUEUE_HISTORY_DEFAULTS,
 };
 
 type EditableNumericField = keyof Pick<
@@ -73,6 +82,17 @@ export const retentionPolicyRanges: Record<EditableNumericField, { min: number; 
 const editableNumericFields = Object.keys(retentionPolicyRanges) as EditableNumericField[];
 const editableBooleanFields: EditableBooleanField[] = ['adminLogRetentionEnabled', 'adminLogSensitiveRetentionEnabled'];
 const editableFields = new Set<string>([...editableNumericFields, ...editableBooleanFields]);
+const editableQueueHistoryFields = new Set<keyof PlatformQueueHistoryPolicyEntry>([
+  'attempts',
+  'removeOnComplete',
+  'removeOnFail',
+]);
+const queueHistoryFieldRanges: Record<keyof PlatformQueueHistoryPolicyEntry, { min: number; max: number }> = {
+  attempts: { min: 1, max: 20 },
+  removeOnComplete: { min: 0, max: 10000 },
+  removeOnFail: { min: 0, max: 10000 },
+};
+const validQueueNames = new Set<PlatformQueue>(platformQueues);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -94,6 +114,51 @@ function parseBooleanField(field: EditableBooleanField, value: unknown): boolean
     throw new Error(`${field} must be a boolean.`);
   }
   return value;
+}
+
+function parseQueueHistoryIntegerField(
+  queueName: PlatformQueue,
+  field: keyof PlatformQueueHistoryPolicyEntry,
+  value: unknown,
+): number {
+  if (!Number.isFinite(value) || typeof value !== 'number' || !Number.isInteger(value)) {
+    throw new Error(`queueHistory.${queueName}.${field} must be a finite integer number.`);
+  }
+  const { min, max } = queueHistoryFieldRanges[field];
+  if (value < min || value > max) {
+    throw new Error(`queueHistory.${queueName}.${field} must be between ${min} and ${max}.`);
+  }
+  return value;
+}
+
+function parseQueueHistoryPolicy(input: unknown): PlatformQueueHistoryPolicy {
+  if (!isObject(input)) {
+    throw new Error('queueHistory must be an object.');
+  }
+
+  const normalized: PlatformQueueHistoryPolicy = { ...QUEUE_HISTORY_DEFAULTS };
+  for (const queueName of Object.keys(input)) {
+    if (!validQueueNames.has(queueName as PlatformQueue)) {
+      throw new Error(`Unknown queue history field: ${queueName}.`);
+    }
+    const queueEntry = input[queueName];
+    if (!isObject(queueEntry)) {
+      throw new Error(`queueHistory.${queueName} must be an object.`);
+    }
+
+    for (const key of Object.keys(queueEntry)) {
+      if (!editableQueueHistoryFields.has(key as keyof PlatformQueueHistoryPolicyEntry)) {
+        throw new Error(`Unknown queue history field: queueHistory.${queueName}.${key}.`);
+      }
+      const queueField = key as keyof PlatformQueueHistoryPolicyEntry;
+      normalized[queueName as PlatformQueue] = {
+        ...normalized[queueName as PlatformQueue],
+        [queueField]: parseQueueHistoryIntegerField(queueName as PlatformQueue, queueField, queueEntry[queueField]),
+      };
+    }
+  }
+
+  return normalized;
 }
 
 export function parseAndNormalizeRetentionPolicy(input: unknown): PlatformRetentionPolicy {
@@ -120,6 +185,10 @@ export function parseAndNormalizeRetentionPolicy(input: unknown): PlatformRetent
     normalized.legacyAiRequestDays = value;
   }
 
+  if ('queueHistory' in source) {
+    normalized.queueHistory = parseQueueHistoryPolicy(source.queueHistory);
+  }
+
   return normalized;
 }
 
@@ -135,6 +204,9 @@ export function parseRetentionPolicyPatch(input: unknown): PlatformRetentionPoli
     }
     if (key === 'emailVerificationLifetimeHours') {
       throw new Error('emailVerificationLifetimeHours is reserved for a future email verification flow and cannot be updated yet.');
+    }
+    if (key === 'queueHistory') {
+      continue;
     }
     if (!editableFields.has(key)) {
       throw new Error(`Unknown retention field: ${key}.`);
@@ -153,6 +225,38 @@ export function parseRetentionPolicyPatch(input: unknown): PlatformRetentionPoli
     }
   }
 
+  if ('queueHistory' in input) {
+    if (!isObject(input.queueHistory)) {
+      throw new Error('queueHistory must be an object.');
+    }
+    const queuePatch: NonNullable<PlatformRetentionPolicyUpdateRequest['queueHistory']> = {};
+
+    for (const queueName of Object.keys(input.queueHistory)) {
+      if (!validQueueNames.has(queueName as PlatformQueue)) {
+        throw new Error(`Unknown queue history field: ${queueName}.`);
+      }
+      const queueEntry = input.queueHistory[queueName];
+      if (!isObject(queueEntry)) {
+        throw new Error(`queueHistory.${queueName} must be an object.`);
+      }
+      const parsedEntry: Partial<PlatformQueueHistoryPolicyEntry> = {};
+      for (const key of Object.keys(queueEntry)) {
+        if (!editableQueueHistoryFields.has(key as keyof PlatformQueueHistoryPolicyEntry)) {
+          throw new Error(`Unknown queue history field: queueHistory.${queueName}.${key}.`);
+        }
+        const queueField = key as keyof PlatformQueueHistoryPolicyEntry;
+        parsedEntry[queueField] = parseQueueHistoryIntegerField(
+          queueName as PlatformQueue,
+          queueField,
+          queueEntry[queueField],
+        );
+      }
+      queuePatch[queueName as PlatformQueue] = parsedEntry;
+    }
+
+    patch.queueHistory = queuePatch;
+  }
+
   return patch;
 }
 
@@ -160,5 +264,21 @@ export function mergeRetentionPolicy(
   base: PlatformRetentionPolicy,
   patch: PlatformRetentionPolicyUpdateRequest,
 ): PlatformRetentionPolicy {
-  return parseAndNormalizeRetentionPolicy({ ...base, ...patch });
+  const mergedQueueHistory: PlatformQueueHistoryPolicy = { ...base.queueHistory };
+
+  if (patch.queueHistory) {
+    for (const queueName of platformQueues) {
+      if (!patch.queueHistory[queueName]) continue;
+      mergedQueueHistory[queueName] = {
+        ...mergedQueueHistory[queueName],
+        ...patch.queueHistory[queueName],
+      };
+    }
+  }
+
+  return parseAndNormalizeRetentionPolicy({
+    ...base,
+    ...patch,
+    queueHistory: mergedQueueHistory,
+  });
 }

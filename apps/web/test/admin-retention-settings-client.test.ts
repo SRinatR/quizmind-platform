@@ -17,6 +17,7 @@ test('/admin/data-retention client loads and saves through BFF routes', async ()
   assert.match(source, /fetch\('\/bff\/admin\/settings\/retention', \{ cache: 'no-store' \}\)/);
   assert.match(source, /method: 'PATCH'/);
   assert.match(source, /body: JSON\.stringify\(retentionDraft\)/);
+  assert.match(source, /queueHistory: policy\.queueHistory/);
 });
 
 test('/admin/data-retention renders separate retention cards for key sections', async () => {
@@ -57,6 +58,22 @@ test('data retention patch payload still excludes read-only fields and validatio
   assert.match(source, /Number\.isInteger\(value\)/);
   assert.match(source, /value < config\.min \|\| value > config\.max/);
   assert.match(source, /setRetentionError\(adminT\.settings\.retention\.validationDays\)/);
+  assert.match(source, /platformQueues\.map\(\(queueName\)/);
+  assert.match(source, /queueAttempts/);
+  assert.match(source, /queueCompletedHistory/);
+  assert.match(source, /queueFailedHistory/);
   assert.doesNotMatch(source, /emailVerificationLifetimeHours: policy\.emailVerificationLifetimeHours/);
   assert.doesNotMatch(source, /legacyAiRequestDays: policy\.legacyAiRequestDays/);
+});
+
+test('data retention queue history renders editable controls for all queue definitions', async () => {
+  const source = await readFile(retentionClientPath, 'utf8');
+  assert.match(source, /'billing-webhooks'/);
+  assert.match(source, /'usage-events'/);
+  assert.match(source, /emails/);
+  assert.match(source, /'quota-resets'/);
+  assert.match(source, /'config-publish'/);
+  assert.match(source, /'audit-exports'/);
+  assert.match(source, /'history-cleanup'/);
+  assert.match(source, /updateQueueField/);
 });

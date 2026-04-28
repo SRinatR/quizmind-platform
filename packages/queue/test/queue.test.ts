@@ -7,6 +7,8 @@ import {
 } from '@quizmind/contracts';
 
 import {
+  QUEUE_HISTORY_DEFAULTS,
+  buildQueueDefinitions,
   buildQueueDedupeKey,
   buildQueueJob,
   createQueueDispatchRequest,
@@ -112,4 +114,20 @@ test('resolveRedisConnectionOptions parses credentials and database selection fr
     password: 'pass',
     db: 2,
   });
+});
+
+test('buildQueueDefinitions applies queue history policy overrides', () => {
+  const definitions = buildQueueDefinitions({
+    ...QUEUE_HISTORY_DEFAULTS,
+    'usage-events': {
+      attempts: 9,
+      removeOnComplete: 333,
+      removeOnFail: 444,
+    },
+  });
+
+  assert.equal(definitions['usage-events'].attempts, 9);
+  assert.equal(definitions['usage-events'].removeOnComplete, 333);
+  assert.equal(definitions['usage-events'].removeOnFail, 444);
+  assert.equal(definitions['billing-webhooks'].attempts, QUEUE_HISTORY_DEFAULTS['billing-webhooks'].attempts);
 });

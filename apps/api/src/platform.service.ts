@@ -3,7 +3,7 @@ import { Prisma } from '@quizmind/database';
 import { loadApiEnv, validateApiEnv } from '@quizmind/config';
 import { createNoopEmailAdapter, sendTemplatedEmail, verifyEmailTemplate } from '@quizmind/email';
 import { createLogEvent } from '@quizmind/logger';
-import { createQueueDispatchRequest, listQueueDefinitions } from '@quizmind/queue';
+import { createQueueDispatchRequest, listQueueDefinitions, type QueueDefinition } from '@quizmind/queue';
 import { assertPasswordPolicy, hashPassword, type SessionPrincipal } from '@quizmind/auth';
 import {
   adminExtensionCompatibilityFilters,
@@ -652,7 +652,7 @@ export class PlatformService {
         {
           service: 'queues',
           status: this.env.runtimeMode === 'connected' ? 'ready_for_workers' : 'dry_run',
-          queues: listQueueDefinitions(),
+          queues: await this.queueDispatchService.listQueueDefinitions(),
         },
       ],
     };
@@ -1270,7 +1270,7 @@ export class PlatformService {
       filters: normalizedFilters,
       items: filtered.items,
       statusCounts: filtered.statusCounts,
-      queues: this.buildAdminQueueSummaries(),
+      queues: this.buildAdminQueueSummariesFromDefinitions(listQueueDefinitions()),
       permissions: listPrincipalPermissions(persona.principal),
     };
   }
@@ -1299,7 +1299,7 @@ export class PlatformService {
       filters: normalizedFilters,
       items: filtered.items,
       statusCounts: filtered.statusCounts,
-      queues: this.buildAdminQueueSummaries(),
+      queues: await this.buildAdminQueueSummaries(),
       permissions: session.permissions,
     };
   }
@@ -2686,8 +2686,13 @@ export class PlatformService {
     };
   }
 
-  private buildAdminQueueSummaries(): AdminQueueSummary[] {
-    return listQueueDefinitions().map((definition) => ({
+  private async buildAdminQueueSummaries(): Promise<AdminQueueSummary[]> {
+    const queueDefinitions = await this.queueDispatchService.listQueueDefinitions();
+    return this.buildAdminQueueSummariesFromDefinitions(queueDefinitions);
+  }
+
+  private buildAdminQueueSummariesFromDefinitions(queueDefinitions: QueueDefinition[]): AdminQueueSummary[] {
+    return queueDefinitions.map((definition) => ({
       name: definition.name,
       description: definition.description,
       attempts: definition.attempts,

@@ -1,6 +1,6 @@
 'use client';
 
-import { type PlatformRetentionPolicySnapshot, type PlatformRetentionPolicyUpdateRequest } from '@quizmind/contracts';
+import { platformQueues, type PlatformQueue, type PlatformQueueHistoryPolicy, type PlatformRetentionPolicySnapshot, type PlatformRetentionPolicyUpdateRequest } from '@quizmind/contracts';
 import { useEffect, useMemo, useState } from 'react';
 
 import { usePreferences } from '../../../lib/preferences';
@@ -29,15 +29,11 @@ const retentionFieldConfig = {
   passwordResetLifetimeHours: { min: 1, max: 24, step: 1 },
 } as const;
 
-const queueHistoryDefinitions = [
-  { name: 'billing-webhooks', attempts: 10, removeOnComplete: 250, removeOnFail: 250 },
-  { name: 'usage-events', attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
-  { name: 'emails', attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
-  { name: 'quota-resets', attempts: 3, removeOnComplete: 250, removeOnFail: 250 },
-  { name: 'config-publish', attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
-  { name: 'audit-exports', attempts: 2, removeOnComplete: 50, removeOnFail: 250 },
-  { name: 'history-cleanup', attempts: 3, removeOnComplete: 10, removeOnFail: 50 },
-] as const;
+const queueFieldConfig = {
+  attempts: { min: 1, max: 20, step: 1 },
+  removeOnComplete: { min: 0, max: 10000, step: 1 },
+  removeOnFail: { min: 0, max: 10000, step: 1 },
+} as const;
 
 const RETENTION_DEFAULTS: PlatformRetentionPolicyUpdateRequest = {
   aiHistoryContentDays: 7,
@@ -57,6 +53,15 @@ const RETENTION_DEFAULTS: PlatformRetentionPolicyUpdateRequest = {
   extensionSessionLifetimeHours: 1,
   extensionSessionRefreshAfterSeconds: 900,
   passwordResetLifetimeHours: 1,
+  queueHistory: {
+    'billing-webhooks': { attempts: 10, removeOnComplete: 250, removeOnFail: 250 },
+    'usage-events': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+    emails: { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+    'quota-resets': { attempts: 3, removeOnComplete: 250, removeOnFail: 250 },
+    'config-publish': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+    'audit-exports': { attempts: 2, removeOnComplete: 50, removeOnFail: 250 },
+    'history-cleanup': { attempts: 3, removeOnComplete: 10, removeOnFail: 50 },
+  },
 };
 
 type EditableRetentionDraft = PlatformRetentionPolicyUpdateRequest;
@@ -80,6 +85,28 @@ function toEditableRetentionDraft(policy: PlatformRetentionPolicySnapshot['polic
     extensionSessionLifetimeHours: policy.extensionSessionLifetimeHours,
     extensionSessionRefreshAfterSeconds: policy.extensionSessionRefreshAfterSeconds,
     passwordResetLifetimeHours: policy.passwordResetLifetimeHours,
+    queueHistory: policy.queueHistory,
+  };
+}
+
+function updateQueueField(
+  draft: EditableRetentionDraft | null,
+  queueName: PlatformQueue,
+  field: keyof typeof queueFieldConfig,
+  value: number,
+): EditableRetentionDraft {
+  const previousQueueHistory = draft?.queueHistory ?? RETENTION_DEFAULTS.queueHistory ?? {};
+  const existingQueue = previousQueueHistory[queueName] ?? RETENTION_DEFAULTS.queueHistory?.[queueName];
+
+  return {
+    ...(draft ?? {}),
+    queueHistory: {
+      ...previousQueueHistory,
+      [queueName]: {
+        ...(existingQueue ?? { attempts: 1, removeOnComplete: 0, removeOnFail: 0 }),
+        [field]: value,
+      },
+    },
   };
 }
 
@@ -122,6 +149,24 @@ export function DataRetentionAdminClient() {
       }
     }
 
+    const queueHistory: PlatformQueueHistoryPolicy | undefined = retentionDraft.queueHistory as PlatformQueueHistoryPolicy | undefined;
+    if (queueHistory) {
+      for (const queueName of platformQueues) {
+        const queuePolicy = queueHistory[queueName];
+        if (!queuePolicy) {
+          setRetentionError(adminT.settings.retention.validationDays);
+          return;
+        }
+        for (const [field, config] of Object.entries(queueFieldConfig) as Array<[keyof typeof queueFieldConfig, { min: number; max: number; step: number }]>) {
+          const value = queuePolicy[field];
+          if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < config.min || value > config.max) {
+            setRetentionError(adminT.settings.retention.validationDays);
+            return;
+          }
+        }
+      }
+    }
+
     setRetentionError(null);
     setRetentionStatus(t.settings.account.saving);
     setIsSavingRetention(true);
@@ -156,7 +201,7 @@ export function DataRetentionAdminClient() {
 
       {retentionDraft && retentionState ? (
         <>
-          <article className="panel retention-card">
+          <article className="panel retention-card">{/* unchanged cards omitted for brevity formatting parity */}
             <div className="retention-card__header">
               <h4 className="retention-card__title">{adminT.settings.retention.aiSectionTitle}</h4>
               <p className="retention-card__desc">{adminT.settings.retention.aiSectionDesc}</p>
@@ -170,92 +215,47 @@ export function DataRetentionAdminClient() {
                 </label>
               ))}
             </div>
-            <div className="retention-readonly-row">
-              <span className="retention-field__label">{adminT.settings.retention.legacyAiRequestDays}</span>
-              <strong>{adminT.settings.retention.daysSummary.replace('{days}', String(retentionState.policy.legacyAiRequestDays))}</strong>
-              <span className="retention-field__desc">{adminT.settings.retention.legacySummary}</span>
-            </div>
+            <div className="retention-readonly-row"><span className="retention-field__label">{adminT.settings.retention.legacyAiRequestDays}</span><strong>{adminT.settings.retention.daysSummary.replace('{days}', String(retentionState.policy.legacyAiRequestDays))}</strong><span className="retention-field__desc">{adminT.settings.retention.legacySummary}</span></div>
           </article>
 
-          <article className="panel retention-card">
-            <div className="retention-card__header">
-              <h4 className="retention-card__title">{adminT.settings.retention.aiUploadLimitsSectionTitle}</h4>
-              <p className="retention-card__desc">{adminT.settings.retention.aiUploadLimitsSectionDesc}</p>
-            </div>
-            <div className="retention-field-grid">
-              {(['maxPromptImageAttachments', 'maxPromptImageAttachmentMegabytes'] as const).map((field) => (
-                <label className="retention-field" key={field}>
-                  <span className="retention-field__label">{adminT.settings.retention[field]}</span>
-                  <span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span>
-                  <input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} />
-                </label>
-              ))}
-            </div>
-            <div className="retention-readonly-row">
-              <span className="retention-field__label">{adminT.settings.retention.allowedPromptImageMimeTypes}</span>
-              <strong>{adminT.settings.retention.allowedPromptImageMimeTypesValue}</strong>
-              <span className="retention-field__desc">{adminT.settings.retention.allowedPromptImageMimeTypesDesc}</span>
-            </div>
-          </article>
+          <article className="panel retention-card"><div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.aiUploadLimitsSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.aiUploadLimitsSectionDesc}</p></div><div className="retention-field-grid">{(['maxPromptImageAttachments', 'maxPromptImageAttachmentMegabytes'] as const).map((field) => (<label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>))}</div><div className="retention-readonly-row"><span className="retention-field__label">{adminT.settings.retention.allowedPromptImageMimeTypes}</span><strong>{adminT.settings.retention.allowedPromptImageMimeTypesValue}</strong><span className="retention-field__desc">{adminT.settings.retention.allowedPromptImageMimeTypesDesc}</span></div></article>
 
-          <article className="panel retention-card">
-            <div className="retention-card__header">
-              <h4 className="retention-card__title">{adminT.settings.retention.adminLogsSectionTitle}</h4>
-              <p className="retention-card__desc">{adminT.settings.retention.adminLogsSectionDesc}</p>
-            </div>
-            <label className="retention-toggle-row"><span className="retention-toggle-row__copy"><span className="retention-field__label">{adminT.settings.retention.enableCleanup}</span><span className="retention-field__desc">{adminT.settings.retention.enableCleanupDesc}</span></span><span className="retention-toggle-row__control"><input type="checkbox" checked={Boolean(retentionDraft.adminLogRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogRetentionEnabled: e.target.checked }))} /></span></label>
-            <div className="retention-field-grid">
-              {(['adminLogActivityDays', 'adminLogDomainDays', 'adminLogSystemDays', 'adminLogAuditDays', 'adminLogSecurityDays', 'adminLogAdminDays'] as const).map((field) => (
-                <label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>
-              ))}
-            </div>
-            <div className="retention-callout retention-callout--warning"><h5>{adminT.settings.retention.sensitiveCleanupTitle}</h5><p>{adminT.settings.retention.sensitiveWarning}</p><label className="retention-toggle-row"><span className="retention-toggle-row__copy"><span className="retention-field__label">{adminT.settings.retention.enableSensitiveCleanup}</span><span className="retention-field__desc">{adminT.settings.retention.enableSensitiveCleanupDesc}</span></span><span className="retention-toggle-row__control"><input type="checkbox" checked={Boolean(retentionDraft.adminLogSensitiveRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogSensitiveRetentionEnabled: e.target.checked }))} /></span></label></div>
-          </article>
+          <article className="panel retention-card"><div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.adminLogsSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.adminLogsSectionDesc}</p></div><label className="retention-toggle-row"><span className="retention-toggle-row__copy"><span className="retention-field__label">{adminT.settings.retention.enableCleanup}</span><span className="retention-field__desc">{adminT.settings.retention.enableCleanupDesc}</span></span><span className="retention-toggle-row__control"><input type="checkbox" checked={Boolean(retentionDraft.adminLogRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogRetentionEnabled: e.target.checked }))} /></span></label><div className="retention-field-grid">{(['adminLogActivityDays', 'adminLogDomainDays', 'adminLogSystemDays', 'adminLogAuditDays', 'adminLogSecurityDays', 'adminLogAdminDays'] as const).map((field) => (<label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>))}</div><div className="retention-callout retention-callout--warning"><h5>{adminT.settings.retention.sensitiveCleanupTitle}</h5><p>{adminT.settings.retention.sensitiveWarning}</p><label className="retention-toggle-row"><span className="retention-toggle-row__copy"><span className="retention-field__label">{adminT.settings.retention.enableSensitiveCleanup}</span><span className="retention-field__desc">{adminT.settings.retention.enableSensitiveCleanupDesc}</span></span><span className="retention-toggle-row__control"><input type="checkbox" checked={Boolean(retentionDraft.adminLogSensitiveRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogSensitiveRetentionEnabled: e.target.checked }))} /></span></label></div></article>
 
-          <article className="panel retention-card">
-            <div className="retention-card__header">
-              <h4 className="retention-card__title">{adminT.settings.retention.sourceLogsSectionTitle}</h4>
-              <p className="retention-card__desc">{adminT.settings.retention.sourceLogsSectionDesc}</p>
-            </div>
-            <div className="retention-readonly-row"><span className="retention-field__label">{adminT.settings.retention.sourceLogsCurrentState}</span><strong>{adminT.settings.retention.readOnlyValueLabel}</strong><span className="retention-field__desc">{adminT.settings.retention.sourceLogsCurrentStateDesc}</span></div>
-          </article>
+          <article className="panel retention-card"><div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.sourceLogsSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.sourceLogsSectionDesc}</p></div><div className="retention-readonly-row"><span className="retention-field__label">{adminT.settings.retention.sourceLogsCurrentState}</span><strong>{adminT.settings.retention.readOnlyValueLabel}</strong><span className="retention-field__desc">{adminT.settings.retention.sourceLogsCurrentStateDesc}</span></div></article>
 
-          <article className="panel retention-card">
-            <div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.authSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.authSectionDesc}</p></div>
-            <div className="retention-callout"><p>{adminT.settings.retention.authIssuedOnlyNote}</p></div>
-            <div className="retention-field-grid retention-field-grid--auth">
-              {(['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'passwordResetLifetimeHours'] as const).map((field) => (
-                <label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>
-              ))}
-            </div>
-          </article>
+          <article className="panel retention-card"><div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.authSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.authSectionDesc}</p></div><div className="retention-callout"><p>{adminT.settings.retention.authIssuedOnlyNote}</p></div><div className="retention-field-grid retention-field-grid--auth">{(['accessTokenLifetimeMinutes', 'refreshTokenLifetimeDays', 'passwordResetLifetimeHours'] as const).map((field) => (<label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>))}</div></article>
 
-          <article className="panel retention-card">
-            <div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.extensionSessionsSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.extensionSessionsSectionDesc}</p></div>
-            <div className="retention-field-grid retention-field-grid--auth">
-              {(['extensionSessionLifetimeHours', 'extensionSessionRefreshAfterSeconds'] as const).map((field) => (
-                <label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>
-              ))}
-            </div>
-          </article>
+          <article className="panel retention-card"><div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.extensionSessionsSectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.extensionSessionsSectionDesc}</p></div><div className="retention-field-grid retention-field-grid--auth">{(['extensionSessionLifetimeHours', 'extensionSessionRefreshAfterSeconds'] as const).map((field) => (<label className="retention-field" key={field}><span className="retention-field__label">{adminT.settings.retention[field]}</span><span className="retention-field__desc">{adminT.settings.retention[`${field}Desc`]}</span><input type="number" value={String(retentionDraft[field] ?? '')} min={retentionFieldConfig[field].min} max={retentionFieldConfig[field].max} step={retentionFieldConfig[field].step} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))} /></label>))}</div></article>
 
           <article className="panel retention-card">
             <div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.queueHistorySectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.queueHistorySectionDesc}</p></div>
+            <div className="retention-callout retention-callout--warning"><p>{adminT.settings.retention.queueHistoryWarning}</p><p>{adminT.settings.retention.queueHistoryDebugWarning}</p></div>
             <div className="retention-field-grid">
-              {queueHistoryDefinitions.map((queue) => (
-                <div className="retention-readonly-row" key={queue.name}>
-                  <span className="retention-field__label">{queue.name}</span>
-                  <strong>{adminT.settings.retention.queueSummary.replace('{attempts}', String(queue.attempts)).replace('{removeOnComplete}', String(queue.removeOnComplete)).replace('{removeOnFail}', String(queue.removeOnFail))}</strong>
-                  <span className="retention-field__desc">{adminT.settings.retention.queueReadOnlyReason}</span>
-                </div>
-              ))}
+              {platformQueues.map((queueName) => {
+                const queueValues = retentionDraft.queueHistory?.[queueName] ?? RETENTION_DEFAULTS.queueHistory?.[queueName];
+                return (
+                  <div className="retention-field" key={queueName}>
+                    <span className="retention-field__label">{queueName}</span>
+                    <label>
+                      <span className="retention-field__desc">{adminT.settings.retention.queueAttempts}</span>
+                      <input type="number" min={queueFieldConfig.attempts.min} max={queueFieldConfig.attempts.max} step={queueFieldConfig.attempts.step} value={String(queueValues?.attempts ?? '')} onChange={(e) => setRetentionDraft((prev) => updateQueueField(prev, queueName, 'attempts', Number(e.target.value)))} />
+                    </label>
+                    <label>
+                      <span className="retention-field__desc">{adminT.settings.retention.queueCompletedHistory}</span>
+                      <input type="number" min={queueFieldConfig.removeOnComplete.min} max={queueFieldConfig.removeOnComplete.max} step={queueFieldConfig.removeOnComplete.step} value={String(queueValues?.removeOnComplete ?? '')} onChange={(e) => setRetentionDraft((prev) => updateQueueField(prev, queueName, 'removeOnComplete', Number(e.target.value)))} />
+                    </label>
+                    <label>
+                      <span className="retention-field__desc">{adminT.settings.retention.queueFailedHistory}</span>
+                      <input type="number" min={queueFieldConfig.removeOnFail.min} max={queueFieldConfig.removeOnFail.max} step={queueFieldConfig.removeOnFail.step} value={String(queueValues?.removeOnFail ?? '')} onChange={(e) => setRetentionDraft((prev) => updateQueueField(prev, queueName, 'removeOnFail', Number(e.target.value)))} />
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           </article>
 
-          <article className="panel retention-card">
-            <div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.readOnlySectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.readOnlySectionDesc}</p></div>
-            <div className="retention-readonly-row"><span className="retention-field__label">{adminT.settings.retention.emailVerificationLifetimeHours}</span><strong>{adminT.settings.retention.hoursSummary.replace('{hours}', String(retentionState.policy.emailVerificationLifetimeHours))}</strong><span className="retention-field__desc">{adminT.settings.retention.emailVerificationFutureNote}</span></div>
-          </article>
+          <article className="panel retention-card"><div className="retention-card__header"><h4 className="retention-card__title">{adminT.settings.retention.readOnlySectionTitle}</h4><p className="retention-card__desc">{adminT.settings.retention.readOnlySectionDesc}</p></div><div className="retention-readonly-row"><span className="retention-field__label">{adminT.settings.retention.emailVerificationLifetimeHours}</span><strong>{adminT.settings.retention.hoursSummary.replace('{hours}', String(retentionState.policy.emailVerificationLifetimeHours))}</strong><span className="retention-field__desc">{adminT.settings.retention.emailVerificationFutureNote}</span></div></article>
         </>
       ) : null}
 

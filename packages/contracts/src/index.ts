@@ -422,7 +422,20 @@ export interface PlatformRetentionPolicy {
   extensionSessionRefreshAfterSeconds: number;
   emailVerificationLifetimeHours: number;
   passwordResetLifetimeHours: number;
+  queueHistory: PlatformQueueHistoryPolicy;
 }
+
+export interface PlatformQueueHistoryPolicyEntry {
+  attempts: number;
+  removeOnComplete: number;
+  removeOnFail: number;
+}
+
+export type PlatformQueueHistoryPolicy = Record<PlatformQueue, PlatformQueueHistoryPolicyEntry>;
+
+export type PlatformQueueHistoryPolicyUpdateRequest = Partial<{
+  [TQueue in PlatformQueue]: Partial<PlatformQueueHistoryPolicyEntry>;
+}>;
 
 export type PlatformRetentionPolicyUpdateRequest = Partial<
   Pick<
@@ -445,7 +458,7 @@ export type PlatformRetentionPolicyUpdateRequest = Partial<
     | 'maxPromptImageAttachmentMegabytes'
     | 'passwordResetLifetimeHours'
   >
->;
+> & { queueHistory?: PlatformQueueHistoryPolicyUpdateRequest };
 
 export interface PlatformRetentionPolicySnapshot {
   policy: PlatformRetentionPolicy;
@@ -1063,6 +1076,7 @@ export interface EmailQueueJobPayload {
 }
 
 export interface QuotaResetJobPayload {
+  workspaceId: string;
   key: string;
   consumed: number;
   periodStart: string;
@@ -1470,6 +1484,7 @@ export interface RemoteConfigPublishResult {
   appliedLayerCount: number;
   publishedAt: string;
   actorId: string;
+  workspaceId?: string;
 }
 
 export interface RemoteConfigVersionSummary {

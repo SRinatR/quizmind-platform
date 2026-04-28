@@ -4,6 +4,8 @@ import {
   type BillingWebhookJobPayload,
   type EmailQueueJobPayload,
   type HistoryCleanupJobPayload,
+  type PlatformQueueHistoryPolicy,
+  type PlatformQueueHistoryPolicyEntry,
   type PlatformQueue,
   type QuotaResetJobPayload,
   type RemoteConfigPublishResult,
@@ -69,67 +71,60 @@ export interface QueueDispatchRequestFor<TQueue extends PlatformQueue>
   queue: TQueue;
 }
 
-export const queueDefinitions: Record<PlatformQueue, QueueDefinition> = {
-  'billing-webhooks': {
-    name: 'billing-webhooks',
-    description: 'Processes billing provider webhook deliveries and retries.',
-    attempts: 10,
-    removeOnComplete: 250,
-    removeOnFail: 250,
-  },
-  'usage-events': {
-    name: 'usage-events',
-    description: 'Tracks extension and product usage for quota and analytics decisions.',
-    attempts: 5,
-    removeOnComplete: 250,
-    removeOnFail: 250,
-  },
-  emails: {
-    name: 'emails',
-    description: 'Delivers transactional email jobs such as verification, reset, and invites.',
-    attempts: 5,
-    removeOnComplete: 250,
-    removeOnFail: 250,
-  },
-  'quota-resets': {
-    name: 'quota-resets',
-    description: 'Resets quota counters at the end of a billing or usage window.',
-    attempts: 3,
-    removeOnComplete: 250,
-    removeOnFail: 250,
-  },
-  'config-publish': {
-    name: 'config-publish',
-    description: 'Publishes remote config updates and downstream invalidation events.',
-    attempts: 5,
-    removeOnComplete: 250,
-    removeOnFail: 250,
-  },
-  'audit-exports': {
-    name: 'audit-exports',
-    description: 'Builds and exports audit log bundles for admins and compliance.',
-    attempts: 2,
-    removeOnComplete: 50,
-    removeOnFail: 250,
-  },
-  'history-cleanup': {
-    name: 'history-cleanup',
-    description: 'Purges expired AI request content (prompt/response text) after the 7-day retention window.',
-    attempts: 3,
-    removeOnComplete: 10,
-    removeOnFail: 50,
-  },
+export const QUEUE_HISTORY_DEFAULTS: PlatformQueueHistoryPolicy = {
+  'billing-webhooks': { attempts: 10, removeOnComplete: 250, removeOnFail: 250 },
+  'usage-events': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+  emails: { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+  'quota-resets': { attempts: 3, removeOnComplete: 250, removeOnFail: 250 },
+  'config-publish': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+  'audit-exports': { attempts: 2, removeOnComplete: 50, removeOnFail: 250 },
+  'history-cleanup': { attempts: 3, removeOnComplete: 10, removeOnFail: 50 },
 };
 
-export function getQueueDefinition(queue: PlatformQueue): QueueDefinition {
-  return queueDefinitions[queue];
+const queueDefinitionDescriptions: Record<PlatformQueue, string> = {
+  'billing-webhooks': 'Processes billing provider webhook deliveries and retries.',
+  'usage-events': 'Tracks extension and product usage for quota and analytics decisions.',
+  emails: 'Delivers transactional email jobs such as verification, reset, and invites.',
+  'quota-resets': 'Resets quota counters at the end of a billing or usage window.',
+  'config-publish': 'Publishes remote config updates and downstream invalidation events.',
+  'audit-exports': 'Builds and exports audit log bundles for admins and compliance.',
+  'history-cleanup': 'Purges expired AI request content (prompt/response text) after the 7-day retention window.',
+};
+
+function resolveQueuePolicyEntry(
+  queue: PlatformQueue,
+  queuePolicy?: PlatformQueueHistoryPolicy,
+): PlatformQueueHistoryPolicyEntry {
+  return queuePolicy?.[queue] ?? QUEUE_HISTORY_DEFAULTS[queue];
+}
+
+export function buildQueueDefinitions(queuePolicy?: PlatformQueueHistoryPolicy): Record<PlatformQueue, QueueDefinition> {
+  return queueNames.reduce(
+    (acc, queue) => {
+      const policy = resolveQueuePolicyEntry(queue, queuePolicy);
+      acc[queue] = {
+        name: queue,
+        description: queueDefinitionDescriptions[queue],
+        attempts: policy.attempts,
+        removeOnComplete: policy.removeOnComplete,
+        removeOnFail: policy.removeOnFail,
+      };
+      return acc;
+    },
+    {} as Record<PlatformQueue, QueueDefinition>,
+  );
+}
+
+export function getQueueDefinition(queue: PlatformQueue, queuePolicy?: PlatformQueueHistoryPolicy): QueueDefinition {
+  return buildQueueDefinitions(queuePolicy)[queue];
 }
 
 export function getQueueRuntimeOptions(
   queue: PlatformQueue,
   overrides?: Partial<Pick<QueueRuntimeOptions, 'attempts'>>,
+  queuePolicy?: PlatformQueueHistoryPolicy,
 ): QueueRuntimeOptions {
-  const definition = getQueueDefinition(queue);
+  const definition = getQueueDefinition(queue, queuePolicy);
 
   return {
     attempts: overrides?.attempts ?? definition.attempts,
@@ -184,11 +179,12 @@ function buildQueueJobId(queue: PlatformQueue, dedupeKey?: string): string {
 
 export function createQueueDispatchRequest<TQueue extends PlatformQueue>(
   request: QueueDispatchRequestFor<TQueue>,
+  queuePolicy?: PlatformQueueHistoryPolicy,
 ): QueueDispatchRequestFor<TQueue> {
   const dedupeKey = request.dedupeKey ?? buildQueueDedupeKey(request.queue, request.payload);
   const runtimeOptions = getQueueRuntimeOptions(request.queue, {
     attempts: request.attempts,
-  });
+  }, queuePolicy);
 
   return {
     ...request,
@@ -197,10 +193,13 @@ export function createQueueDispatchRequest<TQueue extends PlatformQueue>(
   };
 }
 
-export function buildQueueJob<TPayload>(request: QueueDispatchRequest<TPayload>): QueueJobEnvelope<TPayload> {
+export function buildQueueJob<TPayload>(
+  request: QueueDispatchRequest<TPayload>,
+  queuePolicy?: PlatformQueueHistoryPolicy,
+): QueueJobEnvelope<TPayload> {
   const runtimeOptions = getQueueRuntimeOptions(request.queue, {
     attempts: request.attempts,
-  });
+  }, queuePolicy);
   const queueJobId = request.jobId ?? buildQueueJobId(request.queue, request.dedupeKey);
 
   return {
@@ -213,6 +212,7 @@ export function buildQueueJob<TPayload>(request: QueueDispatchRequest<TPayload>)
   };
 }
 
-export function listQueueDefinitions(): QueueDefinition[] {
-  return queueNames.map((queue) => queueDefinitions[queue]);
+export function listQueueDefinitions(queuePolicy?: PlatformQueueHistoryPolicy): QueueDefinition[] {
+  const definitions = buildQueueDefinitions(queuePolicy);
+  return queueNames.map((queue) => definitions[queue]);
 }

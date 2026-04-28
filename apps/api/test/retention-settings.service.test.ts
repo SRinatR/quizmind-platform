@@ -66,6 +66,50 @@ test('updateRetentionPolicy PATCH merges current values instead of resetting omi
   assert.equal(auditEvent.create.metadataJson.after.accessTokenLifetimeMinutes, 25);
 });
 
+test('updateRetentionPolicy PATCH merges queue history fields instead of resetting other queue values', async () => {
+  let storedValue: any;
+  const repository = {
+    findByKey: async () => ({
+      key: 'platform.retention_policy',
+      valueJson: {
+        queueHistory: {
+          'billing-webhooks': { attempts: 10, removeOnComplete: 250, removeOnFail: 250 },
+          'usage-events': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+          emails: { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+          'quota-resets': { attempts: 3, removeOnComplete: 250, removeOnFail: 250 },
+          'config-publish': { attempts: 5, removeOnComplete: 250, removeOnFail: 250 },
+          'audit-exports': { attempts: 2, removeOnComplete: 50, removeOnFail: 250 },
+          'history-cleanup': { attempts: 3, removeOnComplete: 10, removeOnFail: 50 },
+        },
+      },
+      updatedById: 'admin_0',
+      updatedAt: new Date('2026-04-01T00:00:00.000Z'),
+    }),
+    upsertJson: async (_key: string, valueJson: any) => {
+      storedValue = valueJson;
+      return {
+        key: 'platform.retention_policy',
+        valueJson,
+        updatedById: 'admin_1',
+        updatedAt: new Date('2026-04-28T00:00:00.000Z'),
+      };
+    },
+  };
+  const prisma = { adminLogEvent: { upsert: async () => null } };
+  const service = new RetentionSettingsService(repository as any, prisma as any);
+
+  const snapshot = await service.updateRetentionPolicy(createSession(), {
+    queueHistory: {
+      'usage-events': { removeOnFail: 333 },
+    },
+  });
+
+  assert.equal(snapshot.policy.queueHistory['usage-events'].removeOnFail, 333);
+  assert.equal(snapshot.policy.queueHistory['usage-events'].attempts, 5);
+  assert.equal(snapshot.policy.queueHistory['billing-webhooks'].attempts, 10);
+  assert.equal(storedValue.queueHistory['usage-events'].removeOnFail, 333);
+});
+
 test('updateRetentionPolicy rejects invalid values and does not write', async () => {
   let upsertCalls = 0;
   const repository = {
