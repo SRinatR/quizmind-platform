@@ -227,6 +227,9 @@ function toListItemFromEvent(record: AiHistoryEventListRecord, promptContentJson
     totalTokens: record.totalTokens,
     durationMs: record.durationMs,
     estimatedCostUsd: record.estimatedCostUsd ?? 0,
+    chargedCostUsd: record.chargedCostUsd ?? null,
+    chargedCurrency: record.chargedCurrency ?? null,
+    chargedAmountMinor: record.chargedAmountMinor ?? null,
     promptContentJson,
     promptExcerpt: record.promptExcerpt,
     responseExcerpt: record.responseExcerpt,
@@ -251,6 +254,9 @@ function toListItemFromLegacy(record: AiHistoryLegacyListRecord, promptContentJs
     totalTokens: record.totalTokens,
     durationMs: record.durationMs,
     estimatedCostUsd: record.estimatedCostUsd ?? 0,
+    chargedCostUsd: record.chargedCostUsd ?? null,
+    chargedCurrency: null,
+    chargedAmountMinor: null,
     promptContentJson,
     fileMetadata: parseFileMetadata(record.fileMetadataJson),
     occurredAt: record.occurredAt.toISOString(),
@@ -532,6 +538,7 @@ export class AiHistoryService {
       totalCompletionTokens: row.totalCompletionTokens,
       totalTokens: row.totalTokens,
       estimatedCostUsd: Math.round(row.totalCostUsd * 1_000_000) / 1_000_000,
+      chargedCostUsd: Math.round((row.totalChargedCostUsd ?? row.totalCostUsd) * 1_000_000) / 1_000_000,
       avgDurationMs: row.avgDurationMs,
     }));
 
@@ -545,6 +552,7 @@ export class AiHistoryService {
       totalCompletionTokens: data.totalCompletionTokens,
       totalTokens: data.totalTokens,
       estimatedCostUsd: Math.round(data.totalCostUsd * 1_000_000) / 1_000_000,
+      chargedCostUsd: Math.round((data.totalChargedCostUsd ?? data.totalCostUsd) * 1_000_000) / 1_000_000,
       avgDurationMs: data.avgDurationMs,
       byModel,
     };

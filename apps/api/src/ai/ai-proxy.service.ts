@@ -567,7 +567,7 @@ export class AiProxyService {
       return {
         providers: catalog.providers,
         models: catalog.models,
-        workspaceId: session.workspaces[0]?.id,
+        workspaceId: policy.workspaceId ?? undefined,
         planCode: (await (this.aiProxyRepository as any).findWorkspacePlanCode?.()) ?? undefined,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
         ...(catalog.defaultModel ? { defaultModel: catalog.defaultModel } : {}),

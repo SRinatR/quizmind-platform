@@ -23,3 +23,9 @@ test('usage page does not render raw ms latency text', async () => {
   assert.doesNotMatch(source, /avgDurationMs\)}ms/);
   assert.doesNotMatch(source, /row\.avgDurationMs\)}ms/);
 });
+
+test('usage page spend uses chargedCostUsd with estimated fallback', async () => {
+  const source = await readFile(new URL('../src/app/app/usage/usage-page-client.tsx', import.meta.url), 'utf8');
+  assert.match(source, /row\.chargedCostUsd \?\? row\.estimatedCostUsd/);
+  assert.match(source, /filteredTotals\.chargedCostUsd/);
+});
