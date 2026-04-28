@@ -29,6 +29,12 @@ export interface WalletTopUpRecord {
   updatedAt: Date;
 }
 
+export interface WalletDebitResult {
+  ledgerEntryId: string;
+  newBalanceKopecks: number;
+  alreadyProcessed: boolean;
+}
+
 @Injectable()
 export class WalletRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -176,6 +182,73 @@ export class WalletRepository {
         status: 'pending',
       },
       data: { status: 'canceled' },
+    });
+  }
+
+  async debitUsage(input: {
+    userId: string;
+    amountKopecks: number;
+    currency: string;
+    description: string;
+    idempotencyKey: string;
+    metadataJson?: Prisma.InputJsonValue;
+  }): Promise<WalletDebitResult> {
+    if (input.amountKopecks <= 0) {
+      throw new Error('Usage debit amount must be greater than zero.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.walletLedgerEntry.findUnique({
+        where: { idempotencyKey: input.idempotencyKey },
+        select: { id: true, balanceAfterKopecks: true },
+      });
+
+      if (existing) {
+        return {
+          ledgerEntryId: existing.id,
+          newBalanceKopecks: existing.balanceAfterKopecks,
+          alreadyProcessed: true,
+        };
+      }
+
+      const wallet = await tx.wallet.upsert({
+        where: { userId: input.userId },
+        create: { userId: input.userId, currency: input.currency },
+        update: {},
+        select: { id: true, balanceKopecks: true, currency: true },
+      });
+
+      if (wallet.balanceKopecks < input.amountKopecks) {
+        throw new Error('Insufficient wallet balance for usage debit.');
+      }
+
+      const updatedWallet = await tx.wallet.update({
+        where: { id: wallet.id },
+        data: {
+          balanceKopecks: {
+            decrement: input.amountKopecks,
+          },
+        },
+        select: { balanceKopecks: true },
+      });
+
+      const entry = await tx.walletLedgerEntry.create({
+        data: {
+          walletId: wallet.id,
+          idempotencyKey: input.idempotencyKey,
+          type: 'usage_debit',
+          deltaKopecks: -input.amountKopecks,
+          balanceAfterKopecks: updatedWallet.balanceKopecks,
+          description: input.description,
+          ...(input.metadataJson ? { metadataJson: input.metadataJson } : {}),
+        },
+      });
+
+      return {
+        ledgerEntryId: entry.id,
+        newBalanceKopecks: updatedWallet.balanceKopecks,
+        alreadyProcessed: false,
+      };
     });
   }
 }

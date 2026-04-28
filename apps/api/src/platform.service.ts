@@ -71,6 +71,8 @@ import {
   type SupportTicketWorkflowUpdateResult,
   type PlatformRetentionPolicySnapshot,
   type PlatformRetentionPolicyUpdateRequest,
+  type PlatformAiPricingPolicySnapshot,
+  type PlatformAiPricingPolicyUpdateRequest,
   type UiPreferences,
   type UserProfilePayload,
   type UserProfileUpdateRequest,
@@ -177,6 +179,7 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
 import { compareSemver, evaluateCompatibility } from '@quizmind/extension';
 import { AiHistoryService } from './history/ai-history.service';
 import { RetentionSettingsService } from './settings/retention-settings.service';
+import { AiPricingSettingsService } from './settings/ai-pricing-settings.service';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
@@ -572,6 +575,8 @@ export class PlatformService {
     private readonly aiHistoryService: AiHistoryService,
     @Inject(RetentionSettingsService)
     private readonly retentionSettingsService: RetentionSettingsService,
+    @Inject(AiPricingSettingsService)
+    private readonly aiPricingSettingsService: AiPricingSettingsService,
   ) {}
 
   private requireSystemAdmin(session: CurrentSessionSnapshot): void {
@@ -591,6 +596,19 @@ export class PlatformService {
   ): Promise<PlatformRetentionPolicySnapshot> {
     this.requireSystemAdmin(session);
     return this.retentionSettingsService.updateRetentionPolicy(session, request);
+  }
+
+  async getAiPricingPolicyForCurrentSession(session: CurrentSessionSnapshot): Promise<PlatformAiPricingPolicySnapshot> {
+    this.requireSystemAdmin(session);
+    return this.aiPricingSettingsService.getPricingPolicy();
+  }
+
+  async updateAiPricingPolicyForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<PlatformAiPricingPolicyUpdateRequest>,
+  ): Promise<PlatformAiPricingPolicySnapshot> {
+    this.requireSystemAdmin(session);
+    return this.aiPricingSettingsService.updatePricingPolicy(session, request);
   }
 
   async getHealth() {

@@ -35,6 +35,7 @@ import {
 import { OpenRouterCatalogService } from './openrouter-catalog.service';
 import { RouterAiCatalogService } from './routerai-catalog.service';
 import { WalletRepository } from '../wallet/wallet.repository';
+import { AiPricingService } from './ai-pricing.service';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
 const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'routerai', 'openai', 'polza']);
@@ -422,6 +423,8 @@ export class AiProxyService {
     private readonly routerAiCatalogService: RouterAiCatalogService,
     @Inject(WalletRepository)
     private readonly walletRepository: WalletRepository,
+    @Inject(AiPricingService)
+    private readonly aiPricingService?: AiPricingService,
   ) {}
 
   async proxyForCurrentSession(
@@ -760,13 +763,17 @@ export class AiProxyService {
     // ── Wallet balance gate for platform-managed OpenRouter ──────────────────
     // Only enforced in connected mode (wallets exist) and when the platform key
     // is being used (user-key requests are not subject to this gate).
-    if (provider === 'openrouter' && keySource === 'platform' && this.env.runtimeMode === 'connected') {
+    if (this.env.runtimeMode === 'connected') {
+      const pricingPolicy = this.aiPricingService
+        ? await this.aiPricingService.getEffectivePolicy()
+        : { enabled: false, chargeUserKeyRequests: 'never' as const };
       const isFreeModel = selectedModel.capabilityTags.includes('free');
       const balanceKopecks = isFreeModel
         ? null // skip DB lookup entirely for free models
         : await this.walletRepository.findBalanceForUser(session.user.id);
       const effectiveBalance = balanceKopecks ?? 0;
-      const blocked = !isFreeModel && effectiveBalance <= 0;
+      const shouldEnforce = pricingPolicy.enabled && (keySource === 'platform' || pricingPolicy.chargeUserKeyRequests !== 'never');
+      const blocked = shouldEnforce && !isFreeModel && effectiveBalance <= 0;
 
       console.log(
         JSON.stringify({
@@ -776,6 +783,7 @@ export class AiProxyService {
           balanceKopecks: isFreeModel ? null : effectiveBalance,
           decision: blocked ? 'blocked' : 'allowed',
           keySource,
+          pricingEnabled: pricingPolicy.enabled,
           userId: session.user.id,
           occurredAt: new Date().toISOString(),
         }),

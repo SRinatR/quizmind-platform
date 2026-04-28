@@ -466,6 +466,28 @@ export interface PlatformRetentionPolicySnapshot {
   updatedById?: string | null;
 }
 
+export type ChargeFailedRequestsMode = 'never' | 'provider_cost_only' | 'minimum_fee';
+export type ChargeUserKeyRequestsMode = 'never' | 'platform_fee_only' | 'full_price';
+
+export interface PlatformAiPricingPolicy {
+  enabled: boolean;
+  markupPercent: number;
+  minimumFeeUsd: number;
+  roundingUsd: number;
+  maxChargeUsd?: number | null;
+  chargeFailedRequests: ChargeFailedRequestsMode;
+  chargeUserKeyRequests: ChargeUserKeyRequestsMode;
+  displayEstimatedPriceToUser: boolean;
+}
+
+export type PlatformAiPricingPolicyUpdateRequest = Partial<PlatformAiPricingPolicy>;
+
+export interface PlatformAiPricingPolicySnapshot {
+  policy: PlatformAiPricingPolicy;
+  updatedAt?: string | null;
+  updatedById?: string | null;
+}
+
 export interface WorkspaceSummary {
   id: string;
   slug: string;

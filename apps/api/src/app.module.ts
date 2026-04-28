@@ -54,6 +54,8 @@ import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 import { PlatformSettingsRepository } from './settings/platform-settings.repository';
 import { RetentionSettingsService } from './settings/retention-settings.service';
+import { AiPricingSettingsService } from './settings/ai-pricing-settings.service';
+import { AiPricingService } from './ai/ai-pricing.service';
 
 @Module({
   controllers: [
@@ -77,7 +79,9 @@ import { RetentionSettingsService } from './settings/retention-settings.service'
     AiHistoryRepository,
     AiHistoryService,
     PlatformSettingsRepository,
+    AiPricingSettingsService,
     RetentionSettingsService,
+    AiPricingService,
     HistoryBlobService,
     AuthService,
     BillingService,

@@ -16,6 +16,9 @@ const aiHistoryEventListSelect = {
   durationMs: true,
   requestType: true,
   estimatedCostUsd: true,
+  providerCostUsd: true,
+  platformFeeUsd: true,
+  chargedCostUsd: true,
   promptExcerpt: true,
   responseExcerpt: true,
   occurredAt: true,
@@ -64,6 +67,9 @@ const aiHistoryLegacyListSelect = {
   requestType: true,
   fileMetadataJson: true,
   estimatedCostUsd: true,
+  providerCostUsd: true,
+  platformFeeUsd: true,
+  chargedCostUsd: true,
   occurredAt: true,
   expiresAt: true,
 } satisfies Prisma.AiRequestSelect;
@@ -82,6 +88,9 @@ const aiAdminSyncSelect = {
   model: true,
   durationMs: true,
   estimatedCostUsd: true,
+  providerCostUsd: true,
+  platformFeeUsd: true,
+  chargedCostUsd: true,
   promptTokens: true,
   completionTokens: true,
   totalTokens: true,
@@ -124,6 +133,14 @@ export interface UpsertEventAndContentInput {
   completionTokens: number;
   totalTokens: number;
   estimatedCostUsd: number;
+  providerCostUsd?: number | null;
+  platformFeeUsd?: number | null;
+  chargedCostUsd?: number | null;
+  chargedCurrency?: string | null;
+  chargedAmountMinor?: number | null;
+  pricingSource?: string | null;
+  pricingPolicySnapshotJson?: Prisma.InputJsonValue;
+  walletLedgerEntryId?: string | null;
   durationMs?: number;
   promptExcerpt?: string | null;
   responseExcerpt?: string | null;
@@ -319,6 +336,7 @@ export class AiHistoryRepository {
           completionTokens: true,
           totalTokens: true,
           estimatedCostUsd: true,
+          chargedCostUsd: true,
           durationMs: true,
           occurredAt: true,
         },
@@ -343,6 +361,14 @@ export class AiHistoryRepository {
           completionTokens: input.completionTokens,
           totalTokens: input.totalTokens,
           estimatedCostUsd: input.estimatedCostUsd,
+          providerCostUsd: input.providerCostUsd ?? null,
+          platformFeeUsd: input.platformFeeUsd ?? null,
+          chargedCostUsd: input.chargedCostUsd ?? null,
+          chargedCurrency: input.chargedCurrency ?? null,
+          chargedAmountMinor: input.chargedAmountMinor ?? null,
+          pricingSource: input.pricingSource ?? null,
+          pricingPolicySnapshotJson: input.pricingPolicySnapshotJson ?? Prisma.JsonNull,
+          walletLedgerEntryId: input.walletLedgerEntryId ?? null,
           durationMs: input.durationMs,
           promptExcerpt: input.promptExcerpt,
           responseExcerpt: input.responseExcerpt,
@@ -362,6 +388,14 @@ export class AiHistoryRepository {
           completionTokens: input.completionTokens,
           totalTokens: input.totalTokens,
           estimatedCostUsd: input.estimatedCostUsd,
+          providerCostUsd: input.providerCostUsd ?? null,
+          platformFeeUsd: input.platformFeeUsd ?? null,
+          chargedCostUsd: input.chargedCostUsd ?? null,
+          chargedCurrency: input.chargedCurrency ?? null,
+          chargedAmountMinor: input.chargedAmountMinor ?? null,
+          pricingSource: input.pricingSource ?? null,
+          pricingPolicySnapshotJson: input.pricingPolicySnapshotJson ?? Prisma.JsonNull,
+          walletLedgerEntryId: input.walletLedgerEntryId ?? null,
           durationMs: input.durationMs,
           promptExcerpt: input.promptExcerpt,
           responseExcerpt: input.responseExcerpt,

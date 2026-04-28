@@ -31,6 +31,10 @@ export type AiRequestEventAvgAggregateOutputType = {
   completionTokens: number | null
   totalTokens: number | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
+  chargedAmountMinor: number | null
   durationMs: number | null
 }
 
@@ -39,6 +43,10 @@ export type AiRequestEventSumAggregateOutputType = {
   completionTokens: number | null
   totalTokens: number | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
+  chargedAmountMinor: number | null
   durationMs: number | null
 }
 
@@ -58,6 +66,13 @@ export type AiRequestEventMinAggregateOutputType = {
   completionTokens: number | null
   totalTokens: number | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
+  chargedCurrency: string | null
+  chargedAmountMinor: number | null
+  pricingSource: string | null
+  walletLedgerEntryId: string | null
   durationMs: number | null
   promptExcerpt: string | null
   responseExcerpt: string | null
@@ -81,6 +96,13 @@ export type AiRequestEventMaxAggregateOutputType = {
   completionTokens: number | null
   totalTokens: number | null
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
+  chargedCurrency: string | null
+  chargedAmountMinor: number | null
+  pricingSource: string | null
+  walletLedgerEntryId: string | null
   durationMs: number | null
   promptExcerpt: string | null
   responseExcerpt: string | null
@@ -104,6 +126,14 @@ export type AiRequestEventCountAggregateOutputType = {
   completionTokens: number
   totalTokens: number
   estimatedCostUsd: number
+  providerCostUsd: number
+  platformFeeUsd: number
+  chargedCostUsd: number
+  chargedCurrency: number
+  chargedAmountMinor: number
+  pricingSource: number
+  pricingPolicySnapshotJson: number
+  walletLedgerEntryId: number
   durationMs: number
   promptExcerpt: number
   responseExcerpt: number
@@ -118,6 +148,10 @@ export type AiRequestEventAvgAggregateInputType = {
   completionTokens?: true
   totalTokens?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
+  chargedAmountMinor?: true
   durationMs?: true
 }
 
@@ -126,6 +160,10 @@ export type AiRequestEventSumAggregateInputType = {
   completionTokens?: true
   totalTokens?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
+  chargedAmountMinor?: true
   durationMs?: true
 }
 
@@ -145,6 +183,13 @@ export type AiRequestEventMinAggregateInputType = {
   completionTokens?: true
   totalTokens?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
+  chargedCurrency?: true
+  chargedAmountMinor?: true
+  pricingSource?: true
+  walletLedgerEntryId?: true
   durationMs?: true
   promptExcerpt?: true
   responseExcerpt?: true
@@ -168,6 +213,13 @@ export type AiRequestEventMaxAggregateInputType = {
   completionTokens?: true
   totalTokens?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
+  chargedCurrency?: true
+  chargedAmountMinor?: true
+  pricingSource?: true
+  walletLedgerEntryId?: true
   durationMs?: true
   promptExcerpt?: true
   responseExcerpt?: true
@@ -191,6 +243,14 @@ export type AiRequestEventCountAggregateInputType = {
   completionTokens?: true
   totalTokens?: true
   estimatedCostUsd?: true
+  providerCostUsd?: true
+  platformFeeUsd?: true
+  chargedCostUsd?: true
+  chargedCurrency?: true
+  chargedAmountMinor?: true
+  pricingSource?: true
+  pricingPolicySnapshotJson?: true
+  walletLedgerEntryId?: true
   durationMs?: true
   promptExcerpt?: true
   responseExcerpt?: true
@@ -301,6 +361,14 @@ export type AiRequestEventGroupByOutputType = {
   completionTokens: number
   totalTokens: number
   estimatedCostUsd: number | null
+  providerCostUsd: number | null
+  platformFeeUsd: number | null
+  chargedCostUsd: number | null
+  chargedCurrency: string | null
+  chargedAmountMinor: number | null
+  pricingSource: string | null
+  pricingPolicySnapshotJson: runtime.JsonValue | null
+  walletLedgerEntryId: string | null
   durationMs: number | null
   promptExcerpt: string | null
   responseExcerpt: string | null
@@ -347,6 +415,14 @@ export type AiRequestEventWhereInput = {
   completionTokens?: Prisma.IntFilter<"AiRequestEvent"> | number
   totalTokens?: Prisma.IntFilter<"AiRequestEvent"> | number
   estimatedCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  providerCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  chargedCurrency?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
+  chargedAmountMinor?: Prisma.IntNullableFilter<"AiRequestEvent"> | number | null
+  pricingSource?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
+  pricingPolicySnapshotJson?: Prisma.JsonNullableFilter<"AiRequestEvent">
+  walletLedgerEntryId?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
   durationMs?: Prisma.IntNullableFilter<"AiRequestEvent"> | number | null
   promptExcerpt?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
   responseExcerpt?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
@@ -374,6 +450,14 @@ export type AiRequestEventOrderByWithRelationInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedCurrency?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  pricingSource?: Prisma.SortOrderInput | Prisma.SortOrder
+  pricingPolicySnapshotJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  walletLedgerEntryId?: Prisma.SortOrderInput | Prisma.SortOrder
   durationMs?: Prisma.SortOrderInput | Prisma.SortOrder
   promptExcerpt?: Prisma.SortOrderInput | Prisma.SortOrder
   responseExcerpt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -404,6 +488,14 @@ export type AiRequestEventWhereUniqueInput = Prisma.AtLeast<{
   completionTokens?: Prisma.IntFilter<"AiRequestEvent"> | number
   totalTokens?: Prisma.IntFilter<"AiRequestEvent"> | number
   estimatedCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  providerCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  chargedCurrency?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
+  chargedAmountMinor?: Prisma.IntNullableFilter<"AiRequestEvent"> | number | null
+  pricingSource?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
+  pricingPolicySnapshotJson?: Prisma.JsonNullableFilter<"AiRequestEvent">
+  walletLedgerEntryId?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
   durationMs?: Prisma.IntNullableFilter<"AiRequestEvent"> | number | null
   promptExcerpt?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
   responseExcerpt?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
@@ -431,6 +523,14 @@ export type AiRequestEventOrderByWithAggregationInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedCurrency?: Prisma.SortOrderInput | Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
+  pricingSource?: Prisma.SortOrderInput | Prisma.SortOrder
+  pricingPolicySnapshotJson?: Prisma.SortOrderInput | Prisma.SortOrder
+  walletLedgerEntryId?: Prisma.SortOrderInput | Prisma.SortOrder
   durationMs?: Prisma.SortOrderInput | Prisma.SortOrder
   promptExcerpt?: Prisma.SortOrderInput | Prisma.SortOrder
   responseExcerpt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -462,6 +562,14 @@ export type AiRequestEventScalarWhereWithAggregatesInput = {
   completionTokens?: Prisma.IntWithAggregatesFilter<"AiRequestEvent"> | number
   totalTokens?: Prisma.IntWithAggregatesFilter<"AiRequestEvent"> | number
   estimatedCostUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequestEvent"> | number | null
+  providerCostUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequestEvent"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequestEvent"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableWithAggregatesFilter<"AiRequestEvent"> | number | null
+  chargedCurrency?: Prisma.StringNullableWithAggregatesFilter<"AiRequestEvent"> | string | null
+  chargedAmountMinor?: Prisma.IntNullableWithAggregatesFilter<"AiRequestEvent"> | number | null
+  pricingSource?: Prisma.StringNullableWithAggregatesFilter<"AiRequestEvent"> | string | null
+  pricingPolicySnapshotJson?: Prisma.JsonNullableWithAggregatesFilter<"AiRequestEvent">
+  walletLedgerEntryId?: Prisma.StringNullableWithAggregatesFilter<"AiRequestEvent"> | string | null
   durationMs?: Prisma.IntNullableWithAggregatesFilter<"AiRequestEvent"> | number | null
   promptExcerpt?: Prisma.StringNullableWithAggregatesFilter<"AiRequestEvent"> | string | null
   responseExcerpt?: Prisma.StringNullableWithAggregatesFilter<"AiRequestEvent"> | string | null
@@ -483,6 +591,14 @@ export type AiRequestEventCreateInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -510,6 +626,14 @@ export type AiRequestEventUncheckedCreateInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -533,6 +657,14 @@ export type AiRequestEventUpdateInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -560,6 +692,14 @@ export type AiRequestEventUncheckedUpdateInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -585,6 +725,14 @@ export type AiRequestEventCreateManyInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -606,6 +754,14 @@ export type AiRequestEventUpdateManyMutationInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -629,6 +785,14 @@ export type AiRequestEventUncheckedUpdateManyInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -662,6 +826,14 @@ export type AiRequestEventCountOrderByAggregateInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
+  chargedCurrency?: Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrder
+  pricingSource?: Prisma.SortOrder
+  pricingPolicySnapshotJson?: Prisma.SortOrder
+  walletLedgerEntryId?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptExcerpt?: Prisma.SortOrder
   responseExcerpt?: Prisma.SortOrder
@@ -674,6 +846,10 @@ export type AiRequestEventAvgOrderByAggregateInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
 }
 
@@ -693,6 +869,13 @@ export type AiRequestEventMaxOrderByAggregateInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
+  chargedCurrency?: Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrder
+  pricingSource?: Prisma.SortOrder
+  walletLedgerEntryId?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptExcerpt?: Prisma.SortOrder
   responseExcerpt?: Prisma.SortOrder
@@ -716,6 +899,13 @@ export type AiRequestEventMinOrderByAggregateInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
+  chargedCurrency?: Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrder
+  pricingSource?: Prisma.SortOrder
+  walletLedgerEntryId?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
   promptExcerpt?: Prisma.SortOrder
   responseExcerpt?: Prisma.SortOrder
@@ -728,6 +918,10 @@ export type AiRequestEventSumOrderByAggregateInput = {
   completionTokens?: Prisma.SortOrder
   totalTokens?: Prisma.SortOrder
   estimatedCostUsd?: Prisma.SortOrder
+  providerCostUsd?: Prisma.SortOrder
+  platformFeeUsd?: Prisma.SortOrder
+  chargedCostUsd?: Prisma.SortOrder
+  chargedAmountMinor?: Prisma.SortOrder
   durationMs?: Prisma.SortOrder
 }
 
@@ -862,6 +1056,14 @@ export type AiRequestEventCreateWithoutUserInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -887,6 +1089,14 @@ export type AiRequestEventUncheckedCreateWithoutUserInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -941,6 +1151,14 @@ export type AiRequestEventScalarWhereInput = {
   completionTokens?: Prisma.IntFilter<"AiRequestEvent"> | number
   totalTokens?: Prisma.IntFilter<"AiRequestEvent"> | number
   estimatedCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  providerCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  platformFeeUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  chargedCostUsd?: Prisma.FloatNullableFilter<"AiRequestEvent"> | number | null
+  chargedCurrency?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
+  chargedAmountMinor?: Prisma.IntNullableFilter<"AiRequestEvent"> | number | null
+  pricingSource?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
+  pricingPolicySnapshotJson?: Prisma.JsonNullableFilter<"AiRequestEvent">
+  walletLedgerEntryId?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
   durationMs?: Prisma.IntNullableFilter<"AiRequestEvent"> | number | null
   promptExcerpt?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
   responseExcerpt?: Prisma.StringNullableFilter<"AiRequestEvent"> | string | null
@@ -962,6 +1180,14 @@ export type AiRequestEventCreateWithoutWorkspaceInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -987,6 +1213,14 @@ export type AiRequestEventUncheckedCreateWithoutWorkspaceInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1036,6 +1270,14 @@ export type AiRequestEventCreateWithoutContentInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1062,6 +1304,14 @@ export type AiRequestEventUncheckedCreateWithoutContentInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1100,6 +1350,14 @@ export type AiRequestEventUpdateWithoutContentInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1126,6 +1384,14 @@ export type AiRequestEventUncheckedUpdateWithoutContentInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1148,6 +1414,14 @@ export type AiRequestEventCreateWithoutAttachmentsInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1174,6 +1448,14 @@ export type AiRequestEventUncheckedCreateWithoutAttachmentsInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1212,6 +1494,14 @@ export type AiRequestEventUpdateWithoutAttachmentsInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1238,6 +1528,14 @@ export type AiRequestEventUncheckedUpdateWithoutAttachmentsInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1261,6 +1559,14 @@ export type AiRequestEventCreateManyUserInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1282,6 +1588,14 @@ export type AiRequestEventUpdateWithoutUserInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1307,6 +1621,14 @@ export type AiRequestEventUncheckedUpdateWithoutUserInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1331,6 +1653,14 @@ export type AiRequestEventUncheckedUpdateManyWithoutUserInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1353,6 +1683,14 @@ export type AiRequestEventCreateManyWorkspaceInput = {
   completionTokens?: number
   totalTokens?: number
   estimatedCostUsd?: number | null
+  providerCostUsd?: number | null
+  platformFeeUsd?: number | null
+  chargedCostUsd?: number | null
+  chargedCurrency?: string | null
+  chargedAmountMinor?: number | null
+  pricingSource?: string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: string | null
   durationMs?: number | null
   promptExcerpt?: string | null
   responseExcerpt?: string | null
@@ -1374,6 +1712,14 @@ export type AiRequestEventUpdateWithoutWorkspaceInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1399,6 +1745,14 @@ export type AiRequestEventUncheckedUpdateWithoutWorkspaceInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1423,6 +1777,14 @@ export type AiRequestEventUncheckedUpdateManyWithoutWorkspaceInput = {
   completionTokens?: Prisma.IntFieldUpdateOperationsInput | number
   totalTokens?: Prisma.IntFieldUpdateOperationsInput | number
   estimatedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  providerCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  platformFeeUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCostUsd?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  chargedCurrency?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  chargedAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  pricingSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pricingPolicySnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  walletLedgerEntryId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   durationMs?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   promptExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   responseExcerpt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1477,6 +1839,14 @@ export type AiRequestEventSelect<ExtArgs extends runtime.Types.Extensions.Intern
   completionTokens?: boolean
   totalTokens?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
+  chargedCurrency?: boolean
+  chargedAmountMinor?: boolean
+  pricingSource?: boolean
+  pricingPolicySnapshotJson?: boolean
+  walletLedgerEntryId?: boolean
   durationMs?: boolean
   promptExcerpt?: boolean
   responseExcerpt?: boolean
@@ -1505,6 +1875,14 @@ export type AiRequestEventSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   completionTokens?: boolean
   totalTokens?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
+  chargedCurrency?: boolean
+  chargedAmountMinor?: boolean
+  pricingSource?: boolean
+  pricingPolicySnapshotJson?: boolean
+  walletLedgerEntryId?: boolean
   durationMs?: boolean
   promptExcerpt?: boolean
   responseExcerpt?: boolean
@@ -1530,6 +1908,14 @@ export type AiRequestEventSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   completionTokens?: boolean
   totalTokens?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
+  chargedCurrency?: boolean
+  chargedAmountMinor?: boolean
+  pricingSource?: boolean
+  pricingPolicySnapshotJson?: boolean
+  walletLedgerEntryId?: boolean
   durationMs?: boolean
   promptExcerpt?: boolean
   responseExcerpt?: boolean
@@ -1555,6 +1941,14 @@ export type AiRequestEventSelectScalar = {
   completionTokens?: boolean
   totalTokens?: boolean
   estimatedCostUsd?: boolean
+  providerCostUsd?: boolean
+  platformFeeUsd?: boolean
+  chargedCostUsd?: boolean
+  chargedCurrency?: boolean
+  chargedAmountMinor?: boolean
+  pricingSource?: boolean
+  pricingPolicySnapshotJson?: boolean
+  walletLedgerEntryId?: boolean
   durationMs?: boolean
   promptExcerpt?: boolean
   responseExcerpt?: boolean
@@ -1562,7 +1956,7 @@ export type AiRequestEventSelectScalar = {
   createdAt?: boolean
 }
 
-export type AiRequestEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "workspaceId" | "installationId" | "provider" | "model" | "modelDisplayName" | "requestType" | "keySource" | "status" | "errorCode" | "promptTokens" | "completionTokens" | "totalTokens" | "estimatedCostUsd" | "durationMs" | "promptExcerpt" | "responseExcerpt" | "occurredAt" | "createdAt", ExtArgs["result"]["aiRequestEvent"]>
+export type AiRequestEventOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "workspaceId" | "installationId" | "provider" | "model" | "modelDisplayName" | "requestType" | "keySource" | "status" | "errorCode" | "promptTokens" | "completionTokens" | "totalTokens" | "estimatedCostUsd" | "providerCostUsd" | "platformFeeUsd" | "chargedCostUsd" | "chargedCurrency" | "chargedAmountMinor" | "pricingSource" | "pricingPolicySnapshotJson" | "walletLedgerEntryId" | "durationMs" | "promptExcerpt" | "responseExcerpt" | "occurredAt" | "createdAt", ExtArgs["result"]["aiRequestEvent"]>
 export type AiRequestEventInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   workspace?: boolean | Prisma.AiRequestEvent$workspaceArgs<ExtArgs>
@@ -1603,6 +1997,14 @@ export type $AiRequestEventPayload<ExtArgs extends runtime.Types.Extensions.Inte
     completionTokens: number
     totalTokens: number
     estimatedCostUsd: number | null
+    providerCostUsd: number | null
+    platformFeeUsd: number | null
+    chargedCostUsd: number | null
+    chargedCurrency: string | null
+    chargedAmountMinor: number | null
+    pricingSource: string | null
+    pricingPolicySnapshotJson: runtime.JsonValue | null
+    walletLedgerEntryId: string | null
     durationMs: number | null
     promptExcerpt: string | null
     responseExcerpt: string | null
@@ -2050,6 +2452,14 @@ export interface AiRequestEventFieldRefs {
   readonly completionTokens: Prisma.FieldRef<"AiRequestEvent", 'Int'>
   readonly totalTokens: Prisma.FieldRef<"AiRequestEvent", 'Int'>
   readonly estimatedCostUsd: Prisma.FieldRef<"AiRequestEvent", 'Float'>
+  readonly providerCostUsd: Prisma.FieldRef<"AiRequestEvent", 'Float'>
+  readonly platformFeeUsd: Prisma.FieldRef<"AiRequestEvent", 'Float'>
+  readonly chargedCostUsd: Prisma.FieldRef<"AiRequestEvent", 'Float'>
+  readonly chargedCurrency: Prisma.FieldRef<"AiRequestEvent", 'String'>
+  readonly chargedAmountMinor: Prisma.FieldRef<"AiRequestEvent", 'Int'>
+  readonly pricingSource: Prisma.FieldRef<"AiRequestEvent", 'String'>
+  readonly pricingPolicySnapshotJson: Prisma.FieldRef<"AiRequestEvent", 'Json'>
+  readonly walletLedgerEntryId: Prisma.FieldRef<"AiRequestEvent", 'String'>
   readonly durationMs: Prisma.FieldRef<"AiRequestEvent", 'Int'>
   readonly promptExcerpt: Prisma.FieldRef<"AiRequestEvent", 'String'>
   readonly responseExcerpt: Prisma.FieldRef<"AiRequestEvent", 'String'>

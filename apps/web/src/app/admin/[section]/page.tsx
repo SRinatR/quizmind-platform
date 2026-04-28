@@ -31,6 +31,7 @@ import { UsersDirectoryClient } from './users-directory-client';
 import { LogsExplorerClient } from './logs-explorer-client';
 import { AdminSettingsClient } from './admin-settings-client';
 import { DataRetentionAdminClient } from './data-retention-client';
+import { PricingBillingAdminClient } from './pricing-billing-client';
 
 type AdminI18n = Translations['admin'];
 
@@ -154,6 +155,7 @@ function getLocalizedSectionTitle(section: AdminSection, adminI18n: AdminI18n): 
     case 'ai-routing': return adminI18n.nav.items.aiRouting;
     case 'settings': return adminI18n.nav.items.settings;
     case 'data-retention': return adminI18n.nav.items.dataRetention;
+    case 'pricing-billing': return 'Pricing & Billing';
     default: return section.title;
   }
 }
@@ -176,6 +178,7 @@ function getLocalizedSectionDescription(section: AdminSection, adminI18n: AdminI
     case 'ai-routing': return adminI18n.nav.descriptions.aiRouting;
     case 'settings': return adminI18n.nav.descriptions.settings;
     case 'data-retention': return adminI18n.nav.descriptions.dataRetention;
+    case 'pricing-billing': return 'AI request pricing, markup, and billing behavior controls.';
     default: return section.description;
   }
 }
@@ -266,6 +269,7 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
     'extension-control': { compatibility: true, flags: true, remoteConfig: true },
     'ai-routing':        { aiRouting: true },
     'data-retention':    {},
+    'pricing-billing':   {},
   };
   const needs: LoaderNeeds = SECTION_NEEDS[sec] ?? {};
 
@@ -436,6 +440,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
         ) : // ── Control Plane: Data Retention ─────────────────────────────────
         section.id === 'data-retention' ? (
           <DataRetentionAdminClient />
+        ) : section.id === 'pricing-billing' ? (
+          <PricingBillingAdminClient />
         ) : // ── Preferences: Settings ─────────────────────────────────────────────
         section.id === 'settings' ? (
           <AdminSettingsClient

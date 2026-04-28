@@ -40,6 +40,7 @@ export type WalletLedgerEntryMinAggregateOutputType = {
   id: string | null
   walletId: string | null
   topUpId: string | null
+  idempotencyKey: string | null
   type: $Enums.WalletLedgerEntryType | null
   deltaKopecks: number | null
   balanceAfterKopecks: number | null
@@ -51,6 +52,7 @@ export type WalletLedgerEntryMaxAggregateOutputType = {
   id: string | null
   walletId: string | null
   topUpId: string | null
+  idempotencyKey: string | null
   type: $Enums.WalletLedgerEntryType | null
   deltaKopecks: number | null
   balanceAfterKopecks: number | null
@@ -62,10 +64,12 @@ export type WalletLedgerEntryCountAggregateOutputType = {
   id: number
   walletId: number
   topUpId: number
+  idempotencyKey: number
   type: number
   deltaKopecks: number
   balanceAfterKopecks: number
   description: number
+  metadataJson: number
   createdAt: number
   _all: number
 }
@@ -85,6 +89,7 @@ export type WalletLedgerEntryMinAggregateInputType = {
   id?: true
   walletId?: true
   topUpId?: true
+  idempotencyKey?: true
   type?: true
   deltaKopecks?: true
   balanceAfterKopecks?: true
@@ -96,6 +101,7 @@ export type WalletLedgerEntryMaxAggregateInputType = {
   id?: true
   walletId?: true
   topUpId?: true
+  idempotencyKey?: true
   type?: true
   deltaKopecks?: true
   balanceAfterKopecks?: true
@@ -107,10 +113,12 @@ export type WalletLedgerEntryCountAggregateInputType = {
   id?: true
   walletId?: true
   topUpId?: true
+  idempotencyKey?: true
   type?: true
   deltaKopecks?: true
   balanceAfterKopecks?: true
   description?: true
+  metadataJson?: true
   createdAt?: true
   _all?: true
 }
@@ -205,10 +213,12 @@ export type WalletLedgerEntryGroupByOutputType = {
   id: string
   walletId: string
   topUpId: string | null
+  idempotencyKey: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description: string | null
+  metadataJson: runtime.JsonValue | null
   createdAt: Date
   _count: WalletLedgerEntryCountAggregateOutputType | null
   _avg: WalletLedgerEntryAvgAggregateOutputType | null
@@ -239,10 +249,12 @@ export type WalletLedgerEntryWhereInput = {
   id?: Prisma.StringFilter<"WalletLedgerEntry"> | string
   walletId?: Prisma.StringFilter<"WalletLedgerEntry"> | string
   topUpId?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
+  idempotencyKey?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFilter<"WalletLedgerEntry"> | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFilter<"WalletLedgerEntry"> | number
   balanceAfterKopecks?: Prisma.IntFilter<"WalletLedgerEntry"> | number
   description?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
+  metadataJson?: Prisma.JsonNullableFilter<"WalletLedgerEntry">
   createdAt?: Prisma.DateTimeFilter<"WalletLedgerEntry"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   topUp?: Prisma.XOR<Prisma.WalletTopUpNullableScalarRelationFilter, Prisma.WalletTopUpWhereInput> | null
@@ -252,10 +264,12 @@ export type WalletLedgerEntryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   topUpId?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   deltaKopecks?: Prisma.SortOrder
   balanceAfterKopecks?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  metadataJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   wallet?: Prisma.WalletOrderByWithRelationInput
   topUp?: Prisma.WalletTopUpOrderByWithRelationInput
@@ -263,6 +277,7 @@ export type WalletLedgerEntryOrderByWithRelationInput = {
 
 export type WalletLedgerEntryWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  idempotencyKey?: string
   AND?: Prisma.WalletLedgerEntryWhereInput | Prisma.WalletLedgerEntryWhereInput[]
   OR?: Prisma.WalletLedgerEntryWhereInput[]
   NOT?: Prisma.WalletLedgerEntryWhereInput | Prisma.WalletLedgerEntryWhereInput[]
@@ -272,19 +287,22 @@ export type WalletLedgerEntryWhereUniqueInput = Prisma.AtLeast<{
   deltaKopecks?: Prisma.IntFilter<"WalletLedgerEntry"> | number
   balanceAfterKopecks?: Prisma.IntFilter<"WalletLedgerEntry"> | number
   description?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
+  metadataJson?: Prisma.JsonNullableFilter<"WalletLedgerEntry">
   createdAt?: Prisma.DateTimeFilter<"WalletLedgerEntry"> | Date | string
   wallet?: Prisma.XOR<Prisma.WalletScalarRelationFilter, Prisma.WalletWhereInput>
   topUp?: Prisma.XOR<Prisma.WalletTopUpNullableScalarRelationFilter, Prisma.WalletTopUpWhereInput> | null
-}, "id">
+}, "id" | "idempotencyKey">
 
 export type WalletLedgerEntryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   topUpId?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrderInput | Prisma.SortOrder
   type?: Prisma.SortOrder
   deltaKopecks?: Prisma.SortOrder
   balanceAfterKopecks?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  metadataJson?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.WalletLedgerEntryCountOrderByAggregateInput
   _avg?: Prisma.WalletLedgerEntryAvgOrderByAggregateInput
@@ -300,19 +318,23 @@ export type WalletLedgerEntryScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"WalletLedgerEntry"> | string
   walletId?: Prisma.StringWithAggregatesFilter<"WalletLedgerEntry"> | string
   topUpId?: Prisma.StringNullableWithAggregatesFilter<"WalletLedgerEntry"> | string | null
+  idempotencyKey?: Prisma.StringNullableWithAggregatesFilter<"WalletLedgerEntry"> | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeWithAggregatesFilter<"WalletLedgerEntry"> | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntWithAggregatesFilter<"WalletLedgerEntry"> | number
   balanceAfterKopecks?: Prisma.IntWithAggregatesFilter<"WalletLedgerEntry"> | number
   description?: Prisma.StringNullableWithAggregatesFilter<"WalletLedgerEntry"> | string | null
+  metadataJson?: Prisma.JsonNullableWithAggregatesFilter<"WalletLedgerEntry">
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"WalletLedgerEntry"> | Date | string
 }
 
 export type WalletLedgerEntryCreateInput = {
   id?: string
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutLedgerEntriesInput
   topUp?: Prisma.WalletTopUpCreateNestedOneWithoutLedgerEntriesInput
@@ -322,19 +344,23 @@ export type WalletLedgerEntryUncheckedCreateInput = {
   id?: string
   walletId: string
   topUpId?: string | null
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
 export type WalletLedgerEntryUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutLedgerEntriesNestedInput
   topUp?: Prisma.WalletTopUpUpdateOneWithoutLedgerEntriesNestedInput
@@ -344,10 +370,12 @@ export type WalletLedgerEntryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   topUpId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -355,19 +383,23 @@ export type WalletLedgerEntryCreateManyInput = {
   id?: string
   walletId: string
   topUpId?: string | null
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
 export type WalletLedgerEntryUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -375,10 +407,12 @@ export type WalletLedgerEntryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
   topUpId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -396,10 +430,12 @@ export type WalletLedgerEntryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   topUpId?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
   type?: Prisma.SortOrder
   deltaKopecks?: Prisma.SortOrder
   balanceAfterKopecks?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  metadataJson?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -412,6 +448,7 @@ export type WalletLedgerEntryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   topUpId?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
   type?: Prisma.SortOrder
   deltaKopecks?: Prisma.SortOrder
   balanceAfterKopecks?: Prisma.SortOrder
@@ -423,6 +460,7 @@ export type WalletLedgerEntryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   walletId?: Prisma.SortOrder
   topUpId?: Prisma.SortOrder
+  idempotencyKey?: Prisma.SortOrder
   type?: Prisma.SortOrder
   deltaKopecks?: Prisma.SortOrder
   balanceAfterKopecks?: Prisma.SortOrder
@@ -525,10 +563,12 @@ export type EnumWalletLedgerEntryTypeFieldUpdateOperationsInput = {
 
 export type WalletLedgerEntryCreateWithoutWalletInput = {
   id?: string
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   topUp?: Prisma.WalletTopUpCreateNestedOneWithoutLedgerEntriesInput
 }
@@ -536,10 +576,12 @@ export type WalletLedgerEntryCreateWithoutWalletInput = {
 export type WalletLedgerEntryUncheckedCreateWithoutWalletInput = {
   id?: string
   topUpId?: string | null
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -576,19 +618,23 @@ export type WalletLedgerEntryScalarWhereInput = {
   id?: Prisma.StringFilter<"WalletLedgerEntry"> | string
   walletId?: Prisma.StringFilter<"WalletLedgerEntry"> | string
   topUpId?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
+  idempotencyKey?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFilter<"WalletLedgerEntry"> | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFilter<"WalletLedgerEntry"> | number
   balanceAfterKopecks?: Prisma.IntFilter<"WalletLedgerEntry"> | number
   description?: Prisma.StringNullableFilter<"WalletLedgerEntry"> | string | null
+  metadataJson?: Prisma.JsonNullableFilter<"WalletLedgerEntry">
   createdAt?: Prisma.DateTimeFilter<"WalletLedgerEntry"> | Date | string
 }
 
 export type WalletLedgerEntryCreateWithoutTopUpInput = {
   id?: string
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
   wallet: Prisma.WalletCreateNestedOneWithoutLedgerEntriesInput
 }
@@ -596,10 +642,12 @@ export type WalletLedgerEntryCreateWithoutTopUpInput = {
 export type WalletLedgerEntryUncheckedCreateWithoutTopUpInput = {
   id?: string
   walletId: string
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
@@ -632,19 +680,23 @@ export type WalletLedgerEntryUpdateManyWithWhereWithoutTopUpInput = {
 export type WalletLedgerEntryCreateManyWalletInput = {
   id?: string
   topUpId?: string | null
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
 export type WalletLedgerEntryUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   topUp?: Prisma.WalletTopUpUpdateOneWithoutLedgerEntriesNestedInput
 }
@@ -652,39 +704,47 @@ export type WalletLedgerEntryUpdateWithoutWalletInput = {
 export type WalletLedgerEntryUncheckedUpdateWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   topUpId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type WalletLedgerEntryUncheckedUpdateManyWithoutWalletInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   topUpId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type WalletLedgerEntryCreateManyTopUpInput = {
   id?: string
   walletId: string
+  idempotencyKey?: string | null
   type: $Enums.WalletLedgerEntryType
   deltaKopecks: number
   balanceAfterKopecks: number
   description?: string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Date | string
 }
 
 export type WalletLedgerEntryUpdateWithoutTopUpInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   wallet?: Prisma.WalletUpdateOneRequiredWithoutLedgerEntriesNestedInput
 }
@@ -692,20 +752,24 @@ export type WalletLedgerEntryUpdateWithoutTopUpInput = {
 export type WalletLedgerEntryUncheckedUpdateWithoutTopUpInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type WalletLedgerEntryUncheckedUpdateManyWithoutTopUpInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   walletId?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   type?: Prisma.EnumWalletLedgerEntryTypeFieldUpdateOperationsInput | $Enums.WalletLedgerEntryType
   deltaKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   balanceAfterKopecks?: Prisma.IntFieldUpdateOperationsInput | number
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  metadataJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -715,10 +779,12 @@ export type WalletLedgerEntrySelect<ExtArgs extends runtime.Types.Extensions.Int
   id?: boolean
   walletId?: boolean
   topUpId?: boolean
+  idempotencyKey?: boolean
   type?: boolean
   deltaKopecks?: boolean
   balanceAfterKopecks?: boolean
   description?: boolean
+  metadataJson?: boolean
   createdAt?: boolean
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   topUp?: boolean | Prisma.WalletLedgerEntry$topUpArgs<ExtArgs>
@@ -728,10 +794,12 @@ export type WalletLedgerEntrySelectCreateManyAndReturn<ExtArgs extends runtime.T
   id?: boolean
   walletId?: boolean
   topUpId?: boolean
+  idempotencyKey?: boolean
   type?: boolean
   deltaKopecks?: boolean
   balanceAfterKopecks?: boolean
   description?: boolean
+  metadataJson?: boolean
   createdAt?: boolean
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   topUp?: boolean | Prisma.WalletLedgerEntry$topUpArgs<ExtArgs>
@@ -741,10 +809,12 @@ export type WalletLedgerEntrySelectUpdateManyAndReturn<ExtArgs extends runtime.T
   id?: boolean
   walletId?: boolean
   topUpId?: boolean
+  idempotencyKey?: boolean
   type?: boolean
   deltaKopecks?: boolean
   balanceAfterKopecks?: boolean
   description?: boolean
+  metadataJson?: boolean
   createdAt?: boolean
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   topUp?: boolean | Prisma.WalletLedgerEntry$topUpArgs<ExtArgs>
@@ -754,14 +824,16 @@ export type WalletLedgerEntrySelectScalar = {
   id?: boolean
   walletId?: boolean
   topUpId?: boolean
+  idempotencyKey?: boolean
   type?: boolean
   deltaKopecks?: boolean
   balanceAfterKopecks?: boolean
   description?: boolean
+  metadataJson?: boolean
   createdAt?: boolean
 }
 
-export type WalletLedgerEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "walletId" | "topUpId" | "type" | "deltaKopecks" | "balanceAfterKopecks" | "description" | "createdAt", ExtArgs["result"]["walletLedgerEntry"]>
+export type WalletLedgerEntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "walletId" | "topUpId" | "idempotencyKey" | "type" | "deltaKopecks" | "balanceAfterKopecks" | "description" | "metadataJson" | "createdAt", ExtArgs["result"]["walletLedgerEntry"]>
 export type WalletLedgerEntryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   wallet?: boolean | Prisma.WalletDefaultArgs<ExtArgs>
   topUp?: boolean | Prisma.WalletLedgerEntry$topUpArgs<ExtArgs>
@@ -785,10 +857,12 @@ export type $WalletLedgerEntryPayload<ExtArgs extends runtime.Types.Extensions.I
     id: string
     walletId: string
     topUpId: string | null
+    idempotencyKey: string | null
     type: $Enums.WalletLedgerEntryType
     deltaKopecks: number
     balanceAfterKopecks: number
     description: string | null
+    metadataJson: runtime.JsonValue | null
     createdAt: Date
   }, ExtArgs["result"]["walletLedgerEntry"]>
   composites: {}
@@ -1218,10 +1292,12 @@ export interface WalletLedgerEntryFieldRefs {
   readonly id: Prisma.FieldRef<"WalletLedgerEntry", 'String'>
   readonly walletId: Prisma.FieldRef<"WalletLedgerEntry", 'String'>
   readonly topUpId: Prisma.FieldRef<"WalletLedgerEntry", 'String'>
+  readonly idempotencyKey: Prisma.FieldRef<"WalletLedgerEntry", 'String'>
   readonly type: Prisma.FieldRef<"WalletLedgerEntry", 'WalletLedgerEntryType'>
   readonly deltaKopecks: Prisma.FieldRef<"WalletLedgerEntry", 'Int'>
   readonly balanceAfterKopecks: Prisma.FieldRef<"WalletLedgerEntry", 'Int'>
   readonly description: Prisma.FieldRef<"WalletLedgerEntry", 'String'>
+  readonly metadataJson: Prisma.FieldRef<"WalletLedgerEntry", 'Json'>
   readonly createdAt: Prisma.FieldRef<"WalletLedgerEntry", 'DateTime'>
 }
     

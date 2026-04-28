@@ -62,6 +62,17 @@ export const adminSections: AdminSection[] = [
   },
 
   {
+    id: 'pricing-billing',
+    title: 'Pricing & Billing',
+    navLabel: 'Pricing & Billing',
+    href: '/admin/pricing-billing',
+    description: 'AI request pricing, commission, and charging behavior.',
+    requirement: { requireSystemRole: 'admin' },
+    group: 'control-plane',
+    groupLabel: 'Control Plane',
+  },
+
+  {
     id: 'data-retention',
     title: 'Data Retention',
     navLabel: 'Data Retention',
