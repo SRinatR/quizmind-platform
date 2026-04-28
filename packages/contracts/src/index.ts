@@ -1076,6 +1076,7 @@ export interface EmailQueueJobPayload {
 }
 
 export interface QuotaResetJobPayload {
+  workspaceId: string;
   key: string;
   consumed: number;
   periodStart: string;
@@ -1483,6 +1484,7 @@ export interface RemoteConfigPublishResult {
   appliedLayerCount: number;
   publishedAt: string;
   actorId: string;
+  workspaceId?: string;
 }
 
 export interface RemoteConfigVersionSummary {
