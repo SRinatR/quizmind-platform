@@ -20,7 +20,7 @@ async function main() {
   try {
     const repository = new AdminLogRepository(prisma as any);
     const settingsRepository = new PlatformSettingsRepository(prisma as any);
-    const retentionSettingsService = new RetentionSettingsService(settingsRepository);
+    const retentionSettingsService = new RetentionSettingsService(settingsRepository, prisma as any);
     const execute = hasFlag('--execute');
     const explicitDryRun = hasFlag('--dry-run');
     const includeSensitive = hasFlag('--include-sensitive');

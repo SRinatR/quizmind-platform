@@ -25,6 +25,17 @@ interface RetentionRouteResponse {
   error?: { message?: string };
 }
 
+const retentionFieldConfig = {
+  aiHistoryContentDays: { min: 1, max: 365, step: 1 },
+  aiHistoryAttachmentDays: { min: 1, max: 365, step: 1 },
+  adminLogActivityDays: { min: 1, max: 3650, step: 1 },
+  adminLogDomainDays: { min: 1, max: 3650, step: 1 },
+  adminLogSystemDays: { min: 1, max: 3650, step: 1 },
+  adminLogAuditDays: { min: 30, max: 3650, step: 1 },
+  adminLogSecurityDays: { min: 30, max: 3650, step: 1 },
+  adminLogAdminDays: { min: 30, max: 3650, step: 1 },
+} as const;
+
 interface AdminSettingsClientProps {
   isConnectedSession: boolean;
   sessionEmail: string;
@@ -277,6 +288,14 @@ export function AdminSettingsClient({
 
   async function handleRetentionSave() {
     if (!retentionDraft) return;
+    for (const [field, config] of Object.entries(retentionFieldConfig) as Array<[keyof typeof retentionFieldConfig, { min: number; max: number; step: number }]>) {
+      if (!(field in retentionDraft)) continue;
+      const value = retentionDraft[field];
+      if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value) || value < config.min || value > config.max) {
+        setRetentionError(adminT.settings.retention.validationDays);
+        return;
+      }
+    }
     setRetentionError(null);
     setRetentionStatus(t.settings.account.saving);
     setIsSavingRetention(true);
@@ -471,13 +490,37 @@ export function AdminSettingsClient({
             {retentionError ? <div className="banner banner-error" style={{ marginBottom: '8px' }}>{retentionError}</div> : null}
             {retentionDraft ? (
               <>
+                <div className="micro-label" style={{ marginBottom: '8px' }}>{adminT.settings.retention.aiSectionTitle}</div>
                 <div className="form-grid">
-                  {(['aiHistoryContentDays','aiHistoryAttachmentDays','legacyAiRequestDays','adminLogActivityDays','adminLogDomainDays','adminLogSystemDays','adminLogAuditDays','adminLogSecurityDays','adminLogAdminDays'] as const).map((field) => (
+                  {(['aiHistoryContentDays','aiHistoryAttachmentDays'] as const).map((field) => (
                     <label className="form-field" key={field}>
                       <span className="form-field__label">{adminT.settings.retention[field]}</span>
                       <input
                         type="number"
                         value={String(retentionDraft[field] ?? '')}
+                        min={retentionFieldConfig[field].min}
+                        max={retentionFieldConfig[field].max}
+                        step={retentionFieldConfig[field].step}
+                        onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))}
+                      />
+                    </label>
+                  ))}
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <span className="form-field__label">{adminT.settings.retention.legacyAiRequestDays}</span>
+                  <div>{retentionState?.policy.legacyAiRequestDays} {adminT.settings.retention.legacyReadOnly}</div>
+                </div>
+                <div className="micro-label" style={{ marginTop: '12px', marginBottom: '8px' }}>{adminT.settings.retention.adminLogsSectionTitle}</div>
+                <div className="form-grid">
+                  {(['adminLogActivityDays','adminLogDomainDays','adminLogSystemDays','adminLogAuditDays','adminLogSecurityDays','adminLogAdminDays'] as const).map((field) => (
+                    <label className="form-field" key={field}>
+                      <span className="form-field__label">{adminT.settings.retention[field]}</span>
+                      <input
+                        type="number"
+                        value={String(retentionDraft[field] ?? '')}
+                        min={retentionFieldConfig[field].min}
+                        max={retentionFieldConfig[field].max}
+                        step={retentionFieldConfig[field].step}
                         onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))}
                       />
                     </label>
@@ -511,7 +554,7 @@ export function AdminSettingsClient({
               <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(retentionState?.policy ?? null)}>
                 {t.common.cancel}
               </button>
-              <button className="btn-ghost" type="button" onClick={() => setRetentionDraft({ aiHistoryContentDays: 7, aiHistoryAttachmentDays: 7, legacyAiRequestDays: 7, adminLogRetentionEnabled: false, adminLogActivityDays: 30, adminLogDomainDays: 30, adminLogSystemDays: 30, adminLogAuditDays: 365, adminLogSecurityDays: 365, adminLogAdminDays: 365, adminLogSensitiveRetentionEnabled: false })}>
+              <button className="btn-ghost" type="button" onClick={() => setRetentionDraft({ aiHistoryContentDays: 7, aiHistoryAttachmentDays: 7, adminLogRetentionEnabled: false, adminLogActivityDays: 30, adminLogDomainDays: 30, adminLogSystemDays: 30, adminLogAuditDays: 365, adminLogSecurityDays: 365, adminLogAdminDays: 365, adminLogSensitiveRetentionEnabled: false })}>
                 {adminT.settings.retention.resetDefaults}
               </button>
             </div>

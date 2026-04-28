@@ -425,7 +425,6 @@ export type PlatformRetentionPolicyUpdateRequest = Partial<
     PlatformRetentionPolicy,
     | 'aiHistoryContentDays'
     | 'aiHistoryAttachmentDays'
-    | 'legacyAiRequestDays'
     | 'adminLogRetentionEnabled'
     | 'adminLogActivityDays'
     | 'adminLogDomainDays'

@@ -1,10 +1,11 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { type Prisma } from '@quizmind/database';
+import { buildAdminLogEventCreateInput, type Prisma } from '@quizmind/database';
 import { type PlatformRetentionPolicy, type PlatformRetentionPolicySnapshot, type PlatformRetentionPolicyUpdateRequest } from '@quizmind/contracts';
 
 import { type CurrentSessionSnapshot } from '../auth/auth.types';
+import { PrismaService } from '../database/prisma.service';
 import { PlatformSettingsRepository } from './platform-settings.repository';
-import { defaultRetentionPolicy, parseAndNormalizeRetentionPolicy } from './retention-policy';
+import { defaultRetentionPolicy, mergeRetentionPolicy, parseAndNormalizeRetentionPolicy, parseRetentionPolicyPatch } from './retention-policy';
 
 const PLATFORM_RETENTION_POLICY_KEY = 'platform.retention_policy';
 
@@ -26,6 +27,8 @@ export class RetentionSettingsService {
   constructor(
     @Inject(PlatformSettingsRepository)
     private readonly settingsRepository: PlatformSettingsRepository,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
   ) {}
 
   private readEnvFallbackPolicy(): PlatformRetentionPolicy {
@@ -76,12 +79,53 @@ export class RetentionSettingsService {
     request?: Partial<PlatformRetentionPolicyUpdateRequest>,
   ): Promise<PlatformRetentionPolicySnapshot> {
     try {
-      const nextPolicy = parseAndNormalizeRetentionPolicy(request ?? {});
+      const current = await this.getRetentionPolicy();
+      const patch = parseRetentionPolicyPatch(request ?? {});
+      const nextPolicy = mergeRetentionPolicy(current.policy, patch);
+      const changedFields = Object.keys(patch).filter((key) => {
+        const typedKey = key as keyof PlatformRetentionPolicy;
+        return current.policy[typedKey] !== nextPolicy[typedKey];
+      });
       const row = await this.settingsRepository.upsertJson(
         PLATFORM_RETENTION_POLICY_KEY,
         nextPolicy as unknown as Prisma.InputJsonValue,
         session.user.id,
       );
+      if (changedFields.length > 0) {
+        const occurredAt = new Date();
+        const sourceRecordId = `${session.user.id}:${occurredAt.toISOString()}`;
+        const metadata: Prisma.InputJsonObject = {
+          summary: 'Updated retention policy settings',
+          actorEmail: session.user.email,
+          actorDisplayName: session.user.displayName ?? null,
+          changedFields,
+          before: current.policy as unknown as Prisma.InputJsonValue,
+          after: nextPolicy as unknown as Prisma.InputJsonValue,
+        };
+        await this.prisma.adminLogEvent.upsert({
+          where: { stream_sourceRecordId: { stream: 'audit', sourceRecordId } },
+          create: buildAdminLogEventCreateInput({
+            stream: 'audit',
+            sourceRecordId,
+            eventType: 'admin.retention_policy_updated',
+            occurredAt,
+            actorId: session.user.id,
+            targetType: 'platform_setting',
+            targetId: PLATFORM_RETENTION_POLICY_KEY,
+            metadata: metadata as unknown as Record<string, unknown>,
+          }),
+          update: buildAdminLogEventCreateInput({
+            stream: 'audit',
+            sourceRecordId,
+            eventType: 'admin.retention_policy_updated',
+            occurredAt,
+            actorId: session.user.id,
+            targetType: 'platform_setting',
+            targetId: PLATFORM_RETENTION_POLICY_KEY,
+            metadata: metadata as unknown as Record<string, unknown>,
+          }),
+        });
+      }
       return {
         policy: parseAndNormalizeRetentionPolicy(row.valueJson),
         updatedAt: row.updatedAt.toISOString(),
