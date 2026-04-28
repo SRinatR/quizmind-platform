@@ -7,14 +7,21 @@ import { useShellProfile } from '../../../lib/shell-profile-context';
 import { usePreferences } from '../../../lib/preferences';
 import { type UserProfileSnapshot } from '../../../lib/api';
 import { AppearanceSettingsPanel } from '../../components/settings/appearance-settings-panel';
+import { type PlatformRetentionPolicySnapshot, type PlatformRetentionPolicyUpdateRequest } from '@quizmind/contracts';
 
 const PRESET_AVATARS = ['🧠', '🚀', '🦊', '🐼', '🐙', '🧑‍💻', '🎯', '⚡️', '🛰️', '🧩'];
 
-type SettingsTab = 'profile' | 'appearance';
+type SettingsTab = 'profile' | 'appearance' | 'retention';
 
 interface UserProfileRouteResponse {
   ok: boolean;
   data?: UserProfileSnapshot;
+  error?: { message?: string };
+}
+
+interface RetentionRouteResponse {
+  ok: boolean;
+  data?: PlatformRetentionPolicySnapshot;
   error?: { message?: string };
 }
 
@@ -109,6 +116,11 @@ export function AdminSettingsClient({
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [retentionState, setRetentionState] = useState<PlatformRetentionPolicySnapshot | null>(null);
+  const [retentionDraft, setRetentionDraft] = useState<PlatformRetentionPolicyUpdateRequest | null>(null);
+  const [retentionStatus, setRetentionStatus] = useState<string | null>(null);
+  const [retentionError, setRetentionError] = useState<string | null>(null);
+  const [isSavingRetention, setIsSavingRetention] = useState(false);
 
   useEffect(() => {
     setProfileState(userProfile);
@@ -248,6 +260,44 @@ export function AdminSettingsClient({
     }
   }
 
+  async function loadRetentionPolicy() {
+    const res = await fetch('/bff/admin/settings/retention', { cache: 'no-store' });
+    const payload = (await res.json().catch(() => null)) as RetentionRouteResponse | null;
+    if (!res.ok || !payload?.ok || !payload.data) {
+      throw new Error(payload?.error?.message ?? adminT.settings.retention.loadFailed);
+    }
+    setRetentionState(payload.data);
+    setRetentionDraft(payload.data.policy);
+  }
+
+  useEffect(() => {
+    if (activeTab !== 'retention' || retentionState) return;
+    void loadRetentionPolicy().catch(() => setRetentionError(adminT.settings.retention.loadFailed));
+  }, [activeTab, retentionState, adminT.settings.retention.loadFailed]);
+
+  async function handleRetentionSave() {
+    if (!retentionDraft) return;
+    setRetentionError(null);
+    setRetentionStatus(t.settings.account.saving);
+    setIsSavingRetention(true);
+    const res = await fetch('/bff/admin/settings/retention', {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(retentionDraft),
+    });
+    const payload = (await res.json().catch(() => null)) as RetentionRouteResponse | null;
+    if (!res.ok || !payload?.ok || !payload.data) {
+      setRetentionStatus(null);
+      setRetentionError(payload?.error?.message ?? adminT.settings.retention.saveFailed);
+      setIsSavingRetention(false);
+      return;
+    }
+    setRetentionState(payload.data);
+    setRetentionDraft(payload.data.policy);
+    setRetentionStatus(t.settings.account.savedMessage);
+    setIsSavingRetention(false);
+  }
+
   return (
     <>
       <input
@@ -273,6 +323,13 @@ export function AdminSettingsClient({
           onClick={() => setActiveTab('appearance')}
         >
           {t.settings.tabs.appearance}
+        </button>
+        <button
+          type="button"
+          className={`settings-tab${activeTab === 'retention' ? ' settings-tab--active' : ''}`}
+          onClick={() => setActiveTab('retention')}
+        >
+          {adminT.settings.retention.tabLabel}
         </button>
       </nav>
 
@@ -400,6 +457,64 @@ export function AdminSettingsClient({
 
           <article className="panel settings-card">
             <AppearanceSettingsPanel isSignedIn={isConnectedSession} />
+          </article>
+        </div>
+      ) : null}
+      {activeTab === 'retention' ? (
+        <div className="settings-section">
+          <div className="settings-section__header">
+            <h3 className="settings-section__title">{adminT.settings.retention.title}</h3>
+            <p className="settings-section__desc">{adminT.settings.retention.desc}</p>
+          </div>
+          <article className="panel settings-card">
+            {retentionStatus ? <div className="banner banner-info" style={{ marginBottom: '8px' }}>{retentionStatus}</div> : null}
+            {retentionError ? <div className="banner banner-error" style={{ marginBottom: '8px' }}>{retentionError}</div> : null}
+            {retentionDraft ? (
+              <>
+                <div className="form-grid">
+                  {(['aiHistoryContentDays','aiHistoryAttachmentDays','legacyAiRequestDays','adminLogActivityDays','adminLogDomainDays','adminLogSystemDays','adminLogAuditDays','adminLogSecurityDays','adminLogAdminDays'] as const).map((field) => (
+                    <label className="form-field" key={field}>
+                      <span className="form-field__label">{adminT.settings.retention[field]}</span>
+                      <input
+                        type="number"
+                        value={String(retentionDraft[field] ?? '')}
+                        onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), [field]: Number(e.target.value) }))}
+                      />
+                    </label>
+                  ))}
+                  <label className="form-field">
+                    <span className="form-field__label">{adminT.settings.retention.enableCleanup}</span>
+                    <input type="checkbox" checked={Boolean(retentionDraft.adminLogRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogRetentionEnabled: e.target.checked }))} />
+                  </label>
+                  <label className="form-field">
+                    <span className="form-field__label">{adminT.settings.retention.enableSensitiveCleanup}</span>
+                    <input type="checkbox" checked={Boolean(retentionDraft.adminLogSensitiveRetentionEnabled)} onChange={(e) => setRetentionDraft((prev) => ({ ...(prev ?? {}), adminLogSensitiveRetentionEnabled: e.target.checked }))} />
+                    <small>{adminT.settings.retention.sensitiveWarning}</small>
+                  </label>
+                </div>
+                <div style={{ marginTop: '12px' }}>
+                  <div className="micro-label">{adminT.settings.retention.authSectionTitle}</div>
+                  <p style={{ margin: '6px 0 0' }}>{adminT.settings.retention.authReadOnlyNote}</p>
+                  <ul>
+                    <li>{adminT.settings.retention.accessToken}: {retentionState?.policy.accessTokenMinutes}m</li>
+                    <li>{adminT.settings.retention.refreshSession}: {retentionState?.policy.authRefreshSessionDays}d</li>
+                    <li>{adminT.settings.retention.passwordReset}: {retentionState?.policy.passwordResetHours}h</li>
+                    <li>{adminT.settings.retention.emailVerification}: {retentionState?.policy.emailVerificationHours}h</li>
+                  </ul>
+                </div>
+              </>
+            ) : null}
+            <div className="settings-inline-actions" style={{ marginTop: '12px' }}>
+              <button className="btn-primary" type="button" onClick={() => void handleRetentionSave()} disabled={isSavingRetention}>
+                {isSavingRetention ? t.settings.account.saving : t.common.save}
+              </button>
+              <button className="btn-ghost" type="button" onClick={() => setRetentionDraft(retentionState?.policy ?? null)}>
+                {t.common.cancel}
+              </button>
+              <button className="btn-ghost" type="button" onClick={() => setRetentionDraft({ aiHistoryContentDays: 7, aiHistoryAttachmentDays: 7, legacyAiRequestDays: 7, adminLogRetentionEnabled: false, adminLogActivityDays: 30, adminLogDomainDays: 30, adminLogSystemDays: 30, adminLogAuditDays: 365, adminLogSecurityDays: 365, adminLogAdminDays: 365, adminLogSensitiveRetentionEnabled: false })}>
+                {adminT.settings.retention.resetDefaults}
+              </button>
+            </div>
           </article>
         </div>
       ) : null}

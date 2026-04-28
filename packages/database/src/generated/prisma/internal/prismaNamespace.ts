@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  PlatformSetting: 'PlatformSetting',
   Account: 'Account',
   Session: 'Session',
   EmailVerification: 'EmailVerification',
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "adminLogEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "platformSetting" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "adminLogEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -511,6 +512,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    PlatformSetting: {
+      payload: Prisma.$PlatformSettingPayload<ExtArgs>
+      fields: Prisma.PlatformSettingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PlatformSettingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PlatformSettingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>
+        }
+        findFirst: {
+          args: Prisma.PlatformSettingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PlatformSettingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>
+        }
+        findMany: {
+          args: Prisma.PlatformSettingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>[]
+        }
+        create: {
+          args: Prisma.PlatformSettingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>
+        }
+        createMany: {
+          args: Prisma.PlatformSettingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PlatformSettingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>[]
+        }
+        delete: {
+          args: Prisma.PlatformSettingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>
+        }
+        update: {
+          args: Prisma.PlatformSettingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>
+        }
+        deleteMany: {
+          args: Prisma.PlatformSettingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PlatformSettingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PlatformSettingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>[]
+        }
+        upsert: {
+          args: Prisma.PlatformSettingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PlatformSettingPayload>
+        }
+        aggregate: {
+          args: Prisma.PlatformSettingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePlatformSetting>
+        }
+        groupBy: {
+          args: Prisma.PlatformSettingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformSettingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PlatformSettingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PlatformSettingCountAggregateOutputType> | number
         }
       }
     }
@@ -3237,6 +3312,17 @@ export const UserScalarFieldEnum = {
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
 
 
+export const PlatformSettingScalarFieldEnum = {
+  key: 'key',
+  valueJson: 'valueJson',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PlatformSettingScalarFieldEnum = (typeof PlatformSettingScalarFieldEnum)[keyof typeof PlatformSettingScalarFieldEnum]
+
+
 export const AccountScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -4202,6 +4288,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  platformSetting?: Prisma.PlatformSettingOmit
   account?: Prisma.AccountOmit
   session?: Prisma.SessionOmit
   emailVerification?: Prisma.EmailVerificationOmit

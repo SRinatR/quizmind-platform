@@ -137,6 +137,16 @@ model User {
   supportImpersonationSessionsStarted SupportImpersonationSession[] @relation("SupportImpersonationActor")
   supportImpersonationSessionsTargeted SupportImpersonationSession[] @relation("SupportImpersonationTarget")
   wallet                               Wallet?
+  platformSettingsUpdated              PlatformSetting[]
+}
+
+model PlatformSetting {
+  key         String   @id
+  valueJson   Json
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: SetNull)
 }
 
 model Account {

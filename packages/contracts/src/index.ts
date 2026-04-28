@@ -402,6 +402,47 @@ export interface UserProfileUpdateRequest {
   uiPreferences?: UiPreferences | null;
 }
 
+export interface PlatformRetentionPolicy {
+  aiHistoryContentDays: number;
+  aiHistoryAttachmentDays: number;
+  legacyAiRequestDays: number;
+  adminLogRetentionEnabled: boolean;
+  adminLogActivityDays: number;
+  adminLogDomainDays: number;
+  adminLogSystemDays: number;
+  adminLogAuditDays: number;
+  adminLogSecurityDays: number;
+  adminLogAdminDays: number;
+  adminLogSensitiveRetentionEnabled: boolean;
+  authRefreshSessionDays: number;
+  passwordResetHours: number;
+  emailVerificationHours: number;
+  accessTokenMinutes: number;
+}
+
+export type PlatformRetentionPolicyUpdateRequest = Partial<
+  Pick<
+    PlatformRetentionPolicy,
+    | 'aiHistoryContentDays'
+    | 'aiHistoryAttachmentDays'
+    | 'legacyAiRequestDays'
+    | 'adminLogRetentionEnabled'
+    | 'adminLogActivityDays'
+    | 'adminLogDomainDays'
+    | 'adminLogSystemDays'
+    | 'adminLogAuditDays'
+    | 'adminLogSecurityDays'
+    | 'adminLogAdminDays'
+    | 'adminLogSensitiveRetentionEnabled'
+  >
+>;
+
+export interface PlatformRetentionPolicySnapshot {
+  policy: PlatformRetentionPolicy;
+  updatedAt?: string | null;
+  updatedById?: string | null;
+}
+
 export interface WorkspaceSummary {
   id: string;
   slug: string;

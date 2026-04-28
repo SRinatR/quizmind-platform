@@ -69,6 +69,8 @@ import {
   type SupportTicketQueueSnapshot,
   type SupportTicketWorkflowUpdateRequest,
   type SupportTicketWorkflowUpdateResult,
+  type PlatformRetentionPolicySnapshot,
+  type PlatformRetentionPolicyUpdateRequest,
   type UiPreferences,
   type UserProfilePayload,
   type UserProfileUpdateRequest,
@@ -174,6 +176,7 @@ import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
 import { compareSemver, evaluateCompatibility } from '@quizmind/extension';
 import { AiHistoryService } from './history/ai-history.service';
+import { RetentionSettingsService } from './settings/retention-settings.service';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
@@ -567,7 +570,28 @@ export class PlatformService {
     private readonly queueDispatchService: QueueDispatchService,
     @Inject(AiHistoryService)
     private readonly aiHistoryService: AiHistoryService,
+    @Inject(RetentionSettingsService)
+    private readonly retentionSettingsService: RetentionSettingsService,
   ) {}
+
+  private requireSystemAdmin(session: CurrentSessionSnapshot): void {
+    if (!session.principal.systemRoles.includes('admin')) {
+      throw new ForbiddenException('Admin access is required.');
+    }
+  }
+
+  async getRetentionPolicyForCurrentSession(session: CurrentSessionSnapshot): Promise<PlatformRetentionPolicySnapshot> {
+    this.requireSystemAdmin(session);
+    return this.retentionSettingsService.getRetentionPolicy();
+  }
+
+  async updateRetentionPolicyForCurrentSession(
+    session: CurrentSessionSnapshot,
+    request?: Partial<PlatformRetentionPolicyUpdateRequest>,
+  ): Promise<PlatformRetentionPolicySnapshot> {
+    this.requireSystemAdmin(session);
+    return this.retentionSettingsService.updateRetentionPolicy(session, request);
+  }
 
   async getHealth() {
     const [postgresHealth, postgresSchemaHealth, redisHealth] = await Promise.all([
