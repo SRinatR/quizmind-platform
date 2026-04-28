@@ -564,10 +564,13 @@ export class AiProxyService {
         );
       }
 
+      const policyWorkspaceId = (policy as { workspaceId?: string | null }).workspaceId ?? undefined;
+      const sessionWorkspaceId = (session as unknown as { workspaces?: Array<{ id?: string | null }> }).workspaces?.[0]?.id ?? undefined;
+
       return {
         providers: catalog.providers,
         models: catalog.models,
-        workspaceId: policy.workspaceId ?? undefined,
+        ...(policyWorkspaceId ?? sessionWorkspaceId ? { workspaceId: policyWorkspaceId ?? sessionWorkspaceId } : {}),
         planCode: (await (this.aiProxyRepository as any).findWorkspacePlanCode?.()) ?? undefined,
         ...(catalog.defaultProvider ? { defaultProvider: catalog.defaultProvider } : {}),
         ...(catalog.defaultModel ? { defaultModel: catalog.defaultModel } : {}),
