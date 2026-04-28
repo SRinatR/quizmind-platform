@@ -149,6 +149,8 @@ export async function createIntegrationHarness(t: TestContext): Promise<Integrat
     supportImpersonationRepository,
     usageRepository,
     queueDispatchService,
+    {} as any,
+    { getRetentionPolicy: async () => ({ policy: {} }), updateRetentionPolicy: async () => ({ policy: {} }) } as any,
   );
   const env = {
     nodeEnv: 'test' as const,

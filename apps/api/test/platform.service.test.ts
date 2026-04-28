@@ -22,6 +22,7 @@ import { type SupportTicketRepository } from '../src/support/support-ticket.repo
 import { type UsageRepository } from '../src/usage/usage.repository';
 import { type WorkspaceRepository } from '../src/workspaces/workspace.repository';
 import { type AiHistoryService } from '../src/history/ai-history.service';
+import { type RetentionSettingsService } from '../src/settings/retention-settings.service';
 
 function createPlatformService() {
   const infrastructureHealthService = {} as InfrastructureHealthService;
@@ -59,6 +60,10 @@ function createPlatformService() {
     }),
   } as QueueDispatchService;
   const aiHistoryService = {} as AiHistoryService;
+  const retentionSettingsService = {
+    getRetentionPolicy: async () => ({ policy: {} }),
+    updateRetentionPolicy: async () => ({ policy: {} }),
+  } as unknown as RetentionSettingsService;
   const service = new PlatformService(
     infrastructureHealthService,
     subscriptionRepository,
@@ -77,6 +82,7 @@ function createPlatformService() {
     usageRepository as UsageRepository,
     queueDispatchService,
     aiHistoryService,
+    retentionSettingsService,
   );
 
   return {

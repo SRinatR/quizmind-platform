@@ -34,6 +34,7 @@ import {
   type SupportImpersonationRequest,
   type SupportTicketQueuePresetFavoriteRequest,
   type SupportTicketWorkflowUpdateRequest,
+  type PlatformRetentionPolicyUpdateRequest,
   type UserProfileUpdateRequest,
   type UsageExportRequest,
   type UsageHistoryRequest,
@@ -249,6 +250,21 @@ export class PlatformController {
     void persona;
     const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.listAdminSecurityForCurrentSession(session, filters));
+  }
+
+  @Get('admin/settings/retention')
+  async getAdminRetentionSettings(@Headers('authorization') authorization?: string) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.getRetentionPolicyForCurrentSession(session));
+  }
+
+  @Patch('admin/settings/retention')
+  async patchAdminRetentionSettings(
+    @Body() request?: Partial<PlatformRetentionPolicyUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.updateRetentionPolicyForCurrentSession(session, request));
   }
 
   @Get('admin/webhooks')

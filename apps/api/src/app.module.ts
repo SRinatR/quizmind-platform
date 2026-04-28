@@ -52,6 +52,8 @@ import { SupportTicketPresetFavoriteRepository } from './support/support-ticket-
 import { SupportTicketRepository } from './support/support-ticket.repository';
 import { UsageRepository } from './usage/usage.repository';
 import { WorkspaceRepository } from './workspaces/workspace.repository';
+import { PlatformSettingsRepository } from './settings/platform-settings.repository';
+import { RetentionSettingsService } from './settings/retention-settings.service';
 
 @Module({
   controllers: [
@@ -74,6 +76,8 @@ import { WorkspaceRepository } from './workspaces/workspace.repository';
     RouterAiCatalogService,
     AiHistoryRepository,
     AiHistoryService,
+    PlatformSettingsRepository,
+    RetentionSettingsService,
     HistoryBlobService,
     AuthService,
     BillingService,

@@ -3506,3 +3506,37 @@ test('PlatformController.ingestUsageEvent proxies usage event payload', async ()
   assert.equal(result.ok, true);
   assert.equal(result.data.queued, true);
 });
+
+test('PlatformController retention settings endpoints use connected session flow', async () => {
+  const session = createSession();
+  let getCalled = false;
+  let patchCalled = false;
+  const authService = {
+    async getCurrentSession() {
+      return session;
+    },
+  };
+  const platformService = {
+    async getRetentionPolicyForCurrentSession(inputSession: CurrentSessionSnapshot) {
+      getCalled = true;
+      assert.equal(inputSession, session);
+      return { policy: { aiHistoryContentDays: 7 } };
+    },
+    async updateRetentionPolicyForCurrentSession(inputSession: CurrentSessionSnapshot, request: unknown) {
+      patchCalled = true;
+      assert.equal(inputSession, session);
+      assert.deepEqual(request, { aiHistoryContentDays: 14 });
+      return { policy: { aiHistoryContentDays: 14 } };
+    },
+  };
+  const controller = new PlatformController(authService as any, platformService as any);
+  (controller as any).env = { runtimeMode: 'connected' };
+
+  const getResult = await controller.getAdminRetentionSettings('Bearer access-token-123');
+  const patchResult = await controller.patchAdminRetentionSettings({ aiHistoryContentDays: 14 }, 'Bearer access-token-123');
+
+  assert.equal(getCalled, true);
+  assert.equal(patchCalled, true);
+  assert.equal(getResult.ok, true);
+  assert.equal(patchResult.ok, true);
+});

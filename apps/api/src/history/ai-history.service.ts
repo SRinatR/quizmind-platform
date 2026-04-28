@@ -24,6 +24,7 @@ import {
   type AiHistoryLegacyListRecord,
 } from './ai-history.repository';
 import { AdminLogAiSyncService } from '../logs/admin-log-ai-sync.service';
+import { RetentionSettingsService } from '../settings/retention-settings.service';
 
 export const HISTORY_RETENTION_DAYS = 7;
 const DEFAULT_LIST_LIMIT = 25;
@@ -263,7 +264,26 @@ export class AiHistoryService {
     @Inject(AiHistoryRepository) private readonly repository: AiHistoryRepository,
     @Inject(HistoryBlobService) private readonly blobs: HistoryBlobService,
     @Inject(AdminLogAiSyncService) private readonly adminLogAiSync: AdminLogAiSyncService,
+    @Inject(RetentionSettingsService) private readonly retentionSettingsService: RetentionSettingsService,
   ) {}
+
+  private async resolveHistoryRetentionDays(): Promise<{ contentDays: number; attachmentDays: number }> {
+    try {
+      const policy = await this.retentionSettingsService.getEffectiveRetentionPolicy();
+      return {
+        contentDays: policy.aiHistoryContentDays,
+        attachmentDays: policy.aiHistoryAttachmentDays,
+      };
+    } catch (error) {
+      console.warn('[ai-history] retention policy unavailable, using defaults', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return {
+        contentDays: HISTORY_RETENTION_DAYS,
+        attachmentDays: HISTORY_RETENTION_DAYS,
+      };
+    }
+  }
 
   async listHistory(userId: string, rawFilters: Partial<AiHistoryListFilters>): Promise<AiHistoryListResponse> {
     const limit = clampLimit(rawFilters.limit);
@@ -538,15 +558,18 @@ export class AiHistoryService {
     completionTokens?: number;
     durationMs?: number;
   }): Promise<void> {
+    const retention = await this.resolveHistoryRetentionDays();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + HISTORY_RETENTION_DAYS);
+    expiresAt.setDate(expiresAt.getDate() + retention.contentDays);
+    const attachmentExpiresAt = new Date();
+    attachmentExpiresAt.setDate(attachmentExpiresAt.getDate() + retention.attachmentDays);
 
     const eventId = input.aiRequestId ?? input.requestId;
     const promptAttachments: PersistablePromptAttachment[] = [];
     const sanitizedPromptContent = await this.extractPromptAttachments(
       input.promptContent,
       eventId,
-      expiresAt,
+      attachmentExpiresAt,
       promptAttachments,
     );
 

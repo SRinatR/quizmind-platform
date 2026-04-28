@@ -7,11 +7,13 @@ import { type AiHistoryRepository } from '../src/history/ai-history.repository';
 import { sanitizeAttachmentFilename } from '../src/history/ai-history.controller';
 import { type HistoryBlobService } from '../src/history/history-blob.service';
 import { type AdminLogAiSyncService } from '../src/logs/admin-log-ai-sync.service';
+import { type RetentionSettingsService } from '../src/settings/retention-settings.service';
 
 function createService(overrides?: {
   repository?: Partial<AiHistoryRepository>;
   blobs?: Partial<HistoryBlobService>;
   adminLogAiSync?: Partial<AdminLogAiSyncService>;
+  retentionSettingsService?: Partial<RetentionSettingsService>;
 }) {
   const repository: Partial<AiHistoryRepository> = {
     listEventsForUser: async () => [],
@@ -52,12 +54,20 @@ function createService(overrides?: {
     syncFromAiRequestEvent: async () => 0,
     ...overrides?.adminLogAiSync,
   };
+  const retentionSettingsService: Partial<RetentionSettingsService> = {
+    getEffectiveRetentionPolicy: async () => ({
+      aiHistoryContentDays: 7,
+      aiHistoryAttachmentDays: 7,
+    }),
+    ...overrides?.retentionSettingsService,
+  };
 
   return {
     service: new AiHistoryService(
       repository as AiHistoryRepository,
       blobs as HistoryBlobService,
       adminLogAiSync as AdminLogAiSyncService,
+      retentionSettingsService as RetentionSettingsService,
     ),
     repository,
     blobs,
@@ -968,4 +978,65 @@ test('AiHistoryService.listHistory falls back to legacy list when no events exis
   assert.equal(result.total, 1);
   assert.equal(result.items[0]?.id, 'legacy_1');
   assert.deepEqual(result.items[0]?.promptContentJson, null);
+});
+
+test('AiHistoryService.persistContent uses configured retention for content and attachments', async () => {
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+    retentionSettingsService: {
+      getEffectiveRetentionPolicy: async () => ({
+        aiHistoryContentDays: 20,
+        aiHistoryAttachmentDays: 3,
+      } as any),
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_retention_1',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'image',
+    promptContent: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: 'data:image/jpeg;base64,aGVsbG8=' } }] }],
+  });
+
+  assert.ok(upsertInput.expiresAt instanceof Date);
+  assert.equal(upsertInput.promptAttachments.length, 1);
+  const days = Math.round((upsertInput.expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  assert.ok(days >= 19 && days <= 20);
+  const attachmentDays = Math.round((upsertInput.promptAttachments[0].expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  assert.ok(attachmentDays >= 2 && attachmentDays <= 3);
+});
+
+test('AiHistoryService.persistContent falls back to 7 days when retention service fails', async () => {
+  let upsertInput: any;
+  const { service } = createService({
+    repository: {
+      upsertEventContentAndRollup: async (input: any) => {
+        upsertInput = input;
+      },
+    },
+    retentionSettingsService: {
+      getEffectiveRetentionPolicy: async () => {
+        throw new Error('db unavailable');
+      },
+    },
+  });
+
+  await service.persistContent({
+    requestId: 'req_retention_fallback',
+    userId: 'user_1',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    requestType: 'text',
+    promptContent: [{ role: 'user', content: 'hello' }],
+  });
+
+  const days = Math.round((upsertInput.expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+  assert.ok(days >= 6 && days <= 7);
 });
