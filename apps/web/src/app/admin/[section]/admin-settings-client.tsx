@@ -234,7 +234,7 @@ export function AdminSettingsClient({
       const res = await fetch('/bff/user/profile', { cache: 'no-store' });
       const payload = (await res.json().catch(() => null)) as UserProfileRouteResponse | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        throw new Error(payload?.error?.message ?? 'refresh_failed');
+        throw new Error(payload?.error?.message ?? adminT.settings.refreshFailed);
       }
       setProfileState(payload.data);
       setDisplayNameDraft(payload.data.displayName ?? '');
