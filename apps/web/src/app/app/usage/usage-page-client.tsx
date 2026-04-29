@@ -145,7 +145,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
     ? tu.allModels
     : selectedModels.length === 1
       ? tu.oneModelSelected
-      : `${selectedModels.length} models selected`;
+      : tu.modelsSelected.replace('{count}', String(selectedModels.length));
 
   const filteredRows = useMemo(() => {
     if (selectedModels.length === 0) {
@@ -233,11 +233,11 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
             {statCard(tu.totalRequests, String(filteredTotals.totalRequests))}
-            {statCard(tu.successful, String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} failed`)}
-            {statCard(tu.totalTokens, formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} ${tu.prompt} · ${formatTokens(filteredTotals.totalCompletionTokens)} completion`)}
+            {statCard(tu.successful, String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} ${tu.failed}`)}
+            {statCard(tu.totalTokens, formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} ${tu.prompt} · ${formatTokens(filteredTotals.totalCompletionTokens)} ${tu.completion}`)}
             {statCard(tu.spend, formatUsdAmountByPreference(filteredTotals.chargedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
             {filteredTotals.avgDurationMs !== null ? statCard(tu.avgLatency, formatHistoryDuration(filteredTotals.avgDurationMs) ?? '—') : null}
-            {mostUsedModel ? statCard(tu.mostUsedModel, mostUsedModel.displayName, `${mostUsedModel.requestCount} requests`) : null}
+            {mostUsedModel ? statCard(tu.mostUsedModel, mostUsedModel.displayName, `${mostUsedModel.requestCount} ${tu.requests}`) : null}
             {highestCostModel ? statCard(tu.highestCostModel, highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.chargedCostUsd ?? highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
           </div>
 
@@ -410,7 +410,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                             ? tu.allModelsIncluded
                             : selectedModels.length === 1
                               ? tu.oneModelSelected
-                              : `${selectedModels.length} models selected`}
+                              : tu.modelsSelected.replace('{count}', String(selectedModels.length))}
                         </span>
                         <button
                           type="button"
@@ -429,7 +429,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                             opacity: selectedModels.length === 0 && modelSearchText.length === 0 ? 0.5 : 1,
                           }}
                         >
-                          Clear
+                          {tu.clear}
                         </button>
                       </div>
                     </div>
@@ -437,11 +437,11 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                 </div>
               ) : null}
               <label className="filter-field" style={{ margin: 0 }}>
-                <span className="filter-field__label">From</span>
+                <span className="filter-field__label">{tu.from}</span>
                 <input type="date" name="from" defaultValue={fromDate} style={{ padding: '4px 8px' }} />
               </label>
               <label className="filter-field" style={{ margin: 0 }}>
-                <span className="filter-field__label">To</span>
+                <span className="filter-field__label">{tu.to}</span>
                 <input type="date" name="to" defaultValue={toDate} style={{ padding: '4px 8px' }} />
               </label>
               <button className="btn-primary" type="submit">{tu.refresh}</button>

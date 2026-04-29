@@ -155,7 +155,7 @@ export function ProfilePageClient({
     (Number.isFinite(effectiveKopecks) && effectiveKopecks >= 1_000 && effectiveKopecks <= 100_000_000);
 
   const currentDisplayName =
-    profileState?.displayName ?? session.user.displayName ?? 'Your account';
+    profileState?.displayName ?? session.user.displayName ?? tp.yourAccount;
   const currentEmail = profileState?.email ?? session.user.email;
   const avatarUrl = profileState?.avatarUrl ?? userProfile?.avatarUrl;
   const initials = currentDisplayName ? getInitials(currentDisplayName) : '?';
@@ -238,7 +238,7 @@ export function ProfilePageClient({
     const res = await fetch('/bff/user/profile', { cache: 'no-store', signal });
     const payload = (await res.json().catch(() => null)) as UserProfileRouteResponse | null;
     if (!res.ok || !payload?.ok || !payload.data) {
-      throw new Error(payload?.error?.message ?? 'Refresh failed');
+      throw new Error(payload?.error?.message ?? tp.refreshFailed);
     }
 
     const nextProfile = payload.data;
@@ -256,7 +256,7 @@ export function ProfilePageClient({
     const res = await fetch('/bff/wallet/balance', { cache: 'no-store', signal });
     const payload = (await res.json().catch(() => null)) as BillingRouteResponse<WalletBalanceSnapshot> | null;
     if (!res.ok || !payload?.ok || !payload.data) {
-      throw new Error(payload?.error?.message ?? 'Refresh failed');
+      throw new Error(payload?.error?.message ?? tp.refreshFailed);
     }
     setBalance(payload.data);
   }, []);
@@ -275,11 +275,11 @@ export function ProfilePageClient({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setProfileError('Please select an image file (JPEG, PNG, WebP, etc.).');
+      setProfileError(tp.imageFileError);
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setProfileError('Image is too large. Please choose a file under 10 MB.');
+      setProfileError(tp.imageLargeError);
       return;
     }
 
@@ -289,7 +289,7 @@ export function ProfilePageClient({
       setAvatarDraft(dataUrl);
       setProfileError(null);
     } catch {
-      setProfileError('Could not process the image. Please try a different file.');
+      setProfileError(tp.imageProcessError);
     }
   }
 
@@ -390,9 +390,9 @@ export function ProfilePageClient({
         refreshProfile(new AbortController().signal),
         refreshNow(),
       ]);
-      setProfileStatus('Updated just now');
+      setProfileStatus(tp.updatedJustNow);
     } catch {
-      setProfileError('Refresh failed');
+      setProfileError(tp.refreshFailed);
     }
   }
 
@@ -489,7 +489,7 @@ export function ProfilePageClient({
           ) : null}
           {lastUpdatedAt && !profileError ? (
             <div className="list-muted" style={{ marginTop: '8px', fontSize: '0.78rem' }}>
-              {error ? 'Refresh failed' : 'Updated just now'}
+              {error ? tp.refreshFailed : tp.updatedJustNow}
             </div>
           ) : null}
 
@@ -648,7 +648,7 @@ export function ProfilePageClient({
                   {tp.editProfile}
                 </button>
                 <button className="btn-ghost" type="button" onClick={() => void handleManualRefresh()} disabled={isRefreshing || isSavingProfile}>
-                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                  {isRefreshing ? tp.refreshing : tp.refresh}
                 </button>
               </div>
             </>
@@ -760,7 +760,7 @@ export function ProfilePageClient({
                           inputMode="decimal"
                           min="10"
                           max="1000000"
-                          placeholder="e.g. 500"
+                          placeholder={tp.eg500}
                           type="number"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
