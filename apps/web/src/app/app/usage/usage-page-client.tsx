@@ -23,9 +23,9 @@ interface UsagePageClientProps {
   exchangeRates: ExchangeRateSnapshot | null;
 }
 
-function formatDate(value?: string | null) {
+function formatDate(value: string | null | undefined, locale: 'en-US' | 'ru-RU') {
   if (!value) return '—';
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
+  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
 }
 
 function formatTokens(n: number): string {
@@ -80,7 +80,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
     });
     const payload = (await response.json().catch(() => null)) as { ok: boolean; data?: AiAnalyticsSnapshot; error?: { message?: string } } | null;
     if (!response.ok || !payload?.ok || !payload.data) {
-      throw new Error(payload?.error?.message ?? 'Refresh failed');
+      throw new Error(payload?.error?.message ?? tu.refreshFailed);
     }
     setLiveAnalytics(payload.data);
   };
@@ -204,7 +204,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
     : null;
 
   const refreshStatus = error
-    ? 'Refresh failed'
+    ? tu.refreshFailed
     : lastUpdatedAt
       ? `Updated ${Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000)) < 5 ? 'just now' : `${Math.floor((Date.now() - lastUpdatedAt) / 1000)}s ago`}`
       : null;
@@ -221,10 +221,10 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
               <h2>Usage overview</h2>
             </div>
             <span style={{ fontSize: '0.82rem', opacity: 0.6 }}>
-              {formatDate(liveAnalytics.from)} &ndash; {formatDate(liveAnalytics.to)}
+              {formatDate(liveAnalytics.from, prefs.language === 'ru' ? 'ru-RU' : 'en-US')} &ndash; {formatDate(liveAnalytics.to, prefs.language === 'ru' ? 'ru-RU' : 'en-US')}
             </span>
             <button className="btn-ghost" type="button" onClick={() => void refreshNow()} disabled={isRefreshing} style={{ padding: '4px 10px', fontSize: '0.78rem' }}>
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              {isRefreshing ? tu.refreshing : tu.refresh}
             </button>
             {refreshStatus ? (
               <span style={{ fontSize: '0.78rem', opacity: 0.65 }}>{refreshStatus}</span>

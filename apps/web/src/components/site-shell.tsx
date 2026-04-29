@@ -90,6 +90,21 @@ interface SiteShellProps {
   adminNavGroups?: AdminNavGroup[];
 }
 
+const PAGE_TITLE_KEYS: Record<string, { eyebrow: string; title: string }> = {
+  '/app': { eyebrow: 'nav.profile', title: 'profile.pageTitle' },
+  '/app/usage': { eyebrow: 'nav.usage', title: 'usagePage.title' },
+  '/app/history': { eyebrow: 'nav.history', title: 'historyPage.title' },
+  '/app/installations': { eyebrow: 'nav.installations', title: 'installs.fleet' },
+  '/app/settings': { eyebrow: 'settings.eyebrow', title: 'settings.title' },
+  '/admin/users': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.users' },
+  '/admin/logs': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.logs' },
+  '/admin/extension-control': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.extensionControl' },
+  '/admin/ai-routing': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.aiRouting' },
+  '/admin/pricing-billing': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.pricingBilling' },
+  '/admin/data-retention': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.dataRetention' },
+  '/admin/settings': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.settings' },
+};
+
 function isActiveRoute(itemHref: string, pathname: string): boolean {
   // Exact-match roots to prevent /admin or /app from matching all children
   if (itemHref === '/app' || itemHref === '/admin') {
@@ -123,6 +138,27 @@ export function SiteShell({
   adminNavGroups,
 }: SiteShellProps) {
   const { t } = usePreferences();
+  const titleMap = PAGE_TITLE_KEYS[pathname];
+  const localizedEyebrow = titleMap?.eyebrow === 'nav.profile' ? t.nav.profile
+    : titleMap?.eyebrow === 'nav.usage' ? t.nav.usage
+      : titleMap?.eyebrow === 'nav.history' ? t.nav.history
+        : titleMap?.eyebrow === 'nav.installations' ? t.nav.installations
+          : titleMap?.eyebrow === 'settings.eyebrow' ? t.settings.eyebrow
+            : titleMap?.eyebrow === 'admin.page.adminLabel' ? t.admin.page.adminLabel
+              : eyebrow;
+  const localizedTitle = titleMap?.title === 'profile.pageTitle' ? t.profile.pageTitle
+    : titleMap?.title === 'usagePage.title' ? t.usagePage.title
+      : titleMap?.title === 'historyPage.title' ? t.historyPage.title
+        : titleMap?.title === 'installs.fleet' ? t.installs.fleet
+          : titleMap?.title === 'settings.title' ? t.settings.title
+            : titleMap?.title === 'admin.nav.items.users' ? t.admin.nav.items.users
+              : titleMap?.title === 'admin.nav.items.logs' ? t.admin.nav.items.logs
+                : titleMap?.title === 'admin.nav.items.extensionControl' ? t.admin.nav.items.extensionControl
+                  : titleMap?.title === 'admin.nav.items.aiRouting' ? t.admin.nav.items.aiRouting
+                    : titleMap?.title === 'admin.nav.items.pricingBilling' ? t.admin.nav.items.pricingBilling
+                      : titleMap?.title === 'admin.nav.items.dataRetention' ? t.admin.nav.items.dataRetention
+                        : titleMap?.title === 'admin.nav.items.settings' ? t.admin.nav.items.settings
+                          : title;
   const isConnected = apiState.startsWith('Connected');
 
   // Dock identity — initialized from server props, updated reactively after profile save
@@ -272,13 +308,13 @@ export function SiteShell({
             </label>
 
             <div className="app-topbar__page-info">
-              {eyebrow ? (
-                <span className="app-topbar__eyebrow">{eyebrow}</span>
+              {localizedEyebrow ? (
+                <span className="app-topbar__eyebrow">{localizedEyebrow}</span>
               ) : null}
-              {eyebrow ? (
+              {localizedEyebrow ? (
                 <span className="app-topbar__sep" aria-hidden="true">/</span>
               ) : null}
-              <span className="app-topbar__title">{title}</span>
+              <span className="app-topbar__title">{localizedTitle}</span>
             </div>
           </div>
 
