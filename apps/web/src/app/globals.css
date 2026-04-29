@@ -5140,3 +5140,27 @@ code {
 [data-theme="dark"] .avatar-upload-btn:hover {
   background: rgba(200, 150, 90, 0.18);
 }
+
+.ub-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+}
+.ub-badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+}
+.ub-callout { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); }
+.ub-callout-success { background: rgba(60, 140, 90, 0.12); }
+.ub-callout-error { background: rgba(180, 60, 60, 0.12); }
+.ub-callout-warning { background: rgba(184, 92, 56, 0.12); }
+.ub-danger { border-color: rgba(180, 60, 60, 0.45); }
