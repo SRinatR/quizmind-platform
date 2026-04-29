@@ -600,7 +600,7 @@ export function ExtensionControlAdminClient({
 
       {/* ── B: Runtime Settings ──────────────────────────────────────────── */}
       <section className="panel">
-        <span className="micro-label">Runtime Settings</span>
+        <span className="micro-label">{config.runtimeSettings}</span>
         <h2>{config.remoteConfig}</h2>
 
         {/* B1: Feature Flags — compact expandable list */}
@@ -671,7 +671,7 @@ export function ExtensionControlAdminClient({
                     {canEditFlags ? (
                       <div className="admin-ticket-editor">
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Description</span>
+                          <span className="micro-label">{config.description}</span>
                           <textarea
                             rows={2}
                             value={draft.description}
@@ -681,7 +681,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Rollout %</span>
+                          <span className="micro-label">{config.rolloutPercent}</span>
                           <input
                             max={100}
                             min={0}
@@ -694,7 +694,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Min extension version</span>
+                          <span className="micro-label">{config.minExtensionVersion}</span>
                           <input
                             placeholder="1.7.0"
                             value={draft.minimumExtensionVersion}
@@ -704,7 +704,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Allowed roles</span>
+                          <span className="micro-label">{config.allowedRolesUsers}</span>
                           <input
                             placeholder="admin"
                             value={draft.allowRoles}
@@ -714,7 +714,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Allowed users</span>
+                          <span className="micro-label">{config.allowedRolesUsers}</span>
                           <input
                             placeholder="user_1, user_2"
                             value={draft.allowUsers}
@@ -770,7 +770,7 @@ export function ExtensionControlAdminClient({
             })}
           </div>
         ) : (
-          <p style={{ color: 'var(--muted)' }}>No feature flags defined.</p>
+          <p style={{ color: 'var(--muted)' }}>{config.noFeatureFlagsDefined}</p>
         )}
 
         {/* B2: Effective Config — editable key/value default view */}
@@ -802,13 +802,13 @@ export function ExtensionControlAdminClient({
                 {isConnectedSession && simpleConfigDirty ? (
                   <div className="admin-user-actions" style={{ marginTop: '8px' }}>
                     <button className="btn-ghost" type="button" onClick={applySimpleConfigEdits}>
-                      Stage edits to draft layer
+                      {config.stageEditsToDraftLayer}
                     </button>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <p style={{ color: 'var(--muted)' }}>No config values in active layers.</p>
+              <p style={{ color: 'var(--muted)' }}>{config.noConfigValuesInActiveLayers}</p>
             )}
             {activeConfigVersion ? (
               <p style={{ marginTop: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
@@ -847,7 +847,7 @@ export function ExtensionControlAdminClient({
                     <article className="admin-remote-config-layer" key={layer.id}>
                       <div className="billing-section-header">
                         <div>
-                          <span className="micro-label">Layer {i + 1}</span>
+                          <span className="micro-label">{config.layer} {i + 1}</span>
                           <h3>{layer.id}</h3>
                         </div>
                         <button
@@ -857,7 +857,7 @@ export function ExtensionControlAdminClient({
                             setConfigLayers((c) => c.filter((l) => l.id !== layer.id))
                           }
                         >
-                          Remove
+                          {config.remove}
                         </button>
                       </div>
                       <div className="admin-ticket-editor">
@@ -954,7 +954,7 @@ export function ExtensionControlAdminClient({
                     ])
                   }
                 >
-                  Add layer
+                  {config.addLayer}
                 </button>
               </div>
             </details>
