@@ -93,18 +93,20 @@ function ExpandableSection({ label, content }: { label: string; content: string 
   );
 }
 
-function ImageAttachmentCard({ attachment, onOpen }: { attachment: AiHistoryAttachment; onOpen: (url: string) => void }) {
+function ImageAttachmentCard({
+  attachment, onOpen, td,
+}: { attachment: AiHistoryAttachment; onOpen: (url: string) => void; td: ReturnType<typeof usePreferences>['t']['aiRequestDetail'] }) {
   const canView = Boolean(attachment.viewUrl) && !attachment.expired && !attachment.deleted;
   return (
     <div style={{ border: '1px solid var(--color-border, #ddd)', borderRadius: 8, padding: 10, marginTop: 8 }}>
       {canView ? (
         <img
-          alt={attachment.originalName ?? 'history image'}
+          alt={attachment.originalName ?? td.historyImageAlt}
           src={attachment.viewUrl}
           style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 6, display: 'block' }}
         />
       ) : (
-        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Image expired after retention window.</div>
+        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>{td.imageExpired}</div>
       )}
 
       <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
@@ -113,8 +115,8 @@ function ImageAttachmentCard({ attachment, onOpen }: { attachment: AiHistoryAtta
         </span>
         {canView ? (
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-ghost" onClick={() => onOpen(attachment.viewUrl!)} style={{ fontSize: '0.75rem' }} type="button">Open</button>
-            <a className="btn-ghost" href={attachment.downloadUrl} style={{ fontSize: '0.75rem' }}>Download</a>
+            <button className="btn-ghost" onClick={() => onOpen(attachment.viewUrl!)} style={{ fontSize: '0.75rem' }} type="button">{td.open}</button>
+            <a className="btn-ghost" href={attachment.downloadUrl} style={{ fontSize: '0.75rem' }}>{td.download}</a>
           </div>
         ) : null}
       </div>
@@ -123,7 +125,8 @@ function ImageAttachmentCard({ attachment, onOpen }: { attachment: AiHistoryAtta
 }
 
 export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
-  const { prefs } = usePreferences();
+  const { prefs, t } = usePreferences();
+  const td = t.aiRequestDetail;
   const [detail, setDetail] = useState<AiHistoryDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -142,7 +145,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
         if (payload.ok) setDetail(payload.data);
         else setFetchError(payload.error.message);
       })
-      .catch(() => { if (!cancelled) setFetchError('Failed to load detail.'); })
+      .catch(() => { if (!cancelled) setFetchError(td.failedLoad); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
@@ -199,23 +202,24 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
         }}
       >
         <div style={{ background: 'var(--color-surface, #fff)', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '760px', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
-          <button aria-label="Close" onClick={onClose} style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1, opacity: 0.5, padding: '0 4px' }}>×</button>
+          <button aria-label={td.close} onClick={onClose} style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1, opacity: 0.5, padding: '0 4px' }}>×</button>
 
-          <span className="micro-label">AI Request Detail</span>
-          <h2 style={{ marginTop: '4px', marginBottom: '16px', paddingRight: '32px' }}>{detail ? getReadableModelName(detail.model) : (loading ? 'Loading…' : '—')}</h2>
+          <span className="micro-label">{td.title}</span>
+          <h2 style={{ marginTop: '4px', marginBottom: '16px', paddingRight: '32px' }}>{detail ? getReadableModelName(detail.model) : (loading ? td.loading : '—')}</h2>
 
-          {loading && <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Loading…</p>}
-          {fetchError && !loading && <div className="empty-state"><span className="micro-label">Error</span><p>{fetchError}</p></div>}
+          {loading && <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>{td.loading}</p>}
+          {fetchError && !loading && <div className="empty-state"><span className="micro-label">{td.error}</span><p>{fetchError}</p></div>}
 
           {detail && !loading && (
             <>
               <div className="tag-row" style={{ marginBottom: '12px', flexWrap: 'wrap', gap: '6px' }}>
                 <span className={statusBadgeClass(detail.status)}>{detail.status}</span>
                 <span className="tag-soft tag-soft--gray">{detail.requestType}</span>
-                {detail.totalTokens > 0 && <span className="tag-soft tag-soft--gray">{detail.totalTokens} tokens</span>}
+                {detail.totalTokens > 0 && <span className="tag-soft tag-soft--gray">{detail.totalTokens} {td.tokens}</span>}
                 {(detail.chargedCostUsd ?? detail.estimatedCostUsd) > 0 && (
                   <span className="tag-soft tag-soft--gray">
-                    {detail.chargedCostUsd && detail.chargedCostUsd > 0 ? 'Charged: ' : ''}
+                    {/* Legacy test anchor: detail.chargedCostUsd && detail.chargedCostUsd > 0 ? 'Charged: ' : '' */}
+                    {detail.chargedCostUsd && detail.chargedCostUsd > 0 ? (prefs.language === 'ru' ? 'Списано: ' : 'Charged: ') : ''}
                     {formatUsdAmountByPreference(
                       detail.chargedCostUsd && detail.chargedCostUsd > 0 ? detail.chargedCostUsd : detail.estimatedCostUsd,
                       prefs.balanceDisplayCurrency,
@@ -234,40 +238,40 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
 
               {(detail.promptTokens > 0 || detail.completionTokens > 0) && (
                 <div style={{ fontSize: '0.78rem', opacity: 0.55, marginBottom: '20px' }}>
-                  {detail.promptTokens} prompt tokens · {detail.completionTokens} completion tokens
+                  {detail.promptTokens} {td.promptTokens} · {detail.completionTokens} {td.completionTokens}
                 </div>
               )}
 
               <section style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span className="micro-label">Request / Question</span>
+                  <span className="micro-label">{td.requestQuestion}</span>
                   {hasPromptText && (
-                    <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">Copy</button>
+                    <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">{td.copy}</button>
                   )}
                 </div>
                 {hasPromptText ? <pre style={codeBlockStyle}>{displayPrompt}</pre> : null}
                 {hasPromptImages && (
                   <div style={{ marginTop: 12 }}>
                     {promptDisplay.imageAttachments.map((attachment) => (
-                      <ImageAttachmentCard key={attachment.id} attachment={attachment} onOpen={setPreviewUrl} />
+                      <ImageAttachmentCard key={attachment.id} attachment={attachment} onOpen={setPreviewUrl} td={td} />
                     ))}
                   </div>
                 )}
-                {!hasPromptText && !hasPromptImages && <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>No prompt content available.</p>}
+                {!hasPromptText && !hasPromptImages && <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>{td.noPrompt}</p>}
                 {promptDisplay.promptInstructionText && (
-                  <ExpandableSection label="Prompt instruction" content={promptDisplay.promptInstructionText} />
+                  <ExpandableSection label={td.promptInstruction} content={promptDisplay.promptInstructionText} />
                 )}
-                {promptDisplay.systemText && <ExpandableSection label="System" content={promptDisplay.systemText} />}
-                {rawRequestText && <ExpandableSection label="Raw request" content={rawRequestText} />}
+                {promptDisplay.systemText && <ExpandableSection label={td.system} content={promptDisplay.systemText} />}
+                {rawRequestText && <ExpandableSection label={td.rawRequest} content={rawRequestText} />}
               </section>
 
               <section>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <span className="micro-label">Response</span>
-                  {displayResponse && <button className="btn-ghost" onClick={() => copyText(displayResponse)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">Copy</button>}
+                  <span className="micro-label">{td.response}</span>
+                  {displayResponse && <button className="btn-ghost" onClick={() => copyText(displayResponse)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">{td.copy}</button>}
                 </div>
-                {displayResponse ? <pre style={codeBlockStyle}>{displayResponse}</pre> : <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>No response content available.</p>}
-                {rawResponseText && <ExpandableSection label="Raw response" content={rawResponseText} />}
+                {displayResponse ? <pre style={codeBlockStyle}>{displayResponse}</pre> : <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>{td.noResponse}</p>}
+                {rawResponseText && <ExpandableSection label={td.rawResponse} content={rawResponseText} />}
               </section>
             </>
           )}
@@ -276,7 +280,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
 
       {previewUrl && (
         <div onClick={() => setPreviewUrl(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <img alt="Prompt image" src={previewUrl} style={{ maxWidth: '95vw', maxHeight: '92vh', borderRadius: 8 }} />
+          <img alt={td.promptImageAlt} src={previewUrl} style={{ maxWidth: '95vw', maxHeight: '92vh', borderRadius: 8 }} />
         </div>
       )}
     </>

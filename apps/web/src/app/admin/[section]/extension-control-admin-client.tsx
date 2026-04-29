@@ -20,6 +20,7 @@ import {
   type RemoteConfigStateSnapshot,
 } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { usePreferences } from '../../../lib/preferences';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -57,15 +58,15 @@ interface ActionFeedback {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const COMPAT_ACTION_LABELS: Record<string, string> = {
-  supported: 'Allow',
-  warn: 'Warn',
-  degraded: 'Warn',
-  blocked: 'Block',
-  unsupported: 'Block',
+  supported: 'allow',
+  warn: 'warn',
+  degraded: 'warn',
+  blocked: 'block',
+  unsupported: 'block',
 };
 
-function compatLabel(status: string): string {
-  return COMPAT_ACTION_LABELS[status] ?? status;
+function compatLabel(status: string, policySummary: { allow: string; warn: string; block: string }): string {
+  return policySummary[COMPAT_ACTION_LABELS[status] as 'allow' | 'warn' | 'block'] ?? status;
 }
 
 function parseCsv(value: string): string[] {
@@ -132,6 +133,12 @@ export function ExtensionControlAdminClient({
   canEditFlags,
 }: ExtensionControlAdminClientProps) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const shell = t.admin.extensionControlShell;
+  const policySummary = t.admin.extensionControlPolicySummary;
+  const bootstrap = t.admin.extensionControlBootstrap;
+  const telemetry = t.admin.extensionControlTelemetry;
+  const config = t.admin.extensionControlConfig;
   const [, startRefresh] = useTransition();
 
   // Shared feedback
@@ -190,7 +197,7 @@ export function ExtensionControlAdminClient({
 
   async function publishCompatRule() {
     if (!isConnectedSession) {
-      setFeedback({ tone: 'err', message: 'Connected admin session required to publish.' });
+      setFeedback({ tone: 'err', message: policySummary.connectedSessionRequired });
       return;
     }
     setIsPublishingCompat(true);
@@ -215,13 +222,13 @@ export function ExtensionControlAdminClient({
         error?: { message?: string };
       } | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setFeedback({ tone: 'err', message: payload?.error?.message ?? 'Unable to publish version policy.' });
+        setFeedback({ tone: 'err', message: payload?.error?.message ?? policySummary.publishVersionPolicyFailed });
       } else {
-        setFeedback({ tone: 'ok', message: `Version policy published at ${formatUtcDateTime(payload.data.publishedAt)}.` });
+        setFeedback({ tone: 'ok', message: `${policySummary.versionPolicyPublishedAt} ${formatUtcDateTime(payload.data.publishedAt)}.` });
         startRefresh(() => router.refresh());
       }
     } catch {
-      setFeedback({ tone: 'err', message: 'Unable to reach the compatibility publish route.' });
+      setFeedback({ tone: 'err', message: policySummary.unableToReachCompatibilityPublishRoute });
     } finally {
       setIsPublishingCompat(false);
     }
@@ -269,19 +276,19 @@ export function ExtensionControlAdminClient({
       if (!res.ok || !payload?.ok || !payload.data) {
         setFlagFeedbackMap((c) => ({
           ...c,
-          [key]: { tone: 'err', message: payload?.error?.message ?? 'Save failed.' },
+          [key]: { tone: 'err', message: payload?.error?.message ?? config.saveFailed },
         }));
       } else {
         setFlagItems((c) => c.map((f) => (f.key === key ? payload.data!.flag : f)));
         setFlagDrafts((c) => ({ ...c, [key]: initFlagDraft(payload.data!.flag) }));
         setFlagFeedbackMap((c) => ({
           ...c,
-          [key]: { tone: 'ok', message: `Saved ${formatUtcDateTime(payload.data!.updatedAt)}.` },
+          [key]: { tone: 'ok', message: `${config.savedAt} ${formatUtcDateTime(payload.data!.updatedAt)}.` },
         }));
         setLastFlagSave({ key, updatedAt: payload.data.updatedAt });
       }
     } catch {
-      setFlagFeedbackMap((c) => ({ ...c, [key]: { tone: 'err', message: 'Unable to save flag.' } }));
+      setFlagFeedbackMap((c) => ({ ...c, [key]: { tone: 'err', message: config.unableToSaveFlag } }));
     } finally {
       setFlagSavingKey((c) => (c === key ? null : c));
     }
@@ -316,11 +323,11 @@ export function ExtensionControlAdminClient({
 
   async function publishConfig() {
     if (!isConnectedSession) {
-      setFeedback({ tone: 'err', message: 'Connected admin session required to publish.' });
+      setFeedback({ tone: 'err', message: policySummary.connectedSessionRequired });
       return;
     }
     if (!configVersionLabel.trim()) {
-      setFeedback({ tone: 'err', message: 'Version label is required.' });
+      setFeedback({ tone: 'err', message: config.versionLabelRequired });
       return;
     }
     setIsPublishingConfig(true);
@@ -340,7 +347,7 @@ export function ExtensionControlAdminClient({
         };
       });
     } catch (e) {
-      setFeedback({ tone: 'err', message: e instanceof Error ? e.message : 'Invalid layer JSON.' });
+      setFeedback({ tone: 'err', message: e instanceof Error ? e.message : config.invalidLayerJson });
       setIsPublishingConfig(false);
       return;
     }
@@ -356,7 +363,7 @@ export function ExtensionControlAdminClient({
         error?: { message?: string };
       } | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setFeedback({ tone: 'err', message: payload?.error?.message ?? 'Unable to publish config.' });
+        setFeedback({ tone: 'err', message: payload?.error?.message ?? config.publishFailed });
       } else {
         setFeedback({
           tone: 'ok',
@@ -365,7 +372,7 @@ export function ExtensionControlAdminClient({
         startRefresh(() => router.refresh());
       }
     } catch {
-      setFeedback({ tone: 'err', message: 'Unable to reach the config publish route.' });
+      setFeedback({ tone: 'err', message: config.unableToReachConfigPublishRoute });
     } finally {
       setIsPublishingConfig(false);
     }
@@ -377,6 +384,20 @@ export function ExtensionControlAdminClient({
 
   return (
     <div className="admin-feature-flags-shell">
+      <section className="panel" style={{ marginBottom: '12px' }}>
+        <span className="micro-label">{shell.title}</span>
+        <h2>{shell.description}</h2>
+        <div className="admin-user-actions">
+          <button
+            className="btn-ghost"
+            disabled={isPublishingCompat || isPublishingConfig}
+            onClick={() => startRefresh(() => router.refresh())}
+            type="button"
+          >
+            {isPublishingCompat || isPublishingConfig ? shell.refreshing : shell.refresh}
+          </button>
+        </div>
+      </section>
       {feedback ? (
         <p className={feedback.tone === 'err' ? 'admin-inline-error' : 'admin-inline-status'}>
           {feedback.message}
@@ -385,25 +406,25 @@ export function ExtensionControlAdminClient({
 
       {/* ── A: Client Version Policy ─────────────────────────────────────── */}
       <section className="panel">
-        <span className="micro-label">Client Version Policy</span>
-        <h2>Version gates</h2>
+        <span className="micro-label">{policySummary.clientVersionPolicy}</span>
+        <h2>{policySummary.versionGates}</h2>
         <div className="split-grid">
           <article>
             <div className="admin-ticket-editor">
               <label className="admin-ticket-field">
-                <span className="micro-label">Minimum version</span>
+                <span className="micro-label">{policySummary.minimumVersion}</span>
                 <input value={minVer} onChange={(e) => setMinVer(e.target.value)} />
               </label>
               <label className="admin-ticket-field">
-                <span className="micro-label">Recommended version</span>
+                <span className="micro-label">{policySummary.recommendedVersion}</span>
                 <input value={recVer} onChange={(e) => setRecVer(e.target.value)} />
               </label>
               <label className="admin-ticket-field">
-                <span className="micro-label">Client action</span>
+                <span className="micro-label">{policySummary.clientAction}</span>
                 <select value={resultStatus} onChange={(e) => setResultStatus(e.target.value)}>
                   {compatibilityStatuses.map((s) => (
                     <option key={s} value={s}>
-                      {compatLabel(s)}
+                      {compatLabel(s, policySummary)}
                     </option>
                   ))}
                 </select>
@@ -416,24 +437,24 @@ export function ExtensionControlAdminClient({
                 onClick={() => void publishCompatRule()}
                 type="button"
               >
-                {isPublishingCompat ? 'Publishing...' : 'Publish version policy'}
+                {isPublishingCompat ? policySummary.saving : policySummary.publishVersionPolicy}
               </button>
             </div>
             <details style={{ marginTop: '12px' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Advanced
+                {policySummary.advanced}
               </summary>
               <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
                 <label className="admin-ticket-field">
-                  <span className="micro-label">Supported schema versions</span>
-                  <input value={schemas} onChange={(e) => setSchemas(e.target.value)} placeholder="2, 3" />
+                  <span className="micro-label">{policySummary.supportedSchemaVersions}</span>
+                  <input value={schemas} onChange={(e) => setSchemas(e.target.value)} placeholder={policySummary.supportedSchemaVersionsExample} />
                 </label>
                 <label className="admin-ticket-field">
-                  <span className="micro-label">Required capabilities</span>
-                  <input value={caps} onChange={(e) => setCaps(e.target.value)} placeholder="quiz-capture, history-sync" />
+                  <span className="micro-label">{policySummary.requiredCapabilities}</span>
+                  <input value={caps} onChange={(e) => setCaps(e.target.value)} placeholder={policySummary.requiredCapabilitiesExample} />
                 </label>
                 <label className="admin-ticket-field">
-                  <span className="micro-label">Reason</span>
+                  <span className="micro-label">{policySummary.reason}</span>
                   <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
                 </label>
               </div>
@@ -441,42 +462,149 @@ export function ExtensionControlAdminClient({
           </article>
 
           <article>
-            <span className="micro-label">Active policy</span>
+            <span className="micro-label">{policySummary.summary}</span>
             {latestCompat ? (
               <div className="list-stack" style={{ marginTop: '8px' }}>
                 <div className="list-item">
-                  <strong>Minimum version</strong>
+                  <strong>{policySummary.minimumVersion}</strong>
                   <p>{latestCompat.minimumVersion}</p>
                 </div>
                 <div className="list-item">
-                  <strong>Recommended version</strong>
+                  <strong>{policySummary.recommendedVersion}</strong>
                   <p>{latestCompat.recommendedVersion}</p>
                 </div>
                 <div className="list-item">
-                  <strong>Client action</strong>
-                  <p>{compatLabel(latestCompat.resultStatus)}</p>
+                  <strong>{policySummary.clientAction}</strong>
+                  <p>{compatLabel(latestCompat.resultStatus, policySummary)}</p>
                 </div>
                 {latestCompat.reason ? (
                   <div className="list-item">
-                    <strong>Reason</strong>
+                    <strong>{policySummary.reason}</strong>
                     <p>{latestCompat.reason}</p>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <p style={{ marginTop: '8px' }}>No version policy published yet.</p>
+              <p style={{ marginTop: '8px' }}>{policySummary.noVersionPolicyPublished}</p>
             )}
+          </article>
+        </div>
+      </section>
+
+      {/* ── C: Bootstrap Simulator ─────────────────────────────────────── */}
+      <section className="panel">
+        <span className="micro-label">{bootstrap.bootstrapSimulator}</span>
+        <h2>{bootstrap.description}</h2>
+        <details style={{ marginTop: '10px' }}>
+          <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
+            {bootstrap.runBootstrap}
+          </summary>
+          <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.installationToken}</span>
+              <input disabled placeholder={bootstrap.required} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.clientVersion}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.platform}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.browser}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.userAgent}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.deviceLabel}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+          </div>
+          <div className="admin-user-actions" style={{ marginTop: '8px' }}>
+            <button className="btn-primary" disabled type="button">
+              {bootstrap.running}
+            </button>
+            <button className="btn-ghost" disabled type="button">
+              {bootstrap.generate}
+            </button>
+            <button className="btn-ghost" disabled type="button">
+              {bootstrap.reset}
+            </button>
+            <button className="btn-ghost" disabled type="button">
+              {bootstrap.clear}
+            </button>
+          </div>
+          <div className="split-grid" style={{ marginTop: '10px' }}>
+            <article>
+              <span className="micro-label">{bootstrap.requestPayload}</span>
+              <pre>{'{ }'}</pre>
+              <button className="btn-ghost" disabled type="button">{bootstrap.copyPayload}</button>
+            </article>
+            <article>
+              <span className="micro-label">{bootstrap.responsePayload}</span>
+              <pre>{'{ }'}</pre>
+              <button className="btn-ghost" disabled type="button">{bootstrap.copyResult}</button>
+            </article>
+          </div>
+          <p style={{ marginTop: '8px', color: 'var(--muted)' }}>
+            {bootstrap.result}: {bootstrap.failed}
+          </p>
+          <p style={{ marginTop: '4px', color: 'var(--muted)' }}>
+            {bootstrap.success}
+          </p>
+        </details>
+      </section>
+
+      {/* ── D: Telemetry Queue + Usage Snapshot ───────────────────────── */}
+      <section className="panel">
+        <div className="split-grid">
+          <article>
+            <span className="micro-label">{telemetry.telemetryQueue}</span>
+            <h3>{telemetry.queueStatus}</h3>
+            <div className="list-stack" style={{ marginTop: '8px' }}>
+              <div className="list-item"><strong>{telemetry.pendingEvents}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.processedEvents}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.failedEvents}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.lastEvent}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.lastFlush}</strong><p>{telemetry.notAvailable}</p></div>
+            </div>
+            <div className="admin-user-actions" style={{ marginTop: '8px' }}>
+              <button className="btn-primary" disabled type="button">{telemetry.flushing}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.flushNow}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.clearQueue}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.refreshing}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.refresh}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.retry}</button>
+            </div>
+            <p style={{ marginTop: '8px', color: 'var(--muted)' }}>{telemetry.queueEmpty}</p>
+            <p style={{ marginTop: '4px', color: 'var(--muted)' }}>{telemetry.loadingTelemetry}</p>
+            <p style={{ marginTop: '4px', color: 'var(--muted)' }}>{telemetry.failedToLoadTelemetry}</p>
+          </article>
+          <article>
+            <span className="micro-label">{telemetry.usageSnapshot}</span>
+            <div className="list-stack" style={{ marginTop: '8px' }}>
+              <div className="list-item"><strong>{telemetry.requests}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.tokens}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.errors}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.successRate}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.avgLatency}</strong><p>{telemetry.notAvailable}</p></div>
+            </div>
           </article>
         </div>
       </section>
 
       {/* ── B: Runtime Settings ──────────────────────────────────────────── */}
       <section className="panel">
-        <span className="micro-label">Runtime Settings</span>
-        <h2>Feature flags &amp; config</h2>
+        <span className="micro-label">{config.runtimeSettings}</span>
+        <h2>{config.remoteConfig}</h2>
 
         {/* B1: Feature Flags — compact expandable list */}
-        <h3 style={{ fontSize: '0.9rem', margin: '16px 0 6px' }}>Feature Flags</h3>
+        <h3 style={{ fontSize: '0.9rem', margin: '16px 0 6px' }}>{config.featureFlags}</h3>
         {flagItems.length > 0 ? (
           <div className="admin-flag-list">
             {flagItems.map((flag) => {
@@ -499,8 +627,8 @@ export function ExtensionControlAdminClient({
                             patchFlagDraft(flag.key, { enabled: e.target.value === 'enabled' })
                           }
                         >
-                          <option value="enabled">Enabled</option>
-                          <option value="disabled">Disabled</option>
+                          <option value="enabled">{config.enabled}</option>
+                          <option value="disabled">{config.disabled}</option>
                         </select>
                         {dirty ? (
                           <button
@@ -512,7 +640,7 @@ export function ExtensionControlAdminClient({
                             }}
                             type="button"
                           >
-                            {flagSavingKey === flag.key ? 'Saving...' : 'Save'}
+                            {flagSavingKey === flag.key ? config.saving : config.save}
                           </button>
                         ) : (
                           <span className={draft.enabled ? 'tag' : 'tag warn'}>
@@ -543,7 +671,7 @@ export function ExtensionControlAdminClient({
                     {canEditFlags ? (
                       <div className="admin-ticket-editor">
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Description</span>
+                          <span className="micro-label">{config.description}</span>
                           <textarea
                             rows={2}
                             value={draft.description}
@@ -553,7 +681,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Rollout %</span>
+                          <span className="micro-label">{config.rolloutPercent}</span>
                           <input
                             max={100}
                             min={0}
@@ -566,7 +694,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Min extension version</span>
+                          <span className="micro-label">{config.minExtensionVersion}</span>
                           <input
                             placeholder="1.7.0"
                             value={draft.minimumExtensionVersion}
@@ -576,7 +704,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Allowed roles</span>
+                          <span className="micro-label">{config.allowedRolesUsers}</span>
                           <input
                             placeholder="admin"
                             value={draft.allowRoles}
@@ -586,7 +714,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Allowed users</span>
+                          <span className="micro-label">{config.allowedRolesUsers}</span>
                           <input
                             placeholder="user_1, user_2"
                             value={draft.allowUsers}
@@ -603,7 +731,7 @@ export function ExtensionControlAdminClient({
                               onClick={() => void saveFlag(flag.key)}
                               type="button"
                             >
-                              {flagSavingKey === flag.key ? 'Saving...' : 'Save'}
+                              {flagSavingKey === flag.key ? config.saving : config.save}
                             </button>
                           </div>
                         ) : null}
@@ -612,25 +740,25 @@ export function ExtensionControlAdminClient({
                       <div className="list-stack" style={{ marginTop: '6px' }}>
                         {flag.rolloutPercentage !== undefined ? (
                           <div className="list-item">
-                            <strong>Rollout</strong>
+                            <strong>{config.rollout}</strong>
                             <p>{flag.rolloutPercentage}%</p>
                           </div>
                         ) : null}
                         {flag.minimumExtensionVersion ? (
                           <div className="list-item">
-                            <strong>Min version</strong>
+                            <strong>{config.minVersion}</strong>
                             <p>{flag.minimumExtensionVersion}</p>
                           </div>
                         ) : null}
                         {flag.allowRoles?.length ? (
                           <div className="list-item">
-                            <strong>Roles</strong>
+                            <strong>{config.roles}</strong>
                             <p>{flag.allowRoles.join(', ')}</p>
                           </div>
                         ) : null}
                         {flag.allowUsers?.length ? (
                           <div className="list-item">
-                            <strong>Users</strong>
+                            <strong>{config.users}</strong>
                             <p>{flag.allowUsers.join(', ')}</p>
                           </div>
                         ) : null}
@@ -642,11 +770,11 @@ export function ExtensionControlAdminClient({
             })}
           </div>
         ) : (
-          <p style={{ color: 'var(--muted)' }}>No feature flags defined.</p>
+          <p style={{ color: 'var(--muted)' }}>{config.noFeatureFlagsDefined}</p>
         )}
 
         {/* B2: Effective Config — editable key/value default view */}
-        <h3 style={{ fontSize: '0.9rem', margin: '24px 0 6px' }}>Effective Config</h3>
+        <h3 style={{ fontSize: '0.9rem', margin: '24px 0 6px' }}>{config.remoteConfig}</h3>
         {remoteConfig ? (
           <>
             {Object.keys(previewValues).length > 0 ? (
@@ -674,29 +802,29 @@ export function ExtensionControlAdminClient({
                 {isConnectedSession && simpleConfigDirty ? (
                   <div className="admin-user-actions" style={{ marginTop: '8px' }}>
                     <button className="btn-ghost" type="button" onClick={applySimpleConfigEdits}>
-                      Stage edits to draft layer
+                      {config.stageEditsToDraftLayer}
                     </button>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <p style={{ color: 'var(--muted)' }}>No config values in active layers.</p>
+              <p style={{ color: 'var(--muted)' }}>{config.noConfigValuesInActiveLayers}</p>
             )}
             {activeConfigVersion ? (
               <p style={{ marginTop: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
-                Active: {activeConfigVersion.versionLabel} ({activeConfigVersion.layers.length}{' '}
-                layer{activeConfigVersion.layers.length === 1 ? '' : 's'})
+                {config.activeLabel} {activeConfigVersion.versionLabel} ({activeConfigVersion.layers.length}{' '}
+                {activeConfigVersion.layers.length === 1 ? config.layerSingular : config.layerPlural})
               </p>
             ) : null}
 
             <details style={{ marginTop: '12px' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Advanced: Publish &amp; layer editor
+                {config.debugPanel}
               </summary>
               <div style={{ marginTop: '10px' }}>
                 <div className="admin-ticket-editor">
                   <label className="admin-ticket-field">
-                    <span className="micro-label">Version label</span>
+                    <span className="micro-label">{config.version}</span>
                     <input
                       placeholder="spring-rollout-v3"
                       value={configVersionLabel}
@@ -711,7 +839,7 @@ export function ExtensionControlAdminClient({
                     onClick={() => void publishConfig()}
                     type="button"
                   >
-                    {isPublishingConfig ? 'Publishing...' : 'Publish config'}
+                    {isPublishingConfig ? config.publishing : config.publish}
                   </button>
                 </div>
                 <div className="admin-remote-config-layers" style={{ marginTop: '12px' }}>
@@ -719,7 +847,7 @@ export function ExtensionControlAdminClient({
                     <article className="admin-remote-config-layer" key={layer.id}>
                       <div className="billing-section-header">
                         <div>
-                          <span className="micro-label">Layer {i + 1}</span>
+                          <span className="micro-label">{config.layer} {i + 1}</span>
                           <h3>{layer.id}</h3>
                         </div>
                         <button
@@ -729,12 +857,12 @@ export function ExtensionControlAdminClient({
                             setConfigLayers((c) => c.filter((l) => l.id !== layer.id))
                           }
                         >
-                          Remove
+                          {config.remove}
                         </button>
                       </div>
                       <div className="admin-ticket-editor">
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Layer ID</span>
+                          <span className="micro-label">{config.layerId}</span>
                           <input
                             value={layer.id}
                             onChange={(e) =>
@@ -745,7 +873,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Scope</span>
+                          <span className="micro-label">{config.scope}</span>
                           <select
                             value={layer.scope}
                             onChange={(e) =>
@@ -766,7 +894,7 @@ export function ExtensionControlAdminClient({
                           </select>
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Priority</span>
+                          <span className="micro-label">{config.priority}</span>
                           <input
                             value={layer.priority}
                             onChange={(e) =>
@@ -779,7 +907,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Conditions JSON</span>
+                          <span className="micro-label">{config.conditionsJson}</span>
                           <textarea
                             rows={4}
                             value={layer.conditionsText}
@@ -793,7 +921,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Values JSON</span>
+                          <span className="micro-label">{config.valuesJson}</span>
                           <textarea
                             rows={6}
                             value={layer.valuesText}
@@ -826,67 +954,67 @@ export function ExtensionControlAdminClient({
                     ])
                   }
                 >
-                  Add layer
+                  {config.addLayer}
                 </button>
               </div>
             </details>
           </>
         ) : (
-          <p style={{ color: 'var(--muted)' }}>Remote config data unavailable for this session.</p>
+          <p style={{ color: 'var(--muted)' }}>{config.remoteConfigUnavailable}</p>
         )}
       </section>
 
       {/* ── C: Recent Changes ────────────────────────────────────────────── */}
       <section className="panel">
-        <span className="micro-label">Recent Changes</span>
-        <h2>Recent activity</h2>
+        <span className="micro-label">{config.recentChanges}</span>
+        <h2>{config.recentActivity}</h2>
         <div className="list-stack">
           {latestCompat ? (
             <div className="list-item">
-              <strong>Version policy</strong>
+              <strong>{config.versionPolicy}</strong>
               <p>
                 {latestCompat.minimumVersion} &rarr; {latestCompat.recommendedVersion} &mdash;{' '}
-                {compatLabel(latestCompat.resultStatus)}
+                {compatLabel(latestCompat.resultStatus, policySummary)}
               </p>
-              <span className="list-muted">Published {formatUtcDateTime(latestCompat.createdAt)}</span>
+              <span className="list-muted">{config.publishedLabel} {formatUtcDateTime(latestCompat.createdAt)}</span>
             </div>
           ) : (
             <div className="list-item">
-              <strong>Version policy</strong>
-              <p>No version policy published yet.</p>
+              <strong>{config.versionPolicy}</strong>
+              <p>{policySummary.noVersionPolicyPublished}</p>
             </div>
           )}
 
           {remoteConfig?.versions[0] ? (
             <div className="list-item">
-              <strong>Config: {remoteConfig.versions[0].versionLabel}</strong>
+              <strong>{config.config}: {remoteConfig.versions[0].versionLabel}</strong>
               <p>
-                {remoteConfig.versions[0].layers.length} layer
-                {remoteConfig.versions[0].layers.length === 1 ? '' : 's'}
+                {remoteConfig.versions[0].layers.length}{' '}
+                {remoteConfig.versions[0].layers.length === 1 ? config.layerSingular : config.layerPlural}
               </p>
               <span className="list-muted">
-                {formatUtcDateTime(remoteConfig.versions[0].publishedAt)} by{' '}
+                {formatUtcDateTime(remoteConfig.versions[0].publishedAt)} {config.changedBy}{' '}
                 {remoteConfig.versions[0].publishedBy?.displayName ??
                   remoteConfig.versions[0].publishedBy?.email ??
-                  'Unknown'}
+                  config.unknown}
               </span>
             </div>
           ) : (
             <div className="list-item">
-              <strong>Config</strong>
-              <p>No config versions published yet.</p>
+              <strong>{config.config}</strong>
+              <p>{config.noConfigVersionsPublished}</p>
             </div>
           )}
 
           <div className="list-item">
-            <strong>Feature flags</strong>
+            <strong>{config.featureFlags}</strong>
             <p>
-              {flagItems.length} flag{flagItems.length === 1 ? '' : 's'} &mdash;{' '}
-              {flagItems.filter((f) => f.enabled).length} enabled
+              {flagItems.length} {config.countItems} &mdash;
+              {flagItems.filter((f) => f.enabled).length} {config.enabled}
             </p>
             {lastFlagSave ? (
               <span className="list-muted">
-                Last change: {lastFlagSave.key} at {formatUtcDateTime(lastFlagSave.updatedAt)}
+                {config.recentChange}: {lastFlagSave.key} {config.changedAt} {formatUtcDateTime(lastFlagSave.updatedAt)}
               </span>
             ) : null}
           </div>

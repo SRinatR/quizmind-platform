@@ -10,6 +10,7 @@ import { AiRequestDetailModal } from './ai-request-detail-modal';
 import { getReadableModelName } from './history-model-display';
 import { buildHistoryPromptDisplay, getHistoryTimelineSummary } from './history-prompt-display';
 import { useAutoRefresh } from '../../../lib/use-auto-refresh';
+import { usePreferences } from '../../../lib/preferences';
 
 export interface HistoryPageClientProps {
   aiHistory: AiHistoryListResponse | null;
@@ -57,6 +58,8 @@ function formatTokens(n: number): string {
 }
 
 export function HistoryPageClient(props: HistoryPageClientProps) {
+  const { t } = usePreferences();
+  const th = t.historyPage;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [liveHistory, setLiveHistory] = useState<AiHistoryListResponse | null>(props.aiHistory);
 
@@ -89,7 +92,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
     });
     const payload = (await res.json().catch(() => null)) as { ok: boolean; data?: AiHistoryListResponse; error?: { message?: string } } | null;
     if (!res.ok || !payload?.ok || !payload.data) {
-      throw new Error(payload?.error?.message ?? 'Refresh failed');
+      throw new Error(payload?.error?.message ?? th.refreshFailed);
     }
     setLiveHistory(payload.data);
   }, [effectivePage, fromFilter, modelFilter, pageSize, providerFilter, requestStatus, requestType, toFilter]);
@@ -102,18 +105,18 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
   });
 
   const refreshStatusText = useMemo(() => {
-    if (error) return 'Refresh failed';
+    if (error) return th.refreshFailed;
     if (!lastUpdatedAt) return null;
     const seconds = Math.floor((Date.now() - lastUpdatedAt) / 1000);
-    return seconds < 5 ? 'Updated just now' : `Updated ${seconds}s ago`;
-  }, [error, lastUpdatedAt]);
+    return seconds < 5 ? th.updatedNow : th.updatedAgo.replace('{seconds}', String(seconds));
+  }, [error, lastUpdatedAt, th]);
 
   if (!hasSession) {
     return (
       <section className="empty-state">
-        <span className="micro-label">Sign in required</span>
-        <h2>Sign in to view history</h2>
-        <p>Your AI request history is available after signing in.</p>
+        <span className="micro-label">{th.signInRequired}</span>
+        <h2>{th.signInRequiredHeading}</h2>
+        <p>{th.signInRequiredDesc}</p>
       </section>
     );
   }
@@ -149,43 +152,43 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
     <>
       <section className="filter-panel">
         <div className="filter-panel__header">
-          <span className="micro-label">Filters</span>
-          <h2>AI Request History</h2>
+          <span className="micro-label">{th.filtersLabel}</span>
+          <h2>{th.aiRequestHistory}</h2>
         </div>
         <form method="get">
           <input type="hidden" name="source" value="ai_requests" />
           <div className="filter-grid">
             <label className="filter-field">
-              <span className="filter-field__label">Type</span>
+              <span className="filter-field__label">{th.type}</span>
               <select defaultValue={requestType ?? ''} name="requestType">
-                <option value="">all types</option>
-                <option value="text">text</option>
-                <option value="image">image</option>
-                <option value="file">file</option>
+                <option value="">{th.allTypes}</option>
+                <option value="text">{th.textType}</option>
+                <option value="image">{th.imageType}</option>
+                <option value="file">{th.fileType}</option>
               </select>
             </label>
             <label className="filter-field">
-              <span className="filter-field__label">Status</span>
+              <span className="filter-field__label">{th.status}</span>
               <select defaultValue={requestStatus ?? ''} name="status">
-                <option value="">all statuses</option>
-                <option value="success">success</option>
-                <option value="error">error</option>
+                <option value="">{th.allStatuses}</option>
+                <option value="success">{th.successStatus}</option>
+                <option value="error">{th.errorStatus}</option>
               </select>
             </label>
             <label className="filter-field">
-              <span className="filter-field__label">Model</span>
+              <span className="filter-field__label">{th.model}</span>
               <input defaultValue={modelFilter ?? ''} name="model" placeholder="e.g. gpt-4o" type="text" />
             </label>
             <label className="filter-field">
-              <span className="filter-field__label">From</span>
+              <span className="filter-field__label">{th.from}</span>
               <input defaultValue={fromFilter ?? ''} name="from" placeholder="2024-01-01" type="text" />
             </label>
             <label className="filter-field">
-              <span className="filter-field__label">To</span>
+              <span className="filter-field__label">{th.to}</span>
               <input defaultValue={toFilter ?? ''} name="to" placeholder="2024-12-31" type="text" />
             </label>
             <label className="filter-field">
-              <span className="filter-field__label">Per page</span>
+              <span className="filter-field__label">{th.perPage}</span>
               <select defaultValue={String(pageSize)} name="limit">
                 {[10, 25, 50, 100].map((n) => (
                   <option key={n} value={n}>{n}</option>
@@ -195,8 +198,8 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
           </div>
           <input name="page" type="hidden" value="1" />
           <div className="filter-actions">
-            <button className="btn-primary" type="submit">Apply</button>
-            <Link className="btn-ghost" href={clearHref}>Reset</Link>
+            <button className="btn-primary" type="submit">{th.apply}</button>
+            <Link className="btn-ghost" href={clearHref}>{th.reset}</Link>
           </div>
         </form>
       </section>
@@ -204,15 +207,15 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
       <section className="panel">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
           <div>
-            <span className="micro-label">Timeline</span>
-            <h2>AI Requests</h2>
+            <span className="micro-label">{th.timeline}</span>
+            <h2>{th.aiRequests}</h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span className="list-muted" style={{ fontSize: '0.82rem' }}>
-              {total} total &middot; page {effectivePage}
+              {total} {th.total} &middot; {th.page} {effectivePage}
             </span>
             <button className="btn-ghost" type="button" onClick={() => void refreshNow()} disabled={isRefreshing} style={{ padding: '4px 10px', fontSize: '0.78rem' }}>
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              {isRefreshing ? th.refreshing : th.refresh}
             </button>
             {refreshStatusText ? (
               <span className="list-muted" style={{ fontSize: '0.78rem' }}>{refreshStatusText}</span>
@@ -258,13 +261,13 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                   ) : null}
                   {imageAttachments.length > 0 ? (
                     <img
-                      alt={imageAttachments[0]?.originalName ?? 'Prompt image'}
+                      alt={imageAttachments[0]?.originalName ?? th.promptImageAlt}
                       src={toAttachmentViewUrl(item.id, imageAttachments[0]!.id)}
                       style={{ marginTop: 8, width: 'min(100%, 720px)', maxHeight: 340, borderRadius: 6, objectFit: 'contain', border: '1px solid var(--color-border, #ddd)', display: 'block', background: 'var(--color-surface-alt, #f4f4f5)' }}
                     />
                   ) : null}
                   {imageAttachments.length === 0 && hasUnavailableImage ? (
-                    <span className="event-row__context">Image no longer available.</span>
+                    <span className="event-row__context">{th.imageUnavailable}</span>
                   ) : null}
                   {item.fileMetadata ? (
                     <span className="event-row__context">
@@ -288,17 +291,17 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
           </div>
         ) : (
           <div className="empty-state">
-            <span className="micro-label">No results</span>
-            <h2>No AI requests found</h2>
-            <p>Adjust the filters or start using the AI extension to record history.</p>
+            <span className="micro-label">{th.noResults}</span>
+            <h2>{th.noRequestsFound}</h2>
+            <p>{th.adjustFilters}</p>
           </div>
         )}
         <div className="filter-actions" style={{ marginTop: '16px' }}>
           {hasPrev ? (
-            <Link className="btn-ghost" href={buildUrl({ page: effectivePage - 1 })}>Previous</Link>
+            <Link className="btn-ghost" href={buildUrl({ page: effectivePage - 1 })}>{th.previous}</Link>
           ) : null}
           {hasNext ? (
-            <Link className="btn-ghost" href={buildUrl({ page: effectivePage + 1 })}>Next</Link>
+            <Link className="btn-ghost" href={buildUrl({ page: effectivePage + 1 })}>{th.next}</Link>
           ) : null}
         </div>
       </section>

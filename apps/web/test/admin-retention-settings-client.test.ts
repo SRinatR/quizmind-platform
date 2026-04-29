@@ -5,6 +5,7 @@ import test from 'node:test';
 
 const settingsClientPath = path.resolve(process.cwd(), 'src/app/admin/[section]/admin-settings-client.tsx');
 const retentionClientPath = path.resolve(process.cwd(), 'src/app/admin/[section]/data-retention-client.tsx');
+const ruI18nPath = path.resolve(process.cwd(), 'src/lib/i18n/ru.ts');
 
 test('/admin/settings only keeps profile and appearance tabs', async () => {
   const source = await readFile(settingsClientPath, 'utf8');
@@ -76,4 +77,25 @@ test('data retention queue history renders editable controls for all queue defin
   assert.match(source, /'audit-exports'/);
   assert.match(source, /'history-cleanup'/);
   assert.match(source, /updateQueueField/);
+});
+
+test('data retention ru dictionary includes key localized labels', async () => {
+  const source = await readFile(ruI18nPath, 'utf8');
+  assert.match(source, /Хранение данных/);
+  assert.match(source, /История AI/);
+  assert.match(source, /[Лл]оги/);
+  assert.match(source, /Очеред/);
+  assert.match(source, /Сохранить/);
+  assert.match(source, /Сбросить/);
+});
+
+
+test('admin settings ru dictionary includes profile and appearance localization labels', async () => {
+  const source = await readFile(ruI18nPath, 'utf8');
+  assert.match(source, /pageTitle: 'Настройки'/);
+  assert.match(source, /yourProfile: 'Профиль'/);
+  assert.match(source, /title: 'Внешний вид'/);
+  assert.match(source, /languageSection: 'Язык'/);
+  assert.match(source, /saveButton: 'Сохранить'/);
+  assert.match(source, /refreshFailed: 'Не удалось обновить'/);
 });

@@ -5,6 +5,7 @@ import test from 'node:test';
 import { convertDisplayCurrencyToUsd, convertUsdToDisplayCurrency } from '../src/lib/money';
 
 const pricingClientPath = path.resolve(process.cwd(), 'src/app/admin/[section]/pricing-billing-client.tsx');
+const ruI18nPath = path.resolve(process.cwd(), 'src/lib/i18n/ru.ts');
 
 test('pricing billing client uses absolute same-origin BFF endpoint constant', async () => {
   const source = await readFile(pricingClientPath, 'utf8');
@@ -63,4 +64,13 @@ test('currency conversion helpers round-trip RUB/EUR display values through USD 
   const eurFromUsd = convertUsdToDisplayCurrency(1, 'EUR', rates);
   assert.equal(eurFromUsd, 0.9);
   assert.equal(convertDisplayCurrencyToUsd(eurFromUsd ?? 0, 'EUR', rates), 1);
+});
+
+test('pricing billing ru dictionary includes key localized labels', async () => {
+  const source = await readFile(ruI18nPath, 'utf8');
+  assert.match(source, /Тарификация и биллинг/);
+  assert.match(source, /Комиссия платформы/);
+  assert.match(source, /Стоимость|Списанная сумма/);
+  assert.match(source, /Сохранить/);
+  assert.match(source, /Сбросить/);
 });
