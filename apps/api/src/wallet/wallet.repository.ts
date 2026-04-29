@@ -34,6 +34,14 @@ export interface WalletDebitResult {
   newBalanceKopecks: number;
   alreadyProcessed: boolean;
 }
+export interface AdminWalletAdjustmentResult {
+  batchId: string;
+  affectedCount: number;
+  skippedCount: number;
+  direction: 'credit' | 'debit';
+  amountKopecks: number;
+  currency: 'RUB';
+}
 
 @Injectable()
 export class WalletRepository {
@@ -249,6 +257,41 @@ export class WalletRepository {
         newBalanceKopecks: updatedWallet.balanceKopecks,
         alreadyProcessed: false,
       };
+    });
+  }
+
+  async manualAdjustWallets(input: {
+    actorId?: string;
+    targetType: 'selected_users' | 'all_users';
+    userIds: string[];
+    direction: 'credit' | 'debit';
+    amountKopecks: number;
+    currency: 'RUB';
+    reason: string;
+    idempotencyKey: string;
+    allowNegative?: boolean;
+  }): Promise<AdminWalletAdjustmentResult> {
+    if (!Number.isInteger(input.amountKopecks) || input.amountKopecks <= 0) throw new Error('amountKopecks must be a positive integer.');
+    const reason = input.reason.trim();
+    if (reason.length < 5 || reason.length > 500) throw new Error('reason length must be between 5 and 500.');
+    return this.prisma.$transaction(async (tx) => {
+      const existingBatch = await tx.adminWalletAdjustmentBatch.findUnique({ where: { idempotencyKey: input.idempotencyKey } });
+      if (existingBatch) {
+        const affectedCount = await tx.walletLedgerEntry.count({
+          where: { idempotencyKey: { in: input.userIds.map((id) => `admin-adjustment:${existingBatch.id}:${id}`) } },
+        });
+        return { batchId: existingBatch.id, affectedCount, skippedCount: Math.max(0, input.userIds.length - affectedCount), direction: existingBatch.direction as 'credit' | 'debit', amountKopecks: existingBatch.amountKopecks, currency: existingBatch.currency as 'RUB' };
+      }
+      const batch = await tx.adminWalletAdjustmentBatch.create({ data: { actorId: input.actorId, targetType: input.targetType, targetCount: input.userIds.length, amountKopecks: input.amountKopecks, direction: input.direction, currency: input.currency, reason, idempotencyKey: input.idempotencyKey } });
+      let affectedCount = 0; let skippedCount = 0;
+      for (const userId of input.userIds) {
+        const wallet = await tx.wallet.upsert({ where: { userId }, create: { userId, currency: input.currency }, update: {}, select: { id: true, balanceKopecks: true } });
+        if (input.direction === 'debit' && !input.allowNegative && wallet.balanceKopecks < input.amountKopecks) { skippedCount += 1; continue; }
+        const updated = await tx.wallet.update({ where: { id: wallet.id }, data: { balanceKopecks: input.direction === 'credit' ? { increment: input.amountKopecks } : { decrement: input.amountKopecks } }, select: { balanceKopecks: true } });
+        await tx.walletLedgerEntry.create({ data: { walletId: wallet.id, idempotencyKey: `admin-adjustment:${batch.id}:${userId}`, type: 'manual_adjustment', deltaKopecks: input.direction === 'credit' ? input.amountKopecks : -input.amountKopecks, balanceAfterKopecks: updated.balanceKopecks, description: reason, metadataJson: { source: 'admin_manual_adjustment', adminActorId: input.actorId ?? null, reason, targetType: input.targetType, batchId: batch.id, direction: input.direction } } });
+        affectedCount += 1;
+      }
+      return { batchId: batch.id, affectedCount, skippedCount, direction: input.direction, amountKopecks: input.amountKopecks, currency: input.currency };
     });
   }
 }

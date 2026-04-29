@@ -61,6 +61,8 @@ export const ModelName = {
   Wallet: 'Wallet',
   WalletTopUp: 'WalletTopUp',
   WalletLedgerEntry: 'WalletLedgerEntry',
+  UserBillingOverride: 'UserBillingOverride',
+  AdminWalletAdjustmentBatch: 'AdminWalletAdjustmentBatch',
   WorkspaceMembership: 'WorkspaceMembership',
   WorkspaceInvite: 'WorkspaceInvite',
   UserSystemRole: 'UserSystemRole',
@@ -247,6 +249,37 @@ export const WalletLedgerEntryScalarFieldEnum = {
 } as const
 
 export type WalletLedgerEntryScalarFieldEnum = (typeof WalletLedgerEntryScalarFieldEnum)[keyof typeof WalletLedgerEntryScalarFieldEnum]
+
+
+export const UserBillingOverrideScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  aiPlatformFeeExempt: 'aiPlatformFeeExempt',
+  aiMarkupPercentOverride: 'aiMarkupPercentOverride',
+  reason: 'reason',
+  createdById: 'createdById',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserBillingOverrideScalarFieldEnum = (typeof UserBillingOverrideScalarFieldEnum)[keyof typeof UserBillingOverrideScalarFieldEnum]
+
+
+export const AdminWalletAdjustmentBatchScalarFieldEnum = {
+  id: 'id',
+  actorId: 'actorId',
+  targetType: 'targetType',
+  targetCount: 'targetCount',
+  amountKopecks: 'amountKopecks',
+  direction: 'direction',
+  currency: 'currency',
+  reason: 'reason',
+  idempotencyKey: 'idempotencyKey',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminWalletAdjustmentBatchScalarFieldEnum = (typeof AdminWalletAdjustmentBatchScalarFieldEnum)[keyof typeof AdminWalletAdjustmentBatchScalarFieldEnum]
 
 
 export const WorkspaceMembershipScalarFieldEnum = {

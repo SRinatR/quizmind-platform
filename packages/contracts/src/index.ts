@@ -1994,3 +1994,53 @@ export function resolveModelDisplayName(
 export interface HistoryCleanupJobPayload {
   triggeredAt: string;
 }
+
+export interface AdminBillingUserRow {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  walletCurrency: string;
+  balanceKopecks: number;
+  aiPlatformFeeExempt: boolean;
+  aiMarkupPercentOverride: number | null;
+  billingOverrideReason: string | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+}
+
+export interface AdminBillingUsersPayload {
+  items: AdminBillingUserRow[];
+  nextCursor?: string;
+}
+export type AdminWalletAdjustmentTarget =
+  | { type: 'selected_users'; userIds: string[] }
+  | { type: 'all_users'; confirmationText: string };
+export interface AdminWalletAdjustmentRequest {
+  target: AdminWalletAdjustmentTarget;
+  direction: 'credit' | 'debit';
+  amountKopecks: number;
+  currency: 'RUB';
+  reason: string;
+  idempotencyKey: string;
+  allowNegative?: boolean;
+}
+export interface AdminWalletAdjustmentResult {
+  batchId: string;
+  affectedCount: number;
+  skippedCount: number;
+  direction: 'credit' | 'debit';
+  amountKopecks: number;
+  currency: 'RUB';
+}
+export interface UserBillingOverrideRequest {
+  aiPlatformFeeExempt?: boolean;
+  aiMarkupPercentOverride?: number | null;
+  reason: string;
+}
+export interface UserBillingOverrideSnapshot {
+  userId: string;
+  aiPlatformFeeExempt: boolean;
+  aiMarkupPercentOverride: number | null;
+  reason: string | null;
+  updatedAt: string;
+}

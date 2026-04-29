@@ -272,6 +272,8 @@ export type UserWhereInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionListRelationFilter
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionListRelationFilter
   wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
+  billingOverride?: Prisma.XOR<Prisma.UserBillingOverrideNullableScalarRelationFilter, Prisma.UserBillingOverrideWhereInput> | null
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchListRelationFilter
   platformSettingsUpdated?: Prisma.PlatformSettingListRelationFilter
 }
 
@@ -312,6 +314,8 @@ export type UserOrderByWithRelationInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionOrderByRelationAggregateInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionOrderByRelationAggregateInput
   wallet?: Prisma.WalletOrderByWithRelationInput
+  billingOverride?: Prisma.UserBillingOverrideOrderByWithRelationInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchOrderByRelationAggregateInput
   platformSettingsUpdated?: Prisma.PlatformSettingOrderByRelationAggregateInput
 }
 
@@ -355,6 +359,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionListRelationFilter
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionListRelationFilter
   wallet?: Prisma.XOR<Prisma.WalletNullableScalarRelationFilter, Prisma.WalletWhereInput> | null
+  billingOverride?: Prisma.XOR<Prisma.UserBillingOverrideNullableScalarRelationFilter, Prisma.UserBillingOverrideWhereInput> | null
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchListRelationFilter
   platformSettingsUpdated?: Prisma.PlatformSettingListRelationFilter
 }, "id" | "email">
 
@@ -435,6 +441,8 @@ export type UserCreateInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -475,6 +483,8 @@ export type UserUncheckedCreateInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -515,6 +525,8 @@ export type UserUpdateInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -555,6 +567,8 @@ export type UserUncheckedUpdateInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -768,6 +782,36 @@ export type UserUpdateOneRequiredWithoutWalletNestedInput = {
   upsert?: Prisma.UserUpsertWithoutWalletInput
   connect?: Prisma.UserWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWalletInput, Prisma.UserUpdateWithoutWalletInput>, Prisma.UserUncheckedUpdateWithoutWalletInput>
+}
+
+export type UserCreateNestedOneWithoutBillingOverrideInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutBillingOverrideInput, Prisma.UserUncheckedCreateWithoutBillingOverrideInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutBillingOverrideInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutBillingOverrideNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutBillingOverrideInput, Prisma.UserUncheckedCreateWithoutBillingOverrideInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutBillingOverrideInput
+  upsert?: Prisma.UserUpsertWithoutBillingOverrideInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBillingOverrideInput, Prisma.UserUpdateWithoutBillingOverrideInput>, Prisma.UserUncheckedUpdateWithoutBillingOverrideInput>
+}
+
+export type UserCreateNestedOneWithoutWalletAdjustmentBatchesCreatedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUncheckedCreateWithoutWalletAdjustmentBatchesCreatedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletAdjustmentBatchesCreatedInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutWalletAdjustmentBatchesCreatedNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUncheckedCreateWithoutWalletAdjustmentBatchesCreatedInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutWalletAdjustmentBatchesCreatedInput
+  upsert?: Prisma.UserUpsertWithoutWalletAdjustmentBatchesCreatedInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUpdateWithoutWalletAdjustmentBatchesCreatedInput>, Prisma.UserUncheckedUpdateWithoutWalletAdjustmentBatchesCreatedInput>
 }
 
 export type UserCreateNestedOneWithoutMembershipsInput = {
@@ -1055,6 +1099,8 @@ export type UserCreateWithoutPlatformSettingsUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
 }
 
 export type UserUncheckedCreateWithoutPlatformSettingsUpdatedInput = {
@@ -1094,6 +1140,8 @@ export type UserUncheckedCreateWithoutPlatformSettingsUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
 }
 
 export type UserCreateOrConnectWithoutPlatformSettingsUpdatedInput = {
@@ -1149,6 +1197,8 @@ export type UserUpdateWithoutPlatformSettingsUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPlatformSettingsUpdatedInput = {
@@ -1188,6 +1238,8 @@ export type UserUncheckedUpdateWithoutPlatformSettingsUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
 }
 
 export type UserCreateWithoutAccountsInput = {
@@ -1226,6 +1278,8 @@ export type UserCreateWithoutAccountsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1265,6 +1319,8 @@ export type UserUncheckedCreateWithoutAccountsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1320,6 +1376,8 @@ export type UserUpdateWithoutAccountsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1359,6 +1417,8 @@ export type UserUncheckedUpdateWithoutAccountsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1398,6 +1458,8 @@ export type UserCreateWithoutSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1437,6 +1499,8 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1492,6 +1556,8 @@ export type UserUpdateWithoutSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1531,6 +1597,8 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1570,6 +1638,8 @@ export type UserCreateWithoutEmailVerificationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1609,6 +1679,8 @@ export type UserUncheckedCreateWithoutEmailVerificationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1664,6 +1736,8 @@ export type UserUpdateWithoutEmailVerificationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1703,6 +1777,8 @@ export type UserUncheckedUpdateWithoutEmailVerificationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1742,6 +1818,8 @@ export type UserCreateWithoutPasswordResetsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1781,6 +1859,8 @@ export type UserUncheckedCreateWithoutPasswordResetsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1836,6 +1916,8 @@ export type UserUpdateWithoutPasswordResetsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1875,6 +1957,8 @@ export type UserUncheckedUpdateWithoutPasswordResetsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -1914,6 +1998,8 @@ export type UserCreateWithoutWalletInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -1953,6 +2039,8 @@ export type UserUncheckedCreateWithoutWalletInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2008,6 +2096,8 @@ export type UserUpdateWithoutWalletInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2047,6 +2137,368 @@ export type UserUncheckedUpdateWithoutWalletInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
+  platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
+}
+
+export type UserCreateWithoutBillingOverrideInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
+  platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
+}
+
+export type UserUncheckedCreateWithoutBillingOverrideInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetUncheckedCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
+  platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
+}
+
+export type UserCreateOrConnectWithoutBillingOverrideInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutBillingOverrideInput, Prisma.UserUncheckedCreateWithoutBillingOverrideInput>
+}
+
+export type UserUpsertWithoutBillingOverrideInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutBillingOverrideInput, Prisma.UserUncheckedUpdateWithoutBillingOverrideInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutBillingOverrideInput, Prisma.UserUncheckedCreateWithoutBillingOverrideInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutBillingOverrideInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutBillingOverrideInput, Prisma.UserUncheckedUpdateWithoutBillingOverrideInput>
+}
+
+export type UserUpdateWithoutBillingOverrideInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
+  platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutBillingOverrideInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUncheckedUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
+  platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
+}
+
+export type UserCreateWithoutWalletAdjustmentBatchesCreatedInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialCreateNestedManyWithoutUserInput
+  aiRequests?: Prisma.AiRequestCreateNestedManyWithoutUserInput
+  aiRequestEvents?: Prisma.AiRequestEventCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentCreateNestedManyWithoutUserInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupCreateNestedManyWithoutUserInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyCreateNestedManyWithoutUpdatedByInput
+  supportTickets?: Prisma.SupportTicketCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
+  wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
+}
+
+export type UserUncheckedCreateWithoutWalletAdjustmentBatchesCreatedInput = {
+  id?: string
+  email: string
+  passwordHash?: string | null
+  emailVerifiedAt?: Date | string | null
+  displayName?: string | null
+  avatarUrl?: string | null
+  timezone?: string | null
+  locale?: string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Date | string | null
+  suspendReason?: string | null
+  lastLoginAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  accounts?: Prisma.AccountUncheckedCreateNestedManyWithoutUserInput
+  sessions?: Prisma.SessionUncheckedCreateNestedManyWithoutUserInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedCreateNestedManyWithoutUserInput
+  passwordResets?: Prisma.PasswordResetUncheckedCreateNestedManyWithoutUserInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedCreateNestedManyWithoutUserInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedCreateNestedManyWithoutUserInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedCreateNestedManyWithoutUserInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedCreateNestedManyWithoutPublishedByInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedCreateNestedManyWithoutUserInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedCreateNestedManyWithoutUserInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedCreateNestedManyWithoutUserInput
+  aiRequests?: Prisma.AiRequestUncheckedCreateNestedManyWithoutUserInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedCreateNestedManyWithoutUserInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedCreateNestedManyWithoutUserInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedCreateNestedManyWithoutUserInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedCreateNestedManyWithoutUpdatedByInput
+  supportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutRequesterInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedCreateNestedManyWithoutAssignedToInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
+  wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
+}
+
+export type UserCreateOrConnectWithoutWalletAdjustmentBatchesCreatedInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUncheckedCreateWithoutWalletAdjustmentBatchesCreatedInput>
+}
+
+export type UserUpsertWithoutWalletAdjustmentBatchesCreatedInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUncheckedUpdateWithoutWalletAdjustmentBatchesCreatedInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUncheckedCreateWithoutWalletAdjustmentBatchesCreatedInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutWalletAdjustmentBatchesCreatedInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutWalletAdjustmentBatchesCreatedInput, Prisma.UserUncheckedUpdateWithoutWalletAdjustmentBatchesCreatedInput>
+}
+
+export type UserUpdateWithoutWalletAdjustmentBatchesCreatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUpdateManyWithoutUserNestedInput
+  aiRequests?: Prisma.AiRequestUpdateManyWithoutUserNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUpdateManyWithoutUserNestedInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUpdateManyWithoutUserNestedInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUpdateManyWithoutUpdatedByNestedInput
+  supportTickets?: Prisma.SupportTicketUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
+  wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
+}
+
+export type UserUncheckedUpdateWithoutWalletAdjustmentBatchesCreatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  emailVerifiedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  avatarUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  locale?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  uiPreferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  suspendedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  suspendReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  accounts?: Prisma.AccountUncheckedUpdateManyWithoutUserNestedInput
+  sessions?: Prisma.SessionUncheckedUpdateManyWithoutUserNestedInput
+  emailVerifications?: Prisma.EmailVerificationUncheckedUpdateManyWithoutUserNestedInput
+  passwordResets?: Prisma.PasswordResetUncheckedUpdateManyWithoutUserNestedInput
+  systemRoleAssignments?: Prisma.UserSystemRoleUncheckedUpdateManyWithoutUserNestedInput
+  memberships?: Prisma.WorkspaceMembershipUncheckedUpdateManyWithoutUserNestedInput
+  featureFlagOverrides?: Prisma.FeatureFlagOverrideUncheckedUpdateManyWithoutUserNestedInput
+  remoteConfigVersions?: Prisma.RemoteConfigVersionUncheckedUpdateManyWithoutPublishedByNestedInput
+  extensionInstallations?: Prisma.ExtensionInstallationUncheckedUpdateManyWithoutUserNestedInput
+  extensionInstallationSessions?: Prisma.ExtensionInstallationSessionUncheckedUpdateManyWithoutUserNestedInput
+  providerCredentials?: Prisma.ProviderCredentialUncheckedUpdateManyWithoutUserNestedInput
+  aiRequests?: Prisma.AiRequestUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestEvents?: Prisma.AiRequestEventUncheckedUpdateManyWithoutUserNestedInput
+  aiRequestAttachments?: Prisma.AiRequestAttachmentUncheckedUpdateManyWithoutUserNestedInput
+  aiUsageDailyRollups?: Prisma.AiUsageDailyRollupUncheckedUpdateManyWithoutUserNestedInput
+  aiProviderPoliciesUpdated?: Prisma.AiProviderPolicyUncheckedUpdateManyWithoutUpdatedByNestedInput
+  supportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutRequesterNestedInput
+  assignedSupportTickets?: Prisma.SupportTicketUncheckedUpdateManyWithoutAssignedToNestedInput
+  supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
+  supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
+  supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
+  wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2086,6 +2538,8 @@ export type UserCreateWithoutMembershipsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2125,6 +2579,8 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2180,6 +2636,8 @@ export type UserUpdateWithoutMembershipsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2219,6 +2677,8 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2258,6 +2718,8 @@ export type UserCreateWithoutSystemRoleAssignmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2297,6 +2759,8 @@ export type UserUncheckedCreateWithoutSystemRoleAssignmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2352,6 +2816,8 @@ export type UserUpdateWithoutSystemRoleAssignmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2391,6 +2857,8 @@ export type UserUncheckedUpdateWithoutSystemRoleAssignmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2430,6 +2898,8 @@ export type UserCreateWithoutAiRequestsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2469,6 +2939,8 @@ export type UserUncheckedCreateWithoutAiRequestsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2524,6 +2996,8 @@ export type UserUpdateWithoutAiRequestsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2563,6 +3037,8 @@ export type UserUncheckedUpdateWithoutAiRequestsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2602,6 +3078,8 @@ export type UserCreateWithoutAiRequestEventsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2641,6 +3119,8 @@ export type UserUncheckedCreateWithoutAiRequestEventsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2696,6 +3176,8 @@ export type UserUpdateWithoutAiRequestEventsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2735,6 +3217,8 @@ export type UserUncheckedUpdateWithoutAiRequestEventsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2774,6 +3258,8 @@ export type UserCreateWithoutAiRequestAttachmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2813,6 +3299,8 @@ export type UserUncheckedCreateWithoutAiRequestAttachmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2868,6 +3356,8 @@ export type UserUpdateWithoutAiRequestAttachmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2907,6 +3397,8 @@ export type UserUncheckedUpdateWithoutAiRequestAttachmentsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -2946,6 +3438,8 @@ export type UserCreateWithoutAiUsageDailyRollupsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -2985,6 +3479,8 @@ export type UserUncheckedCreateWithoutAiUsageDailyRollupsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3040,6 +3536,8 @@ export type UserUpdateWithoutAiUsageDailyRollupsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3079,6 +3577,8 @@ export type UserUncheckedUpdateWithoutAiUsageDailyRollupsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3118,6 +3618,8 @@ export type UserCreateWithoutFeatureFlagOverridesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3157,6 +3659,8 @@ export type UserUncheckedCreateWithoutFeatureFlagOverridesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3212,6 +3716,8 @@ export type UserUpdateWithoutFeatureFlagOverridesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3251,6 +3757,8 @@ export type UserUncheckedUpdateWithoutFeatureFlagOverridesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3290,6 +3798,8 @@ export type UserCreateWithoutRemoteConfigVersionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3329,6 +3839,8 @@ export type UserUncheckedCreateWithoutRemoteConfigVersionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3384,6 +3896,8 @@ export type UserUpdateWithoutRemoteConfigVersionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3423,6 +3937,8 @@ export type UserUncheckedUpdateWithoutRemoteConfigVersionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3462,6 +3978,8 @@ export type UserCreateWithoutExtensionInstallationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3501,6 +4019,8 @@ export type UserUncheckedCreateWithoutExtensionInstallationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3556,6 +4076,8 @@ export type UserUpdateWithoutExtensionInstallationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3595,6 +4117,8 @@ export type UserUncheckedUpdateWithoutExtensionInstallationsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3634,6 +4158,8 @@ export type UserCreateWithoutExtensionInstallationSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3673,6 +4199,8 @@ export type UserUncheckedCreateWithoutExtensionInstallationSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3728,6 +4256,8 @@ export type UserUpdateWithoutExtensionInstallationSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3767,6 +4297,8 @@ export type UserUncheckedUpdateWithoutExtensionInstallationSessionsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3806,6 +4338,8 @@ export type UserCreateWithoutProviderCredentialsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3845,6 +4379,8 @@ export type UserUncheckedCreateWithoutProviderCredentialsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -3900,6 +4436,8 @@ export type UserUpdateWithoutProviderCredentialsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3939,6 +4477,8 @@ export type UserUncheckedUpdateWithoutProviderCredentialsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -3978,6 +4518,8 @@ export type UserCreateWithoutAiProviderPoliciesUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4017,6 +4559,8 @@ export type UserUncheckedCreateWithoutAiProviderPoliciesUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4072,6 +4616,8 @@ export type UserUpdateWithoutAiProviderPoliciesUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4111,6 +4657,8 @@ export type UserUncheckedUpdateWithoutAiProviderPoliciesUpdatedInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4150,6 +4698,8 @@ export type UserCreateWithoutSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4189,6 +4739,8 @@ export type UserUncheckedCreateWithoutSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4233,6 +4785,8 @@ export type UserCreateWithoutAssignedSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4272,6 +4826,8 @@ export type UserUncheckedCreateWithoutAssignedSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4327,6 +4883,8 @@ export type UserUpdateWithoutSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4366,6 +4924,8 @@ export type UserUncheckedUpdateWithoutSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4416,6 +4976,8 @@ export type UserUpdateWithoutAssignedSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4455,6 +5017,8 @@ export type UserUncheckedUpdateWithoutAssignedSupportTicketsInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4494,6 +5058,8 @@ export type UserCreateWithoutSupportTicketPresetFavoritesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4533,6 +5099,8 @@ export type UserUncheckedCreateWithoutSupportTicketPresetFavoritesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4588,6 +5156,8 @@ export type UserUpdateWithoutSupportTicketPresetFavoritesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4627,6 +5197,8 @@ export type UserUncheckedUpdateWithoutSupportTicketPresetFavoritesInput = {
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4666,6 +5238,8 @@ export type UserCreateWithoutSupportImpersonationSessionsStartedInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4705,6 +5279,8 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsStartedInput =
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutTargetUserInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4749,6 +5325,8 @@ export type UserCreateWithoutSupportImpersonationSessionsTargetedInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionCreateNestedManyWithoutSupportActorInput
   wallet?: Prisma.WalletCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4788,6 +5366,8 @@ export type UserUncheckedCreateWithoutSupportImpersonationSessionsTargetedInput 
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedCreateNestedManyWithoutUserInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedCreateNestedManyWithoutSupportActorInput
   wallet?: Prisma.WalletUncheckedCreateNestedOneWithoutUserInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedCreateNestedOneWithoutUserInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedCreateNestedManyWithoutActorInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedCreateNestedManyWithoutUpdatedByInput
 }
 
@@ -4843,6 +5423,8 @@ export type UserUpdateWithoutSupportImpersonationSessionsStartedInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4882,6 +5464,8 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsStartedInput =
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsTargeted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutTargetUserNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4932,6 +5516,8 @@ export type UserUpdateWithoutSupportImpersonationSessionsTargetedInput = {
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUpdateManyWithoutSupportActorNestedInput
   wallet?: Prisma.WalletUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -4971,6 +5557,8 @@ export type UserUncheckedUpdateWithoutSupportImpersonationSessionsTargetedInput 
   supportTicketPresetFavorites?: Prisma.SupportTicketPresetFavoriteUncheckedUpdateManyWithoutUserNestedInput
   supportImpersonationSessionsStarted?: Prisma.SupportImpersonationSessionUncheckedUpdateManyWithoutSupportActorNestedInput
   wallet?: Prisma.WalletUncheckedUpdateOneWithoutUserNestedInput
+  billingOverride?: Prisma.UserBillingOverrideUncheckedUpdateOneWithoutUserNestedInput
+  walletAdjustmentBatchesCreated?: Prisma.AdminWalletAdjustmentBatchUncheckedUpdateManyWithoutActorNestedInput
   platformSettingsUpdated?: Prisma.PlatformSettingUncheckedUpdateManyWithoutUpdatedByNestedInput
 }
 
@@ -5001,6 +5589,7 @@ export type UserCountOutputType = {
   supportTicketPresetFavorites: number
   supportImpersonationSessionsStarted: number
   supportImpersonationSessionsTargeted: number
+  walletAdjustmentBatchesCreated: number
   platformSettingsUpdated: number
 }
 
@@ -5026,6 +5615,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   supportTicketPresetFavorites?: boolean | UserCountOutputTypeCountSupportTicketPresetFavoritesArgs
   supportImpersonationSessionsStarted?: boolean | UserCountOutputTypeCountSupportImpersonationSessionsStartedArgs
   supportImpersonationSessionsTargeted?: boolean | UserCountOutputTypeCountSupportImpersonationSessionsTargetedArgs
+  walletAdjustmentBatchesCreated?: boolean | UserCountOutputTypeCountWalletAdjustmentBatchesCreatedArgs
   platformSettingsUpdated?: boolean | UserCountOutputTypeCountPlatformSettingsUpdatedArgs
 }
 
@@ -5189,6 +5779,13 @@ export type UserCountOutputTypeCountSupportImpersonationSessionsTargetedArgs<Ext
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountWalletAdjustmentBatchesCreatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdminWalletAdjustmentBatchWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountPlatformSettingsUpdatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.PlatformSettingWhereInput
 }
@@ -5231,6 +5828,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   supportImpersonationSessionsStarted?: boolean | Prisma.User$supportImpersonationSessionsStartedArgs<ExtArgs>
   supportImpersonationSessionsTargeted?: boolean | Prisma.User$supportImpersonationSessionsTargetedArgs<ExtArgs>
   wallet?: boolean | Prisma.User$walletArgs<ExtArgs>
+  billingOverride?: boolean | Prisma.User$billingOverrideArgs<ExtArgs>
+  walletAdjustmentBatchesCreated?: boolean | Prisma.User$walletAdjustmentBatchesCreatedArgs<ExtArgs>
   platformSettingsUpdated?: boolean | Prisma.User$platformSettingsUpdatedArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
@@ -5310,6 +5909,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   supportImpersonationSessionsStarted?: boolean | Prisma.User$supportImpersonationSessionsStartedArgs<ExtArgs>
   supportImpersonationSessionsTargeted?: boolean | Prisma.User$supportImpersonationSessionsTargetedArgs<ExtArgs>
   wallet?: boolean | Prisma.User$walletArgs<ExtArgs>
+  billingOverride?: boolean | Prisma.User$billingOverrideArgs<ExtArgs>
+  walletAdjustmentBatchesCreated?: boolean | Prisma.User$walletAdjustmentBatchesCreatedArgs<ExtArgs>
   platformSettingsUpdated?: boolean | Prisma.User$platformSettingsUpdatedArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -5341,6 +5942,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     supportImpersonationSessionsStarted: Prisma.$SupportImpersonationSessionPayload<ExtArgs>[]
     supportImpersonationSessionsTargeted: Prisma.$SupportImpersonationSessionPayload<ExtArgs>[]
     wallet: Prisma.$WalletPayload<ExtArgs> | null
+    billingOverride: Prisma.$UserBillingOverridePayload<ExtArgs> | null
+    walletAdjustmentBatchesCreated: Prisma.$AdminWalletAdjustmentBatchPayload<ExtArgs>[]
     platformSettingsUpdated: Prisma.$PlatformSettingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -5774,6 +6377,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   supportImpersonationSessionsStarted<T extends Prisma.User$supportImpersonationSessionsStartedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$supportImpersonationSessionsStartedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportImpersonationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   supportImpersonationSessionsTargeted<T extends Prisma.User$supportImpersonationSessionsTargetedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$supportImpersonationSessionsTargetedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SupportImpersonationSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   wallet<T extends Prisma.User$walletArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$walletArgs<ExtArgs>>): Prisma.Prisma__WalletClient<runtime.Types.Result.GetResult<Prisma.$WalletPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  billingOverride<T extends Prisma.User$billingOverrideArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$billingOverrideArgs<ExtArgs>>): Prisma.Prisma__UserBillingOverrideClient<runtime.Types.Result.GetResult<Prisma.$UserBillingOverridePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  walletAdjustmentBatchesCreated<T extends Prisma.User$walletAdjustmentBatchesCreatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$walletAdjustmentBatchesCreatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdminWalletAdjustmentBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   platformSettingsUpdated<T extends Prisma.User$platformSettingsUpdatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$platformSettingsUpdatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlatformSettingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -6731,6 +7336,49 @@ export type User$walletArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
    */
   include?: Prisma.WalletInclude<ExtArgs> | null
   where?: Prisma.WalletWhereInput
+}
+
+/**
+ * User.billingOverride
+ */
+export type User$billingOverrideArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserBillingOverride
+   */
+  select?: Prisma.UserBillingOverrideSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserBillingOverride
+   */
+  omit?: Prisma.UserBillingOverrideOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserBillingOverrideInclude<ExtArgs> | null
+  where?: Prisma.UserBillingOverrideWhereInput
+}
+
+/**
+ * User.walletAdjustmentBatchesCreated
+ */
+export type User$walletAdjustmentBatchesCreatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AdminWalletAdjustmentBatch
+   */
+  select?: Prisma.AdminWalletAdjustmentBatchSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AdminWalletAdjustmentBatch
+   */
+  omit?: Prisma.AdminWalletAdjustmentBatchOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdminWalletAdjustmentBatchInclude<ExtArgs> | null
+  where?: Prisma.AdminWalletAdjustmentBatchWhereInput
+  orderBy?: Prisma.AdminWalletAdjustmentBatchOrderByWithRelationInput | Prisma.AdminWalletAdjustmentBatchOrderByWithRelationInput[]
+  cursor?: Prisma.AdminWalletAdjustmentBatchWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AdminWalletAdjustmentBatchScalarFieldEnum | Prisma.AdminWalletAdjustmentBatchScalarFieldEnum[]
 }
 
 /**

@@ -394,6 +394,8 @@ export const ModelName = {
   Wallet: 'Wallet',
   WalletTopUp: 'WalletTopUp',
   WalletLedgerEntry: 'WalletLedgerEntry',
+  UserBillingOverride: 'UserBillingOverride',
+  AdminWalletAdjustmentBatch: 'AdminWalletAdjustmentBatch',
   WorkspaceMembership: 'WorkspaceMembership',
   WorkspaceInvite: 'WorkspaceInvite',
   UserSystemRole: 'UserSystemRole',
@@ -437,7 +439,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "platformSetting" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "adminLogEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
+    modelProps: "user" | "platformSetting" | "account" | "session" | "emailVerification" | "passwordReset" | "workspace" | "wallet" | "walletTopUp" | "walletLedgerEntry" | "userBillingOverride" | "adminWalletAdjustmentBatch" | "workspaceMembership" | "workspaceInvite" | "userSystemRole" | "webhookEvent" | "quotaCounter" | "aiRequest" | "aiRequestEvent" | "aiRequestContent" | "aiRequestAttachment" | "aiUsageDailyRollup" | "featureFlag" | "featureFlagOverride" | "remoteConfigVersion" | "remoteConfigLayer" | "extensionCompatibilityRule" | "extensionInstallation" | "extensionInstallationSession" | "providerCredential" | "aiProviderPolicy" | "extensionTelemetry" | "auditLog" | "activityLog" | "securityEvent" | "domainEvent" | "adminLogEvent" | "supportTicket" | "supportTicketPresetFavorite" | "supportImpersonationSession"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1178,6 +1180,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.WalletLedgerEntryCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.WalletLedgerEntryCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserBillingOverride: {
+      payload: Prisma.$UserBillingOverridePayload<ExtArgs>
+      fields: Prisma.UserBillingOverrideFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserBillingOverrideFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserBillingOverrideFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>
+        }
+        findFirst: {
+          args: Prisma.UserBillingOverrideFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserBillingOverrideFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>
+        }
+        findMany: {
+          args: Prisma.UserBillingOverrideFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>[]
+        }
+        create: {
+          args: Prisma.UserBillingOverrideCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>
+        }
+        createMany: {
+          args: Prisma.UserBillingOverrideCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UserBillingOverrideCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>[]
+        }
+        delete: {
+          args: Prisma.UserBillingOverrideDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>
+        }
+        update: {
+          args: Prisma.UserBillingOverrideUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>
+        }
+        deleteMany: {
+          args: Prisma.UserBillingOverrideDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserBillingOverrideUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UserBillingOverrideUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>[]
+        }
+        upsert: {
+          args: Prisma.UserBillingOverrideUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserBillingOverridePayload>
+        }
+        aggregate: {
+          args: Prisma.UserBillingOverrideAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserBillingOverride>
+        }
+        groupBy: {
+          args: Prisma.UserBillingOverrideGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserBillingOverrideGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserBillingOverrideCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserBillingOverrideCountAggregateOutputType> | number
+        }
+      }
+    }
+    AdminWalletAdjustmentBatch: {
+      payload: Prisma.$AdminWalletAdjustmentBatchPayload<ExtArgs>
+      fields: Prisma.AdminWalletAdjustmentBatchFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AdminWalletAdjustmentBatchFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AdminWalletAdjustmentBatchFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>
+        }
+        findFirst: {
+          args: Prisma.AdminWalletAdjustmentBatchFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AdminWalletAdjustmentBatchFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>
+        }
+        findMany: {
+          args: Prisma.AdminWalletAdjustmentBatchFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>[]
+        }
+        create: {
+          args: Prisma.AdminWalletAdjustmentBatchCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>
+        }
+        createMany: {
+          args: Prisma.AdminWalletAdjustmentBatchCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AdminWalletAdjustmentBatchCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>[]
+        }
+        delete: {
+          args: Prisma.AdminWalletAdjustmentBatchDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>
+        }
+        update: {
+          args: Prisma.AdminWalletAdjustmentBatchUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>
+        }
+        deleteMany: {
+          args: Prisma.AdminWalletAdjustmentBatchDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AdminWalletAdjustmentBatchUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AdminWalletAdjustmentBatchUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>[]
+        }
+        upsert: {
+          args: Prisma.AdminWalletAdjustmentBatchUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AdminWalletAdjustmentBatchPayload>
+        }
+        aggregate: {
+          args: Prisma.AdminWalletAdjustmentBatchAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdminWalletAdjustmentBatch>
+        }
+        groupBy: {
+          args: Prisma.AdminWalletAdjustmentBatchGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminWalletAdjustmentBatchGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AdminWalletAdjustmentBatchCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AdminWalletAdjustmentBatchCountAggregateOutputType> | number
         }
       }
     }
@@ -3434,6 +3584,37 @@ export const WalletLedgerEntryScalarFieldEnum = {
 export type WalletLedgerEntryScalarFieldEnum = (typeof WalletLedgerEntryScalarFieldEnum)[keyof typeof WalletLedgerEntryScalarFieldEnum]
 
 
+export const UserBillingOverrideScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  aiPlatformFeeExempt: 'aiPlatformFeeExempt',
+  aiMarkupPercentOverride: 'aiMarkupPercentOverride',
+  reason: 'reason',
+  createdById: 'createdById',
+  updatedById: 'updatedById',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserBillingOverrideScalarFieldEnum = (typeof UserBillingOverrideScalarFieldEnum)[keyof typeof UserBillingOverrideScalarFieldEnum]
+
+
+export const AdminWalletAdjustmentBatchScalarFieldEnum = {
+  id: 'id',
+  actorId: 'actorId',
+  targetType: 'targetType',
+  targetCount: 'targetCount',
+  amountKopecks: 'amountKopecks',
+  direction: 'direction',
+  currency: 'currency',
+  reason: 'reason',
+  idempotencyKey: 'idempotencyKey',
+  createdAt: 'createdAt'
+} as const
+
+export type AdminWalletAdjustmentBatchScalarFieldEnum = (typeof AdminWalletAdjustmentBatchScalarFieldEnum)[keyof typeof AdminWalletAdjustmentBatchScalarFieldEnum]
+
+
 export const WorkspaceMembershipScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -4032,6 +4213,27 @@ export type ListEnumWalletLedgerEntryTypeFieldRefInput<$PrismaModel> = FieldRefI
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+/**
  * Reference to a field of type 'WorkspaceRole'
  */
 export type EnumWorkspaceRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'WorkspaceRole'>
@@ -4060,20 +4262,6 @@ export type ListEnumSystemRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$P
 
 
 /**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-/**
- * Reference to a field of type 'Float[]'
- */
-export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
-    
-
-
-/**
  * Reference to a field of type 'FeatureFlagStatus'
  */
 export type EnumFeatureFlagStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeatureFlagStatus'>
@@ -4084,13 +4272,6 @@ export type EnumFeatureFlagStatusFieldRefInput<$PrismaModel> = FieldRefInputType
  * Reference to a field of type 'FeatureFlagStatus[]'
  */
 export type ListEnumFeatureFlagStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeatureFlagStatus[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -4310,6 +4491,8 @@ export type GlobalOmitConfig = {
   wallet?: Prisma.WalletOmit
   walletTopUp?: Prisma.WalletTopUpOmit
   walletLedgerEntry?: Prisma.WalletLedgerEntryOmit
+  userBillingOverride?: Prisma.UserBillingOverrideOmit
+  adminWalletAdjustmentBatch?: Prisma.AdminWalletAdjustmentBatchOmit
   workspaceMembership?: Prisma.WorkspaceMembershipOmit
   workspaceInvite?: Prisma.WorkspaceInviteOmit
   userSystemRole?: Prisma.UserSystemRoleOmit

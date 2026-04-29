@@ -68,6 +68,16 @@ export type WalletTopUp = Prisma.WalletTopUpModel
  */
 export type WalletLedgerEntry = Prisma.WalletLedgerEntryModel
 /**
+ * Model UserBillingOverride
+ * 
+ */
+export type UserBillingOverride = Prisma.UserBillingOverrideModel
+/**
+ * Model AdminWalletAdjustmentBatch
+ * 
+ */
+export type AdminWalletAdjustmentBatch = Prisma.AdminWalletAdjustmentBatchModel
+/**
  * Model WorkspaceMembership
  * 
  */
