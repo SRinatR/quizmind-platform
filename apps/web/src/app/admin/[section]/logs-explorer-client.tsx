@@ -357,7 +357,8 @@ export function LogsExplorerClient({
   isConnectedSession,
   exchangeRates,
 }: LogsExplorerClientProps) {
-  const { prefs } = usePreferences();
+  const { prefs, t } = usePreferences();
+  const tl = t.admin.logsView;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -428,7 +429,7 @@ export function LogsExplorerClient({
         if (requestId !== listRequestSeqRef.current) return;
         const payload = (await res.json().catch(() => null)) as LogListRouteResponse | null;
         if (!res.ok || !payload?.ok || !payload.data) {
-          throw new Error(payload?.error?.message ?? 'Unable to load logs.');
+          throw new Error(payload?.error?.message ?? tl.loadFailed);
         }
         setSnapshot(payload.data);
         setErrorMessage(null);
@@ -436,7 +437,7 @@ export function LogsExplorerClient({
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         if (requestId !== listRequestSeqRef.current) return;
-        setErrorMessage(error instanceof Error ? error.message : 'Unable to load logs.');
+        setErrorMessage(error instanceof Error ? error.message : tl.loadFailed);
       })
       .finally(() => {
         if (!controller.signal.aborted && requestId === listRequestSeqRef.current) setIsLoadingTable(false);
@@ -501,17 +502,17 @@ export function LogsExplorerClient({
 
   async function exportLogs() {
     if (!isConnectedSession) {
-      setErrorMessage('Sign in with a connected session to export logs.');
+      setErrorMessage(tl.signInToExport);
       return;
     }
     if (!canExportLogs) {
-      setErrorMessage('This session does not have audit_logs:export permission.');
+      setErrorMessage(tl.exportPermissionRequired);
       return;
     }
 
     setIsExporting(true);
     setErrorMessage(null);
-    setStatusMessage('Preparing export...');
+    setStatusMessage(tl.preparingExport);
 
     try {
       const response = await fetch('/bff/admin/logs/export', {
@@ -536,7 +537,7 @@ export function LogsExplorerClient({
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsExporting(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Export failed.');
+        setErrorMessage(payload?.error?.message ?? tl.exportFailed);
         return;
       }
 
@@ -546,7 +547,7 @@ export function LogsExplorerClient({
     } catch {
       setIsExporting(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the export route.');
+      setErrorMessage(tl.exportRouteFailed);
     }
   }
 
@@ -591,7 +592,7 @@ export function LogsExplorerClient({
         {/* Row 1: time range + event type + search + stream/severity/status selects */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label className="filter-field" style={{ minWidth: '130px', flex: '0 0 auto' }}>
-            <span className="filter-field__label">From</span>
+            <span className="filter-field__label">{tl.from}</span>
             <input
               type="datetime-local"
               value={fromDraft}
@@ -600,7 +601,7 @@ export function LogsExplorerClient({
             />
           </label>
           <label className="filter-field" style={{ minWidth: '130px', flex: '0 0 auto' }}>
-            <span className="filter-field__label">To</span>
+            <span className="filter-field__label">{tl.to}</span>
             <input
               type="datetime-local"
               value={toDraft}
@@ -609,17 +610,17 @@ export function LogsExplorerClient({
             />
           </label>
           <label className="filter-field" style={{ flex: '1 1 140px', minWidth: '120px' }}>
-            <span className="filter-field__label">Search</span>
+            <span className="filter-field__label">{tl.search}</span>
             <input
               value={searchDraft}
               onChange={(e) => setSearchDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyAllFilters(); } }}
-              placeholder="event type, user, summary…"
+              placeholder={tl.searchPlaceholder}
               style={{ fontSize: '0.82rem' }}
             />
           </label>
           <label className="filter-field" style={{ flex: '1 1 120px', minWidth: '100px' }}>
-            <span className="filter-field__label">Event type</span>
+            <span className="filter-field__label">{tl.eventType}</span>
             <input
               value={eventTypeDraft}
               onChange={(e) => setEventTypeDraft(e.target.value)}
@@ -629,7 +630,7 @@ export function LogsExplorerClient({
             />
           </label>
           <label className="filter-field" style={{ flex: '0 0 auto' }}>
-            <span className="filter-field__label">Category</span>
+            <span className="filter-field__label">{tl.category}</span>
             <select
               value={filters.category ?? 'all'}
               onChange={(e) => pushFilters({ category: e.target.value as AdminLogCategoryFilter, page: 1 })}
@@ -637,14 +638,14 @@ export function LogsExplorerClient({
             >
               {adminLogCategoryFilters.map((c) => (
                 <option key={c} value={c}>
-                  {c === 'all' ? 'all categories' : c}
+                  {c === 'all' ? tl.allCategories : c}
                   {c !== 'all' && counts ? ` (${counts[c as keyof typeof counts] ?? 0})` : ''}
                 </option>
               ))}
             </select>
           </label>
           <label className="filter-field" style={{ flex: '0 0 auto' }}>
-            <span className="filter-field__label">Source</span>
+            <span className="filter-field__label">{tl.source}</span>
             <select
               value={filters.source ?? 'all'}
               onChange={(e) => pushFilters({ source: e.target.value as AdminLogSourceFilter, page: 1 })}
@@ -656,7 +657,7 @@ export function LogsExplorerClient({
             </select>
           </label>
           <label className="filter-field" style={{ flex: '0 0 auto' }}>
-            <span className="filter-field__label">Severity</span>
+            <span className="filter-field__label">{tl.severity}</span>
             <select
               value={filters.severity}
               onChange={(e) => pushFilters({ severity: e.target.value as AdminLogFilters['severity'], page: 1 })}
@@ -668,7 +669,7 @@ export function LogsExplorerClient({
             </select>
           </label>
           <label className="filter-field" style={{ flex: '0 0 auto' }}>
-            <span className="filter-field__label">Status</span>
+            <span className="filter-field__label">{tl.status}</span>
             <select
               value={filters.status ?? 'all'}
               onChange={(e) => pushFilters({ status: e.target.value as AdminLogFilters['status'], page: 1 })}
@@ -680,7 +681,7 @@ export function LogsExplorerClient({
             </select>
           </label>
           <label className="filter-field" style={{ flex: '0 0 auto' }}>
-            <span className="filter-field__label">Stream</span>
+            <span className="filter-field__label">{tl.stream}</span>
             <select
               value={filters.stream}
               onChange={(e) => pushFilters({ stream: e.target.value as AdminLogFilters['stream'], page: 1 })}
@@ -692,7 +693,7 @@ export function LogsExplorerClient({
             </select>
           </label>
           <label className="filter-field" style={{ flex: '0 0 auto' }}>
-            <span className="filter-field__label">Limit</span>
+            <span className="filter-field__label">{tl.limit}</span>
             <select
               value={String(filters.limit)}
               onChange={(e) => pushFilters({ limit: Number(e.target.value), page: 1 })}
@@ -708,10 +709,10 @@ export function LogsExplorerClient({
         {/* Row 2: actions + presets + export */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginTop: '10px' }}>
           <button className="btn-primary" onClick={applyAllFilters} type="button" style={{ fontSize: '0.82rem', padding: '5px 14px' }}>
-            Apply
+            {tl.apply}
           </button>
           <button className="btn-ghost" onClick={resetFilters} type="button" style={{ fontSize: '0.82rem', padding: '5px 12px' }}>
-            Reset
+            {tl.reset}
           </button>
 
           <span style={{ width: '1px', height: '20px', background: 'var(--border)', flexShrink: 0, margin: '0 4px' }} />
@@ -746,7 +747,7 @@ export function LogsExplorerClient({
             type="button"
             style={{ fontSize: '0.78rem', padding: '4px 12px' }}
           >
-            {isExporting ? 'Exporting…' : 'Export'}
+            {isExporting ? tl.exporting : tl.export}
           </button>
         </div>
 
@@ -763,7 +764,7 @@ export function LogsExplorerClient({
       {counts ? (
         <div className="tag-row" style={{ padding: '0 2px' }}>
           <span className="tag-soft tag-soft--gray">
-            {effectiveSnapshot.total} total{effectiveSnapshot.items.length !== effectiveSnapshot.total ? ` · ${effectiveSnapshot.items.length} on page` : ''}
+            {effectiveSnapshot.total} {tl.total}{effectiveSnapshot.items.length !== effectiveSnapshot.total ? ` · ${effectiveSnapshot.items.length} ${tl.onPage}` : ''}
           </span>
           {(['auth', 'extension', 'ai', 'admin', 'system'] as const).map((cat) => (
             counts[cat] > 0 ? (
@@ -784,13 +785,13 @@ export function LogsExplorerClient({
       {/* ── Log table ── */}
       <section className="panel" style={{ padding: 0, overflow: 'hidden' }}>
         {isLoadingTable ? (
-          <div style={{ padding: '20px', fontSize: '0.82rem', color: 'var(--muted)' }}>Loading…</div>
+          <div style={{ padding: '20px', fontSize: '0.82rem', color: 'var(--muted)' }}>{tl.loading}</div>
         ) : effectiveSnapshot.items.length > 0 ? (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-                  {(['Time', 'Cat', 'Event', 'User', 'Source', 'Status', 'Target', 'Dur', 'Cost', ''] as const).map((col) => (
+                  {([tl.time, tl.categoryShort, tl.event, tl.user, tl.source, tl.status, tl.target, tl.duration, tl.cost, ''] as const).map((col) => (
                     <th
                       key={col}
                       style={{
@@ -858,7 +859,7 @@ export function LogsExplorerClient({
                     </td>
                     <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
                       <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
-                        View
+                        {tl.view}
                       </button>
                     </td>
                   </tr>
@@ -888,10 +889,10 @@ export function LogsExplorerClient({
             type="button"
             style={{ fontSize: '0.8rem', padding: '4px 12px' }}
           >
-            ← Prev
+            {tl.prev}
           </button>
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-            Page {filters.page ?? 1}{typeof effectiveSnapshot.total === 'number' ? ` · ${effectiveSnapshot.total} total` : ''}
+            {tl.page} {filters.page ?? 1}{typeof effectiveSnapshot.total === 'number' ? ` · ${effectiveSnapshot.total} ${tl.total}` : ''}
           </span>
           <button
             className="btn-ghost"
@@ -909,7 +910,7 @@ export function LogsExplorerClient({
             type="button"
             style={{ fontSize: '0.8rem', padding: '4px 12px' }}
           >
-            Next →
+            {tl.next}
           </button>
         </div>
       ) : null}
@@ -917,7 +918,7 @@ export function LogsExplorerClient({
       {/* ── Details drawer ── */}
       {selectedEntry ? (
         <>
-          {isLoadingDetail ? <div className="panel" style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 120, padding: '8px 10px', fontSize: '0.78rem' }}>Loading…</div> : null}
+          {isLoadingDetail ? <div className="panel" style={{ position: 'fixed', top: '12px', right: '12px', zIndex: 120, padding: '8px 10px', fontSize: '0.78rem' }}>{tl.loading}</div> : null}
           <DetailsDrawer entry={selectedEntry} exchangeRates={exchangeRates} onClose={() => setSelectedEntry(null)} />
         </>
       ) : null}
