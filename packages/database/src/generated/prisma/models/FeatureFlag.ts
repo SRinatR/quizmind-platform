@@ -469,10 +469,6 @@ export type EnumFeatureFlagStatusFieldUpdateOperationsInput = {
   set?: $Enums.FeatureFlagStatus
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type FeatureFlagCreateNestedOneWithoutOverridesInput = {
   create?: Prisma.XOR<Prisma.FeatureFlagCreateWithoutOverridesInput, Prisma.FeatureFlagUncheckedCreateWithoutOverridesInput>
   connectOrCreate?: Prisma.FeatureFlagCreateOrConnectWithoutOverridesInput

@@ -32,6 +32,7 @@ import { LogsExplorerClient } from './logs-explorer-client';
 import { AdminSettingsClient } from './admin-settings-client';
 import { DataRetentionAdminClient } from './data-retention-client';
 import { PricingBillingAdminClient } from './pricing-billing-client';
+import { UserBillingAdminClient } from './user-billing-client';
 
 type AdminI18n = Translations['admin'];
 
@@ -156,6 +157,7 @@ function getLocalizedSectionTitle(section: AdminSection, adminI18n: AdminI18n): 
     case 'settings': return adminI18n.nav.items.settings;
     case 'data-retention': return adminI18n.nav.items.dataRetention;
     case 'pricing-billing': return adminI18n.nav.items.pricingBilling;
+    case 'user-billing': return adminI18n.nav.items.userBilling;
     default: return section.title;
   }
 }
@@ -179,6 +181,7 @@ function getLocalizedSectionDescription(section: AdminSection, adminI18n: AdminI
     case 'settings': return adminI18n.nav.descriptions.settings;
     case 'data-retention': return adminI18n.nav.descriptions.dataRetention;
     case 'pricing-billing': return adminI18n.nav.descriptions.pricingBilling;
+    case 'user-billing': return adminI18n.nav.descriptions.userBilling;
     default: return section.description;
   }
 }
@@ -442,6 +445,8 @@ export default async function AdminSectionPage({ params, searchParams }: AdminSe
           <DataRetentionAdminClient />
         ) : section.id === 'pricing-billing' ? (
           <PricingBillingAdminClient exchangeRates={exchangeRates} />
+        ) : section.id === 'user-billing' ? (
+          <UserBillingAdminClient />
         ) : // ── Preferences: Settings ─────────────────────────────────────────────
         section.id === 'settings' ? (
           <AdminSettingsClient

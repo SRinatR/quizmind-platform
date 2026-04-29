@@ -114,6 +114,7 @@ test('admin nav places Pricing & Billing and Data Retention in Billing & Data af
   const billingDataHrefs = new Set(billingData.items.map((item) => item.href));
   assert.equal(billingDataHrefs.has('/admin/pricing-billing'), true, 'pricing-billing must be in Billing & Data');
   assert.equal(billingDataHrefs.has('/admin/data-retention'), true, 'data-retention must be in Billing & Data');
+  assert.equal(billingDataHrefs.has('/admin/user-billing'), true, 'user-billing must be in Billing & Data');
 });
 
 test('admin nav keeps pricing-billing and data-retention links active-targetable and hidden for non-admin users', () => {
@@ -121,11 +122,13 @@ test('admin nav keeps pricing-billing and data-retention links active-targetable
   const adminHrefs = new Set(adminGroups.flatMap((group) => group.items.map((item) => item.href)));
   assert.equal(adminHrefs.has('/admin/pricing-billing'), true, 'pricing-billing route must remain in admin nav');
   assert.equal(adminHrefs.has('/admin/data-retention'), true, 'data-retention route must remain in admin nav');
+  assert.equal(adminHrefs.has('/admin/user-billing'), true, 'user-billing route must remain in admin nav');
 
   const userGroups = buildVisibleAdminNavGroups(createContext([]));
   const userHrefs = new Set(userGroups.flatMap((group) => group.items.map((item) => item.href)));
   assert.equal(userHrefs.has('/admin/pricing-billing'), false, 'pricing-billing must remain hidden for non-admin');
   assert.equal(userHrefs.has('/admin/data-retention'), false, 'data-retention must remain hidden for non-admin');
+  assert.equal(userHrefs.has('/admin/user-billing'), false, 'user-billing must remain hidden for non-admin');
 });
 
 test('isAdminEmail returns false for unknown emails', () => {

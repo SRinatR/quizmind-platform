@@ -101,6 +101,7 @@ const PAGE_TITLE_KEYS: Record<string, { eyebrow: string; title: string }> = {
   '/admin/extension-control': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.extensionControl' },
   '/admin/ai-routing': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.aiRouting' },
   '/admin/pricing-billing': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.pricingBilling' },
+  '/admin/user-billing': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.userBilling' },
   '/admin/data-retention': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.dataRetention' },
   '/admin/settings': { eyebrow: 'admin.page.adminLabel', title: 'admin.nav.items.settings' },
 };
@@ -156,6 +157,7 @@ export function SiteShell({
                 : titleMap?.title === 'admin.nav.items.extensionControl' ? t.admin.nav.items.extensionControl
                   : titleMap?.title === 'admin.nav.items.aiRouting' ? t.admin.nav.items.aiRouting
                     : titleMap?.title === 'admin.nav.items.pricingBilling' ? t.admin.nav.items.pricingBilling
+                      : titleMap?.title === 'admin.nav.items.userBilling' ? t.admin.nav.items.userBilling
                       : titleMap?.title === 'admin.nav.items.dataRetention' ? t.admin.nav.items.dataRetention
                         : titleMap?.title === 'admin.nav.items.settings' ? t.admin.nav.items.settings
                           : title;

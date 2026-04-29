@@ -67,6 +67,37 @@ test('PlatformController.listAdminSecurity requires connected runtime and does n
   );
 });
 
+test('PlatformController admin billing users rejects missing bearer token in connected mode', async () => {
+  const controller = new PlatformController({ getCurrentSession: async () => createSession() } as any, {} as any);
+  (controller as any).env = { runtimeMode: 'connected' };
+  await assert.rejects(() => controller.listAdminBillingUsers(undefined, undefined, undefined, undefined, undefined, undefined), UnauthorizedException);
+});
+
+test('PlatformController admin billing users returns 403 for non-admin session', async () => {
+  const authService = { getCurrentSession: async () => createSession() };
+  const platformService = { listAdminBillingUsersForCurrentSession: async () => { throw new (await import('@nestjs/common')).ForbiddenException('Admin access is required.'); } };
+  const controller = new PlatformController(authService as any, platformService as any);
+  (controller as any).env = { runtimeMode: 'connected' };
+  await assert.rejects(() => controller.listAdminBillingUsers(undefined, undefined, undefined, undefined, undefined, 'Bearer token'));
+});
+
+test('PlatformController wallet adjustments rejects missing bearer token', async () => {
+  const controller = new PlatformController({ getCurrentSession: async () => createSession() } as any, {} as any);
+  (controller as any).env = { runtimeMode: 'connected' };
+  await assert.rejects(
+    () => controller.createAdminWalletAdjustment({ target: { type: 'selected_users', userIds: ['u1'] }, direction: 'credit', amountKopecks: 10, currency: 'RUB', reason: 'valid reason', idempotencyKey: 'k' } as any, undefined),
+    UnauthorizedException,
+  );
+});
+
+test('PlatformController override patch returns 403 for non-admin', async () => {
+  const authService = { getCurrentSession: async () => createSession() };
+  const platformService = { updateUserBillingOverrideForCurrentSession: async () => { throw new (await import('@nestjs/common')).ForbiddenException('Admin access is required.'); } };
+  const controller = new PlatformController(authService as any, platformService as any);
+  (controller as any).env = { runtimeMode: 'connected' };
+  await assert.rejects(() => controller.patchUserBillingOverride('u1', { reason: 'valid reason' }, 'Bearer token'));
+});
+
 test('PlatformController.listAdminSecurity uses connected session flow and forces security stream', async () => {
   const session = createSession();
   let capturedToken: string | null = null;

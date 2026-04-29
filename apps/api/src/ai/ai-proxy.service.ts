@@ -36,6 +36,7 @@ import { OpenRouterCatalogService } from './openrouter-catalog.service';
 import { RouterAiCatalogService } from './routerai-catalog.service';
 import { WalletRepository } from '../wallet/wallet.repository';
 import { AiPricingService } from './ai-pricing.service';
+import { UserBillingOverrideRepository } from './user-billing-override.repository';
 
 const aiRequestsQuotaKey = 'limit.requests_per_day';
 const supportedProxyProviders = new Set<AiProvider>(['openrouter', 'routerai', 'openai', 'polza']);
@@ -436,6 +437,8 @@ export class AiProxyService {
     private readonly walletRepository: WalletRepository,
     @Inject(AiPricingService)
     private readonly aiPricingService?: AiPricingService,
+    @Inject(UserBillingOverrideRepository)
+    private readonly userBillingOverrideRepository?: UserBillingOverrideRepository,
   ) {}
 
   async proxyForCurrentSession(
@@ -1970,13 +1973,22 @@ export class AiProxyService {
     );
     const providerCostUsd = providerCostFromUsage ?? estimatedProviderCost;
     const pricingSource: 'provider' | 'estimated' = providerCostFromUsage !== null ? 'provider' : 'estimated';
+    const userOverride = this.userBillingOverrideRepository
+      ? await this.userBillingOverrideRepository.getOverrideForUser(input.invocation.session.user.id)
+      : null;
+    const basePolicy = this.aiPricingService ? await this.aiPricingService.getEffectivePolicy() : null;
+    const effectivePolicy =
+      this.aiPricingService && typeof (this.aiPricingService as any).resolveEffectiveAiPricingPolicy === 'function'
+        ? (this.aiPricingService as any).resolveEffectiveAiPricingPolicy(basePolicy, userOverride)
+        : basePolicy;
     const breakdown = this.aiPricingService
       ? await this.aiPricingService.calculate({
         providerCostUsd,
         pricingSource,
         keySource: input.invocation.keySource,
         status: input.status,
-      })
+        ...(effectivePolicy ? { policy: effectivePolicy } : {}),
+      } as any)
       : {
         providerCostUsd,
         platformFeeUsd: 0,
@@ -2015,6 +2027,15 @@ export class AiProxyService {
     });
     const pricingPolicySnapshotJson: Prisma.InputJsonObject = {
       ...breakdown.policySnapshot,
+      userBillingOverride: userOverride
+        ? {
+          userId: userOverride.userId,
+          aiPlatformFeeExempt: userOverride.aiPlatformFeeExempt,
+          aiMarkupPercentOverride: userOverride.aiMarkupPercentOverride,
+          reason: userOverride.reason,
+          appliedAt: new Date().toISOString(),
+        }
+        : null,
       conversion: {
         walletCurrency: wallet.currency,
         chargedAmountMinor: conversion.chargedAmountMinor,

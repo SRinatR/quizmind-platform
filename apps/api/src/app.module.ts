@@ -56,6 +56,7 @@ import { PlatformSettingsRepository } from './settings/platform-settings.reposit
 import { RetentionSettingsService } from './settings/retention-settings.service';
 import { AiPricingSettingsService } from './settings/ai-pricing-settings.service';
 import { AiPricingService } from './ai/ai-pricing.service';
+import { UserBillingOverrideRepository } from './ai/user-billing-override.repository';
 
 @Module({
   controllers: [
@@ -82,6 +83,7 @@ import { AiPricingService } from './ai/ai-pricing.service';
     AiPricingSettingsService,
     RetentionSettingsService,
     AiPricingService,
+    UserBillingOverrideRepository,
     HistoryBlobService,
     AuthService,
     BillingService,

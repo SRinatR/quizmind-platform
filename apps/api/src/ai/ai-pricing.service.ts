@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { type PlatformAiPricingPolicy } from '@quizmind/contracts';
 
 import { AiPricingSettingsService } from '../settings/ai-pricing-settings.service';
+import type { UserBillingOverride } from '@quizmind/database';
 
 export interface PricingBreakdown {
   providerCostUsd: number;
@@ -25,12 +26,13 @@ export class AiPricingService {
   }
 
   async calculate(input: {
+    policy?: PlatformAiPricingPolicy;
     providerCostUsd: number;
     pricingSource: 'provider' | 'estimated';
     keySource: 'platform' | 'user';
     status: 'success' | 'error' | 'quota_exceeded';
   }): Promise<PricingBreakdown> {
-    const policy = await this.settings.getEffectivePricingPolicy();
+    const policy = input.policy ?? (await this.settings.getEffectivePricingPolicy());
     return this.calculateWithPolicy({ ...input, policy });
   }
 
@@ -104,6 +106,17 @@ export class AiPricingService {
       policySnapshot: policy,
       chargeable: true,
     };
+  }
+
+  resolveEffectiveAiPricingPolicy(policy: PlatformAiPricingPolicy, userOverride?: UserBillingOverride | null): PlatformAiPricingPolicy {
+    if (!userOverride) return policy;
+    if (userOverride.aiPlatformFeeExempt) {
+      return { ...policy, markupPercent: 0, minimumFeeUsd: 0 };
+    }
+    if (typeof userOverride.aiMarkupPercentOverride === 'number') {
+      return { ...policy, markupPercent: userOverride.aiMarkupPercentOverride };
+    }
+    return policy;
   }
 
   private roundToIncrement(value: number, increment: number): number {

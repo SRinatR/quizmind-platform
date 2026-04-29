@@ -32,3 +32,53 @@ test('debitUsage is idempotent and returns existing ledger', async () => {
   assert.equal(second.alreadyProcessed, true);
   assert.equal(store.balance, 900);
 });
+
+test('manualAdjustWallets credits selected users and is idempotent', async () => {
+  const store: any = { balances: new Map<string, number>(), batches: new Map<string, any>(), ledgers: [] as any[] };
+  const tx: any = {
+    adminWalletAdjustmentBatch: {
+      findUnique: async ({ where }: any) => store.batches.get(where.idempotencyKey) ?? null,
+      create: async ({ data }: any) => {
+        const row = { id: `b_${store.batches.size + 1}`, ...data };
+        store.batches.set(data.idempotencyKey, row);
+        return row;
+      },
+    },
+    walletLedgerEntry: {
+      count: async ({ where }: any) => store.ledgers.filter((l) => where.idempotencyKey.in.includes(l.idempotencyKey)).length,
+      create: async ({ data }: any) => { store.ledgers.push(data); return data; },
+    },
+    wallet: {
+      upsert: async ({ where }: any) => ({ id: `w_${where.userId}`, balanceKopecks: store.balances.get(where.userId) ?? 0 }),
+      update: async ({ where, data }: any) => {
+        const userId = where.id.replace('w_', '');
+        const prev = store.balances.get(userId) ?? 0;
+        const next = data.balanceKopecks.increment ? prev + data.balanceKopecks.increment : prev - data.balanceKopecks.decrement;
+        store.balances.set(userId, next);
+        return { balanceKopecks: next };
+      },
+    },
+  };
+  const repo = new WalletRepository({ $transaction: async (fn: any) => fn(tx) } as any);
+  const first = await repo.manualAdjustWallets({ actorId: 'admin1', targetType: 'selected_users', userIds: ['u1'], direction: 'credit', amountKopecks: 50, currency: 'RUB', reason: 'manual credit', idempotencyKey: 'idem-1' });
+  const second = await repo.manualAdjustWallets({ actorId: 'admin1', targetType: 'selected_users', userIds: ['u1'], direction: 'credit', amountKopecks: 50, currency: 'RUB', reason: 'manual credit', idempotencyKey: 'idem-1' });
+  assert.equal(first.affectedCount, 1);
+  assert.equal(second.affectedCount, 1);
+  assert.equal(store.balances.get('u1'), 50);
+  assert.equal(store.ledgers[0].type, 'manual_adjustment');
+});
+
+test('manualAdjustWallets blocks negative debits by default', async () => {
+  const tx: any = {
+    adminWalletAdjustmentBatch: { findUnique: async () => null, create: async ({ data }: any) => ({ id: 'b1', ...data }) },
+    walletLedgerEntry: { create: async () => null },
+    wallet: {
+      upsert: async () => ({ id: 'w_u1', balanceKopecks: 10 }),
+      update: async () => { throw new Error('should not update'); },
+    },
+  };
+  const repo = new WalletRepository({ $transaction: async (fn: any) => fn(tx) } as any);
+  const result = await repo.manualAdjustWallets({ actorId: 'a', targetType: 'selected_users', userIds: ['u1'], direction: 'debit', amountKopecks: 50, currency: 'RUB', reason: 'manual debit', idempotencyKey: 'idem-2' });
+  assert.equal(result.affectedCount, 0);
+  assert.equal(result.skippedCount, 1);
+});
