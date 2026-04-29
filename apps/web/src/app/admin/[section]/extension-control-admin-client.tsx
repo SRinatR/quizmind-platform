@@ -137,6 +137,7 @@ export function ExtensionControlAdminClient({
   const shell = t.admin.extensionControlShell;
   const policySummary = t.admin.extensionControlPolicySummary;
   const bootstrap = t.admin.extensionControlBootstrap;
+  const telemetry = t.admin.extensionControlTelemetry;
   const [, startRefresh] = useTransition();
 
   // Shared feedback
@@ -556,6 +557,44 @@ export function ExtensionControlAdminClient({
             {bootstrap.success}
           </p>
         </details>
+      </section>
+
+      {/* ── D: Telemetry Queue + Usage Snapshot ───────────────────────── */}
+      <section className="panel">
+        <div className="split-grid">
+          <article>
+            <span className="micro-label">{telemetry.telemetryQueue}</span>
+            <h3>{telemetry.queueStatus}</h3>
+            <div className="list-stack" style={{ marginTop: '8px' }}>
+              <div className="list-item"><strong>{telemetry.pendingEvents}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.processedEvents}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.failedEvents}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.lastEvent}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.lastFlush}</strong><p>{telemetry.notAvailable}</p></div>
+            </div>
+            <div className="admin-user-actions" style={{ marginTop: '8px' }}>
+              <button className="btn-primary" disabled type="button">{telemetry.flushing}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.flushNow}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.clearQueue}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.refreshing}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.refresh}</button>
+              <button className="btn-ghost" disabled type="button">{telemetry.retry}</button>
+            </div>
+            <p style={{ marginTop: '8px', color: 'var(--muted)' }}>{telemetry.queueEmpty}</p>
+            <p style={{ marginTop: '4px', color: 'var(--muted)' }}>{telemetry.loadingTelemetry}</p>
+            <p style={{ marginTop: '4px', color: 'var(--muted)' }}>{telemetry.failedToLoadTelemetry}</p>
+          </article>
+          <article>
+            <span className="micro-label">{telemetry.usageSnapshot}</span>
+            <div className="list-stack" style={{ marginTop: '8px' }}>
+              <div className="list-item"><strong>{telemetry.requests}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.tokens}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.errors}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.successRate}</strong><p>{telemetry.notAvailable}</p></div>
+              <div className="list-item"><strong>{telemetry.avgLatency}</strong><p>{telemetry.notAvailable}</p></div>
+            </div>
+          </article>
+        </div>
       </section>
 
       {/* ── B: Runtime Settings ──────────────────────────────────────────── */}
