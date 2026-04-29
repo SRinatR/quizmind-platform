@@ -5173,3 +5173,18 @@ code {
 .user-billing-action-card { display: grid; gap: 4px; }
 .user-billing-form-grid { display: grid; gap: 8px; }
 .user-billing-context { display: grid; gap: 2px; }
+
+.user-billing-help ol { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.user-billing-selection-panel { align-items: flex-start; }
+.user-billing-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.user-billing-action-tabs { display: flex; gap: 8px; }
+.user-billing-action-tabs .is-active { border-color: var(--accent); }
+.user-billing-main-grid { display: grid; gap: 12px; }
+.user-billing-table-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
+.user-billing-table-wrap table { margin: 0; }
+.user-billing-table-wrap thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.user-billing-table-wrap tbody tr:hover { background: color-mix(in srgb, var(--surface-strong) 55%, transparent); }
+.user-billing-row-selected { background: color-mix(in srgb, var(--accent-soft) 35%, transparent); }
+.user-billing-preview { display: grid; gap: 4px; }
+.user-billing-danger { border-color: rgba(180, 60, 60, 0.45); }
+.btn-compact { padding: 4px 8px; font-size: 0.82rem; }

@@ -10,26 +10,30 @@ test('client references t.admin.userBilling and billing endpoints', async () => 
   assert.match(source, /\/bff\/admin\/billing\/users\/\$\{encodeURIComponent\(userId\)\}\/override/);
 });
 
-test('client has search trigger, async hardening, and payload invariants', async () => {
+test('client has mode logic, preview callout, and payload invariants', async () => {
   const source = await readFile('src/app/admin/[section]/user-billing-client.tsx', 'utf8');
-  assert.match(source, /ub\.search/);
-  assert.match(source, /onKeyDown=\{\(e\) => \{ if \(e\.key === 'Enter'\) void loadUsers\(\); \}\}/);
-  assert.match(source, /async function loadUsers\(\)[\s\S]*try \{/);
-  assert.match(source, /async function loadUsers\(\)[\s\S]*finally \{/);
-  assert.match(source, /async function submitAdjustment\(\)[\s\S]*finally \{/);
-  assert.match(source, /async function saveOverride\(\)[\s\S]*finally \{/);
-  assert.match(source, /async function clearOverride\(userId: string\)[\s\S]*try \{/);
-  assert.match(source, /ub\.actionsHelpTitle/);
-  assert.match(source, /ub\.managingUser/);
+  assert.match(source, /ub\.howItWorksTitle/);
+  assert.match(source, /ub\.balanceAdjustmentTitle/);
+  assert.match(source, /setPanelMode\('adjustment'\)/);
+  assert.match(source, /function openCommissionRule\(row: AdminBillingUserRow\)/);
+  assert.match(source, /onClick=\{\(\) => \{ if \(singleSelectedRow\) openCommissionRule\(singleSelectedRow\); \}\}/);
+  assert.doesNotMatch(source, /onClick=\{\(\) => setPanelMode\('commission'\)\}/);
+  assert.match(source, /ub\.previewTitle/);
+  assert.match(source, /ub\.previewLedgerEntry/);
+  assert.match(source, /ub\.previewYookassaPayment/);
   assert.match(source, /Math\.round\(amount \* 100\)/);
   assert.match(source, /crypto\.randomUUID\(\)/);
+  assert.match(source, /user-billing-row-selected/);
+  assert.match(source, /disabled=\{saving \|\| !editingUserId \|\| overrideReason\.trim\(\)\.length < 5\}/);
+  assert.match(source, /\{saving \? ub\.savingOverride : ub\.saveOverride\}/);
 });
 
-test('ru dictionary contains required hardening labels', async () => {
+test('ru dictionary contains required billing labels', async () => {
   const ru = await readFile('src/lib/i18n/ru.ts', 'utf8');
-  assert.match(ru, /Искать/);
-  assert.match(ru, /Что означают действия/);
-  assert.match(ru, /Управление:/);
-  assert.match(ru, /Ошибка сети\. Попробуйте ещё раз\./);
-  assert.match(ru, /возвращает пользователя к глобальным настройкам/);
+  assert.match(ru, /Как работает страница/);
+  assert.match(ru, /Корректировка баланса/);
+  assert.match(ru, /Предпросмотр/);
+  assert.match(ru, /Платёж YooKassa не создаётся/);
+  assert.match(ru, /Правила комиссии можно изменять только для одного пользователя/);
+  assert.match(ru, /Сбросить к глобальным настройкам/);
 });
