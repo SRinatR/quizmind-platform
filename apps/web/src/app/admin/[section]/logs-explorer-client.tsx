@@ -201,7 +201,8 @@ function DetailsDrawer({
   onClose: () => void;
   exchangeRates: ExchangeRateSnapshot | null;
 }) {
-  const { prefs } = usePreferences();
+  const { prefs, t } = usePreferences();
+  const td = t.admin.logsView.detail;
   const aiRequest = entry.aiRequest;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const promptDisplay = aiRequest
@@ -231,7 +232,7 @@ function DetailsDrawer({
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
         <div>
-          <span className="micro-label">{aiRequest ? 'AI request detail' : 'Event detail'}</span>
+          <span className="micro-label">{aiRequest ? td.aiRequestDetail : td.logDetail}</span>
           <h3 style={{ margin: '4px 0 0', fontSize: '0.95rem', wordBreak: 'break-word' }}>
             {aiRequest ? getReadableModelName(aiRequest.model) : entry.eventType}
           </h3>
@@ -242,7 +243,7 @@ function DetailsDrawer({
           type="button"
           style={{ padding: '4px 10px', flexShrink: 0, marginLeft: '8px' }}
         >
-          Close
+          {td.close}
         </button>
       </div>
 
@@ -251,7 +252,7 @@ function DetailsDrawer({
           <div className="tag-row" style={{ marginBottom: 10, gap: 6, flexWrap: 'wrap' }}>
             <span className={statusBadgeClass(aiRequest.status)}>{aiRequest.status}</span>
             <span className="tag-soft tag-soft--gray">{aiRequest.requestType}</span>
-            {typeof aiRequest.totalTokens === 'number' ? <span className="tag-soft tag-soft--gray">{aiRequest.totalTokens} tokens</span> : null}
+            {typeof aiRequest.totalTokens === 'number' ? <span className="tag-soft tag-soft--gray">{aiRequest.totalTokens} {td.tokens}</span> : null}
             <span className="tag-soft tag-soft--gray">{formatCost(aiRequest.estimatedCostUsd ?? undefined, prefs.balanceDisplayCurrency, exchangeRates)}</span>
             <span className="tag-soft tag-soft--gray">{formatDuration(aiRequest.durationMs ?? undefined)}</span>
           </div>
@@ -260,32 +261,32 @@ function DetailsDrawer({
           </div>
           {(typeof aiRequest.promptTokens === 'number' || typeof aiRequest.completionTokens === 'number') ? (
             <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginBottom: 14 }}>
-              {typeof aiRequest.promptTokens === 'number' ? aiRequest.promptTokens : '—'} prompt tokens · {typeof aiRequest.completionTokens === 'number' ? aiRequest.completionTokens : '—'} completion tokens
+              {typeof aiRequest.promptTokens === 'number' ? aiRequest.promptTokens : '—'} {td.promptTokens} · {typeof aiRequest.completionTokens === 'number' ? aiRequest.completionTokens : '—'} {td.completionTokens}
             </div>
           ) : null}
           {aiRequest.contentMessage ? <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 8 }}>{aiRequest.contentMessage}</p> : null}
           {promptDisplay?.hasPromptText ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <p className="micro-label" style={{ margin: 0 }}>Request / Question</p>
-                <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }} onClick={() => copyText(promptDisplay.cleanQuestionText)}>Copy</button>
+                <p className="micro-label" style={{ margin: 0 }}>{td.requestQuestion}</p>
+                <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }} onClick={() => copyText(promptDisplay.cleanQuestionText)}>{td.copy}</button>
               </div>
               <pre style={codeBlockStyle}>{promptDisplay.cleanQuestionText}</pre>
             </>
           ) : null}
-          {promptDisplay?.promptInstructionText ? <ExpandableSection label="Prompt instruction" content={promptDisplay.promptInstructionText} /> : null}
-          {promptDisplay?.systemText ? <ExpandableSection label="System" content={promptDisplay.systemText} /> : null}
-          {aiRequest.promptContentJson ? <ExpandableSection label="Raw request" content={typeof aiRequest.promptContentJson === 'string' ? aiRequest.promptContentJson : JSON.stringify(aiRequest.promptContentJson, null, 2)} /> : null}
+          {promptDisplay?.promptInstructionText ? <ExpandableSection label={td.promptInstruction} content={promptDisplay.promptInstructionText} /> : null}
+          {promptDisplay?.systemText ? <ExpandableSection label={td.system} content={promptDisplay.systemText} /> : null}
+          {aiRequest.promptContentJson ? <ExpandableSection label={td.rawRequest} content={typeof aiRequest.promptContentJson === 'string' ? aiRequest.promptContentJson : JSON.stringify(aiRequest.promptContentJson, null, 2)} /> : null}
           {promptDisplay?.imageAttachments?.map((attachment) => (
             <div key={attachment.id} style={{ marginTop: 10, border: '1px solid var(--border)', borderRadius: 6, padding: 8 }}>
-              {attachment.viewUrl && !attachment.expired && !attachment.deleted ? <img src={attachment.viewUrl} alt={attachment.originalName ?? 'attachment'} style={{ width: '100%', borderRadius: 4, cursor: 'pointer' }} onClick={() => setPreviewUrl(attachment.viewUrl!)} /> : <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>Image expired after retention window.</div>}
+              {attachment.viewUrl && !attachment.expired && !attachment.deleted ? <img src={attachment.viewUrl} alt={attachment.originalName ?? td.attachmentAlt} style={{ width: '100%', borderRadius: 4, cursor: 'pointer' }} onClick={() => setPreviewUrl(attachment.viewUrl!)} /> : <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>{td.imageExpired}</div>}
               <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: 6 }}>
                 {attachment.originalName ?? attachment.id} · {(attachment.sizeBytes / 1024).toFixed(0)} KB
               </div>
               {attachment.viewUrl && !attachment.expired && !attachment.deleted ? (
                 <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
-                  <a className="btn-ghost" href={attachment.viewUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>Open</a>
-                  <a className="btn-ghost" href={attachment.downloadUrl} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>Download</a>
+                  <a className="btn-ghost" href={attachment.viewUrl} target="_blank" rel="noreferrer" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{td.open}</a>
+                  <a className="btn-ghost" href={attachment.downloadUrl} style={{ fontSize: '0.72rem', padding: '2px 8px' }}>{td.download}</a>
                 </div>
               ) : null}
             </div>
@@ -298,11 +299,11 @@ function DetailsDrawer({
             return (
               <section style={{ marginTop: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <p className="micro-label" style={{ margin: 0 }}>Response</p>
-                  <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }} onClick={() => copyText(displayResponse)}>Copy</button>
+                  <p className="micro-label" style={{ margin: 0 }}>{td.response}</p>
+                  <button className="btn-ghost" type="button" style={{ fontSize: '0.72rem', padding: '2px 8px' }} onClick={() => copyText(displayResponse)}>{td.copy}</button>
                 </div>
                 <pre style={codeBlockStyle}>{displayResponse}</pre>
-                <ExpandableSection label="Raw response" content={rawResponseText} />
+                <ExpandableSection label={td.rawResponse} content={rawResponseText} />
               </section>
             );
           })()}
@@ -311,7 +312,7 @@ function DetailsDrawer({
 
       {entry.errorSummary ? (
         <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px', color: 'var(--warn)' }}>Error</p>
+          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px', color: 'var(--warn)' }}>{td.error}</p>
           <pre style={{ fontSize: '0.78rem', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '4px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0 }}>
             {entry.errorSummary}
           </pre>
@@ -320,29 +321,29 @@ function DetailsDrawer({
 
       {entry.summary ? (
         <>
-          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>Summary</p>
+          <p className="micro-label" style={{ marginTop: '16px', marginBottom: '6px' }}>{td.summary}</p>
           <p style={{ fontSize: '0.83rem', margin: 0 }}>{entry.summary}</p>
         </>
       ) : null}
 
       <details style={{ marginTop: 16 }}>
-        <summary className="micro-label" style={{ cursor: 'pointer' }}>Technical log metadata</summary>
+        <summary className="micro-label" style={{ cursor: 'pointer' }}>{td.technicalMetadata}</summary>
         <div className="kv-list" style={{ marginTop: 8 }}>
-          <div className="kv-row"><span className="kv-row__key">Time</span><span className="kv-row__value">{formatUtcDateTime(entry.occurredAt)}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.time}</span><span className="kv-row__value">{formatUtcDateTime(entry.occurredAt)}</span></div>
           <div className="kv-row"><span className="kv-row__key">Category</span><span className="kv-row__value">{entry.category ?? '—'}</span></div>
           <div className="kv-row"><span className="kv-row__key">Stream</span><span className="kv-row__value">{entry.stream}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Source</span><span className="kv-row__value">{entry.source ?? '—'}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Event type</span><span className="kv-row__value">{entry.eventType}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Log record id</span><span className="kv-row__value">{entry.id}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Source record id</span><span className="kv-row__value">{typeof entry.metadata?.sourceRecordId === 'string' ? entry.metadata.sourceRecordId : '—'}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Target type</span><span className="kv-row__value">{typeof entry.metadata?.targetType === 'string' ? entry.metadata.targetType : (entry.targetType ?? '—')}</span></div>
-          <div className="kv-row"><span className="kv-row__key">Target id</span><span className="kv-row__value">{typeof entry.metadata?.targetId === 'string' ? entry.metadata.targetId : (entry.targetId ?? '—')}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.source}</span><span className="kv-row__value">{entry.source ?? '—'}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.eventType}</span><span className="kv-row__value">{entry.eventType}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.logRecordId}</span><span className="kv-row__value">{entry.id}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.sourceRecordId}</span><span className="kv-row__value">{typeof entry.metadata?.sourceRecordId === 'string' ? entry.metadata.sourceRecordId : '—'}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.targetType}</span><span className="kv-row__value">{typeof entry.metadata?.targetType === 'string' ? entry.metadata.targetType : (entry.targetType ?? '—')}</span></div>
+          <div className="kv-row"><span className="kv-row__key">{td.targetId}</span><span className="kv-row__value">{typeof entry.metadata?.targetId === 'string' ? entry.metadata.targetId : (entry.targetId ?? '—')}</span></div>
           {entry.metadata && Object.keys(entry.metadata).length > 0 ? <pre style={codeBlockStyle}>{JSON.stringify(entry.metadata, null, 2)}</pre> : null}
         </div>
       </details>
       {previewUrl ? (
         <div onClick={() => setPreviewUrl(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <img alt="Prompt image" src={previewUrl} style={{ maxWidth: '95vw', maxHeight: '92vh', borderRadius: 8 }} />
+          <img alt={td.promptImageAlt} src={previewUrl} style={{ maxWidth: '95vw', maxHeight: '92vh', borderRadius: 8 }} />
         </div>
       ) : null}
     </div>
