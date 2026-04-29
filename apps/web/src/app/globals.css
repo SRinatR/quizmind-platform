@@ -5164,27 +5164,44 @@ code {
 .ub-callout-error { background: rgba(180, 60, 60, 0.12); }
 .ub-callout-warning { background: rgba(184, 92, 56, 0.12); }
 .ub-danger { border-color: rgba(180, 60, 60, 0.45); }
-.user-billing-page { display: grid; gap: 12px; }
-.user-billing-header { display: flex; justify-content: space-between; gap: 8px; }
+
+.user-billing-page { display: grid; gap: 14px; }
+.user-billing-header { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .user-billing-header h2 { margin: 0; }
 .user-billing-header p { margin: 6px 0 0; }
-.user-billing-search { display: flex; gap: 8px; align-items: end; }
+.user-billing-helper-strip { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.user-billing-helper-chip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-strong); font-size: 12px; }
+.user-billing-workspace { display: grid; grid-template-columns: minmax(620px, 1fr) minmax(380px, 440px); gap: 20px; align-items: start; }
+.user-billing-users-panel { display: grid; gap: 12px; }
+.user-billing-users-panel-header { display: flex; justify-content: space-between; gap: 12px; align-items: end; }
+.user-billing-users-panel-header h3 { margin: 0; }
+.user-billing-users-panel-header p { margin: 4px 0 0; }
+.user-billing-search { display: flex; gap: 8px; align-items: end; flex: 1; max-width: 420px; }
 .user-billing-search label { display: grid; gap: 6px; flex: 1; }
-.user-billing-action-card { display: grid; gap: 4px; }
-.user-billing-form-grid { display: grid; gap: 8px; }
-.user-billing-context { display: grid; gap: 2px; }
-
-.user-billing-help ol { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; }
-.user-billing-selection-panel { align-items: flex-start; }
-.user-billing-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.user-billing-side-panel { position: relative; }
+.user-billing-side-panel-sticky { position: sticky; top: 14px; display: grid; gap: 12px; }
+.user-billing-side-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .user-billing-action-tabs { display: flex; gap: 8px; }
 .user-billing-action-tabs .is-active { border-color: var(--accent); }
-.user-billing-main-grid { display: grid; gap: 12px; }
-.user-billing-table-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
-.user-billing-table-wrap table { margin: 0; }
-.user-billing-table-wrap thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
-.user-billing-table-wrap tbody tr:hover { background: color-mix(in srgb, var(--surface-strong) 55%, transparent); }
+.user-billing-form-grid { display: grid; gap: 10px; }
+.user-billing-controls-grid { display: grid; gap: 10px; }
+.user-billing-field { display: grid; gap: 6px; }
+.user-billing-control { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 9px 10px; }
+.user-billing-control:focus { outline: 2px solid color-mix(in srgb, var(--accent) 35%, transparent); outline-offset: 1px; }
+.user-billing-table { border: 1px solid var(--line); border-radius: 12px; overflow: auto; }
+.user-billing-table table { width: 100%; margin: 0; }
+.user-billing-table thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.user-billing-table tbody tr:hover { background: color-mix(in srgb, var(--surface-strong) 55%, transparent); }
+.user-billing-user-cell { min-width: 220px; }
 .user-billing-row-selected { background: color-mix(in srgb, var(--accent-soft) 35%, transparent); }
-.user-billing-preview { display: grid; gap: 4px; }
+.user-billing-preview-grid { display: grid; gap: 6px; }
+.user-billing-context { display: grid; gap: 2px; }
+.user-billing-empty-selection { border: 1px dashed var(--line); border-radius: 10px; padding: 14px; }
+.user-billing-empty-selection h3 { margin: 0; }
+.user-billing-empty-selection p { margin: 6px 0 0; color: var(--muted); }
 .user-billing-danger { border-color: rgba(180, 60, 60, 0.45); }
+@media (max-width: 1100px) {
+  .user-billing-workspace { grid-template-columns: 1fr; }
+  .user-billing-side-panel-sticky { position: static; }
+}
 .btn-compact { padding: 4px 8px; font-size: 0.82rem; }

@@ -185,122 +185,132 @@ export function UserBillingAdminClient() {
         <button className="btn-ghost" onClick={() => void loadUsers()}>{ub.refresh}</button>
       </div>
 
-      <div className="user-billing-help ub-callout">
-        <strong>{ub.howItWorksTitle}</strong>
-        <ol>
-          <li>{ub.howItWorksStep1}</li>
-          <li>{ub.howItWorksStep2}</li>
-          <li>{ub.howItWorksStep3}</li>
-          <li>{ub.howItWorksStep4}</li>
-        </ol>
+      <div className="user-billing-helper-strip">
+        <span className="user-billing-helper-chip">{ub.helperSelectUsers}</span>
+        <span className="user-billing-helper-chip">{ub.helperAdjustBalance}</span>
+        <span className="user-billing-helper-chip">{ub.helperManageCommission}</span>
+        <span className="muted">{ub.ledgerEntryWritten}</span>
       </div>
 
-      <div className="user-billing-search">
-        <label>
-          <span className="micro-label">{ub.searchUsers}</span>
-          <input value={search} onKeyDown={(e) => { if (e.key === 'Enter') void loadUsers(); }} onChange={(e) => setSearch(e.target.value)} placeholder={ub.searchHint} />
-        </label>
-        <button className="btn-ghost" onClick={() => void loadUsers()}>{ub.search}</button>
-      </div>
-
-      {selected.size > 0 ? (
-        <div className="ub-toolbar user-billing-selection-panel">
-          {singleSelectedRow ? (
-            <div className="user-billing-context">
-              <span className="micro-label">{ub.selectedUser}</span>
-              <strong>{singleSelectedRow.displayName ?? singleSelectedRow.userId}</strong>
-              <span className="muted">{singleSelectedRow.email}</span>
-              <span>{ub.selectedUserBalance.replace('{amount}', String(singleSelectedRow.balanceKopecks / 100)).replace('{currency}', singleSelectedRow.walletCurrency)}</span>
-              <span className="ub-badge">{singleSelectedRow.aiPlatformFeeExempt ? ub.platformFeeExemptBadge : singleSelectedRow.aiMarkupPercentOverride != null ? ub.customMarkupBadge.replace('{value}', String(singleSelectedRow.aiMarkupPercentOverride)) : ub.standardCommission}</span>
-            </div>
-          ) : (
-            <div className="user-billing-context">
-              <strong>{ub.selectedMany.replace('{count}', String(selectedRows.length))}</strong>
-              <span className="muted">{ub.singleUserCommissionHint}</span>
-            </div>
-          )}
-          <div className="user-billing-actions">
-            <button className="btn-ghost" onClick={() => openAdjustment('credit')}>{ub.credit}</button>
-            <button className="btn-ghost" onClick={() => openAdjustment('debit')}>{ub.debit}</button>
-            <button className="btn-ghost" disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.editCommission}</button>
-            {canResetSelectedRule && singleSelectedRow ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverride}</button> : null}
-          </div>
-        </div>
-      ) : null}
-
-      {loading ? <div className="ub-callout ub-callout-warning">{ub.loadingUsers}</div> : null}
-      {error ? <div className="ub-callout ub-callout-error"><p>{error}</p><button className="btn-ghost" onClick={() => void loadUsers()}>{ub.retry}</button></div> : null}
       {status ? <div className={`ub-callout ${statusTone === 'success' ? 'ub-callout-success' : statusTone === 'warning' ? 'ub-callout-warning' : 'ub-callout-error'}`}>{status}</div> : null}
 
-      {!loading && !error ? (
-        <div className="user-billing-table-wrap">
-          <table>
-            <thead>
-              <tr><th></th><th>{ub.user}</th><th>{ub.balance}</th><th>{ub.commissionStatus}</th><th>{ub.actions}</th></tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? <tr><td colSpan={5}>{ub.noUsers}</td></tr> : rows.map((row) => (
-                <tr key={row.userId} className={selected.has(row.userId) ? 'user-billing-row-selected' : ''}>
-                  <td><input type="checkbox" checked={selected.has(row.userId)} onChange={() => toggleUser(row.userId)} /></td>
-                  <td><div>{row.displayName ?? row.userId}</div><div className="muted">{row.email}</div></td>
-                  <td>{row.balanceKopecks / 100} {row.walletCurrency}</td>
-                  <td><span className="ub-badge">{row.aiPlatformFeeExempt ? ub.platformFeeExemptBadge : row.aiMarkupPercentOverride != null ? ub.customMarkupBadge.replace('{value}', String(row.aiMarkupPercentOverride)) : ub.standardCommission}</span></td>
-                  <td><button className="btn-ghost btn-compact" onClick={() => openManage(row)}>{ub.manage}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-
-      <div className="user-billing-action-tabs">
-        <button className={`btn-ghost ${panelMode === 'adjustment' ? 'is-active' : ''}`} onClick={() => setPanelMode('adjustment')}>{ub.balanceAdjustmentTitle}</button>
-        <button className={`btn-ghost ${panelMode === 'commission' ? 'is-active' : ''}`} disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.editCommission}</button>
-      </div>
-
-      <div className="user-billing-main-grid">
-        {panelMode === 'adjustment' ? (
-          <div className="panel user-billing-form-grid">
-            <h3>{ub.balanceAdjustmentTitle}</h3><p>{ub.balanceAdjustmentSubtitle}</p>
-            <label>{ub.targetMode}<select value={targetMode} onChange={(e) => setTargetMode(e.target.value as 'selected_users' | 'all_users')}><option value="selected_users">{ub.selectedUsers}</option><option value="all_users">{ub.allUsers}</option></select></label>
-            <label>{ub.direction}<select value={direction} onChange={(e) => setDirection(e.target.value as 'credit' | 'debit')}><option value="credit">{ub.credit}</option><option value="debit">{ub.debit}</option></select></label>
-            <label>{ub.amountRub}<input value={amountRub} onChange={(e) => setAmountRub(e.target.value)} /></label>
-            <label>{ub.reason}<textarea value={reason} onChange={(e) => setReason(e.target.value)} /></label>
-            {targetMode === 'all_users' ? <label>{ub.confirmation}<input value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} /><small>{ub.confirmationHint}</small></label> : null}
-            <div className="ub-callout user-billing-preview">
-              <strong>{ub.previewTitle}</strong>
-              <div>{ub.previewSelected.replace('{count}', String(previewUsersCount))}</div>
-              <div>{ub.previewOperation}: {direction === 'credit' ? ub.credit : ub.debit}</div>
-              <div>{ub.previewAmountSigned.replace('{value}', amountRub || '0').replace('{sign}', direction === 'credit' ? '+' : '-')}</div>
-              <div>{ub.previewLedgerEntry}</div>
-              <div>{ub.previewYookassaPayment}</div>
-            </div>
-            {direction === 'debit' ? <div className="ub-callout ub-callout-warning">{ub.debitWarning}</div> : null}
-            {targetMode === 'all_users' ? <div className="ub-callout ub-callout-error user-billing-danger">{ub.allUsersWarning}</div> : null}
-            <button className="btn-primary" disabled={!canSubmit} onClick={() => void submitAdjustment()}>{saving ? ub.applyingAdjustment : ub.applyAdjustment}</button>
-          </div>
-        ) : null}
-
-        {panelMode === 'commission' && singleSelectedRow ? (
-          <div className="panel user-billing-form-grid">
-            <h3>{ub.editCommission}</h3>
-            <div className="user-billing-context">
-              <strong>{singleSelectedRow.displayName ?? singleSelectedRow.userId}</strong>
-              <span className="muted">{singleSelectedRow.email}</span>
-              <span>{ub.selectedUserBalance.replace('{amount}', String(singleSelectedRow.balanceKopecks / 100)).replace('{currency}', singleSelectedRow.walletCurrency)}</span>
-              <span className="ub-badge">{singleSelectedRow.aiPlatformFeeExempt ? ub.platformFeeExemptBadge : singleSelectedRow.aiMarkupPercentOverride != null ? ub.customMarkupBadge.replace('{value}', String(singleSelectedRow.aiMarkupPercentOverride)) : ub.standardCommission}</span>
-            </div>
-            <div className="ub-callout">{ub.providerCostStillCharged}</div>
-            <label><input type="checkbox" checked={overrideFeeExempt} onChange={(e) => setOverrideFeeExempt(e.target.checked)} /> {ub.platformFeeExempt}</label>
-            <label>{ub.customMarkupPercent}<input value={overrideMarkup} onChange={(e) => setOverrideMarkup(e.target.value)} /></label>
-            <label>{ub.overrideReason}<textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} /></label>
+      <div className="user-billing-workspace">
+        <section className="panel user-billing-users-panel">
+          <div className="user-billing-users-panel-header">
             <div>
-              <button className="btn-primary" disabled={saving || !editingUserId || overrideReason.trim().length < 5} onClick={() => void saveOverride()}>{saving ? ub.savingOverride : ub.saveOverride}</button>
-              <button className="btn-ghost" onClick={() => setPanelMode('adjustment')}>{ub.cancel}</button>
-              {(singleSelectedRow.aiPlatformFeeExempt || singleSelectedRow.aiMarkupPercentOverride != null) ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverrideToGlobal}</button> : null}
+              <h3>{ub.users}</h3>
+              <p className="muted">{ub.usersCount.replace('{count}', String(rows.length))}</p>
+            </div>
+            <div className="user-billing-search">
+              <label>
+                <span className="micro-label">{ub.searchUsers}</span>
+                <input className="user-billing-control" value={search} onKeyDown={(e) => { if (e.key === 'Enter') void loadUsers(); }} onChange={(e) => setSearch(e.target.value)} placeholder={ub.searchHint} />
+              </label>
+              <button className="btn-ghost" onClick={() => void loadUsers()}>{ub.search}</button>
             </div>
           </div>
-        ) : null}
+
+          {loading ? <div className="ub-callout ub-callout-warning">{ub.loadingUsers}</div> : null}
+          {error ? <div className="ub-callout ub-callout-error"><p>{error}</p><button className="btn-ghost" onClick={() => void loadUsers()}>{ub.retry}</button></div> : null}
+
+          {!loading && !error ? (
+            <div className="user-billing-table-wrap user-billing-table">
+              <table>
+                <thead>
+                  <tr><th></th><th>{ub.user}</th><th>{ub.balance}</th><th>{ub.commissionStatus}</th><th>{ub.actions}</th></tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? <tr><td colSpan={5}>{ub.noUsers}</td></tr> : rows.map((row) => (
+                    <tr key={row.userId} className={selected.has(row.userId) ? 'user-billing-row-selected' : ''}>
+                      <td><input type="checkbox" checked={selected.has(row.userId)} onChange={() => toggleUser(row.userId)} /></td>
+                      <td className="user-billing-user-cell"><div>{row.displayName ?? row.userId}</div><div className="muted">{row.email}</div></td>
+                      <td>{row.balanceKopecks / 100} {row.walletCurrency}</td>
+                      <td><span className="ub-badge">{row.aiPlatformFeeExempt ? ub.platformFeeExemptBadge : row.aiMarkupPercentOverride != null ? ub.customMarkupBadge.replace('{value}', String(row.aiMarkupPercentOverride)) : ub.standardCommission}</span></td>
+                      <td><button className="btn-ghost btn-compact" onClick={() => openManage(row)}>{ub.manage}</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
+
+        <aside className="panel user-billing-side-panel">
+          <div className="user-billing-side-panel-sticky">
+            {selected.size === 0 ? (
+              <div className="user-billing-empty-selection">
+                <h3>{ub.selectUserToManageTitle}</h3>
+                <p>{ub.selectUserToManageDescription}</p>
+              </div>
+            ) : (
+              <>
+                <div className="user-billing-context">
+                  {singleSelectedRow ? (
+                    <>
+                      <span className="micro-label">{ub.selectedUser}</span>
+                      <strong>{singleSelectedRow.displayName ?? singleSelectedRow.userId}</strong>
+                      <span className="muted">{singleSelectedRow.email}</span>
+                      <span>{ub.selectedUserBalance.replace('{amount}', String(singleSelectedRow.balanceKopecks / 100)).replace('{currency}', singleSelectedRow.walletCurrency)}</span>
+                      <span className="ub-badge">{singleSelectedRow.aiPlatformFeeExempt ? ub.platformFeeExemptBadge : singleSelectedRow.aiMarkupPercentOverride != null ? ub.customMarkupBadge.replace('{value}', String(singleSelectedRow.aiMarkupPercentOverride)) : ub.standardCommission}</span>
+                    </>
+                  ) : (
+                    <>
+                      <strong>{ub.selectedMany.replace('{count}', String(selectedRows.length))}</strong>
+                      <span className="muted">{ub.singleUserCommissionHint}</span>
+                    </>
+                  )}
+                </div>
+
+                <div className="user-billing-side-actions">
+                  <button className="btn-ghost" onClick={() => openAdjustment('credit')}>{ub.credit}</button>
+                  <button className="btn-ghost" onClick={() => openAdjustment('debit')}>{ub.debit}</button>
+                  <button className="btn-ghost" disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.editCommission}</button>
+                  {canResetSelectedRule && singleSelectedRow ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverride}</button> : null}
+                </div>
+              </>
+            )}
+
+            <div className="user-billing-action-tabs">
+              <button className={`btn-ghost ${panelMode === 'adjustment' ? 'is-active' : ''}`} onClick={() => setPanelMode('adjustment')}>{ub.balanceTab}</button>
+              <button className={`btn-ghost ${panelMode === 'commission' ? 'is-active' : ''}`} disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.commissionTab}</button>
+            </div>
+
+            {panelMode === 'adjustment' && (selected.size > 0 || targetMode === 'all_users') ? (
+              <div className="user-billing-form-grid">
+                <div className="user-billing-controls-grid">
+                  <label className="user-billing-field">{ub.targetMode}<select className="user-billing-control" value={targetMode} onChange={(e) => setTargetMode(e.target.value as 'selected_users' | 'all_users')}><option value="selected_users">{ub.selectedUsers}</option><option value="all_users">{ub.allUsers}</option></select></label>
+                  <label className="user-billing-field">{ub.direction}<select className="user-billing-control" value={direction} onChange={(e) => setDirection(e.target.value as 'credit' | 'debit')}><option value="credit">{ub.credit}</option><option value="debit">{ub.debit}</option></select></label>
+                  <label className="user-billing-field">{ub.amountRub}<input className="user-billing-control" value={amountRub} onChange={(e) => setAmountRub(e.target.value)} /></label>
+                  <label className="user-billing-field">{ub.reason}<textarea className="user-billing-control" value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+                  {targetMode === 'all_users' ? <label className="user-billing-field">{ub.confirmation}<input className="user-billing-control" value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} /><small>{ub.confirmationHint}</small></label> : null}
+                </div>
+
+                <div className="ub-callout user-billing-preview user-billing-preview-grid">
+                  <strong>{ub.previewTitle}</strong>
+                  <div>{ub.usersAffected}: {previewUsersCount}</div>
+                  <div>{ub.previewOperation}: {direction === 'credit' ? ub.credit : ub.debit}</div>
+                  <div>{ub.previewAmountSigned.replace('{value}', amountRub || '0').replace('{sign}', direction === 'credit' ? '+' : '-')}</div>
+                  <div>{ub.previewLedgerEntry}</div>
+                  <div>{ub.yookassaNotCreated}</div>
+                </div>
+                {direction === 'debit' ? <div className="ub-callout ub-callout-warning">{ub.debitWarning}</div> : null}
+                {targetMode === 'all_users' ? <div className="ub-callout ub-callout-error user-billing-danger">{ub.allUsersWarning}</div> : null}
+                <button className="btn-primary" disabled={!canSubmit} onClick={() => void submitAdjustment()}>{saving ? ub.applyingAdjustment : ub.applyAdjustment}</button>
+              </div>
+            ) : null}
+
+            {panelMode === 'commission' && singleSelectedRow ? (
+              <div className="user-billing-form-grid">
+                <div className="ub-callout">{ub.providerCostStillCharged}</div>
+                <label className="user-billing-field"><input type="checkbox" checked={overrideFeeExempt} onChange={(e) => setOverrideFeeExempt(e.target.checked)} /> {ub.platformFeeExempt}</label>
+                <label className="user-billing-field">{ub.customMarkupPercent}<input className="user-billing-control" value={overrideMarkup} onChange={(e) => setOverrideMarkup(e.target.value)} /></label>
+                <label className="user-billing-field">{ub.overrideReason}<textarea className="user-billing-control" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} /></label>
+                <button className="btn-primary" disabled={saving || !editingUserId || overrideReason.trim().length < 5} onClick={() => void saveOverride()}>{saving ? ub.savingOverride : ub.saveOverride}</button>
+                {(singleSelectedRow.aiPlatformFeeExempt || singleSelectedRow.aiMarkupPercentOverride != null) ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverrideToGlobal}</button> : null}
+              </div>
+            ) : null}
+          </div>
+        </aside>
       </div>
     </section>
   );
