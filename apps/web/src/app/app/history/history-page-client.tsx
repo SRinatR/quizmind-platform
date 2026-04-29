@@ -114,9 +114,9 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
   if (!hasSession) {
     return (
       <section className="empty-state">
-        <span className="micro-label">Sign in required</span>
-        <h2>Sign in to view history</h2>
-        <p>Your AI request history is available after signing in.</p>
+        <span className="micro-label">{th.signInRequired}</span>
+        <h2>{th.signInRequiredHeading}</h2>
+        <p>{th.signInRequiredDesc}</p>
       </section>
     );
   }
