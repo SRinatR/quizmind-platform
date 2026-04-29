@@ -614,7 +614,7 @@ export const en = {
     },
     settings: {
       pageTitle: 'Settings',
-      yourProfile: 'Your Profile',
+      yourProfile: 'Profile',
       profileDesc: 'Edit your personal profile for this admin account.',
       uploadFromDevice: 'Upload from device',
       pickAvatar: 'Pick an avatar',

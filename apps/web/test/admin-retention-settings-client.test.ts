@@ -88,3 +88,14 @@ test('data retention ru dictionary includes key localized labels', async () => {
   assert.match(source, /Сохранить/);
   assert.match(source, /Сбросить/);
 });
+
+
+test('admin settings ru dictionary includes profile and appearance localization labels', async () => {
+  const source = await readFile(ruI18nPath, 'utf8');
+  assert.match(source, /pageTitle: 'Настройки'/);
+  assert.match(source, /yourProfile: 'Профиль'/);
+  assert.match(source, /title: 'Внешний вид'/);
+  assert.match(source, /languageSection: 'Язык'/);
+  assert.match(source, /saveButton: 'Сохранить'/);
+  assert.match(source, /refreshFailed: 'Не удалось обновить'/);
+});

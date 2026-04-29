@@ -616,7 +616,7 @@ export const ru: Translations = {
     },
     settings: {
       pageTitle: 'Настройки',
-      yourProfile: 'Ваш профиль',
+      yourProfile: 'Профиль',
       profileDesc: 'Редактируйте личный профиль администратора.',
       uploadFromDevice: 'Загрузить с устройства',
       pickAvatar: 'Выберите аватар',
