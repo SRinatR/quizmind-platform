@@ -135,6 +135,7 @@ export function ExtensionControlAdminClient({
   const router = useRouter();
   const { t } = usePreferences();
   const shell = t.admin.extensionControlShell;
+  const policySummary = t.admin.extensionControlPolicySummary;
   const [, startRefresh] = useTransition();
 
   // Shared feedback
@@ -402,17 +403,17 @@ export function ExtensionControlAdminClient({
 
       {/* ── A: Client Version Policy ─────────────────────────────────────── */}
       <section className="panel">
-        <span className="micro-label">Client Version Policy</span>
+        <span className="micro-label">{policySummary.clientVersionPolicy}</span>
         <h2>Version gates</h2>
         <div className="split-grid">
           <article>
             <div className="admin-ticket-editor">
               <label className="admin-ticket-field">
-                <span className="micro-label">Minimum version</span>
+                <span className="micro-label">{policySummary.minimumVersion}</span>
                 <input value={minVer} onChange={(e) => setMinVer(e.target.value)} />
               </label>
               <label className="admin-ticket-field">
-                <span className="micro-label">Recommended version</span>
+                <span className="micro-label">{policySummary.recommendedVersion}</span>
                 <input value={recVer} onChange={(e) => setRecVer(e.target.value)} />
               </label>
               <label className="admin-ticket-field">
@@ -458,15 +459,15 @@ export function ExtensionControlAdminClient({
           </article>
 
           <article>
-            <span className="micro-label">Active policy</span>
+            <span className="micro-label">{policySummary.summary}</span>
             {latestCompat ? (
               <div className="list-stack" style={{ marginTop: '8px' }}>
                 <div className="list-item">
-                  <strong>Minimum version</strong>
+                  <strong>{policySummary.minimumVersion}</strong>
                   <p>{latestCompat.minimumVersion}</p>
                 </div>
                 <div className="list-item">
-                  <strong>Recommended version</strong>
+                  <strong>{policySummary.recommendedVersion}</strong>
                   <p>{latestCompat.recommendedVersion}</p>
                 </div>
                 <div className="list-item">
