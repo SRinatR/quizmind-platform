@@ -56,7 +56,7 @@ function deriveStatus(governance: AdminProviderGovernanceStateSnapshot): { label
   );
 
   if (!hasKey) {
-    return { label: `${activeProvider === 'routerai' ? 'RouterAI' : 'OpenRouter'} key missing`, ok: false };
+    return { label: activeProvider === 'routerai' ? 'routerAiMissing' : 'openRouterMissing', ok: false };
   }
 
   const policyOk =
@@ -71,10 +71,10 @@ function deriveStatus(governance: AdminProviderGovernanceStateSnapshot): { label
     policy.defaultProvider === activeProvider;
 
   if (!policyOk) {
-    return { label: 'Policy not locked to platform-only', ok: false };
+    return { label: 'policyNotLockedPlatformOnly', ok: false };
   }
 
-  return { label: `${activeProvider === 'routerai' ? 'RouterAI' : 'OpenRouter'} routing active`, ok: true };
+  return { label: activeProvider === 'routerai' ? 'routerAiActive' : 'openRouterActive', ok: true };
 }
 
 export function AdminAiProvidersClient({ governance, isConnectedSession }: Props) {
@@ -119,6 +119,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     .filter((item) => item.provider === 'routerai' && item.ownerType === 'platform' && !item.revokedAt)
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0] ?? null;
   const status = deriveStatus(governance);
+  const statusLabel = ai[status.label as keyof typeof ai] ?? status.label;
   const lastPolicyChange = governance.policyHistory[0] ?? null;
 
   async function saveAndActivate() {
@@ -209,7 +210,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     } catch {
       setIsSavingPolicy(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the AI provider policy route.');
+      setErrorMessage(ai.unableToReachPolicyRoute);
     }
   }
 
@@ -251,7 +252,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     } catch {
       setIsResettingPolicy(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the AI provider policy reset route.');
+      setErrorMessage(ai.unableToReachPolicyResetRoute);
     }
   }
 
@@ -341,7 +342,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       <section className="panel">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
           <span className="micro-label">{ai.aiRouting}</span>
-          <span className={status.ok ? 'tag' : 'tag warn'}>{status.label}</span>
+              <span className={status.ok ? 'tag' : 'tag warn'}>{statusLabel}</span>
         </div>
         <p style={{ marginTop: 0 }}>{ai.providerRouting}</p>
         {isConnectedSession ? (
@@ -392,7 +393,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
         <div className="mini-list">
           <div className="list-item">
             <strong>{ai.provider}</strong>
-            <p>{(governance.policy.defaultProvider ?? governance.policy.providers.join(', ')) || 'None'}</p>
+            <p>{(governance.policy.defaultProvider ?? governance.policy.providers.join(', ')) || ai.none}</p>
           </div>
           <div className="list-item">
             <strong>{ai.routingMode}</strong>
@@ -400,15 +401,15 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           </div>
           <div className="list-item">
             <strong>{ai.platformManaged}</strong>
-            <p>{governance.policy.allowPlatformManaged ? 'enabled' : 'disabled'}</p>
+            <p>{governance.policy.allowPlatformManaged ? ai.enabled : ai.disabled}</p>
           </div>
           <div className="list-item">
             <strong>BYOK</strong>
-            <p>{governance.policy.allowBringYourOwnKey ? 'enabled' : 'disabled'}</p>
+            <p>{governance.policy.allowBringYourOwnKey ? ai.enabled : ai.disabled}</p>
           </div>
           <div className="list-item">
             <strong>{ai.defaultModel}</strong>
-            <p>{governance.policy.defaultModel ?? 'platform-selected'}</p>
+            <p>{governance.policy.defaultModel ?? ai.platformSelected}</p>
           </div>
           <div className="list-item">
             <strong>{ai.platformKey}</strong>
@@ -450,16 +451,16 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                   <div className="admin-ticket-editor">
                     <label className="admin-ticket-field"><span className="micro-label">{ai.routingMode}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, mode: event.target.value as AiAccessPolicyMode }))} value={policyState.mode}><option value="platform_only">platform_only</option><option value="user_key_optional">user_key_optional</option><option value="user_key_required">user_key_required</option><option value="admin_approved_user_key">admin_approved_user_key</option><option value="enterprise_managed">enterprise_managed</option></select></label>
                     <label className="admin-ticket-field"><span className="micro-label">{ai.providerPolicies}</span><input onChange={(event) => setPolicyState((c) => ({ ...c, providersText: event.target.value }))} value={policyState.providersText} /></label>
-                    <label className="admin-ticket-field"><span className="micro-label">{ai.defaultProvider}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, defaultProvider: event.target.value }))} value={policyState.defaultProvider}><option value="">platform-selected</option>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.defaultProvider}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, defaultProvider: event.target.value }))} value={policyState.defaultProvider}><option value="">{ai.platformSelected}</option>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
                     <label className="admin-ticket-field"><span className="micro-label">{ai.defaultModel}</span><input onChange={(event) => setPolicyState((c) => ({ ...c, defaultModel: event.target.value }))} value={policyState.defaultModel} /></label>
                     <label className="admin-ticket-field"><span className="micro-label">{ai.modelPolicies}</span><input onChange={(event) => setPolicyState((c) => ({ ...c, allowedModelTagsText: event.target.value }))} value={policyState.allowedModelTagsText} /></label>
                     <label className="admin-ticket-field"><span className="micro-label">{ai.reason}</span><textarea rows={3} onChange={(event) => setPolicyState((c) => ({ ...c, reason: event.target.value }))} value={policyState.reason} /></label>
-                    <label className="admin-ticket-field"><span className="micro-label">{ai.platformManaged}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowPlatformManaged: event.target.value === 'true' }))} value={String(policyState.allowPlatformManaged)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">BYOK</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowBringYourOwnKey: event.target.value === 'true' }))} value={String(policyState.allowBringYourOwnKey)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">{ai.providerRouting}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowDirectProviderMode: event.target.value === 'true' }))} value={String(policyState.allowDirectProviderMode)}><option value="false">disabled (recommended)</option><option value="true">enabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">{ai.credentials}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowWorkspaceSharedCredentials: event.target.value === 'true' }))} value={String(policyState.allowWorkspaceSharedCredentials)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">{ai.actions}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, requireAdminApproval: event.target.value === 'true' }))} value={String(policyState.requireAdminApproval)}><option value="true">required</option><option value="false">not required</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">{ai.model}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowVisionOnUserKeys: event.target.value === 'true' }))} value={String(policyState.allowVisionOnUserKeys)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.platformManaged}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowPlatformManaged: event.target.value === 'true' }))} value={String(policyState.allowPlatformManaged)}><option value="true">{ai.enabled}</option><option value="false">{ai.disabled}</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">BYOK</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowBringYourOwnKey: event.target.value === 'true' }))} value={String(policyState.allowBringYourOwnKey)}><option value="true">{ai.enabled}</option><option value="false">{ai.disabled}</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.providerRouting}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowDirectProviderMode: event.target.value === 'true' }))} value={String(policyState.allowDirectProviderMode)}><option value="false">{ai.disabled}</option><option value="true">{ai.enabled}</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.credentials}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowWorkspaceSharedCredentials: event.target.value === 'true' }))} value={String(policyState.allowWorkspaceSharedCredentials)}><option value="true">{ai.enabled}</option><option value="false">{ai.disabled}</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.actions}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, requireAdminApproval: event.target.value === 'true' }))} value={String(policyState.requireAdminApproval)}><option value="true">{ai.enabled}</option><option value="false">{ai.disabled}</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.model}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowVisionOnUserKeys: event.target.value === 'true' }))} value={String(policyState.allowVisionOnUserKeys)}><option value="true">{ai.enabled}</option><option value="false">{ai.disabled}</option></select></label>
                   </div>
                   <div className="admin-user-actions">
                     <button className="btn-primary" disabled={isSavingPolicy || isResettingPolicy || !canManagePlatform} onClick={() => void savePolicy()} type="button">{isSavingPolicy ? ai.saving : ai.savePolicy}</button>
@@ -470,7 +471,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                     ) : null}
                   </div>
                 </>
-              ) : <p>Sign in with a connected admin session to override policy.</p>}
+              ) : <p>{ai.signInAdminToOverride}</p>}
             </article>
 
             {/* Advanced block 2: Platform credential maintenance */}
