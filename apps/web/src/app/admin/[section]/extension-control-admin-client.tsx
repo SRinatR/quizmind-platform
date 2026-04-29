@@ -407,7 +407,7 @@ export function ExtensionControlAdminClient({
       {/* ── A: Client Version Policy ─────────────────────────────────────── */}
       <section className="panel">
         <span className="micro-label">{policySummary.clientVersionPolicy}</span>
-        <h2>Version gates</h2>
+        <h2>{policySummary.versionGates}</h2>
         <div className="split-grid">
           <article>
             <div className="admin-ticket-editor">
@@ -420,7 +420,7 @@ export function ExtensionControlAdminClient({
                 <input value={recVer} onChange={(e) => setRecVer(e.target.value)} />
               </label>
               <label className="admin-ticket-field">
-                <span className="micro-label">Client action</span>
+                <span className="micro-label">{policySummary.clientAction}</span>
                 <select value={resultStatus} onChange={(e) => setResultStatus(e.target.value)}>
                   {compatibilityStatuses.map((s) => (
                     <option key={s} value={s}>
@@ -437,24 +437,24 @@ export function ExtensionControlAdminClient({
                 onClick={() => void publishCompatRule()}
                 type="button"
               >
-                {isPublishingCompat ? 'Publishing...' : 'Publish version policy'}
+                {isPublishingCompat ? policySummary.saving : policySummary.publishVersionPolicy}
               </button>
             </div>
             <details style={{ marginTop: '12px' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Advanced
+                {policySummary.advanced}
               </summary>
               <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
                 <label className="admin-ticket-field">
-                  <span className="micro-label">Supported schema versions</span>
+                  <span className="micro-label">{policySummary.supportedSchemaVersions}</span>
                   <input value={schemas} onChange={(e) => setSchemas(e.target.value)} placeholder="2, 3" />
                 </label>
                 <label className="admin-ticket-field">
-                  <span className="micro-label">Required capabilities</span>
+                  <span className="micro-label">{policySummary.requiredCapabilities}</span>
                   <input value={caps} onChange={(e) => setCaps(e.target.value)} placeholder="quiz-capture, history-sync" />
                 </label>
                 <label className="admin-ticket-field">
-                  <span className="micro-label">Reason</span>
+                  <span className="micro-label">{policySummary.reason}</span>
                   <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
                 </label>
               </div>
@@ -474,18 +474,18 @@ export function ExtensionControlAdminClient({
                   <p>{latestCompat.recommendedVersion}</p>
                 </div>
                 <div className="list-item">
-                  <strong>Client action</strong>
+                  <strong>{policySummary.clientAction}</strong>
                   <p>{compatLabel(latestCompat.resultStatus)}</p>
                 </div>
                 {latestCompat.reason ? (
                   <div className="list-item">
-                    <strong>Reason</strong>
+                    <strong>{policySummary.reason}</strong>
                     <p>{latestCompat.reason}</p>
                   </div>
                 ) : null}
               </div>
             ) : (
-              <p style={{ marginTop: '8px' }}>No version policy published yet.</p>
+              <p style={{ marginTop: '8px' }}>{policySummary.noVersionPolicyPublished}</p>
             )}
           </article>
         </div>
@@ -740,25 +740,25 @@ export function ExtensionControlAdminClient({
                       <div className="list-stack" style={{ marginTop: '6px' }}>
                         {flag.rolloutPercentage !== undefined ? (
                           <div className="list-item">
-                            <strong>Rollout</strong>
+                            <strong>{config.rollout}</strong>
                             <p>{flag.rolloutPercentage}%</p>
                           </div>
                         ) : null}
                         {flag.minimumExtensionVersion ? (
                           <div className="list-item">
-                            <strong>Min version</strong>
+                            <strong>{config.minVersion}</strong>
                             <p>{flag.minimumExtensionVersion}</p>
                           </div>
                         ) : null}
                         {flag.allowRoles?.length ? (
                           <div className="list-item">
-                            <strong>Roles</strong>
+                            <strong>{config.roles}</strong>
                             <p>{flag.allowRoles.join(', ')}</p>
                           </div>
                         ) : null}
                         {flag.allowUsers?.length ? (
                           <div className="list-item">
-                            <strong>Users</strong>
+                            <strong>{config.users}</strong>
                             <p>{flag.allowUsers.join(', ')}</p>
                           </div>
                         ) : null}
@@ -981,7 +981,7 @@ export function ExtensionControlAdminClient({
           ) : (
             <div className="list-item">
               <strong>{config.versionPolicy}</strong>
-              <p>{config.noVersionPolicyPublished}</p>
+              <p>{policySummary.noVersionPolicyPublished}</p>
             </div>
           )}
 
@@ -1009,8 +1009,8 @@ export function ExtensionControlAdminClient({
           <div className="list-item">
             <strong>{config.featureFlags}</strong>
             <p>
-              {flagItems.length} flag{flagItems.length === 1 ? '' : 's'} &mdash;{' '}
-              {flagItems.filter((f) => f.enabled).length} enabled
+              {flagItems.length} {config.countItems} &mdash;
+              {flagItems.filter((f) => f.enabled).length} {config.enabled}
             </p>
             {lastFlagSave ? (
               <span className="list-muted">
