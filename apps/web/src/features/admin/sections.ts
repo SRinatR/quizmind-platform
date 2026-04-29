@@ -73,6 +73,17 @@ export const adminSections: AdminSection[] = [
   },
 
   {
+    id: 'user-billing',
+    title: 'User Billing',
+    navLabel: 'User Billing',
+    href: '/admin/user-billing',
+    description: 'Manage user balances, manual wallet adjustments, and commission exemptions.',
+    requirement: { requireSystemRole: 'admin' },
+    group: 'billing-data',
+    groupLabel: 'Billing & Data',
+  },
+
+  {
     id: 'data-retention',
     title: 'Data Retention',
     navLabel: 'Data Retention',
