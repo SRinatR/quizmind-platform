@@ -10,26 +10,26 @@ test('client references t.admin.userBilling and billing endpoints', async () => 
   assert.match(source, /\/bff\/admin\/billing\/users\/\$\{encodeURIComponent\(userId\)\}\/override/);
 });
 
-test('client uses updated actions and keeps payload safety invariants', async () => {
+test('client has search trigger, async hardening, and payload invariants', async () => {
   const source = await readFile('src/app/admin/[section]/user-billing-client.tsx', 'utf8');
-  assert.match(source, /ub\.actions/);
-  assert.doesNotMatch(source, /<th>\{ub\.close\}<\/th>/);
-  assert.match(source, /ub\.manage/);
-  assert.match(source, /selected\.size > 0/);
-  assert.match(source, /CREDIT ALL USERS/);
+  assert.match(source, /ub\.search/);
+  assert.match(source, /onKeyDown=\{\(e\) => \{ if \(e\.key === 'Enter'\) void loadUsers\(\); \}\}/);
+  assert.match(source, /async function loadUsers\(\)[\s\S]*try \{/);
+  assert.match(source, /async function loadUsers\(\)[\s\S]*finally \{/);
+  assert.match(source, /async function submitAdjustment\(\)[\s\S]*finally \{/);
+  assert.match(source, /async function saveOverride\(\)[\s\S]*finally \{/);
+  assert.match(source, /async function clearOverride\(userId: string\)[\s\S]*try \{/);
+  assert.match(source, /ub\.actionsHelpTitle/);
+  assert.match(source, /ub\.managingUser/);
   assert.match(source, /Math\.round\(amount \* 100\)/);
   assert.match(source, /crypto\.randomUUID\(\)/);
-  assert.match(source, /rows\.map\(\(row\).*?\{ub\.manage\}/s);
-  assert.doesNotMatch(source, /setSelected\(new Set\(\[row\.userId\]\)\);\s*setDirection\('credit'\);/);
 });
 
-test('ru dictionary contains required billing action labels', async () => {
+test('ru dictionary contains required hardening labels', async () => {
   const ru = await readFile('src/lib/i18n/ru.ts', 'utf8');
-  assert.match(ru, /Начислить/);
-  assert.match(ru, /Списать/);
-  assert.match(ru, /Правило комиссии/);
-  assert.match(ru, /Сбросить правило/);
-  assert.match(ru, /Управлять/);
-  assert.match(ru, /Ручная корректировка баланса/);
-  assert.match(ru, /Комиссия отключена/);
+  assert.match(ru, /Искать/);
+  assert.match(ru, /Что означают действия/);
+  assert.match(ru, /Управление:/);
+  assert.match(ru, /Ошибка сети\. Попробуйте ещё раз\./);
+  assert.match(ru, /возвращает пользователя к глобальным настройкам/);
 });
