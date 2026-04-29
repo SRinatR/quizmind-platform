@@ -166,7 +166,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
 
     if (providers.length === 0) {
       setStatusMessage(null);
-      setErrorMessage('At least one valid provider must remain enabled.');
+      setErrorMessage(ai.failedToLoadProviders);
       return;
     }
 
@@ -199,7 +199,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsSavingPolicy(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to save AI provider policy.');
+        setErrorMessage(payload?.error?.message ?? ai.policySaveFailedShort);
         return;
       }
 
@@ -224,7 +224,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
 
     setIsResettingPolicy(true);
     setErrorMessage(null);
-    setStatusMessage('Resetting workspace AI provider policy...');
+    setStatusMessage(ai.refreshing);
 
     try {
       const response = await fetch('/bff/admin/providers/policy/reset', {
@@ -237,7 +237,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsResettingPolicy(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to reset the workspace AI provider policy.');
+        setErrorMessage(payload?.error?.message ?? ai.policySaveFailedShort);
         return;
       }
 
@@ -245,7 +245,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       setStatusMessage(
         payload.data.resetApplied
           ? `Reset workspace override at ${formatUtcDateTime(payload.data.resetAt)}.`
-          : 'Workspace already inherits the global AI provider policy.',
+          : ai.policySavedShort,
       );
       router.refresh();
     } catch {
@@ -257,20 +257,20 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
 
   async function rotateOpenRouterKey() {
     if (!advancedRotateSecret.trim()) {
-      setErrorMessage('New secret is required.');
+      setErrorMessage(ai.configureKey);
       setStatusMessage(null);
       return;
     }
 
     if (!platformOpenRouterCred) {
-      setErrorMessage('No active platform OpenRouter credential found. Use Save and Activate above instead.');
+      setErrorMessage(ai.noProviderCredentials);
       setStatusMessage(null);
       return;
     }
 
     setIsRotatingKey(true);
     setErrorMessage(null);
-    setStatusMessage('Rotating OpenRouter key...');
+    setStatusMessage(ai.refreshing);
 
     try {
       const response = await fetch('/bff/providers/credentials/rotate', {
@@ -283,7 +283,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsRotatingKey(false);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to rotate OpenRouter key.');
+        setErrorMessage(payload?.error?.message ?? ai.policySaveFailedShort);
         return;
       }
 
@@ -294,7 +294,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     } catch {
       setIsRotatingKey(false);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the rotate route.');
+      setErrorMessage(ai.unableToReachServer);
     }
   }
 
@@ -305,7 +305,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
 
     setIsRevokingId(credentialId);
     setErrorMessage(null);
-    setStatusMessage('Revoking provider credential...');
+    setStatusMessage(ai.refreshing);
 
     try {
       const response = await fetch('/bff/providers/credentials/revoke', {
@@ -318,7 +318,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       if (!response.ok || !payload?.ok || !payload.data) {
         setIsRevokingId(null);
         setStatusMessage(null);
-        setErrorMessage(payload?.error?.message ?? 'Unable to revoke provider credential.');
+        setErrorMessage(payload?.error?.message ?? ai.policySaveFailedShort);
         return;
       }
 
@@ -328,7 +328,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
     } catch {
       setIsRevokingId(null);
       setStatusMessage(null);
-      setErrorMessage('Unable to reach the revoke route.');
+      setErrorMessage(ai.unableToReachServer);
     }
   }
 
@@ -412,7 +412,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           </div>
           <div className="list-item">
             <strong>{ai.platformKey}</strong>
-            <p>{platformActiveProviderCred ? (platformActiveProviderCred.secretPreview ?? 'configured') : 'not configured'}</p>
+            <p>{platformActiveProviderCred ? (platformActiveProviderCred.secretPreview ?? ai.enabled) : ai.disabled}</p>
           </div>
           <div className="list-item">
             <strong>{ai.lastUpdated}</strong>
@@ -442,30 +442,30 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
           <div className="split-grid">
             {/* Advanced block 1: Emergency manual policy editor */}
             <article className="panel">
-              <span className="micro-label">Emergency override</span>
+              <span className="micro-label">{ai.advancedEmergencyUse}</span>
               <h2>{ai.manualPolicyEditor}</h2>
-              <p className="list-muted">Use only if the normal provider setup is not sufficient. Changes here override the active routing configuration.</p>
+              <p className="list-muted">{ai.configuration}</p>
               {isConnectedSession ? (
                 <>
                   <div className="admin-ticket-editor">
-                    <label className="admin-ticket-field"><span className="micro-label">Mode</span><select onChange={(event) => setPolicyState((c) => ({ ...c, mode: event.target.value as AiAccessPolicyMode }))} value={policyState.mode}><option value="platform_only">platform_only</option><option value="user_key_optional">user_key_optional</option><option value="user_key_required">user_key_required</option><option value="admin_approved_user_key">admin_approved_user_key</option><option value="enterprise_managed">enterprise_managed</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Providers</span><input onChange={(event) => setPolicyState((c) => ({ ...c, providersText: event.target.value }))} value={policyState.providersText} /></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Default provider</span><select onChange={(event) => setPolicyState((c) => ({ ...c, defaultProvider: event.target.value }))} value={policyState.defaultProvider}><option value="">platform-selected</option>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.routingMode}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, mode: event.target.value as AiAccessPolicyMode }))} value={policyState.mode}><option value="platform_only">platform_only</option><option value="user_key_optional">user_key_optional</option><option value="user_key_required">user_key_required</option><option value="admin_approved_user_key">admin_approved_user_key</option><option value="enterprise_managed">enterprise_managed</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.providerPolicies}</span><input onChange={(event) => setPolicyState((c) => ({ ...c, providersText: event.target.value }))} value={policyState.providersText} /></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.defaultProvider}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, defaultProvider: event.target.value }))} value={policyState.defaultProvider}><option value="">platform-selected</option>{governance.providers.map((provider) => <option key={provider.provider} value={provider.provider}>{provider.displayName}</option>)}</select></label>
                     <label className="admin-ticket-field"><span className="micro-label">{ai.defaultModel}</span><input onChange={(event) => setPolicyState((c) => ({ ...c, defaultModel: event.target.value }))} value={policyState.defaultModel} /></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Model tags</span><input onChange={(event) => setPolicyState((c) => ({ ...c, allowedModelTagsText: event.target.value }))} value={policyState.allowedModelTagsText} /></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Reason</span><textarea rows={3} onChange={(event) => setPolicyState((c) => ({ ...c, reason: event.target.value }))} value={policyState.reason} /></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Platform managed</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowPlatformManaged: event.target.value === 'true' }))} value={String(policyState.allowPlatformManaged)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.modelPolicies}</span><input onChange={(event) => setPolicyState((c) => ({ ...c, allowedModelTagsText: event.target.value }))} value={policyState.allowedModelTagsText} /></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.reason}</span><textarea rows={3} onChange={(event) => setPolicyState((c) => ({ ...c, reason: event.target.value }))} value={policyState.reason} /></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.platformManaged}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowPlatformManaged: event.target.value === 'true' }))} value={String(policyState.allowPlatformManaged)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
                     <label className="admin-ticket-field"><span className="micro-label">BYOK</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowBringYourOwnKey: event.target.value === 'true' }))} value={String(policyState.allowBringYourOwnKey)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Direct provider mode</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowDirectProviderMode: event.target.value === 'true' }))} value={String(policyState.allowDirectProviderMode)}><option value="false">disabled (recommended)</option><option value="true">enabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Shared keys</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowWorkspaceSharedCredentials: event.target.value === 'true' }))} value={String(policyState.allowWorkspaceSharedCredentials)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Admin approval</span><select onChange={(event) => setPolicyState((c) => ({ ...c, requireAdminApproval: event.target.value === 'true' }))} value={String(policyState.requireAdminApproval)}><option value="true">required</option><option value="false">not required</option></select></label>
-                    <label className="admin-ticket-field"><span className="micro-label">Vision on user keys</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowVisionOnUserKeys: event.target.value === 'true' }))} value={String(policyState.allowVisionOnUserKeys)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.providerRouting}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowDirectProviderMode: event.target.value === 'true' }))} value={String(policyState.allowDirectProviderMode)}><option value="false">disabled (recommended)</option><option value="true">enabled</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.credentials}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowWorkspaceSharedCredentials: event.target.value === 'true' }))} value={String(policyState.allowWorkspaceSharedCredentials)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.actions}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, requireAdminApproval: event.target.value === 'true' }))} value={String(policyState.requireAdminApproval)}><option value="true">required</option><option value="false">not required</option></select></label>
+                    <label className="admin-ticket-field"><span className="micro-label">{ai.model}</span><select onChange={(event) => setPolicyState((c) => ({ ...c, allowVisionOnUserKeys: event.target.value === 'true' }))} value={String(policyState.allowVisionOnUserKeys)}><option value="true">enabled</option><option value="false">disabled</option></select></label>
                   </div>
                   <div className="admin-user-actions">
                     <button className="btn-primary" disabled={isSavingPolicy || isResettingPolicy || !canManagePlatform} onClick={() => void savePolicy()} type="button">{isSavingPolicy ? ai.saving : ai.savePolicy}</button>
                     {workspaceOverrideActive ? (
                       <button className="btn-ghost" disabled={isSavingPolicy || isResettingPolicy || !canManagePlatform} onClick={() => void resetWorkspacePolicy()} type="button">
-                        {isResettingPolicy ? 'Resetting...' : ai.resetToGlobal}
+                        {isResettingPolicy ? ai.refreshing : ai.resetToGlobal}
                       </button>
                     ) : null}
                   </div>
@@ -484,7 +484,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                       <div className="list-item" key={credential.id}>
                         <strong>{credential.provider}</strong>
                         <p>
-                          {credential.secretPreview ?? 'configured'} · {credential.validationStatus}
+                          {credential.secretPreview ?? ai.enabled} · {credential.validationStatus}
                           {credential.validationMessage ? ` — ${credential.validationMessage}` : ''} · {formatUtcDateTime(credential.updatedAt)}
                         </p>
                       </div>
@@ -494,10 +494,10 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                     <>
                       <div className="admin-ticket-editor" style={{ marginTop: '0.75rem' }}>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">New secret (to rotate only)</span>
+                          <span className="micro-label">{ai.configureKey}</span>
                           <input
                             type="password"
-                            placeholder="New OpenRouter key"
+                            placeholder={ai.usePlatformKey}
                             value={advancedRotateSecret}
                             onChange={(event) => setAdvancedRotateSecret(event.target.value)}
                           />
@@ -525,7 +525,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                   ) : null}
                 </>
               ) : (
-                <p className="list-muted">No active platform credentials. Use Save and Activate above to add one.</p>
+                <p className="list-muted">{ai.noProviderCredentials}</p>
               )}
             </article>
           </div>

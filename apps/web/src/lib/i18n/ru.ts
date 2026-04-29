@@ -895,6 +895,7 @@ export const ru: Translations = {
       providerRouting: 'Маршрутизация провайдеров',
       providerPolicies: 'Политики провайдеров',
       modelPolicies: 'Политики моделей',
+      reason: 'Причина',
       defaultProvider: 'Провайдер по умолчанию',
       fallbackProvider: 'Резервный провайдер',
       provider: 'Провайдер',
