@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 
 import { formatUtcDateTime } from '../../../lib/datetime';
 import { type AdminProviderGovernanceStateSnapshot } from '../../../lib/api';
+import { usePreferences } from '../../../lib/preferences';
 
 interface Props {
   governance: AdminProviderGovernanceStateSnapshot;
@@ -78,6 +79,8 @@ function deriveStatus(governance: AdminProviderGovernanceStateSnapshot): { label
 
 export function AdminAiProvidersClient({ governance, isConnectedSession }: Props) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const ai = t.admin.aiRouting;
   const initialPlatformProvider = governance.policy.defaultProvider === 'routerai' ? 'routerai' : 'openrouter';
 
   // Primary action state
@@ -337,15 +340,15 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
       {/* A. Primary: Platform AI routing */}
       <section className="panel">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-          <span className="micro-label">Platform AI Routing</span>
+          <span className="micro-label">{ai.aiRouting}</span>
           <span className={status.ok ? 'tag' : 'tag warn'}>{status.label}</span>
         </div>
-        <p style={{ marginTop: 0 }}>Choose whether platform-managed extension traffic uses OpenRouter or RouterAI.</p>
+        <p style={{ marginTop: 0 }}>{ai.providerRouting}</p>
         {isConnectedSession ? (
           <>
             <div className="admin-ticket-editor">
               <label className="admin-ticket-field">
-                <span className="micro-label">Provider</span>
+                <span className="micro-label">{ai.provider}</span>
                 <select
                   value={quickProvider}
                   onChange={(event) => {
@@ -374,25 +377,25 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
                 onClick={() => void saveAndActivate()}
                 type="button"
               >
-                {isSavingAndActivating ? 'Saving…' : platformQuickProviderCred ? (quickSecret.trim() ? 'Rotate and Activate' : 'Activate') : 'Save and Activate'}
+                {isSavingAndActivating ? ai.saving : platformQuickProviderCred ? (quickSecret.trim() ? ai.apply : ai.activate) : ai.save}
               </button>
             </div>
           </>
         ) : (
-          <p>Sign in with a connected admin session to configure platform AI routing.</p>
+          <p>{ai.checkConnection}</p>
         )}
       </section>
 
       {/* B. Current Routing Status */}
       <section className="panel">
-        <span className="micro-label">Current Routing Status</span>
+        <span className="micro-label">{ai.status}</span>
         <div className="mini-list">
           <div className="list-item">
-            <strong>Provider</strong>
+            <strong>{ai.provider}</strong>
             <p>{(governance.policy.defaultProvider ?? governance.policy.providers.join(', ')) || 'None'}</p>
           </div>
           <div className="list-item">
-            <strong>Mode</strong>
+            <strong>{ai.routingMode}</strong>
             <p>{governance.policy.mode}</p>
           </div>
           <div className="list-item">
@@ -412,7 +415,7 @@ export function AdminAiProvidersClient({ governance, isConnectedSession }: Props
             <p>{platformActiveProviderCred ? (platformActiveProviderCred.secretPreview ?? 'configured') : 'not configured'}</p>
           </div>
           <div className="list-item">
-            <strong>Last updated</strong>
+            <strong>{ai.lastUpdated}</strong>
             <p>{formatUtcDateTime(governance.policy.updatedAt)}</p>
           </div>
           {lastPolicyChange ? (
