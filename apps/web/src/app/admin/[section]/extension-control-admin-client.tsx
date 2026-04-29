@@ -824,7 +824,7 @@ export function ExtensionControlAdminClient({
               <div style={{ marginTop: '10px' }}>
                 <div className="admin-ticket-editor">
                   <label className="admin-ticket-field">
-                    <span className="micro-label">Version label</span>
+                    <span className="micro-label">{config.version}</span>
                     <input
                       placeholder="spring-rollout-v3"
                       value={configVersionLabel}
@@ -862,7 +862,7 @@ export function ExtensionControlAdminClient({
                       </div>
                       <div className="admin-ticket-editor">
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Layer ID</span>
+                          <span className="micro-label">{config.layerId}</span>
                           <input
                             value={layer.id}
                             onChange={(e) =>
@@ -873,7 +873,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Scope</span>
+                          <span className="micro-label">{config.scope}</span>
                           <select
                             value={layer.scope}
                             onChange={(e) =>
@@ -894,7 +894,7 @@ export function ExtensionControlAdminClient({
                           </select>
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Priority</span>
+                          <span className="micro-label">{config.priority}</span>
                           <input
                             value={layer.priority}
                             onChange={(e) =>
@@ -907,7 +907,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Conditions JSON</span>
+                          <span className="micro-label">{config.conditionsJson}</span>
                           <textarea
                             rows={4}
                             value={layer.conditionsText}
@@ -921,7 +921,7 @@ export function ExtensionControlAdminClient({
                           />
                         </label>
                         <label className="admin-ticket-field">
-                          <span className="micro-label">Values JSON</span>
+                          <span className="micro-label">{config.valuesJson}</span>
                           <textarea
                             rows={6}
                             value={layer.valuesText}
@@ -966,7 +966,7 @@ export function ExtensionControlAdminClient({
 
       {/* ── C: Recent Changes ────────────────────────────────────────────── */}
       <section className="panel">
-        <span className="micro-label">Recent Changes</span>
+        <span className="micro-label">{config.recentChanges}</span>
         <h2>Recent activity</h2>
         <div className="list-stack">
           {latestCompat ? (
@@ -996,7 +996,7 @@ export function ExtensionControlAdminClient({
                 {formatUtcDateTime(remoteConfig.versions[0].publishedAt)} by{' '}
                 {remoteConfig.versions[0].publishedBy?.displayName ??
                   remoteConfig.versions[0].publishedBy?.email ??
-                  'Unknown'}
+                  config.unknown}
               </span>
             </div>
           ) : (

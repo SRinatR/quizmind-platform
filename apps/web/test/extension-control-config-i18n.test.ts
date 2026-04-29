@@ -7,28 +7,26 @@ const root = process.cwd();
 const sourcePath = join(root, 'src/app/admin/[section]/extension-control-admin-client.tsx');
 const ruPath = join(root, 'src/lib/i18n/ru.ts');
 
-test('extension-control admin client uses extensionControlConfig keys', () => {
+test('extension-control admin client localizes remaining config labels', () => {
   const source = readFileSync(sourcePath, 'utf8');
   assert.match(source, /extensionControlConfig/);
 
-  assert.doesNotMatch(source, />\s*Runtime Settings\s*</);
-  assert.doesNotMatch(source, />\s*Description\s*</);
-  assert.doesNotMatch(source, />\s*Rollout %\s*</);
-  assert.doesNotMatch(source, />\s*Min extension version\s*</);
-  assert.doesNotMatch(source, />\s*Allowed roles\/users\s*</);
-  assert.doesNotMatch(source, /No feature flags defined\./);
-  assert.doesNotMatch(source, /Stage edits to draft layer/);
-  assert.doesNotMatch(source, /No config values in active layers\./);
-  assert.doesNotMatch(source, />\s*Add layer\s*</);
+  assert.doesNotMatch(source, />\s*Version\s*</);
+  assert.doesNotMatch(source, />\s*Layer ID\s*</);
+  assert.doesNotMatch(source, />\s*Scope\s*</);
+  assert.doesNotMatch(source, />\s*Priority\s*</);
+  assert.doesNotMatch(source, />\s*Conditions JSON\s*</);
+  assert.doesNotMatch(source, />\s*Values JSON\s*</);
+  assert.doesNotMatch(source, />\s*Recent Changes\s*</);
 });
 
-test('ru dictionary contains config translations', () => {
+test('ru dictionary contains remaining config translations', () => {
   const ru = readFileSync(ruPath, 'utf8');
-  assert.match(ru, /Runtime-настройки/);
-  assert.match(ru, /Описание/);
-  assert.match(ru, /Процент раскатки/);
-  assert.match(ru, /Минимальная версия расширения/);
-  assert.match(ru, /Разрешённые роли\/пользователи/);
-  assert.match(ru, /Флаги функций не заданы\./);
-  assert.match(ru, /Добавить слой/);
+  assert.match(ru, /Версия/);
+  assert.match(ru, /ID слоя/);
+  assert.match(ru, /Область действия/);
+  assert.match(ru, /Приоритет/);
+  assert.match(ru, /JSON условий/);
+  assert.match(ru, /JSON значений/);
+  assert.match(ru, /Последние изменения/);
 });
