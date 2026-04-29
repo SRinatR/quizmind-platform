@@ -5,6 +5,7 @@ import {
   GoneException,
   Headers,
   Inject,
+  Delete,
   NotFoundException,
   Param,
   Patch,
@@ -36,6 +37,8 @@ import {
   type SupportTicketWorkflowUpdateRequest,
   type PlatformRetentionPolicyUpdateRequest,
   type PlatformAiPricingPolicyUpdateRequest,
+  type AdminWalletAdjustmentRequest,
+  type UserBillingOverrideRequest,
   type UserProfileUpdateRequest,
   type UsageExportRequest,
   type UsageHistoryRequest,
@@ -281,6 +284,44 @@ export class PlatformController {
   ) {
     const session = await this.requireStrictConnectedSession(authorization);
     return ok(await this.platformService.updateAiPricingPolicyForCurrentSession(session, request));
+  }
+
+  @Get('admin/billing/users')
+  async listAdminBillingUsers(
+    @Query('search') search?: string,
+    @Query('hasOverride') hasOverride?: string,
+    @Query('feeExempt') feeExempt?: string,
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.listAdminBillingUsersForCurrentSession(session, { search, hasOverride, feeExempt, limit, cursor }));
+  }
+
+  @Post('admin/billing/wallet-adjustments')
+  async createAdminWalletAdjustment(
+    @Body() request?: Partial<AdminWalletAdjustmentRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.createAdminWalletAdjustmentForCurrentSession(session, request));
+  }
+
+  @Patch('admin/billing/users/:userId/override')
+  async patchUserBillingOverride(
+    @Param('userId') userId: string,
+    @Body() request?: Partial<UserBillingOverrideRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.updateUserBillingOverrideForCurrentSession(session, userId, request));
+  }
+
+  @Delete('admin/billing/users/:userId/override')
+  async deleteUserBillingOverride(@Param('userId') userId: string, @Headers('authorization') authorization?: string) {
+    const session = await this.requireStrictConnectedSession(authorization);
+    return ok(await this.platformService.deleteUserBillingOverrideForCurrentSession(session, userId));
   }
 
   @Get('admin/webhooks')

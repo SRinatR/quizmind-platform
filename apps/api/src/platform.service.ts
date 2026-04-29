@@ -47,6 +47,11 @@ import {
   type AdminUserDirectorySnapshot,
   type AdminUserAccessUpdateRequest,
   type AdminUserMutationResult,
+  type AdminBillingUsersPayload,
+  type AdminWalletAdjustmentRequest,
+  type AdminWalletAdjustmentResult,
+  type UserBillingOverrideRequest,
+  type UserBillingOverrideSnapshot,
   type AuthLoginRequest,
   type ExtensionBootstrapRequest,
   type FeatureFlagUpdateRequest,
@@ -180,6 +185,9 @@ import { compareSemver, evaluateCompatibility } from '@quizmind/extension';
 import { AiHistoryService } from './history/ai-history.service';
 import { RetentionSettingsService } from './settings/retention-settings.service';
 import { AiPricingSettingsService } from './settings/ai-pricing-settings.service';
+import { WalletRepository } from './wallet/wallet.repository';
+import { UserBillingOverrideRepository } from './ai/user-billing-override.repository';
+import { PrismaService } from './database/prisma.service';
 
 const validSupportTicketPresetKeys = new Set<string>(supportTicketQueuePresets);
 const validAdminLogStreams = new Set<string>(adminLogStreamFilters);
@@ -577,7 +585,50 @@ export class PlatformService {
     private readonly retentionSettingsService: RetentionSettingsService,
     @Inject(AiPricingSettingsService)
     private readonly aiPricingSettingsService: AiPricingSettingsService,
+    @Inject(WalletRepository)
+    private readonly walletRepository: WalletRepository,
+    @Inject(UserBillingOverrideRepository)
+    private readonly userBillingOverrideRepository: UserBillingOverrideRepository,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
   ) {}
+
+  async listAdminBillingUsersForCurrentSession(
+    session: CurrentSessionSnapshot,
+    raw?: { search?: string; hasOverride?: string; feeExempt?: string; limit?: string; cursor?: string },
+  ): Promise<AdminBillingUsersPayload> {
+    this.requireSystemAdmin(session);
+    const limit = Math.min(100, Math.max(1, Number(raw?.limit) || 25));
+    const search = raw?.search?.trim();
+    const where: Prisma.UserWhereInput = {
+      ...(search ? { OR: [{ email: { contains: search, mode: 'insensitive' } }, { displayName: { contains: search, mode: 'insensitive' } }] } : {}),
+      ...(raw?.hasOverride === 'true' ? { billingOverride: { isNot: null } } : raw?.hasOverride === 'false' ? { billingOverride: { is: null } } : {}),
+      ...(raw?.feeExempt === 'true' ? { billingOverride: { is: { aiPlatformFeeExempt: true } } } : {}),
+    };
+    const items = await this.prisma.user.findMany({ where, take: limit, orderBy: { createdAt: 'desc' }, include: { wallet: true, billingOverride: true } });
+    return { items: items.map((u) => ({ userId: u.id, email: u.email, displayName: u.displayName ?? null, walletCurrency: u.wallet?.currency ?? 'RUB', balanceKopecks: u.wallet?.balanceKopecks ?? 0, aiPlatformFeeExempt: u.billingOverride?.aiPlatformFeeExempt ?? false, aiMarkupPercentOverride: u.billingOverride?.aiMarkupPercentOverride ?? null, billingOverrideReason: u.billingOverride?.reason ?? null, createdAt: u.createdAt.toISOString(), lastLoginAt: u.lastLoginAt?.toISOString() ?? null })) };
+  }
+
+  async createAdminWalletAdjustmentForCurrentSession(session: CurrentSessionSnapshot, request?: Partial<AdminWalletAdjustmentRequest>): Promise<AdminWalletAdjustmentResult> {
+    this.requireSystemAdmin(session);
+    if (!request || (request.direction !== 'credit' && request.direction !== 'debit')) throw new BadRequestException('direction must be credit or debit.');
+    if (request.currency !== 'RUB') throw new BadRequestException('currency must be RUB.');
+    if (!request.idempotencyKey?.trim()) throw new BadRequestException('idempotencyKey is required.');
+    if (!Number.isInteger(request.amountKopecks) || request.amountKopecks <= 0) throw new BadRequestException('amountKopecks must be positive integer.');
+    if (!request.reason || request.reason.trim().length < 5 || request.reason.trim().length > 500) throw new BadRequestException('reason length must be 5..500.');
+    let userIds: string[] = [];
+    if (request.target?.type === 'selected_users') {
+      userIds = request.target.userIds ?? [];
+      if (userIds.length === 0) throw new BadRequestException('selected_users requires non-empty userIds.');
+    } else if (request.target?.type === 'all_users') {
+      if (request.target.confirmationText !== 'CREDIT ALL USERS') throw new BadRequestException('Invalid confirmationText.');
+      const users = await this.prisma.user.findMany({ select: { id: true } });
+      userIds = users.map((u) => u.id);
+    } else throw new BadRequestException('target is required.');
+    const result = await this.walletRepository.manualAdjustWallets({ actorId: session.user.id, targetType: request.target.type, userIds, direction: request.direction, amountKopecks: request.amountKopecks, currency: 'RUB', reason: request.reason, idempotencyKey: request.idempotencyKey, allowNegative: request.allowNegative });
+    this.logAdminUserMutation('admin.wallet_adjustment_created', { actorUserId: session.user.id, targetType: request.target.type, affectedCount: result.affectedCount, batchId: result.batchId });
+    return result;
+  }
 
   private requireSystemAdmin(session: CurrentSessionSnapshot): void {
     if (!session.principal.systemRoles.includes('admin')) {
@@ -1841,6 +1892,27 @@ export class PlatformService {
 
       throw error;
     }
+  }
+
+  async updateUserBillingOverrideForCurrentSession(
+    session: CurrentSessionSnapshot,
+    userId: string,
+    request?: Partial<UserBillingOverrideRequest>,
+  ): Promise<UserBillingOverrideSnapshot> {
+    this.requireSystemAdmin(session);
+    if (!userId?.trim()) throw new BadRequestException('userId is required.');
+    if (!request?.reason) throw new BadRequestException('reason is required.');
+    const row = await this.userBillingOverrideRepository.updateOverride(userId, request as UserBillingOverrideRequest, session.user.id);
+    this.logAdminUserMutation('admin.user_billing_override_updated', { actorUserId: session.user.id, targetUserId: userId });
+    return { userId: row.userId, aiPlatformFeeExempt: row.aiPlatformFeeExempt, aiMarkupPercentOverride: row.aiMarkupPercentOverride, reason: row.reason ?? null, updatedAt: row.updatedAt.toISOString() };
+  }
+
+  async deleteUserBillingOverrideForCurrentSession(session: CurrentSessionSnapshot, userId: string): Promise<{ success: true }> {
+    this.requireSystemAdmin(session);
+    if (!userId?.trim()) throw new BadRequestException('userId is required.');
+    await this.userBillingOverrideRepository.deleteOverride(userId, session.user.id);
+    this.logAdminUserMutation('admin.user_billing_override_deleted', { actorUserId: session.user.id, targetUserId: userId });
+    return { success: true };
   }
 
   async listFeatureFlagsForCurrentSession(session: CurrentSessionSnapshot) {
