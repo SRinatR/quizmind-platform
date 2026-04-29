@@ -20,6 +20,7 @@ import {
   type RemoteConfigStateSnapshot,
 } from '../../../lib/api';
 import { formatUtcDateTime } from '../../../lib/datetime';
+import { usePreferences } from '../../../lib/preferences';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,6 +133,8 @@ export function ExtensionControlAdminClient({
   canEditFlags,
 }: ExtensionControlAdminClientProps) {
   const router = useRouter();
+  const { t } = usePreferences();
+  const shell = t.admin.extensionControlShell;
   const [, startRefresh] = useTransition();
 
   // Shared feedback
@@ -377,6 +380,20 @@ export function ExtensionControlAdminClient({
 
   return (
     <div className="admin-feature-flags-shell">
+      <section className="panel" style={{ marginBottom: '12px' }}>
+        <span className="micro-label">{shell.title}</span>
+        <h2>{shell.description}</h2>
+        <div className="admin-user-actions">
+          <button
+            className="btn-ghost"
+            disabled={isPublishingCompat || isPublishingConfig}
+            onClick={() => startRefresh(() => router.refresh())}
+            type="button"
+          >
+            {isPublishingCompat || isPublishingConfig ? shell.refreshing : shell.refresh}
+          </button>
+        </div>
+      </section>
       {feedback ? (
         <p className={feedback.tone === 'err' ? 'admin-inline-error' : 'admin-inline-status'}>
           {feedback.message}
