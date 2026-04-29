@@ -812,8 +812,8 @@ export function ExtensionControlAdminClient({
             )}
             {activeConfigVersion ? (
               <p style={{ marginTop: '6px', fontSize: '0.78rem', color: 'var(--muted)' }}>
-                Active: {activeConfigVersion.versionLabel} ({activeConfigVersion.layers.length}{' '}
-                layer{activeConfigVersion.layers.length === 1 ? '' : 's'})
+                {config.activeLabel} {activeConfigVersion.versionLabel} ({activeConfigVersion.layers.length}{' '}
+                {activeConfigVersion.layers.length === 1 ? config.layerSingular : config.layerPlural})
               </p>
             ) : null}
 
@@ -960,40 +960,40 @@ export function ExtensionControlAdminClient({
             </details>
           </>
         ) : (
-          <p style={{ color: 'var(--muted)' }}>Remote config data unavailable for this session.</p>
+          <p style={{ color: 'var(--muted)' }}>{config.remoteConfigUnavailable}</p>
         )}
       </section>
 
       {/* ── C: Recent Changes ────────────────────────────────────────────── */}
       <section className="panel">
         <span className="micro-label">{config.recentChanges}</span>
-        <h2>Recent activity</h2>
+        <h2>{config.recentActivity}</h2>
         <div className="list-stack">
           {latestCompat ? (
             <div className="list-item">
-              <strong>Version policy</strong>
+              <strong>{config.versionPolicy}</strong>
               <p>
                 {latestCompat.minimumVersion} &rarr; {latestCompat.recommendedVersion} &mdash;{' '}
                 {compatLabel(latestCompat.resultStatus)}
               </p>
-              <span className="list-muted">Published {formatUtcDateTime(latestCompat.createdAt)}</span>
+              <span className="list-muted">{config.publishedLabel} {formatUtcDateTime(latestCompat.createdAt)}</span>
             </div>
           ) : (
             <div className="list-item">
-              <strong>Version policy</strong>
-              <p>No version policy published yet.</p>
+              <strong>{config.versionPolicy}</strong>
+              <p>{config.noVersionPolicyPublished}</p>
             </div>
           )}
 
           {remoteConfig?.versions[0] ? (
             <div className="list-item">
-              <strong>Config: {remoteConfig.versions[0].versionLabel}</strong>
+              <strong>{config.config}: {remoteConfig.versions[0].versionLabel}</strong>
               <p>
-                {remoteConfig.versions[0].layers.length} layer
-                {remoteConfig.versions[0].layers.length === 1 ? '' : 's'}
+                {remoteConfig.versions[0].layers.length}{' '}
+                {remoteConfig.versions[0].layers.length === 1 ? config.layerSingular : config.layerPlural}
               </p>
               <span className="list-muted">
-                {formatUtcDateTime(remoteConfig.versions[0].publishedAt)} by{' '}
+                {formatUtcDateTime(remoteConfig.versions[0].publishedAt)} {config.changedBy}{' '}
                 {remoteConfig.versions[0].publishedBy?.displayName ??
                   remoteConfig.versions[0].publishedBy?.email ??
                   config.unknown}
@@ -1001,8 +1001,8 @@ export function ExtensionControlAdminClient({
             </div>
           ) : (
             <div className="list-item">
-              <strong>Config</strong>
-              <p>No config versions published yet.</p>
+              <strong>{config.config}</strong>
+              <p>{config.noConfigVersionsPublished}</p>
             </div>
           )}
 
@@ -1014,7 +1014,7 @@ export function ExtensionControlAdminClient({
             </p>
             {lastFlagSave ? (
               <span className="list-muted">
-                Last change: {lastFlagSave.key} at {formatUtcDateTime(lastFlagSave.updatedAt)}
+                {config.recentChange}: {lastFlagSave.key} {config.changedAt} {formatUtcDateTime(lastFlagSave.updatedAt)}
               </span>
             ) : null}
           </div>
