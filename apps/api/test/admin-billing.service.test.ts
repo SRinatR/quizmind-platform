@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ForbiddenException } from '@nestjs/common';
 import { PlatformService } from '../src/platform.service';
+import { WalletRepository } from '../src/wallet/wallet.repository';
 
 const adminSession: any = { user: { id: 'admin1' }, principal: { systemRoles: ['admin'] }, permissions: [] };
 const userSession: any = { user: { id: 'user1' }, principal: { systemRoles: [] }, permissions: [] };
@@ -63,4 +64,46 @@ test('override update/delete rejects non-admin and validates markup', async () =
   await assert.rejects(() => service.deleteUserBillingOverrideForCurrentSession(userSession, 'u1'), ForbiddenException);
   const del = await service.deleteUserBillingOverrideForCurrentSession(adminSession, 'u1');
   assert.equal(del.success, true);
+});
+
+test('createAdminWalletAdjustmentForCurrentSession selected_users credit creates wallet+ledger and is idempotent', async () => {
+  const state: any = { users: [{ id: 'u1' }], wallets: new Map<string, any>(), batches: new Map<string, any>(), ledgers: [] as any[] };
+  const tx: any = {
+    adminWalletAdjustmentBatch: {
+      findUnique: async ({ where }: any) => state.batches.get(where.idempotencyKey) ?? null,
+      create: async ({ data }: any) => { const b = { id: `batch_${state.batches.size + 1}`, ...data }; state.batches.set(data.idempotencyKey, b); return b; },
+    },
+    wallet: {
+      upsert: async ({ where, create }: any) => {
+        const row = state.wallets.get(where.userId) ?? { id: `w_${where.userId}`, userId: where.userId, balanceKopecks: 0, currency: create.currency };
+        state.wallets.set(where.userId, row);
+        return row;
+      },
+      update: async ({ where, data }: any) => {
+        const userId = where.id.replace('w_', '');
+        const wallet = state.wallets.get(userId);
+        wallet.balanceKopecks += data.balanceKopecks.increment ?? -data.balanceKopecks.decrement;
+        return { balanceKopecks: wallet.balanceKopecks };
+      },
+    },
+    walletLedgerEntry: {
+      count: async ({ where }: any) => state.ledgers.filter((l) => where.idempotencyKey.in.includes(l.idempotencyKey)).length,
+      create: async ({ data }: any) => { state.ledgers.push(data); return data; },
+    },
+  };
+  const prisma: any = { user: { findMany: async () => state.users }, $transaction: async (fn: any) => fn(tx) };
+  const walletRepository = new WalletRepository(prisma);
+  const service = makeService({ prisma, walletRepository });
+  const req: any = { target: { type: 'selected_users', userIds: ['u1'] }, direction: 'credit', amountKopecks: 100, currency: 'RUB', reason: 'admin grant', idempotencyKey: 'idem-1' };
+  const first = await service.createAdminWalletAdjustmentForCurrentSession(adminSession, req);
+  const second = await service.createAdminWalletAdjustmentForCurrentSession(adminSession, req);
+  assert.equal(first.affectedCount, 1);
+  assert.equal(second.affectedCount, 1);
+  assert.equal(state.wallets.get('u1').balanceKopecks, 100);
+  assert.equal(state.ledgers.length, 1);
+  assert.equal(state.ledgers[0].type, 'manual_adjustment');
+  assert.equal(state.ledgers[0].metadataJson.adminActorId, 'admin1');
+  assert.equal(state.ledgers[0].metadataJson.reason, 'admin grant');
+  assert.equal(state.ledgers[0].metadataJson.direction, 'credit');
+  assert.ok(state.ledgers[0].metadataJson.batchId);
 });
