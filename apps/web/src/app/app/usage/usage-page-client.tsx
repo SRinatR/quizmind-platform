@@ -142,9 +142,9 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
   }, [isModelFilterOpen]);
 
   const modelFilterLabel = selectedModels.length === 0
-    ? 'All models'
+    ? tu.allModels
     : selectedModels.length === 1
-      ? '1 model selected'
+      ? tu.oneModelSelected
       : `${selectedModels.length} models selected`;
 
   const filteredRows = useMemo(() => {
@@ -206,7 +206,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
   const refreshStatus = error
     ? tu.refreshFailed
     : lastUpdatedAt
-      ? `Updated ${Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000)) < 5 ? 'just now' : `${Math.floor((Date.now() - lastUpdatedAt) / 1000)}s ago`}`
+      ? Math.max(0, Math.floor((Date.now() - lastUpdatedAt) / 1000)) < 5 ? tu.updatedNow : tu.updatedAgo.replace('{seconds}', String(Math.floor((Date.now() - lastUpdatedAt) / 1000)))
       : null;
 
   if (session && liveAnalytics) {
@@ -217,8 +217,8 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
         <section className="panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
             <div>
-              <span className="micro-label">AI Analytics</span>
-              <h2>Usage overview</h2>
+              <span className="micro-label">{tu.analytics}</span>
+              <h2>{tu.overview}</h2>
             </div>
             <span style={{ fontSize: '0.82rem', opacity: 0.6 }}>
               {formatDate(liveAnalytics.from, prefs.language === 'ru' ? 'ru-RU' : 'en-US')} &ndash; {formatDate(liveAnalytics.to, prefs.language === 'ru' ? 'ru-RU' : 'en-US')}
@@ -232,30 +232,30 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-            {statCard('Total requests', String(filteredTotals.totalRequests))}
-            {statCard('Successful', String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} failed`)}
-            {statCard('Total tokens', formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} prompt · ${formatTokens(filteredTotals.totalCompletionTokens)} completion`)}
-            {statCard('Spend', formatUsdAmountByPreference(filteredTotals.chargedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
-            {filteredTotals.avgDurationMs !== null ? statCard('Avg latency', formatHistoryDuration(filteredTotals.avgDurationMs) ?? '—') : null}
-            {mostUsedModel ? statCard('Most used model', mostUsedModel.displayName, `${mostUsedModel.requestCount} requests`) : null}
-            {highestCostModel ? statCard('Highest cost model', highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.chargedCostUsd ?? highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
+            {statCard(tu.totalRequests, String(filteredTotals.totalRequests))}
+            {statCard(tu.successful, String(filteredTotals.successfulRequests), `${filteredTotals.failedRequests} failed`)}
+            {statCard(tu.totalTokens, formatTokens(filteredTotals.totalTokens), `${formatTokens(filteredTotals.totalPromptTokens)} ${tu.prompt} · ${formatTokens(filteredTotals.totalCompletionTokens)} completion`)}
+            {statCard(tu.spend, formatUsdAmountByPreference(filteredTotals.chargedCostUsd, prefs.balanceDisplayCurrency, exchangeRates))}
+            {filteredTotals.avgDurationMs !== null ? statCard(tu.avgLatency, formatHistoryDuration(filteredTotals.avgDurationMs) ?? '—') : null}
+            {mostUsedModel ? statCard(tu.mostUsedModel, mostUsedModel.displayName, `${mostUsedModel.requestCount} requests`) : null}
+            {highestCostModel ? statCard(tu.highestCostModel, highestCostModel.displayName, formatUsdAmountByPreference(highestCostModel.chargedCostUsd ?? highestCostModel.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)) : null}
           </div>
 
           {filteredRows.length > 0 ? (
             <>
-              <span className="micro-label">Model analytics</span>
+              <span className="micro-label">{tu.modelAnalytics}</span>
               <div style={{ marginTop: '8px', overflowX: 'auto', border: '1px solid var(--border, #e5e7eb)', borderRadius: '10px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
                   <thead>
                     <tr style={{ textAlign: 'left', fontSize: '0.78rem', opacity: 0.75, background: 'var(--surface-muted, #f8fafc)' }}>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Model</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Requests</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Success</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Failed</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Success rate</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Total tokens</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Estimated cost</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>Avg latency</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.model}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.requestsHeader}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.success}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.failedHeader}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.successRate}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.totalTokens}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.estimatedCost}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.avgLatency}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -282,18 +282,18 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
             </>
           ) : (
             <section className="empty-state" style={{ marginTop: '8px' }}>
-              <span className="micro-label">No model activity</span>
-              <h3 style={{ marginTop: '6px' }}>No usage data for selected model filters</h3>
-              <p>Try selecting different models or widening your date range.</p>
+              <span className="micro-label">{tu.noModelActivity}</span>
+              <h3 style={{ marginTop: '6px' }}>{tu.noUsageForFilters}</h3>
+              <p>{tu.tryDifferentModels}</p>
             </section>
           )}
 
           <div className="filter-actions" style={{ marginTop: '12px' }}>
             <div className="tag-row" style={{ gap: '6px', marginBottom: '8px' }}>
               {[
-                { label: 'Today', days: 0 },
-                { label: '7 days', days: 7 },
-                { label: '30 days', days: 30 },
+                { label: tu.today, days: 0 },
+                { label: tu.days7, days: 7 },
+                { label: tu.days30, days: 30 },
               ].map(({ label, days }) => {
                 const to = new Date();
                 const from = new Date(to);
@@ -308,7 +308,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
               {hasModels ? (
                 <div ref={modelFilterRef} style={{ position: 'relative', minWidth: '210px', overflow: 'visible' }}>
                   <label className="filter-field" style={{ margin: 0 }}>
-                    <span className="filter-field__label">Models</span>
+                    <span className="filter-field__label">{tu.models}</span>
                     <button
                       type="button"
                       onClick={() => setIsModelFilterOpen((open) => !open)}
@@ -337,7 +337,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                   {isModelFilterOpen ? (
                     <div
                       role="dialog"
-                      aria-label="Model filters"
+                      aria-label={tu.modelFilters}
                       style={{
                         position: 'absolute',
                         bottom: 'calc(100% + 6px)',
@@ -358,7 +358,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                         type="search"
                         value={modelSearchText}
                         onChange={(event) => setModelSearchText(event.target.value)}
-                        placeholder="Search models..."
+                        placeholder={tu.searchModels}
                         style={{
                           width: '100%',
                           border: '1px solid var(--border, #e5e7eb)',
@@ -371,7 +371,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                       />
                       <div style={{ maxHeight: '270px', overflowY: 'auto', display: 'grid', gap: '7px', paddingRight: '2px' }}>
                         {filteredModelOptions.length === 0 ? (
-                          <span style={{ fontSize: '0.82rem', opacity: 0.65, padding: '2px 0' }}>No models found</span>
+                          <span style={{ fontSize: '0.82rem', opacity: 0.65, padding: '2px 0' }}>{tu.noModelsFound}</span>
                         ) : null}
                         {filteredModelOptions.map((row) => {
                           const checked = selectedModels.includes(row.model);
@@ -407,9 +407,9 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '0.75rem', opacity: 0.68 }}>
                           {selectedModels.length === 0
-                            ? 'All models included'
+                            ? tu.allModelsIncluded
                             : selectedModels.length === 1
-                              ? '1 model selected'
+                              ? tu.oneModelSelected
                               : `${selectedModels.length} models selected`}
                         </span>
                         <button
@@ -444,7 +444,7 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                 <span className="filter-field__label">To</span>
                 <input type="date" name="to" defaultValue={toDate} style={{ padding: '4px 8px' }} />
               </label>
-              <button className="btn-primary" type="submit">Refresh</button>
+              <button className="btn-primary" type="submit">{tu.refresh}</button>
             </form>
           </div>
         </section>
