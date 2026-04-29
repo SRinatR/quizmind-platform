@@ -5,24 +5,48 @@ import test from 'node:test';
 
 const root = process.cwd();
 const source = readFileSync(join(root, 'src/app/admin/[section]/admin-ai-providers-client.tsx'), 'utf8');
-const en = readFileSync(join(root, 'src/lib/i18n/en.ts'), 'utf8');
 const ru = readFileSync(join(root, 'src/lib/i18n/ru.ts'), 'utf8');
 
-test('ai routing client references i18n keys', () => {
+test('ai routing client localizes requested labels', () => {
   assert.match(source, /t\.admin\.aiRouting/);
-  assert.doesNotMatch(source, />\s*Provider\s*</);
+  assert.doesNotMatch(source, />\s*API Key\s*</);
   assert.doesNotMatch(source, />\s*Current Routing Status\s*</);
+  assert.doesNotMatch(source, />\s*Platform-managed\s*</);
+  assert.doesNotMatch(source, />\s*Default model\s*</);
+  assert.doesNotMatch(source, />\s*Platform key\s*</);
+  assert.doesNotMatch(source, />\s*Last change\s*</);
+  assert.doesNotMatch(source, />\s*Advanced \(emergency use\)\s*</);
+  assert.doesNotMatch(source, />\s*Manual policy editor\s*</);
+  assert.doesNotMatch(source, />\s*Save policy\s*</);
+  assert.doesNotMatch(source, />\s*Reset to global\s*</);
+  assert.doesNotMatch(source, />\s*Credential maintenance\s*</);
+  assert.doesNotMatch(source, />\s*Platform keys\s*</);
+  assert.doesNotMatch(source, />\s*Rotate key\s*</);
+  assert.doesNotMatch(source, />\s*Revoke key\s*</);
+  assert.doesNotMatch(source, /Unable to reach the server\./);
+  assert.doesNotMatch(source, /Saving AI provider policy\.\.\./);
 });
 
-test('ru and en include ai routing labels', () => {
-  assert.match(ru, /Маршрутизация AI/);
-  assert.match(ru, /Провайдер/);
-  assert.match(ru, /Модель/);
-  assert.match(ru, /Статус/);
-  assert.match(ru, /Сохранить/);
-  assert.match(ru, /Обновить/);
-
-  assert.match(en, /AI Routing/);
-  assert.match(en, /Provider/);
-  assert.match(en, /Model/);
+test('ru dictionary contains requested ai routing translations', () => {
+  const required = [
+    'API-ключ',
+    'Текущий статус маршрутизации',
+    'Управляется платформой',
+    'Модель по умолчанию',
+    'Ключ платформы',
+    'Последнее изменение',
+    'Расширенные настройки (экстренное использование)',
+    'Ручной редактор политики',
+    'Сохранить политику',
+    'Сбросить к глобальным настройкам',
+    'Обслуживание учётных данных',
+    'Ключи платформы',
+    'Обновить ключ',
+    'Отозвать ключ',
+    'Не удалось подключиться к серверу.',
+    'Сохранение политики AI-провайдера...',
+  ];
+  for (const label of required) {
+    assert.match(ru, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
 });
