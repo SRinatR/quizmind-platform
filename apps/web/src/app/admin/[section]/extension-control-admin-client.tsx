@@ -58,15 +58,15 @@ interface ActionFeedback {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const COMPAT_ACTION_LABELS: Record<string, string> = {
-  supported: 'Allow',
-  warn: 'Warn',
-  degraded: 'Warn',
-  blocked: 'Block',
-  unsupported: 'Block',
+  supported: 'allow',
+  warn: 'warn',
+  degraded: 'warn',
+  blocked: 'block',
+  unsupported: 'block',
 };
 
-function compatLabel(status: string): string {
-  return COMPAT_ACTION_LABELS[status] ?? status;
+function compatLabel(status: string, policySummary: { allow: string; warn: string; block: string }): string {
+  return policySummary[COMPAT_ACTION_LABELS[status] as 'allow' | 'warn' | 'block'] ?? status;
 }
 
 function parseCsv(value: string): string[] {
@@ -197,7 +197,7 @@ export function ExtensionControlAdminClient({
 
   async function publishCompatRule() {
     if (!isConnectedSession) {
-      setFeedback({ tone: 'err', message: 'Connected admin session required to publish.' });
+      setFeedback({ tone: 'err', message: policySummary.connectedSessionRequired });
       return;
     }
     setIsPublishingCompat(true);
@@ -222,13 +222,13 @@ export function ExtensionControlAdminClient({
         error?: { message?: string };
       } | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setFeedback({ tone: 'err', message: payload?.error?.message ?? 'Unable to publish version policy.' });
+        setFeedback({ tone: 'err', message: payload?.error?.message ?? policySummary.publishVersionPolicyFailed });
       } else {
-        setFeedback({ tone: 'ok', message: `Version policy published at ${formatUtcDateTime(payload.data.publishedAt)}.` });
+        setFeedback({ tone: 'ok', message: `${policySummary.versionPolicyPublishedAt} ${formatUtcDateTime(payload.data.publishedAt)}.` });
         startRefresh(() => router.refresh());
       }
     } catch {
-      setFeedback({ tone: 'err', message: 'Unable to reach the compatibility publish route.' });
+      setFeedback({ tone: 'err', message: policySummary.unableToReachCompatibilityPublishRoute });
     } finally {
       setIsPublishingCompat(false);
     }
@@ -276,19 +276,19 @@ export function ExtensionControlAdminClient({
       if (!res.ok || !payload?.ok || !payload.data) {
         setFlagFeedbackMap((c) => ({
           ...c,
-          [key]: { tone: 'err', message: payload?.error?.message ?? 'Save failed.' },
+          [key]: { tone: 'err', message: payload?.error?.message ?? config.saveFailed },
         }));
       } else {
         setFlagItems((c) => c.map((f) => (f.key === key ? payload.data!.flag : f)));
         setFlagDrafts((c) => ({ ...c, [key]: initFlagDraft(payload.data!.flag) }));
         setFlagFeedbackMap((c) => ({
           ...c,
-          [key]: { tone: 'ok', message: `Saved ${formatUtcDateTime(payload.data!.updatedAt)}.` },
+          [key]: { tone: 'ok', message: `${config.savedAt} ${formatUtcDateTime(payload.data!.updatedAt)}.` },
         }));
         setLastFlagSave({ key, updatedAt: payload.data.updatedAt });
       }
     } catch {
-      setFlagFeedbackMap((c) => ({ ...c, [key]: { tone: 'err', message: 'Unable to save flag.' } }));
+      setFlagFeedbackMap((c) => ({ ...c, [key]: { tone: 'err', message: config.unableToSaveFlag } }));
     } finally {
       setFlagSavingKey((c) => (c === key ? null : c));
     }
@@ -323,11 +323,11 @@ export function ExtensionControlAdminClient({
 
   async function publishConfig() {
     if (!isConnectedSession) {
-      setFeedback({ tone: 'err', message: 'Connected admin session required to publish.' });
+      setFeedback({ tone: 'err', message: policySummary.connectedSessionRequired });
       return;
     }
     if (!configVersionLabel.trim()) {
-      setFeedback({ tone: 'err', message: 'Version label is required.' });
+      setFeedback({ tone: 'err', message: config.versionLabelRequired });
       return;
     }
     setIsPublishingConfig(true);
@@ -347,7 +347,7 @@ export function ExtensionControlAdminClient({
         };
       });
     } catch (e) {
-      setFeedback({ tone: 'err', message: e instanceof Error ? e.message : 'Invalid layer JSON.' });
+      setFeedback({ tone: 'err', message: e instanceof Error ? e.message : config.invalidLayerJson });
       setIsPublishingConfig(false);
       return;
     }
@@ -363,7 +363,7 @@ export function ExtensionControlAdminClient({
         error?: { message?: string };
       } | null;
       if (!res.ok || !payload?.ok || !payload.data) {
-        setFeedback({ tone: 'err', message: payload?.error?.message ?? 'Unable to publish config.' });
+        setFeedback({ tone: 'err', message: payload?.error?.message ?? config.publishFailed });
       } else {
         setFeedback({
           tone: 'ok',
@@ -372,7 +372,7 @@ export function ExtensionControlAdminClient({
         startRefresh(() => router.refresh());
       }
     } catch {
-      setFeedback({ tone: 'err', message: 'Unable to reach the config publish route.' });
+      setFeedback({ tone: 'err', message: config.unableToReachConfigPublishRoute });
     } finally {
       setIsPublishingConfig(false);
     }
@@ -424,7 +424,7 @@ export function ExtensionControlAdminClient({
                 <select value={resultStatus} onChange={(e) => setResultStatus(e.target.value)}>
                   {compatibilityStatuses.map((s) => (
                     <option key={s} value={s}>
-                      {compatLabel(s)}
+                      {compatLabel(s, policySummary)}
                     </option>
                   ))}
                 </select>
@@ -447,11 +447,11 @@ export function ExtensionControlAdminClient({
               <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
                 <label className="admin-ticket-field">
                   <span className="micro-label">{policySummary.supportedSchemaVersions}</span>
-                  <input value={schemas} onChange={(e) => setSchemas(e.target.value)} placeholder="2, 3" />
+                  <input value={schemas} onChange={(e) => setSchemas(e.target.value)} placeholder={policySummary.supportedSchemaVersionsExample} />
                 </label>
                 <label className="admin-ticket-field">
                   <span className="micro-label">{policySummary.requiredCapabilities}</span>
-                  <input value={caps} onChange={(e) => setCaps(e.target.value)} placeholder="quiz-capture, history-sync" />
+                  <input value={caps} onChange={(e) => setCaps(e.target.value)} placeholder={policySummary.requiredCapabilitiesExample} />
                 </label>
                 <label className="admin-ticket-field">
                   <span className="micro-label">{policySummary.reason}</span>
@@ -475,7 +475,7 @@ export function ExtensionControlAdminClient({
                 </div>
                 <div className="list-item">
                   <strong>{policySummary.clientAction}</strong>
-                  <p>{compatLabel(latestCompat.resultStatus)}</p>
+                  <p>{compatLabel(latestCompat.resultStatus, policySummary)}</p>
                 </div>
                 {latestCompat.reason ? (
                   <div className="list-item">
@@ -974,7 +974,7 @@ export function ExtensionControlAdminClient({
               <strong>{config.versionPolicy}</strong>
               <p>
                 {latestCompat.minimumVersion} &rarr; {latestCompat.recommendedVersion} &mdash;{' '}
-                {compatLabel(latestCompat.resultStatus)}
+                {compatLabel(latestCompat.resultStatus, policySummary)}
               </p>
               <span className="list-muted">{config.publishedLabel} {formatUtcDateTime(latestCompat.createdAt)}</span>
             </div>
