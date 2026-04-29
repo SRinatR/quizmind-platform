@@ -89,7 +89,7 @@ export function UserBillingAdminClient() {
     setPanelMode('adjustment');
   }
 
-  function startEdit(row: AdminBillingUserRow) {
+  function openCommissionRule(row: AdminBillingUserRow) {
     setSelected(new Set([row.userId]));
     setEditingUserId(row.userId);
     setOverrideFeeExempt(row.aiPlatformFeeExempt);
@@ -165,10 +165,7 @@ export function UserBillingAdminClient() {
         body: JSON.stringify({ aiPlatformFeeExempt: overrideFeeExempt, aiMarkupPercentOverride: parsed, reason: overrideReason.trim() }),
       });
       setStatusMessage(res.ok ? ub.overrideSaved : ub.failedToSaveOverride, res.ok ? 'success' : 'error');
-      if (res.ok) {
-        setEditingUserId(null);
-        await loadUsers();
-      }
+      if (res.ok) await loadUsers();
     } catch {
       setStatusMessage(ub.networkError, 'error');
     } finally {
@@ -225,7 +222,7 @@ export function UserBillingAdminClient() {
           <div className="user-billing-actions">
             <button className="btn-ghost" onClick={() => openAdjustment('credit')}>{ub.credit}</button>
             <button className="btn-ghost" onClick={() => openAdjustment('debit')}>{ub.debit}</button>
-            <button className="btn-ghost" disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) startEdit(singleSelectedRow); }}>{ub.editCommission}</button>
+            <button className="btn-ghost" disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.editCommission}</button>
             {canResetSelectedRule && singleSelectedRow ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverride}</button> : null}
           </div>
         </div>
@@ -258,7 +255,7 @@ export function UserBillingAdminClient() {
 
       <div className="user-billing-action-tabs">
         <button className={`btn-ghost ${panelMode === 'adjustment' ? 'is-active' : ''}`} onClick={() => setPanelMode('adjustment')}>{ub.balanceAdjustmentTitle}</button>
-        <button className={`btn-ghost ${panelMode === 'commission' ? 'is-active' : ''}`} disabled={!singleSelectedRow} onClick={() => setPanelMode('commission')}>{ub.editCommission}</button>
+        <button className={`btn-ghost ${panelMode === 'commission' ? 'is-active' : ''}`} disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.editCommission}</button>
       </div>
 
       <div className="user-billing-main-grid">
@@ -298,7 +295,7 @@ export function UserBillingAdminClient() {
             <label>{ub.customMarkupPercent}<input value={overrideMarkup} onChange={(e) => setOverrideMarkup(e.target.value)} /></label>
             <label>{ub.overrideReason}<textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} /></label>
             <div>
-              <button className="btn-primary" onClick={() => void saveOverride()}>{ub.saveOverride}</button>
+              <button className="btn-primary" disabled={saving || !editingUserId || overrideReason.trim().length < 5} onClick={() => void saveOverride()}>{saving ? ub.savingOverride : ub.saveOverride}</button>
               <button className="btn-ghost" onClick={() => setPanelMode('adjustment')}>{ub.cancel}</button>
               {(singleSelectedRow.aiPlatformFeeExempt || singleSelectedRow.aiMarkupPercentOverride != null) ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverrideToGlobal}</button> : null}
             </div>

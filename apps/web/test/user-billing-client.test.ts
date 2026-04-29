@@ -15,13 +15,17 @@ test('client has mode logic, preview callout, and payload invariants', async () 
   assert.match(source, /ub\.howItWorksTitle/);
   assert.match(source, /ub\.balanceAdjustmentTitle/);
   assert.match(source, /setPanelMode\('adjustment'\)/);
-  assert.match(source, /setPanelMode\('commission'\)/);
+  assert.match(source, /function openCommissionRule\(row: AdminBillingUserRow\)/);
+  assert.match(source, /onClick=\{\(\) => \{ if \(singleSelectedRow\) openCommissionRule\(singleSelectedRow\); \}\}/);
+  assert.doesNotMatch(source, /onClick=\{\(\) => setPanelMode\('commission'\)\}/);
   assert.match(source, /ub\.previewTitle/);
   assert.match(source, /ub\.previewLedgerEntry/);
   assert.match(source, /ub\.previewYookassaPayment/);
   assert.match(source, /Math\.round\(amount \* 100\)/);
   assert.match(source, /crypto\.randomUUID\(\)/);
   assert.match(source, /user-billing-row-selected/);
+  assert.match(source, /disabled=\{saving \|\| !editingUserId \|\| overrideReason\.trim\(\)\.length < 5\}/);
+  assert.match(source, /\{saving \? ub\.savingOverride : ub\.saveOverride\}/);
 });
 
 test('ru dictionary contains required billing labels', async () => {
