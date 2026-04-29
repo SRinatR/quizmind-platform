@@ -136,6 +136,7 @@ export function ExtensionControlAdminClient({
   const { t } = usePreferences();
   const shell = t.admin.extensionControlShell;
   const policySummary = t.admin.extensionControlPolicySummary;
+  const bootstrap = t.admin.extensionControlBootstrap;
   const [, startRefresh] = useTransition();
 
   // Shared feedback
@@ -486,6 +487,75 @@ export function ExtensionControlAdminClient({
             )}
           </article>
         </div>
+      </section>
+
+      {/* ── C: Bootstrap Simulator ─────────────────────────────────────── */}
+      <section className="panel">
+        <span className="micro-label">{bootstrap.bootstrapSimulator}</span>
+        <h2>{bootstrap.description}</h2>
+        <details style={{ marginTop: '10px' }}>
+          <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
+            {bootstrap.runBootstrap}
+          </summary>
+          <div className="admin-ticket-editor" style={{ marginTop: '8px' }}>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.installationToken}</span>
+              <input disabled placeholder={bootstrap.required} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.clientVersion}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.platform}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.browser}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.userAgent}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+            <label className="admin-ticket-field">
+              <span className="micro-label">{bootstrap.deviceLabel}</span>
+              <input disabled placeholder={bootstrap.optional} />
+            </label>
+          </div>
+          <div className="admin-user-actions" style={{ marginTop: '8px' }}>
+            <button className="btn-primary" disabled type="button">
+              {bootstrap.running}
+            </button>
+            <button className="btn-ghost" disabled type="button">
+              {bootstrap.generate}
+            </button>
+            <button className="btn-ghost" disabled type="button">
+              {bootstrap.reset}
+            </button>
+            <button className="btn-ghost" disabled type="button">
+              {bootstrap.clear}
+            </button>
+          </div>
+          <div className="split-grid" style={{ marginTop: '10px' }}>
+            <article>
+              <span className="micro-label">{bootstrap.requestPayload}</span>
+              <pre>{'{ }'}</pre>
+              <button className="btn-ghost" disabled type="button">{bootstrap.copyPayload}</button>
+            </article>
+            <article>
+              <span className="micro-label">{bootstrap.responsePayload}</span>
+              <pre>{'{ }'}</pre>
+              <button className="btn-ghost" disabled type="button">{bootstrap.copyResult}</button>
+            </article>
+          </div>
+          <p style={{ marginTop: '8px', color: 'var(--muted)' }}>
+            {bootstrap.result}: {bootstrap.failed}
+          </p>
+          <p style={{ marginTop: '4px', color: 'var(--muted)' }}>
+            {bootstrap.success}
+          </p>
+        </details>
       </section>
 
       {/* ── B: Runtime Settings ──────────────────────────────────────────── */}
