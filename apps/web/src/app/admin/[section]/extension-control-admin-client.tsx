@@ -138,6 +138,7 @@ export function ExtensionControlAdminClient({
   const policySummary = t.admin.extensionControlPolicySummary;
   const bootstrap = t.admin.extensionControlBootstrap;
   const telemetry = t.admin.extensionControlTelemetry;
+  const config = t.admin.extensionControlConfig;
   const [, startRefresh] = useTransition();
 
   // Shared feedback
@@ -600,10 +601,10 @@ export function ExtensionControlAdminClient({
       {/* ── B: Runtime Settings ──────────────────────────────────────────── */}
       <section className="panel">
         <span className="micro-label">Runtime Settings</span>
-        <h2>Feature flags &amp; config</h2>
+        <h2>{config.remoteConfig}</h2>
 
         {/* B1: Feature Flags — compact expandable list */}
-        <h3 style={{ fontSize: '0.9rem', margin: '16px 0 6px' }}>Feature Flags</h3>
+        <h3 style={{ fontSize: '0.9rem', margin: '16px 0 6px' }}>{config.featureFlags}</h3>
         {flagItems.length > 0 ? (
           <div className="admin-flag-list">
             {flagItems.map((flag) => {
@@ -626,8 +627,8 @@ export function ExtensionControlAdminClient({
                             patchFlagDraft(flag.key, { enabled: e.target.value === 'enabled' })
                           }
                         >
-                          <option value="enabled">Enabled</option>
-                          <option value="disabled">Disabled</option>
+                          <option value="enabled">{config.enabled}</option>
+                          <option value="disabled">{config.disabled}</option>
                         </select>
                         {dirty ? (
                           <button
@@ -639,7 +640,7 @@ export function ExtensionControlAdminClient({
                             }}
                             type="button"
                           >
-                            {flagSavingKey === flag.key ? 'Saving...' : 'Save'}
+                            {flagSavingKey === flag.key ? config.saving : config.save}
                           </button>
                         ) : (
                           <span className={draft.enabled ? 'tag' : 'tag warn'}>
@@ -730,7 +731,7 @@ export function ExtensionControlAdminClient({
                               onClick={() => void saveFlag(flag.key)}
                               type="button"
                             >
-                              {flagSavingKey === flag.key ? 'Saving...' : 'Save'}
+                              {flagSavingKey === flag.key ? config.saving : config.save}
                             </button>
                           </div>
                         ) : null}
@@ -773,7 +774,7 @@ export function ExtensionControlAdminClient({
         )}
 
         {/* B2: Effective Config — editable key/value default view */}
-        <h3 style={{ fontSize: '0.9rem', margin: '24px 0 6px' }}>Effective Config</h3>
+        <h3 style={{ fontSize: '0.9rem', margin: '24px 0 6px' }}>{config.remoteConfig}</h3>
         {remoteConfig ? (
           <>
             {Object.keys(previewValues).length > 0 ? (
@@ -818,7 +819,7 @@ export function ExtensionControlAdminClient({
 
             <details style={{ marginTop: '12px' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Advanced: Publish &amp; layer editor
+                {config.debugPanel}
               </summary>
               <div style={{ marginTop: '10px' }}>
                 <div className="admin-ticket-editor">
@@ -838,7 +839,7 @@ export function ExtensionControlAdminClient({
                     onClick={() => void publishConfig()}
                     type="button"
                   >
-                    {isPublishingConfig ? 'Publishing...' : 'Publish config'}
+                    {isPublishingConfig ? config.publishing : config.publish}
                   </button>
                 </div>
                 <div className="admin-remote-config-layers" style={{ marginTop: '12px' }}>
@@ -1006,7 +1007,7 @@ export function ExtensionControlAdminClient({
           )}
 
           <div className="list-item">
-            <strong>Feature flags</strong>
+            <strong>{config.featureFlags}</strong>
             <p>
               {flagItems.length} flag{flagItems.length === 1 ? '' : 's'} &mdash;{' '}
               {flagItems.filter((f) => f.enabled).length} enabled
