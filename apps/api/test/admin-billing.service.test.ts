@@ -57,13 +57,20 @@ test('createAdminWalletAdjustmentForCurrentSession validates target and supports
 test('override update/delete rejects non-admin and validates markup', async () => {
   const service = makeService({ userBillingOverrideRepository: { updateOverride: async (_u: string, p: any) => { if (p.aiMarkupPercentOverride > 500) throw new Error('aiMarkupPercentOverride must be between 0 and 500.'); return { userId: 'u1', aiPlatformFeeExempt: true, aiMarkupPercentOverride: p.aiMarkupPercentOverride ?? null, reason: p.reason, updatedAt: new Date('2026-01-01T00:00:00.000Z') }; }, deleteOverride: async () => undefined } });
   await assert.rejects(() => service.updateUserBillingOverrideForCurrentSession(userSession, 'u1', { reason: 'valid reason' }), ForbiddenException);
-  await assert.rejects(() => service.updateUserBillingOverrideForCurrentSession(adminSession, 'u1', { reason: '' as any }));
+  const normalized = await service.updateUserBillingOverrideForCurrentSession(adminSession, 'u1', { reason: '' as any });
+  assert.equal(normalized.reason, '');
   await assert.rejects(() => service.updateUserBillingOverrideForCurrentSession(adminSession, 'u1', { reason: 'valid reason', aiMarkupPercentOverride: 999 }));
   const ok = await service.updateUserBillingOverrideForCurrentSession(adminSession, 'u1', { reason: 'valid reason', aiPlatformFeeExempt: true });
   assert.equal(ok.aiPlatformFeeExempt, true);
   await assert.rejects(() => service.deleteUserBillingOverrideForCurrentSession(userSession, 'u1'), ForbiddenException);
   const del = await service.deleteUserBillingOverrideForCurrentSession(adminSession, 'u1');
   assert.equal(del.success, true);
+});
+
+test('createAdminWalletAdjustmentForCurrentSession allows empty reason and validates max length', async () => {
+  const service = makeService({ walletRepository: { manualAdjustWallets: async (_: any) => ({ batchId: 'b1', affectedCount: 1, skippedCount: 0, direction: 'credit', amountKopecks: 10, currency: 'RUB' }) } });
+  await assert.doesNotReject(() => service.createAdminWalletAdjustmentForCurrentSession(adminSession, { target: { type: 'selected_users', userIds: ['u1'] }, direction: 'credit', amountKopecks: 10, currency: 'RUB', reason: '   ', idempotencyKey: 'k-empty' }));
+  await assert.rejects(() => service.createAdminWalletAdjustmentForCurrentSession(adminSession, { target: { type: 'selected_users', userIds: ['u1'] }, direction: 'credit', amountKopecks: 10, currency: 'RUB', reason: 'x'.repeat(501), idempotencyKey: 'k-long' }));
 });
 
 test('createAdminWalletAdjustmentForCurrentSession selected_users credit creates wallet+ledger and is idempotent', async () => {

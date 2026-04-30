@@ -9,14 +9,15 @@ export class UserBillingOverrideRepository {
     return this.prisma.userBillingOverride.findUnique({ where: { userId } });
   }
 
-  async updateOverride(userId: string, patch: { aiPlatformFeeExempt?: boolean; aiMarkupPercentOverride?: number | null; reason: string }, actorId?: string) {
-    const reason = patch.reason.trim();
-    if (reason.length < 5 || reason.length > 500) throw new Error('reason length must be between 5 and 500.');
+  async updateOverride(userId: string, patch: { aiPlatformFeeExempt?: boolean; aiMarkupPercentOverride?: number | null; reason?: string }, actorId?: string) {
+    const reason = patch.reason?.trim() ?? '';
+    if (reason.length > 500) throw new Error('reason length must be at most 500.');
+    const normalizedReason = reason || 'Admin billing override';
     if (patch.aiMarkupPercentOverride !== undefined && patch.aiMarkupPercentOverride !== null && (!Number.isFinite(patch.aiMarkupPercentOverride) || patch.aiMarkupPercentOverride < 0 || patch.aiMarkupPercentOverride > 500)) throw new Error('aiMarkupPercentOverride must be between 0 and 500.');
     return this.prisma.userBillingOverride.upsert({
       where: { userId },
-      create: { userId, aiPlatformFeeExempt: patch.aiPlatformFeeExempt ?? false, aiMarkupPercentOverride: patch.aiMarkupPercentOverride ?? null, reason, createdById: actorId, updatedById: actorId },
-      update: { ...(patch.aiPlatformFeeExempt !== undefined ? { aiPlatformFeeExempt: patch.aiPlatformFeeExempt } : {}), ...(patch.aiMarkupPercentOverride !== undefined ? { aiMarkupPercentOverride: patch.aiMarkupPercentOverride } : {}), reason, updatedById: actorId },
+      create: { userId, aiPlatformFeeExempt: patch.aiPlatformFeeExempt ?? false, aiMarkupPercentOverride: patch.aiMarkupPercentOverride ?? null, normalizedReason, createdById: actorId, updatedById: actorId },
+      update: { ...(patch.aiPlatformFeeExempt !== undefined ? { aiPlatformFeeExempt: patch.aiPlatformFeeExempt } : {}), ...(patch.aiMarkupPercentOverride !== undefined ? { aiMarkupPercentOverride: patch.aiMarkupPercentOverride } : {}), reason: normalizedReason, updatedById: actorId },
     });
   }
 

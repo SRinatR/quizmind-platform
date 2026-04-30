@@ -82,3 +82,20 @@ test('manualAdjustWallets blocks negative debits by default', async () => {
   assert.equal(result.affectedCount, 0);
   assert.equal(result.skippedCount, 1);
 });
+
+test('manualAdjustWallets normalizes empty reason', async () => {
+  const store: any = { ledger: null, batch: null };
+  const tx: any = {
+    adminWalletAdjustmentBatch: { findUnique: async () => null, create: async ({ data }: any) => ((store.batch = { id: 'b1', ...data }), store.batch) },
+    walletLedgerEntry: { create: async ({ data }: any) => ((store.ledger = data), data), count: async () => 0 },
+    wallet: {
+      upsert: async () => ({ id: 'w_u1', balanceKopecks: 0 }),
+      update: async () => ({ balanceKopecks: 10 }),
+    },
+  };
+  const repo = new WalletRepository({ $transaction: async (fn: any) => fn(tx) } as any);
+  await repo.manualAdjustWallets({ actorId: 'a', targetType: 'selected_users', userIds: ['u1'], direction: 'credit', amountKopecks: 10, currency: 'RUB', reason: '   ', idempotencyKey: 'idem-3' });
+  assert.equal(store.batch.reason, 'Admin manual wallet adjustment');
+  assert.equal(store.ledger.description, 'Admin manual wallet adjustment');
+  assert.equal(store.ledger.metadataJson.reason, 'Admin manual wallet adjustment');
+});

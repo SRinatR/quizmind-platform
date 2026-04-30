@@ -5205,3 +5205,8 @@ code {
   .user-billing-side-panel-sticky { position: static; }
 }
 .btn-compact { padding: 4px 8px; font-size: 0.82rem; }
+
+.user-billing-toggle-row { display:flex; gap:10px; align-items:flex-start; padding:10px; border:1px solid var(--line); border-radius:10px; }
+.user-billing-toggle-copy { display:flex; flex-direction:column; gap:2px; }
+.user-billing-toggle-title { font-weight:600; }
+.user-billing-toggle-description { color: var(--muted); font-size: 13px; }
