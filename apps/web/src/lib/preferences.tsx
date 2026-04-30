@@ -52,6 +52,7 @@ const DEFAULTS: ResolvedPrefs = {
 };
 
 const STORAGE_KEY = 'qm_prefs';
+const LOCAL_LANGUAGE_LOCK_KEY = 'qm_prefs_language_lock';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -73,6 +74,27 @@ function writeLocalPrefs(prefs: ResolvedPrefs): void {
   }
 }
 
+
+
+function markLocalLanguageUpdate(locale: Language): void {
+  try {
+    localStorage.setItem(LOCAL_LANGUAGE_LOCK_KEY, JSON.stringify({ language: locale, updatedAt: Date.now() }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readLocalLanguageUpdate(): { language: Language; updatedAt: number } | null {
+  try {
+    const raw = localStorage.getItem(LOCAL_LANGUAGE_LOCK_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { language?: string; updatedAt?: number };
+    if (!parsed || typeof parsed.language !== 'string' || !isSupportedLocale(parsed.language) || typeof parsed.updatedAt !== 'number') return null;
+    return { language: parsed.language, updatedAt: parsed.updatedAt };
+  } catch {
+    return null;
+  }
+}
 function resolveEffectiveTheme(theme: Theme): 'light' | 'dark' {
   if (theme === 'system') {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -172,7 +194,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const loadFromServer = useCallback((serverPrefs: UiPreferences | null | undefined) => {
     if (!serverPrefs || typeof serverPrefs !== 'object') return;
     setPrefs((current) => {
-      const next = merge(current, serverPrefs as Partial<ResolvedPrefs>);
+      const serverPatch = { ...(serverPrefs as Partial<ResolvedPrefs>) };
+      const localLanguageUpdate = readLocalLanguageUpdate();
+      if (localLanguageUpdate && isSupportedLocale(current.language)) {
+        if (!serverPatch.language || serverPatch.language !== current.language) {
+          serverPatch.language = current.language;
+        }
+      }
+      const next = merge(current, serverPatch);
       writeLocalPrefs(next);
       applyPrefsToDOM(next);
       return next;
@@ -213,7 +242,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   );
 
   const setTheme = useCallback((v: Theme) => applyAndSave({ theme: v }), [applyAndSave]);
-  const setLanguage = useCallback((v: Language) => applyAndSave({ language: v }), [applyAndSave]);
+  const setLanguage = useCallback((v: Language) => {
+    markLocalLanguageUpdate(v);
+    applyAndSave({ language: v });
+  }, [applyAndSave]);
   const setDensity = useCallback((v: Density) => applyAndSave({ density: v }), [applyAndSave]);
   const setReducedMotion = useCallback(
     (v: boolean) => applyAndSave({ reducedMotion: v }),
