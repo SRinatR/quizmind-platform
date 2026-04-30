@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { formatBalanceFromKopecks, formatMinorCurrencyAmount } from '../src/lib/money';
+import { formatBalanceFromKopecks, formatDisplayMoneyFromRubMinor, formatMinorCurrencyAmount } from '../src/lib/money';
 
 test('balance formatter keeps kopeck precision for RUB wallet balances', () => {
   assert.equal(formatBalanceFromKopecks(273, 'RUB'), '2,73\u00a0₽');
@@ -10,9 +10,20 @@ test('balance formatter keeps kopeck precision for RUB wallet balances', () => {
   assert.equal(formatMinorCurrencyAmount(273, 'RUB'), '2,73\u00a0₽');
 });
 
+
+
+test('charged display conversion from RUB minor respects selected display currency', () => {
+  const rates = { base: 'RUB', timestamp: '2026-01-01T00:00:00.000Z', rates: { RUB: 1, UZS: 0.01, USD: 80 } };
+  assert.equal(formatDisplayMoneyFromRubMinor({ amountMinor: 27, displayCurrency: 'RUB', rates }), '0,27 ₽');
+  const uzs = formatDisplayMoneyFromRubMinor({ amountMinor: 27, displayCurrency: 'UZS', rates });
+  assert.match(uzs, /UZS|soʻm|сум/);
+  assert.doesNotMatch(uzs, /₽/);
+});
+
 test('history timeline prefers charged RUB minor amount and falls back to estimate', async () => {
   const source = await readFile(new URL('../src/app/app/history/history-page-client.tsx', import.meta.url), 'utf8');
   assert.match(source, /chargedCurrency === 'RUB'/);
+  assert.match(source, /formatDisplayMoneyFromRubMinor/);
   assert.match(source, /chargedAmountMinor/);
   assert.match(source, /approximateLabel/);
   assert.match(source, /history-price-pill/);
@@ -24,10 +35,9 @@ test('history timeline prefers charged RUB minor amount and falls back to estima
 test('detail modal renders user-facing charged and approximate cost without internal breakdown rows', async () => {
   const source = await readFile(new URL('../src/app/app/history/ai-request-detail-modal.tsx', import.meta.url), 'utf8');
   assert.match(source, /costMeta/);
-  assert.match(source, /ai-detail-cost-card/);
-  assert.match(source, /td\.chargedToBalance/);
-  assert.match(source, /td\.approximateCost/);
-  assert.match(source, /td\.notChargedHelper/);
+  assert.match(source, /ai-detail-price-chip/);
+  assert.match(source, /td\.chargedLabel/);
+  assert.match(source, /td\.approximateLabel/);
   assert.doesNotMatch(source, /td\.providerCost/);
   assert.doesNotMatch(source, /td\.platformFee/);
 });

@@ -19,3 +19,11 @@ test('ru i18n defines natural currency labels', async () => {
   assert.match(ru, /KZT — казахстанский тенге/);
   assert.match(ru, /GBP — британский фунт/);
 });
+
+
+test('appearance currency selector uses a compact dropdown select', async () => {
+  const source = await readFile(new URL('../src/app/components/settings/appearance-settings-panel.tsx', import.meta.url), 'utf8');
+  assert.match(source, /className="currency-select"/);
+  assert.match(source, /<select/);
+  assert.doesNotMatch(source, /type="radio"\s*name="balanceCurrency"/);
+});

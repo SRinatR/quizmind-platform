@@ -12,7 +12,7 @@ import { buildHistoryPromptDisplay, getHistoryTimelineSummary } from './history-
 import { useAutoRefresh } from '../../../lib/use-auto-refresh';
 import { usePreferences } from '../../../lib/preferences';
 
-import { formatMinorCurrencyAmount, formatUsdAmountByPreference, type SupportedCurrency } from '../../../lib/money';
+import { formatDisplayMoneyFromRubMinor, formatUsdAmountByPreference, type SupportedCurrency } from '../../../lib/money';
 
 export interface HistoryPageClientProps {
   aiHistory: AiHistoryListResponse | null;
@@ -61,7 +61,7 @@ function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], langu
   const estimated = item.estimatedCostUsd ?? item.providerCostUsd ?? 0;
   const hasEstimatedUsd = Number.isFinite(estimated) && estimated > 0;
   if (hasChargedMinor) {
-    return { label: chargedLabel, value: formatMinorCurrencyAmount(item.chargedAmountMinor!, 'RUB'), billed: true };
+    return { label: chargedLabel, value: formatDisplayMoneyFromRubMinor({ amountMinor: item.chargedAmountMinor!, displayCurrency, rates: exchangeRates }), billed: true };
   }
   if (hasChargedUsd) {
     return { label: chargedLabel, value: formatUsdAmountByPreference(item.chargedCostUsd!, displayCurrency, exchangeRates), billed: true };

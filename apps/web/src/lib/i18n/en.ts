@@ -228,7 +228,7 @@ export const en = {
         CNY: 'CNY — Chinese yuan',
         GBP: 'GBP — British pound',
       },
-      currencyApproximateNote: 'Your wallet is stored in RUB. Other currencies are approximate display values.',
+      currencyApproximateNote: 'Your wallet is stored and debited in RUB. We show other currencies as approximate display values using exchange rates.',
       currencyRateUnavailable: 'Rate unavailable \u2014 showing RUB',
       saving: 'Saving\u2026',
       savedHint: 'Preferences are saved to your account and restore after login.',

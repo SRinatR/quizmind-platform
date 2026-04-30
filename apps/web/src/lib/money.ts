@@ -87,3 +87,21 @@ export function formatBalanceFromKopecks(kopecks: number, currency: SupportedCur
   if (targetRate === null) return formatDisplayCurrencyAmount(rub, 'RUB');
   return new Intl.NumberFormat(currencyLocale(currency), { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rub / targetRate);
 }
+
+
+export function formatDisplayMoneyFromRubMinor({
+  amountMinor,
+  displayCurrency = 'RUB',
+  rates = null,
+}: {
+  amountMinor: number;
+  displayCurrency?: SupportedCurrency;
+  rates?: ExchangeRateSnapshot | null;
+}): string {
+  if (!Number.isFinite(amountMinor)) return formatDisplayCurrencyAmount(0, 'RUB');
+  if (displayCurrency === 'RUB') return formatMinorCurrencyAmount(amountMinor, 'RUB');
+  const rub = amountMinor / 100;
+  const targetRate = getRate(displayCurrency, rates);
+  if (targetRate === null) return formatDisplayCurrencyAmount(rub, 'RUB');
+  return formatDisplayCurrencyAmount(rub / targetRate, displayCurrency);
+}

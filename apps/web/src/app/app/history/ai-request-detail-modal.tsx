@@ -7,7 +7,7 @@ import { getReadableModelName } from './history-model-display';
 import { formatHistoryDuration } from './history-duration';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
-import { formatMinorCurrencyAmount, formatUsdAmountByPreference } from '../../../lib/money';
+import { formatDisplayMoneyFromRubMinor, formatUsdAmountByPreference } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
 
 interface Props {
@@ -191,7 +191,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
     const estimatedCost = detail.estimatedCostUsd ?? detail.providerCostUsd ?? 0;
     const hasEstimatedUsd = Number.isFinite(estimatedCost) && estimatedCost > 0;
     if (hasChargedMinor) {
-      return { label: td.chargedLabel, value: formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB'), billed: true };
+      return { label: td.chargedLabel, value: formatDisplayMoneyFromRubMinor({ amountMinor: detail.chargedAmountMinor!, displayCurrency: prefs.balanceDisplayCurrency, rates: exchangeRates }), billed: true };
     }
     if (hasChargedUsd) {
       return { label: td.chargedLabel, value: formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates), billed: true };
