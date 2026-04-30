@@ -267,8 +267,10 @@ export const ru: Translations = {
     widgetError: 'Ошибка виджета:',
   },
   installs: {
-    noInstallations: 'Нет активных сессий расширения.',
+    noInstallations: 'Нет активных подключений расширения',
     noInstallationsDesc: 'Подключите расширение в браузере, чтобы начать новую активную сессию.',
+    removedExtensionsDisappear: 'Удалённые или неактивные расширения исчезают автоматически, когда перестают выходить на связь.',
+    hardwareModelUnavailableNote: 'Точная модель устройства может быть недоступна из браузерного расширения.',
     fleet: 'Парк',
     managedInstallations: 'Подключённые устройства',
     devicesLabel: 'Устройства',
