@@ -27,15 +27,14 @@ import {
 } from 'react';
 import type { UiPreferences } from '@quizmind/contracts';
 
-import { en } from './i18n/en';
 import { isSupportedCurrency, type SupportedCurrency } from './money';
-import { ru } from './i18n/ru';
 import type { Translations } from './i18n/en';
+import { DEFAULT_LOCALE, getTranslations, isSupportedLocale, type SupportedLocale } from './i18n/languages';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 export type Theme = 'light' | 'dark' | 'system';
-export type Language = 'en' | 'ru';
+export type Language = SupportedLocale;
 export type Density = 'comfortable' | 'compact';
 export type BalanceDisplayCurrency = SupportedCurrency;
 
@@ -45,7 +44,7 @@ export type ResolvedPrefs = Required<UiPreferences>;
 
 const DEFAULTS: ResolvedPrefs = {
   theme: 'system',
-  language: 'en',
+  language: DEFAULT_LOCALE,
   density: 'comfortable',
   reducedMotion: false,
   sidebarCollapsed: false,
@@ -81,18 +80,26 @@ function resolveEffectiveTheme(theme: Theme): 'light' | 'dark' {
   return theme;
 }
 
+
+function resolveLocaleCode(locale: Language): string {
+  return locale.toLowerCase();
+}
+
 function applyPrefsToDOM(prefs: ResolvedPrefs): void {
   const root = document.documentElement;
   root.setAttribute('data-theme', resolveEffectiveTheme(prefs.theme as Theme));
   root.setAttribute('data-density', prefs.density);
   root.setAttribute('data-motion', prefs.reducedMotion ? 'reduced' : 'full');
-  root.setAttribute('lang', prefs.language === 'ru' ? 'ru' : 'en');
+  root.setAttribute('lang', resolveLocaleCode(prefs.language));
 }
 
 function merge(base: ResolvedPrefs, patch: Partial<ResolvedPrefs>): ResolvedPrefs {
   const next = { ...base, ...patch };
   if (!isSupportedCurrency(next.balanceDisplayCurrency)) {
     next.balanceDisplayCurrency = 'RUB';
+  }
+  if (!isSupportedLocale(next.language)) {
+    next.language = DEFAULT_LOCALE;
   }
   return next;
 }
@@ -118,7 +125,7 @@ export interface PrefsContextValue {
 
 const PrefsContext = createContext<PrefsContextValue>({
   prefs: DEFAULTS,
-  t: en,
+  t: getTranslations(DEFAULT_LOCALE),
   loadFromServer: () => undefined,
   setTheme: () => undefined,
   setLanguage: () => undefined,
@@ -221,10 +228,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     [applyAndSave],
   );
 
-  const t: Translations = useMemo(
-    () => (prefs.language === 'ru' ? ru : en),
-    [prefs.language],
-  );
+  const t: Translations = useMemo(() => getTranslations(prefs.language), [prefs.language]);
 
   const value = useMemo<PrefsContextValue>(
     () => ({

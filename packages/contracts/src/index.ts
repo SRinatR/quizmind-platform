@@ -374,7 +374,7 @@ export interface AuthSessionsPayload {
  */
 export interface UiPreferences {
   theme?: 'light' | 'dark' | 'system';
-  language?: 'en' | 'ru';
+  language?: 'en' | 'ru' | 'uz' | 'kk' | 'tr' | 'es' | 'pt-BR';
   density?: 'comfortable' | 'compact';
   reducedMotion?: boolean;
   sidebarCollapsed?: boolean;
