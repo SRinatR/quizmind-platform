@@ -52,8 +52,8 @@ function statCard(label: string, value: string, sub?: string) {
     <div className="stat-card" key={label} style={{
       padding: '16px',
       borderRadius: '8px',
-      border: '1px solid var(--border, #e5e7eb)',
-      background: 'var(--surface, #fff)',
+      border: '1px solid var(--line)',
+      background: 'var(--surface)',
     }}>
       <span className="micro-label">{label}</span>
       <div style={{ fontSize: '1.5rem', fontWeight: 700, lineHeight: 1.2 }}>{value}</div>
@@ -244,18 +244,18 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
           {filteredRows.length > 0 ? (
             <>
               <span className="micro-label">{tu.modelAnalytics}</span>
-              <div style={{ marginTop: '8px', overflowX: 'auto', border: '1px solid var(--border, #e5e7eb)', borderRadius: '10px' }}>
+              <div style={{ marginTop: '8px', overflowX: 'auto', border: '1px solid var(--line)', borderRadius: '10px' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
                   <thead>
-                    <tr style={{ textAlign: 'left', fontSize: '0.78rem', opacity: 0.75, background: 'var(--surface-muted, #f8fafc)' }}>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.model}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.requestsHeader}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.success}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.failedHeader}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.successRate}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.totalTokens}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.estimatedCost}</th>
-                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{tu.avgLatency}</th>
+                    <tr style={{ textAlign: 'left', fontSize: '0.78rem', opacity: 0.75, background: 'var(--table-head-bg)' }}>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.model}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.requestsHeader}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.success}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.failedHeader}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.successRate}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.totalTokens}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.estimatedCost}</th>
+                      <th style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{tu.avgLatency}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -263,16 +263,16 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                       const successRate = row.requestCount > 0 ? row.successCount / row.requestCount : 0;
                       return (
                         <tr key={row.model}>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)', fontWeight: 600 }}>{row.displayName}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{row.requestCount}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{row.successCount}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{row.failedCount}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatPercent(successRate)}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatTokens(row.totalTokens)}</td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)', fontWeight: 600 }}>{row.displayName}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{row.requestCount}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{row.successCount}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{row.failedCount}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{formatPercent(successRate)}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{formatTokens(row.totalTokens)}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>
                             {formatUsdAmountByPreference(row.chargedCostUsd ?? row.estimatedCostUsd, prefs.balanceDisplayCurrency, exchangeRates)}
                           </td>
-                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--border, #e5e7eb)' }}>{formatHistoryDuration(row.avgDurationMs) ?? '—'}</td>
+                          <td style={{ padding: '10px 12px', borderBottom: '1px solid var(--line)' }}>{formatHistoryDuration(row.avgDurationMs) ?? '—'}</td>
                         </tr>
                       );
                     })}
@@ -322,8 +322,8 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                         gap: '8px',
                         padding: '6px 10px',
                         borderRadius: '8px',
-                        border: '1px solid var(--border, #e5e7eb)',
-                        background: 'var(--surface, #fff)',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
                         color: 'inherit',
                         font: 'inherit',
                         cursor: 'pointer',
@@ -344,9 +344,9 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                         left: 0,
                         right: 0,
                         zIndex: 50,
-                        border: '1px solid var(--border, #e5e7eb)',
+                        border: '1px solid var(--line)',
                         borderRadius: '10px',
-                        background: 'var(--surface, #fff)',
+                        background: 'var(--surface)',
                         boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
                         padding: '10px',
                         display: 'flex',
@@ -361,11 +361,11 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                         placeholder={tu.searchModels}
                         style={{
                           width: '100%',
-                          border: '1px solid var(--border, #e5e7eb)',
+                          border: '1px solid var(--line)',
                           borderRadius: '7px',
                           padding: '6px 8px',
                           fontSize: '0.84rem',
-                          background: 'var(--surface, #fff)',
+                          background: 'var(--surface)',
                           color: 'inherit',
                         }}
                       />
@@ -420,10 +420,10 @@ export function UsagePageClient({ session, analytics, fromDate, toDate, exchange
                           }}
                           disabled={selectedModels.length === 0 && modelSearchText.length === 0}
                           style={{
-                            border: '1px solid var(--border, #e5e7eb)',
+                            border: '1px solid var(--line)',
                             borderRadius: '6px',
                             padding: '4px 8px',
-                            background: 'var(--surface, #fff)',
+                            background: 'var(--surface)',
                             fontSize: '0.76rem',
                             cursor: selectedModels.length === 0 && modelSearchText.length === 0 ? 'not-allowed' : 'pointer',
                             opacity: selectedModels.length === 0 && modelSearchText.length === 0 ? 0.5 : 1,

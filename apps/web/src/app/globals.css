@@ -72,6 +72,13 @@
   color-scheme: dark;
 }
 
+[data-theme="dark"] .auth-page__backdrop {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(212, 114, 76, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 12%, rgba(44, 93, 136, 0.16), transparent 24%),
+    linear-gradient(180deg, rgba(26, 22, 18, 0.96), rgba(21, 17, 13, 0.94));
+}
+
 [data-theme="dark"] body {
   background:
     radial-gradient(circle at top left, rgba(212, 114, 76, 0.14), transparent 32%),
@@ -2457,8 +2464,8 @@ details[open] .admin-flag-row-summary::before {
 }
 
 .list-item:hover {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(31, 41, 51, 0.13);
+  background: var(--surface-elevated);
+  border-color: var(--line-strong);
 }
 
 /* ── Tag improvements ── */
@@ -2715,7 +2722,7 @@ textarea:focus-visible {
 }
 
 .content-card:hover {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--surface-elevated);
   box-shadow: var(--shadow-sm);
   transform: translateY(-1px);
 }
@@ -2902,7 +2909,7 @@ code {
 }
 
 .event-row:hover {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--surface-elevated);
 }
 
 .event-dot {
@@ -2985,7 +2992,7 @@ code {
 }
 
 .session-row:hover {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--surface-elevated);
 }
 
 .session-row__info {
@@ -3032,8 +3039,8 @@ code {
 }
 
 .installation-row:hover {
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(31, 41, 51, 0.13);
+  background: var(--surface-elevated);
+  border-color: var(--line-strong);
 }
 
 .installation-row__header {
@@ -3294,7 +3301,7 @@ code {
 }
 
 .access-row:hover {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--surface-elevated);
 }
 
 .access-row__dot {
@@ -4896,7 +4903,7 @@ code {
 }
 
 .ai-credential-row:hover {
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--surface-elevated);
 }
 
 .ai-credential-info {

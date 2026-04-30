@@ -53,7 +53,7 @@ function copyText(text: string) {
 }
 
 const codeBlockStyle: React.CSSProperties = {
-  background: 'var(--color-surface-alt, #f4f4f5)',
+  background: 'var(--code-bg)',
   borderRadius: '6px',
   padding: '12px',
   fontSize: '0.8rem',
@@ -64,6 +64,8 @@ const codeBlockStyle: React.CSSProperties = {
   overflowY: 'auto',
   margin: 0,
   fontFamily: 'monospace',
+  color: 'var(--code-ink)',
+  border: '1px solid var(--line)',
 };
 
 function ExpandableSection({ label, content }: { label: string; content: string }) {
@@ -98,7 +100,7 @@ function ImageAttachmentCard({
 }: { attachment: AiHistoryAttachment; onOpen: (url: string) => void; td: ReturnType<typeof usePreferences>['t']['aiRequestDetail'] }) {
   const canView = Boolean(attachment.viewUrl) && !attachment.expired && !attachment.deleted;
   return (
-    <div style={{ border: '1px solid var(--color-border, #ddd)', borderRadius: 8, padding: 10, marginTop: 8 }}>
+    <div style={{ border: '1px solid var(--line)', borderRadius: 8, padding: 10, marginTop: 8 }}>
       {canView ? (
         <img
           alt={attachment.originalName ?? td.historyImageAlt}
@@ -209,7 +211,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.55)',
+          background: 'var(--overlay-bg)',
           zIndex: 1000,
           display: 'flex',
           alignItems: 'flex-start',
@@ -218,7 +220,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
           overflowY: 'auto',
         }}
       >
-        <div style={{ background: 'var(--color-surface, #fff)', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '760px', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
+        <div style={{ background: 'var(--modal-bg)', borderRadius: '12px', padding: '24px', width: '100%', maxWidth: '760px', position: 'relative', boxShadow: '0 8px 32px rgba(0,0,0,0.22)' }}>
           <button aria-label={td.close} onClick={onClose} style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', lineHeight: 1, opacity: 0.5, padding: '0 4px' }}>×</button>
 
           <span className="micro-label">{td.title}</span>
