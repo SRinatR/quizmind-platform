@@ -366,7 +366,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
                     <div className="link-row" style={{ marginTop: '10px' }}>
                       <button
-                        className="btn-ghost"
+                        className="btn-outline"
                         disabled={isRenaming}
                         onClick={() => startRename(installation)}
                         type="button"
@@ -374,7 +374,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                         {ti.renameDevice}
                       </button>
                       <button
-                        className={isDisconnecting ? 'btn-ghost' : 'btn-danger'}
+                        className={isDisconnecting ? 'btn-ghost' : 'btn-danger-outline'}
                         disabled={isDisconnecting || isRenaming}
                         onClick={() => void handleDisconnect(installation.installationId)}
                         type="button"
@@ -432,7 +432,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
           <div className="link-row" style={{ marginTop: '12px' }}>
             <button
-              className="btn-danger"
+              className="btn-danger-outline"
               disabled={isRevokingEverywhere}
               onClick={() => void handleLogoutAll()}
               type="button"
