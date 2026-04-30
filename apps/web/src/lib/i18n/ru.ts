@@ -216,6 +216,7 @@ export const ru: Translations = {
       currencyRub: 'RUB \u2014 российский рубль',
       currencyUsd: 'USD \u2014 доллар США',
       currencyEur: 'EUR \u2014 евро',
+      currencyApproximateNote: 'Баланс хранится в рублях. Другие валюты показываются примерно по текущему курсу.',
       currencyRateUnavailable: 'Курс недоступен \u2014 показывается RUB',
       saving: 'Сохраняем\u2026',
       savedHint: 'Настройки сохраняются в аккаунте и восстанавливаются при входе.',

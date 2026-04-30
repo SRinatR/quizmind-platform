@@ -378,7 +378,7 @@ export interface UiPreferences {
   density?: 'comfortable' | 'compact';
   reducedMotion?: boolean;
   sidebarCollapsed?: boolean;
-  balanceDisplayCurrency?: 'RUB' | 'USD' | 'EUR';
+  balanceDisplayCurrency?: 'RUB' | 'USD' | 'EUR' | 'UZS' | 'KZT' | 'TRY' | 'AED' | 'GEL' | 'AMD' | 'KGS' | 'CNY' | 'GBP';
 }
 
 export interface UserProfilePayload {

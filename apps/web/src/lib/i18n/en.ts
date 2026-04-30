@@ -214,6 +214,7 @@ export const en = {
       currencyRub: 'RUB \u2014 Russian ruble',
       currencyUsd: 'USD \u2014 US dollar',
       currencyEur: 'EUR \u2014 Euro',
+      currencyApproximateNote: 'Your wallet is stored in RUB. Other currencies are approximate display values.',
       currencyRateUnavailable: 'Rate unavailable \u2014 showing RUB',
       saving: 'Saving\u2026',
       savedHint: 'Preferences are saved to your account and restore after login.',

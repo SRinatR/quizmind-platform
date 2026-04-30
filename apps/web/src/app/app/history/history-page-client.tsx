@@ -12,7 +12,7 @@ import { buildHistoryPromptDisplay, getHistoryTimelineSummary } from './history-
 import { useAutoRefresh } from '../../../lib/use-auto-refresh';
 import { usePreferences } from '../../../lib/preferences';
 
-import { formatMinorCurrencyAmount, formatUsdAmountByPreference } from '../../../lib/money';
+import { formatMinorCurrencyAmount, formatUsdAmountByPreference, type SupportedCurrency } from '../../../lib/money';
 
 export interface HistoryPageClientProps {
   aiHistory: AiHistoryListResponse | null;
@@ -55,7 +55,7 @@ function toAttachmentViewUrl(itemId: string, attachmentId: string): string {
   return `/bff/history/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/view`;
 }
 
-function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], language: 'en' | 'ru', displayCurrency: 'RUB' | 'USD' | 'EUR', exchangeRates: ExchangeRateSnapshot | null, chargedLabel: string, approximateLabel: string): { label: string; value: string; billed: boolean } | null {
+function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], language: 'en' | 'ru', displayCurrency: SupportedCurrency, exchangeRates: ExchangeRateSnapshot | null, chargedLabel: string, approximateLabel: string): { label: string; value: string; billed: boolean } | null {
   const hasChargedMinor = item.chargedCurrency === 'RUB' && Number.isFinite(item.chargedAmountMinor) && (item.chargedAmountMinor ?? 0) > 0;
   const hasChargedUsd = Number.isFinite(item.chargedCostUsd) && (item.chargedCostUsd ?? 0) > 0;
   const estimated = item.estimatedCostUsd ?? item.providerCostUsd ?? 0;

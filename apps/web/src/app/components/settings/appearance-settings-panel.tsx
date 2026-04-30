@@ -1,6 +1,22 @@
 'use client';
 
+import { SUPPORTED_DISPLAY_CURRENCIES, type SupportedCurrency } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
+
+const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
+  RUB: 'RUB — Russian ruble',
+  USD: 'USD — US dollar',
+  EUR: 'EUR — Euro',
+  UZS: 'UZS — Uzbek soʻm',
+  KZT: 'KZT — Kazakhstani tenge',
+  TRY: 'TRY — Turkish lira',
+  AED: 'AED — UAE dirham',
+  GEL: 'GEL — Georgian lari',
+  AMD: 'AMD — Armenian dram',
+  KGS: 'KGS — Kyrgyzstani som',
+  CNY: 'CNY — Chinese yuan',
+  GBP: 'GBP — British pound',
+};
 
 export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean }) {
   const { prefs, t, setTheme, setLanguage, setBalanceDisplayCurrency, isSaving } =
@@ -104,8 +120,8 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
           <span className="pref-group__title">{s.currencySection}</span>
           <span className="pref-group__desc">{s.currencyDesc}</span>
         </div>
-        <div className="pref-option-row">
-          {(['RUB', 'USD', 'EUR'] as const).map((code) => (
+        <div className="pref-option-row" style={{ flexWrap: 'wrap' }}>
+          {SUPPORTED_DISPLAY_CURRENCIES.map((code) => (
             <label
               key={code}
               className={`pref-option${prefs.balanceDisplayCurrency === code ? ' pref-option--active' : ''}`}
@@ -117,12 +133,11 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
                 checked={prefs.balanceDisplayCurrency === code}
                 onChange={() => setBalanceDisplayCurrency(code)}
               />
-              <span className="pref-option__label">
-                {code === 'RUB' ? s.currencyRub : code === 'USD' ? s.currencyUsd : s.currencyEur}
-              </span>
+              <span className="pref-option__label">{CURRENCY_LABELS[code]}</span>
             </label>
           ))}
         </div>
+        <p className="pref-hint" style={{ marginTop: '8px' }}>{s.currencyApproximateNote}</p>
       </div>
 
       <p className="pref-hint">
