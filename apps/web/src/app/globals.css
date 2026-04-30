@@ -5369,3 +5369,199 @@ code {
 .user-billing-toggle-copy { display:flex; flex-direction:column; gap:2px; }
 .user-billing-toggle-title { font-weight:600; }
 .user-billing-toggle-description { color: var(--muted); font-size: 13px; }
+
+
+/* ── Dark-mode semantic UI tokens for history/installations/auth ── */
+:root {
+  --surface-filter: rgba(255, 255, 255, 0.55);
+  --surface-card: rgba(255, 249, 240, 0.9);
+  --surface-row: rgba(255, 255, 255, 0.62);
+  --surface-row-hover: rgba(255, 255, 255, 0.78);
+  --button-outline-bg: transparent;
+  --button-outline-border: rgba(31, 41, 51, 0.22);
+  --button-outline-ink: var(--ink);
+  --danger-outline-bg: transparent;
+  --danger-outline-border: rgba(186, 50, 50, 0.35);
+  --danger-outline-ink: #6b1c1c;
+  --danger-outline-hover-bg: rgba(186, 50, 50, 0.08);
+  --danger-outline-hover-ink: #571515;
+  --pill-bg: rgba(44, 93, 136, 0.09);
+  --pill-ink: var(--muted-strong);
+  --pill-success-bg: rgba(34, 120, 74, 0.09);
+  --pill-success-ink: #1a5c38;
+  --pill-muted-bg: rgba(31, 41, 51, 0.07);
+  --pill-muted-ink: var(--muted);
+  --auth-panel-bg: rgba(255, 249, 240, 0.9);
+  --auth-panel-ink: var(--ink);
+  --auth-panel-muted: var(--muted);
+}
+
+[data-theme="dark"] {
+  --surface-filter: rgba(41, 34, 28, 0.96);
+  --surface-card: rgba(42, 35, 29, 0.94);
+  --surface-row: rgba(49, 41, 35, 0.9);
+  --surface-row-hover: rgba(60, 50, 43, 0.92);
+  --button-outline-bg: rgba(45, 37, 31, 0.7);
+  --button-outline-border: rgba(237, 232, 224, 0.24);
+  --button-outline-ink: #ede8e0;
+  --danger-outline-bg: rgba(76, 26, 24, 0.36);
+  --danger-outline-border: rgba(255, 147, 147, 0.44);
+  --danger-outline-ink: #ffb8b8;
+  --danger-outline-hover-bg: rgba(108, 35, 34, 0.52);
+  --danger-outline-hover-ink: #ffd0d0;
+  --pill-bg: rgba(117, 90, 70, 0.44);
+  --pill-ink: #e8d9ca;
+  --pill-success-bg: rgba(49, 118, 81, 0.34);
+  --pill-success-ink: #d0f3dd;
+  --pill-muted-bg: rgba(79, 67, 58, 0.56);
+  --pill-muted-ink: #ddd1c6;
+  --auth-panel-bg: rgba(39, 33, 28, 0.95);
+  --auth-panel-ink: #f2ebe2;
+  --auth-panel-muted: #cabdb1;
+}
+
+.auth-panel {
+  background: var(--auth-panel-bg);
+  color: var(--auth-panel-ink);
+}
+
+.auth-panel--brand {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--auth-panel-bg) 92%, #ffffff 8%), color-mix(in srgb, var(--auth-panel-bg) 84%, var(--accent-soft) 16%)),
+    linear-gradient(160deg, rgba(184, 92, 56, 0.08), transparent);
+}
+
+.auth-brand p,
+.auth-highlight p,
+.auth-form-copy,
+.auth-session-card p,
+.auth-demo-card p,
+.auth-inline-status,
+.auth-inline-error,
+.auth-field span {
+  color: var(--auth-panel-muted);
+}
+
+.auth-links a {
+  color: var(--auth-panel-ink);
+}
+
+.auth-links a:hover,
+.auth-demo-card:hover {
+  background: var(--surface-row-hover);
+}
+
+.filter-panel {
+  background: var(--surface-filter);
+}
+
+.filter-field__label {
+  color: var(--muted-strong);
+}
+
+.filter-field input,
+.filter-field select {
+  border: 1px solid var(--input-border);
+}
+
+.event-row {
+  background: var(--surface-row);
+  border: 1px solid var(--line);
+}
+
+.event-row:hover {
+  background: var(--surface-row-hover);
+}
+
+.installation-row {
+  background: var(--surface-row);
+}
+
+.installation-row:hover {
+  background: var(--surface-row-hover);
+}
+
+.tag-soft {
+  background: var(--pill-bg);
+  color: var(--pill-ink);
+  border: 1px solid color-mix(in srgb, var(--pill-ink) 25%, transparent);
+}
+
+.tag-soft--green {
+  background: var(--pill-success-bg);
+  color: var(--pill-success-ink);
+  border-color: color-mix(in srgb, var(--pill-success-ink) 30%, transparent);
+}
+
+.tag-soft--gray {
+  background: var(--pill-muted-bg);
+  color: var(--pill-muted-ink);
+  border-color: color-mix(in srgb, var(--pill-muted-ink) 24%, transparent);
+}
+
+.history-price-pill--charged {
+  background: var(--pill-success-bg);
+  color: var(--pill-success-ink);
+  border-color: color-mix(in srgb, var(--pill-success-ink) 28%, transparent);
+}
+
+.history-price-pill--estimated {
+  background: var(--pill-muted-bg);
+  color: var(--pill-muted-ink);
+  border-color: color-mix(in srgb, var(--pill-muted-ink) 24%, transparent);
+}
+
+.btn-outline {
+  background: var(--button-outline-bg);
+  border: 1.5px solid var(--button-outline-border);
+  color: var(--button-outline-ink);
+}
+
+.btn-outline:hover {
+  border-color: color-mix(in srgb, var(--button-outline-border) 65%, var(--button-outline-ink) 35%);
+  background: color-mix(in srgb, var(--button-outline-bg) 72%, var(--button-outline-ink) 10%);
+}
+
+.btn-danger-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border: 1.5px solid var(--danger-outline-border);
+  background: var(--danger-outline-bg);
+  color: var(--danger-outline-ink);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  text-decoration: none;
+}
+
+.btn-danger-outline:hover {
+  background: var(--danger-outline-hover-bg);
+  color: var(--danger-outline-hover-ink);
+  border-color: color-mix(in srgb, var(--danger-outline-border) 65%, var(--danger-outline-hover-ink) 35%);
+}
+
+.btn-danger-outline:disabled,
+.btn-danger-outline[disabled] {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+
+[data-theme="dark"] .filter-panel { background: var(--surface-filter); }
+[data-theme="dark"] .event-row { background: var(--surface-row); }
+[data-theme="dark"] .event-row:hover { background: var(--surface-row-hover); }
+[data-theme="dark"] .history-price-pill--charged { background: var(--pill-success-bg); color: var(--pill-success-ink); }
+[data-theme="dark"] .history-price-pill--estimated { background: var(--pill-muted-bg); color: var(--pill-muted-ink); }
+[data-theme="dark"] .tag-soft { background: var(--pill-bg); color: var(--pill-ink); }
+[data-theme="dark"] .installation-row { background: var(--surface-row); }
+[data-theme="dark"] .installation-row:hover { background: var(--surface-row-hover); }
+[data-theme="dark"] .btn-outline { background: var(--button-outline-bg); color: var(--button-outline-ink); border-color: var(--button-outline-border); }
+[data-theme="dark"] .btn-danger-outline { background: var(--danger-outline-bg); color: var(--danger-outline-ink); border-color: var(--danger-outline-border); }
+[data-theme="dark"] .auth-panel { background: var(--auth-panel-bg); color: var(--auth-panel-ink); }
+[data-theme="dark"] .auth-field input,
+[data-theme="dark"] .auth-field select { background: var(--input-bg); color: var(--input-ink); border-color: var(--input-border); }
+[data-theme="dark"] .auth-links a { color: var(--auth-panel-ink); border-color: var(--line); }
