@@ -1,58 +1,52 @@
 import type { ExchangeRateSnapshot } from './exchange-rates';
 
-export type SupportedCurrency = 'RUB' | 'USD' | 'EUR';
+export const SUPPORTED_DISPLAY_CURRENCIES = [
+  'RUB',
+  'USD',
+  'EUR',
+  'UZS',
+  'KZT',
+  'TRY',
+  'AED',
+  'GEL',
+  'AMD',
+  'KGS',
+  'CNY',
+  'GBP',
+] as const;
 
-export function convertUsdToDisplayCurrency(
-  usdAmount: number,
-  currency: SupportedCurrency,
-  rates: ExchangeRateSnapshot | null,
-): number | null {
-  if (!Number.isFinite(usdAmount)) {
-    return null;
-  }
+export type SupportedCurrency = (typeof SUPPORTED_DISPLAY_CURRENCIES)[number];
 
-  if (currency === 'USD') {
-    return usdAmount;
-  }
-
-  if (!rates || !Number.isFinite(rates.USD) || !Number.isFinite(rates.EUR) || rates.USD <= 0 || rates.EUR <= 0) {
-    return null;
-  }
-
-  if (currency === 'RUB') {
-    return usdAmount * rates.USD;
-  }
-
-  return (usdAmount * rates.USD) / rates.EUR;
+export function isSupportedCurrency(value: string): value is SupportedCurrency {
+  return (SUPPORTED_DISPLAY_CURRENCIES as readonly string[]).includes(value);
 }
 
-export function convertDisplayCurrencyToUsd(
-  value: number,
-  currency: SupportedCurrency,
-  rates: ExchangeRateSnapshot | null,
-): number | null {
-  if (!Number.isFinite(value)) {
-    return null;
-  }
+function getRate(currency: SupportedCurrency, rates: ExchangeRateSnapshot | null): number | null {
+  if (!rates) return null;
+  const rate = rates.rates[currency];
+  return Number.isFinite(rate) && rate > 0 ? rate : null;
+}
 
-  if (currency === 'USD') {
-    return value;
-  }
+export function convertUsdToDisplayCurrency(usdAmount: number, currency: SupportedCurrency, rates: ExchangeRateSnapshot | null): number | null {
+  if (!Number.isFinite(usdAmount)) return null;
+  if (currency === 'USD') return usdAmount;
+  const usdRate = getRate('USD', rates);
+  const targetRate = getRate(currency, rates);
+  if (usdRate === null || targetRate === null) return null;
+  return (usdAmount * usdRate) / targetRate;
+}
 
-  if (!rates || !Number.isFinite(rates.USD) || !Number.isFinite(rates.EUR) || rates.USD <= 0 || rates.EUR <= 0) {
-    return null;
-  }
-
-  if (currency === 'RUB') {
-    return value / rates.USD;
-  }
-
-  return (value * rates.EUR) / rates.USD;
+export function convertDisplayCurrencyToUsd(value: number, currency: SupportedCurrency, rates: ExchangeRateSnapshot | null): number | null {
+  if (!Number.isFinite(value)) return null;
+  if (currency === 'USD') return value;
+  const usdRate = getRate('USD', rates);
+  const sourceRate = getRate(currency, rates);
+  if (usdRate === null || sourceRate === null) return null;
+  return (value * sourceRate) / usdRate;
 }
 
 function fractionDigitsForAmount(value: number): { minimumFractionDigits: number; maximumFractionDigits: number } {
   const absValue = Math.abs(value);
-
   if (absValue >= 100) return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
   if (absValue >= 1) return { minimumFractionDigits: 2, maximumFractionDigits: 4 };
   if (absValue >= 0.01) return { minimumFractionDigits: 2, maximumFractionDigits: 6 };
@@ -60,34 +54,21 @@ function fractionDigitsForAmount(value: number): { minimumFractionDigits: number
 }
 
 function currencyLocale(currency: SupportedCurrency): string {
-  if (currency === 'RUB') {
-    return 'ru-RU';
-  }
-
-  return 'en-US';
+  return currency === 'RUB' ? 'ru-RU' : 'en-US';
 }
 
 export function formatDisplayCurrencyAmount(value: number, currency: SupportedCurrency): string {
   const { minimumFractionDigits, maximumFractionDigits } = fractionDigitsForAmount(value);
-  return new Intl.NumberFormat(currencyLocale(currency), {
-    style: 'currency',
-    currency,
-    minimumFractionDigits,
-    maximumFractionDigits,
-  }).format(value);
+  try {
+    return new Intl.NumberFormat(currencyLocale(currency), { style: 'currency', currency, minimumFractionDigits, maximumFractionDigits }).format(value);
+  } catch {
+    return `${currency} ${value.toFixed(Math.min(maximumFractionDigits, 2))}`;
+  }
 }
 
-export function formatUsdAmountByPreference(
-  usdAmount: number,
-  currency: SupportedCurrency = 'USD',
-  rates: ExchangeRateSnapshot | null = null,
-): string {
+export function formatUsdAmountByPreference(usdAmount: number, currency: SupportedCurrency = 'USD', rates: ExchangeRateSnapshot | null = null): string {
   const converted = convertUsdToDisplayCurrency(usdAmount, currency, rates);
-
-  if (converted === null) {
-    return formatDisplayCurrencyAmount(usdAmount, 'USD');
-  }
-
+  if (converted === null) return formatDisplayCurrencyAmount(usdAmount, 'USD');
   return formatDisplayCurrencyAmount(converted, currency);
 }
 
@@ -95,38 +76,14 @@ export function formatMinorCurrencyAmount(minorUnits: number, currency: Supporte
   const major = minorUnits / 100;
   if (!Number.isFinite(major)) return formatDisplayCurrencyAmount(0, currency);
   const isWhole = Math.abs(minorUnits) % 100 === 0;
-  return new Intl.NumberFormat(currencyLocale(currency), {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: isWhole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(major);
+  return new Intl.NumberFormat(currencyLocale(currency), { style: 'currency', currency, minimumFractionDigits: isWhole ? 0 : 2, maximumFractionDigits: 2 }).format(major);
 }
 
-export function formatBalanceFromKopecks(
-  kopecks: number,
-  currency: SupportedCurrency = 'RUB',
-  rates: ExchangeRateSnapshot | null = null,
-): string {
+export function formatBalanceFromKopecks(kopecks: number, currency: SupportedCurrency = 'RUB', rates: ExchangeRateSnapshot | null = null): string {
   const rub = kopecks / 100;
-
-  if (!Number.isFinite(rub)) {
-    return formatDisplayCurrencyAmount(0, 'RUB');
-  }
-
-  if (currency === 'RUB') {
-    return formatMinorCurrencyAmount(kopecks, 'RUB');
-  }
-
-  if (!rates || !Number.isFinite(rates[currency]) || rates[currency] <= 0) {
-    return formatDisplayCurrencyAmount(rub, 'RUB');
-  }
-
-  const converted = rub / rates[currency];
-  return new Intl.NumberFormat(currencyLocale(currency), {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(converted);
+  if (!Number.isFinite(rub)) return formatDisplayCurrencyAmount(0, 'RUB');
+  if (currency === 'RUB') return formatMinorCurrencyAmount(kopecks, 'RUB');
+  const targetRate = getRate(currency, rates);
+  if (targetRate === null) return formatDisplayCurrencyAmount(rub, 'RUB');
+  return new Intl.NumberFormat(currencyLocale(currency), { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rub / targetRate);
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { SUPPORTED_DISPLAY_CURRENCIES } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
 
 export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean }) {
@@ -104,8 +105,8 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
           <span className="pref-group__title">{s.currencySection}</span>
           <span className="pref-group__desc">{s.currencyDesc}</span>
         </div>
-        <div className="pref-option-row">
-          {(['RUB', 'USD', 'EUR'] as const).map((code) => (
+        <div className="pref-option-row" style={{ flexWrap: 'wrap' }}>
+          {SUPPORTED_DISPLAY_CURRENCIES.map((code) => (
             <label
               key={code}
               className={`pref-option${prefs.balanceDisplayCurrency === code ? ' pref-option--active' : ''}`}
@@ -117,12 +118,11 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
                 checked={prefs.balanceDisplayCurrency === code}
                 onChange={() => setBalanceDisplayCurrency(code)}
               />
-              <span className="pref-option__label">
-                {code === 'RUB' ? s.currencyRub : code === 'USD' ? s.currencyUsd : s.currencyEur}
-              </span>
+              <span className="pref-option__label">{s.currencyNames[code] ?? code}</span>
             </label>
           ))}
         </div>
+        <p className="pref-hint" style={{ marginTop: '8px' }}>{s.currencyApproximateNote}</p>
       </div>
 
       <p className="pref-hint">

@@ -28,6 +28,7 @@ import {
 import type { UiPreferences } from '@quizmind/contracts';
 
 import { en } from './i18n/en';
+import { isSupportedCurrency, type SupportedCurrency } from './money';
 import { ru } from './i18n/ru';
 import type { Translations } from './i18n/en';
 
@@ -36,7 +37,7 @@ import type { Translations } from './i18n/en';
 export type Theme = 'light' | 'dark' | 'system';
 export type Language = 'en' | 'ru';
 export type Density = 'comfortable' | 'compact';
-export type BalanceDisplayCurrency = 'RUB' | 'USD' | 'EUR';
+export type BalanceDisplayCurrency = SupportedCurrency;
 
 export type ResolvedPrefs = Required<UiPreferences>;
 
@@ -89,7 +90,11 @@ function applyPrefsToDOM(prefs: ResolvedPrefs): void {
 }
 
 function merge(base: ResolvedPrefs, patch: Partial<ResolvedPrefs>): ResolvedPrefs {
-  return { ...base, ...patch };
+  const next = { ...base, ...patch };
+  if (!isSupportedCurrency(next.balanceDisplayCurrency)) {
+    next.balanceDisplayCurrency = 'RUB';
+  }
+  return next;
 }
 
 // ─── Context ─────────────────────────────────────────────────────────────────

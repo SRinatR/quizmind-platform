@@ -107,7 +107,9 @@ export function PricingBillingAdminClient({ exchangeRates }: PricingBillingAdmin
   const currencySymbol = moneySymbol(currency);
   const currencyConversionUnavailable = useMemo(() => {
     if (currency === 'USD') return false;
-    return !exchangeRates || !Number.isFinite(exchangeRates.USD) || !Number.isFinite(exchangeRates.EUR) || exchangeRates.USD <= 0 || exchangeRates.EUR <= 0;
+    const usd = exchangeRates?.rates.USD;
+    const current = exchangeRates?.rates[currency];
+    return !Number.isFinite(usd) || !Number.isFinite(current) || (usd ?? 0) <= 0 || (current ?? 0) <= 0;
   }, [currency, exchangeRates]);
 
   const loadPricingSettings = useCallback(async () => {

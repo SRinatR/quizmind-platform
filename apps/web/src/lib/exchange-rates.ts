@@ -1,40 +1,31 @@
-/**
- * Server-side exchange rate fetcher.
- * Uses CBR (Central Bank of Russia) daily JSON feed.
- * Rates give how many RUB equal 1 unit of the foreign currency.
- * In-memory cache with 1-hour TTL to avoid hammering the API.
- */
-
 export interface ExchangeRateSnapshot {
-  USD: number; // 1 USD = N RUB
-  EUR: number; // 1 EUR = N RUB
+  baseCurrency: 'RUB';
+  rates: Record<string, number>;
+  fetchedAt: number;
+  source: 'cbr';
 }
 
-interface CbrResponse {
-  Valute: {
-    USD: { Value: number; Nominal: number };
-    EUR: { Value: number; Nominal: number };
-  };
-}
+interface CbrValuteEntry { Value: number; Nominal: number; CharCode: string }
+interface CbrResponse { Valute: Record<string, CbrValuteEntry> }
 
-let _cache: (ExchangeRateSnapshot & { fetchedAt: number }) | null = null;
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+let _cache: ExchangeRateSnapshot | null = null;
+const CACHE_TTL_MS = 60 * 60 * 1000;
 
 export async function getExchangeRates(): Promise<ExchangeRateSnapshot | null> {
-  if (_cache && Date.now() - _cache.fetchedAt < CACHE_TTL_MS) {
-    return { USD: _cache.USD, EUR: _cache.EUR };
-  }
+  if (_cache && Date.now() - _cache.fetchedAt < CACHE_TTL_MS) return _cache;
   try {
-    const res = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', {
-      // Next.js fetch cache: revalidate every hour at the CDN/ISR level too
-      next: { revalidate: 3600 },
-    });
+    const res = await fetch('https://www.cbr-xml-daily.ru/daily_json.js', { next: { revalidate: 3600 } });
     if (!res.ok) return null;
     const data = (await res.json()) as CbrResponse;
-    const usd = data.Valute.USD.Value / data.Valute.USD.Nominal;
-    const eur = data.Valute.EUR.Value / data.Valute.EUR.Nominal;
-    _cache = { USD: usd, EUR: eur, fetchedAt: Date.now() };
-    return { USD: usd, EUR: eur };
+    const rates: Record<string, number> = { RUB: 1 };
+    for (const valute of Object.values(data.Valute ?? {})) {
+      const rate = valute.Value / valute.Nominal;
+      if (Number.isFinite(rate) && rate > 0) rates[valute.CharCode] = rate;
+    }
+    if (!Number.isFinite(rates.USD) || rates.USD <= 0) return null;
+    const snapshot: ExchangeRateSnapshot = { baseCurrency: 'RUB', rates, fetchedAt: Date.now(), source: 'cbr' };
+    _cache = snapshot;
+    return snapshot;
   } catch {
     return null;
   }
