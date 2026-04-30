@@ -2,7 +2,7 @@ import type { Translations } from './en';
 import { en } from './en';
 import { es } from './es';
 import { kk } from './kk';
-import { ptBR } from './pt-BR';
+import { ptBR } from './ptBR';
 import { ru } from './ru';
 import { tr } from './tr';
 import { uz } from './uz';
