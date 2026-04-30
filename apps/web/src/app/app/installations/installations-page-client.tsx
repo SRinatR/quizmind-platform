@@ -27,6 +27,7 @@ interface LogoutAllRouteResponse {
   data?: { revoked: boolean; revokedCount: number };
   error?: { message?: string };
 }
+const maxDeviceLabelLength = 120;
 
 function formatDateTime(value?: string | null) {
   if (!value) return '—';
@@ -110,6 +111,9 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
   const [logoutAllStatusMessage, setLogoutAllStatusMessage] = useState<string | null>(null);
   const [logoutAllErrorMessage, setLogoutAllErrorMessage] = useState<string | null>(null);
   const [isRevokingEverywhere, setIsRevokingEverywhere] = useState(false);
+  const [editingInstallationId, setEditingInstallationId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
   const refreshInstallations = useCallback(async (signal: AbortSignal) => {
     const response = await fetch('/bff/extension/installations', { cache: 'no-store', signal });
     const payload = (await response.json().catch(() => null)) as { ok: boolean; data?: ExtensionInstallationInventorySnapshot; error?: { message?: string } } | null;
@@ -210,6 +214,58 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     }
   }
 
+  function startRename(installation: ExtensionInstallationInventoryItem) {
+    setEditingInstallationId(installation.installationId);
+    setRenameDraft(installation.deviceLabel ?? '');
+    clearCardMessage(installation.installationId);
+  }
+
+  function cancelRename(installationId: string) {
+    setEditingInstallationId(null);
+    setRenameDraft('');
+    clearCardMessage(installationId);
+  }
+
+  async function saveRename(installation: ExtensionInstallationInventoryItem, clear = false) {
+    const nextLabel = clear ? null : renameDraft.trim() || null;
+    if (!clear && renameDraft.trim().length > maxDeviceLabelLength) {
+      setCardMessage(installation.installationId, 'error', `${ti.deviceName} max ${maxDeviceLabelLength} chars.`);
+      return;
+    }
+
+    setIsRenaming(true);
+    clearCardMessage(installation.installationId);
+    try {
+      const response = await fetch(`/bff/extension/installations/${installation.installationId}/label`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ deviceLabel: nextLabel }),
+      });
+      const payload = (await response.json().catch(() => null)) as { ok: boolean; data?: { deviceLabel: string | null }; error?: { message?: string } } | null;
+      if (!response.ok || !payload?.ok) {
+        setCardMessage(installation.installationId, 'error', payload?.error?.message ?? ti.deviceRenameFailed);
+        setIsRenaming(false);
+        return;
+      }
+
+      setLiveSnapshot((prev) => ({
+        ...prev,
+        items: prev.items.map((item) => (
+          item.installationId === installation.installationId
+            ? { ...item, deviceLabel: payload.data?.deviceLabel ?? undefined }
+            : item
+        )),
+      }));
+      setCardMessage(installation.installationId, 'info', ti.deviceRenameSaved);
+      setEditingInstallationId(null);
+      setRenameDraft('');
+    } catch {
+      setCardMessage(installation.installationId, 'error', ti.deviceRenameFailed);
+    } finally {
+      setIsRenaming(false);
+    }
+  }
+
   return (
     <>
       <section className="panel" style={{ padding: '10px 14px' }}>
@@ -262,6 +318,9 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
               {visibleItems.map((installation) => {
                 const cardMessage = cardMessages[installation.installationId];
                 const isDisconnecting = pendingInstallationId === installation.installationId;
+                const isEditing = editingInstallationId === installation.installationId;
+                const labelLength = renameDraft.trim().length;
+                const isLabelTooLong = labelLength > maxDeviceLabelLength;
 
                 return (
                   <div className="installation-row" key={installation.installationId}>
@@ -307,14 +366,49 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
                     <div className="link-row" style={{ marginTop: '10px' }}>
                       <button
+                        className="btn-ghost"
+                        disabled={isRenaming}
+                        onClick={() => startRename(installation)}
+                        type="button"
+                      >
+                        {ti.renameDevice}
+                      </button>
+                      <button
                         className={isDisconnecting ? 'btn-ghost' : 'btn-danger'}
-                        disabled={isDisconnecting}
+                        disabled={isDisconnecting || isRenaming}
                         onClick={() => void handleDisconnect(installation.installationId)}
                         type="button"
                       >
                         {isDisconnecting ? ti.loggingOut : ti.logout}
                       </button>
                     </div>
+                    {isEditing ? (
+                      <div style={{ marginTop: '10px', display: 'grid', gap: '8px' }}>
+                        <label style={{ display: 'grid', gap: '6px' }}>
+                          <span className="micro-label">{ti.deviceName}</span>
+                          <input
+                            maxLength={maxDeviceLabelLength + 1}
+                            placeholder={ti.deviceNamePlaceholder}
+                            value={renameDraft}
+                            onChange={(event) => setRenameDraft(event.target.value)}
+                          />
+                        </label>
+                        <span className="list-muted" style={{ fontSize: '0.78rem' }}>{ti.deviceRenameHelp}</span>
+                        <span className="list-muted" style={{ fontSize: '0.78rem' }}>{labelLength}/{maxDeviceLabelLength}</span>
+                        {isLabelTooLong ? <span className="banner banner-error">{ti.deviceRenameFailed}</span> : null}
+                        <div className="link-row">
+                          <button className="btn-primary" type="button" disabled={isRenaming || isLabelTooLong} onClick={() => void saveRename(installation)}>
+                            {ti.saveDeviceName}
+                          </button>
+                          <button className="btn-ghost" type="button" disabled={isRenaming} onClick={() => cancelRename(installation.installationId)}>
+                            {ti.cancelRename}
+                          </button>
+                          <button className="btn-ghost" type="button" disabled={isRenaming} onClick={() => void saveRename(installation, true)}>
+                            {ti.clearDeviceName}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
