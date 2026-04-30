@@ -975,6 +975,15 @@ export interface ExtensionInstallationInventorySnapshot {
   permissions: string[];
 }
 
+export interface ExtensionInstallationLabelUpdateRequest {
+  deviceLabel: string | null;
+}
+
+export interface ExtensionInstallationLabelUpdateResult {
+  installationId: string;
+  deviceLabel: string | null;
+}
+
 export interface ExtensionInstallationDisconnectRequest {
   installationId: string;
   reason: string;

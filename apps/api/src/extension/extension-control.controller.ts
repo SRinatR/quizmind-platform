@@ -327,6 +327,21 @@ export class ExtensionControlController {
     );
   }
 
+  @Patch('extension/installations/:installationId/label')
+  async updateInstallationLabel(
+    @Param('installationId') installationId: string,
+    @Body() request?: Partial<ExtensionInstallationLabelUpdateRequest>,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return ok(
+      await this.extensionControlService.updateInstallationLabelForCurrentSession(
+        await this.requireConnectedSession(authorization),
+        installationId,
+        request?.deviceLabel,
+      ),
+    );
+  }
+
   @Post('extension/installations/rotate-session')
   async rotateInstallationSession(
     @Body() request?: Partial<ExtensionInstallationRotateSessionRequest>,

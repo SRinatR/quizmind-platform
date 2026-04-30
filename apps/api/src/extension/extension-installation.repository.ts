@@ -86,4 +86,16 @@ export class ExtensionInstallationRepository {
       select: extensionInstallationSelect,
     });
   }
+
+  updateDeviceLabelForUser(userId: string, installationId: string, deviceLabel: string | null): Promise<ExtensionInstallationRecord | null> {
+    return this.prisma.extensionInstallation
+      .updateMany({
+        where: { userId, installationId },
+        data: { deviceLabel },
+      })
+      .then(async (result) => {
+        if (result.count === 0) return null;
+        return this.findByInstallationId(installationId);
+      });
+  }
 }
