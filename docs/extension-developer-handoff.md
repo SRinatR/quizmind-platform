@@ -103,6 +103,17 @@ The extension must provide:
 - `handshake.schemaVersion`
 - `handshake.capabilities`
 - `handshake.browser`
+- best-effort runtime metadata for user-facing device cards:
+  - `browserName`
+  - `browserVersion`
+  - `osName` or `platform`
+  - `osVersion` when available
+
+Device naming note:
+
+- Exact hardware models (for example, `MacBook Air M3`) are usually not available from browser extension APIs.
+- Platform should support user-defined `deviceLabel` for friendly names.
+- Future TODO: add `PATCH /extension/installations/:id/label` so users can rename devices from `/app/installations`.
 
 Environment format requirement:
 

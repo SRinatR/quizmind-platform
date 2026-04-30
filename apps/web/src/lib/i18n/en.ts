@@ -265,8 +265,10 @@ export const en = {
     widgetError: 'Widget error:',
   },
   installs: {
-    noInstallations: 'No active extension sessions.',
+    noInstallations: 'No active extension installations',
     noInstallationsDesc: 'Connect the extension in your browser to start a new active session.',
+    removedExtensionsDisappear: 'Removed or inactive extensions disappear automatically after they stop checking in.',
+    hardwareModelUnavailableNote: 'Exact device model may not be available from a browser extension.',
     fleet: 'Fleet',
     managedInstallations: 'Connected devices',
     devicesLabel: 'Devices',

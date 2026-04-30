@@ -68,13 +68,37 @@ function ConnectionStatusBadge({ status, ti }: { status: ExtensionConnectionStat
 }
 
 function isActiveInstallation(installation: ExtensionInstallationInventoryItem): boolean {
-  return installation.connectionStatus !== 'reconnect_required' && installation.requiresReconnect !== true;
+  // Offline means stale heartbeat. User-facing Installations hides stale extensions
+  // so removed/uninstalled extensions disappear after the grace window.
+  return (installation.connectionStatus === 'connected' || installation.connectionStatus === 'expiring_soon') && installation.requiresReconnect !== true;
+}
+
+function getBrowserDisplayName(installation: ExtensionInstallationInventoryItem): string {
+  const rawName = (installation.browserName ?? installation.browser ?? '').toLowerCase();
+  if (rawName === 'chrome') return 'Chrome';
+  if (rawName === 'edge') return 'Edge';
+  if (rawName === 'firefox') return 'Firefox';
+  if (rawName === 'unknown' || rawName === 'other' || rawName.length === 0) return 'Browser';
+  return rawName.charAt(0).toUpperCase() + rawName.slice(1);
 }
 
 function getInstallationTitle(installation: ExtensionInstallationInventoryItem): string {
   if (installation.deviceLabel) return installation.deviceLabel;
-  if (installation.browserName && installation.osName) return `${installation.browserName} extension on ${installation.osName}`;
-  return `${installation.browser} v${installation.extensionVersion}`;
+  const browserDisplay = getBrowserDisplayName(installation);
+  if (installation.osName) return `${browserDisplay} on ${installation.osName}`;
+  if (installation.platform) return `${browserDisplay} on ${installation.platform}`;
+  return `${browserDisplay} extension`;
+}
+
+function getInstallationSubtitle(installation: ExtensionInstallationInventoryItem): string {
+  const parts: string[] = [`Extension ${installation.extensionVersion}`];
+  if (installation.browserVersion) {
+    parts.push(`${getBrowserDisplayName(installation)} ${installation.browserVersion}`);
+  }
+  if (installation.osName) {
+    parts.push(`${installation.osName}${installation.osVersion ? ` ${installation.osVersion}` : ''}`);
+  }
+  return parts.join(', ');
 }
 
 export function InstallationsPageClient({ snapshot }: InstallationsPageClientProps) {
@@ -207,6 +231,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
           <span className="micro-label">{ti.devicesLabel}</span>
           <h2>{ti.noInstallations}</h2>
           <p>{ti.noInstallationsDesc}</p>
+          <p>{ti.removedExtensionsDisappear}</p>
         </section>
       ) : (
         <>
@@ -232,6 +257,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
             <span className="micro-label">{ti.devicesLabel}</span>
             <h2>{ti.managedInstallations}</h2>
             <p>{ti.devicesDesc} {ti.sessionAutoRefresh}</p>
+            <p className="list-muted">{ti.hardwareModelUnavailableNote}</p>
 
             <div className="installation-list" style={{ marginTop: '16px' }}>
               {activeItems.map((installation) => {
@@ -243,7 +269,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                     <div className="installation-row__header">
                       <div className="installation-row__device-info">
                         <span className="installation-row__browser">{getInstallationTitle(installation)}</span>
-                        <span className="installation-row__version">{(installation.browserName ?? installation.browser)} extension {installation.extensionVersion}{installation.osName ? `, ${installation.osName}${installation.osVersion ? ` ${installation.osVersion}` : ''}` : ''}</span>
+                        <span className="installation-row__version">{getInstallationSubtitle(installation)}</span>
                       </div>
                       <div className="installation-row__badges">
                         <ConnectionStatusBadge status={installation.connectionStatus} ti={ti} />
