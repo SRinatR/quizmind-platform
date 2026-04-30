@@ -3490,38 +3490,28 @@ code {
   color: var(--muted);
 }
 
-.ai-detail-cost-card {
-  margin-bottom: 12px;
-  padding: 12px;
-  border: 1px solid rgba(31, 41, 51, 0.1);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.48);
-}
-
-.ai-detail-cost-card__header {
-  display: flex;
+.ai-detail-price-chip {
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 10px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.77rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
 }
 
-.ai-detail-cost-card__amount {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: baseline;
-  font-size: 0.84rem;
-  color: var(--ink);
+.ai-detail-price-chip--charged {
+  background: rgba(34, 120, 74, 0.09);
+  color: #1a5c38;
+  border-color: rgba(34, 120, 74, 0.14);
 }
 
-.ai-detail-cost-card__amount strong {
-  font-size: 0.98rem;
-  font-weight: 700;
-}
-
-.ai-detail-cost-card__helper {
-  margin: 8px 0 0;
-  font-size: 0.78rem;
+.ai-detail-price-chip--approximate {
+  background: rgba(31, 41, 51, 0.07);
   color: var(--muted);
+  border-color: rgba(31, 41, 51, 0.1);
 }
 
 /* ── Plan badge ── */

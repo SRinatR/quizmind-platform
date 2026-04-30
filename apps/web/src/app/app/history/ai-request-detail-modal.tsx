@@ -191,16 +191,16 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
     const estimatedCost = detail.estimatedCostUsd ?? detail.providerCostUsd ?? 0;
     const hasEstimatedUsd = Number.isFinite(estimatedCost) && estimatedCost > 0;
     if (hasChargedMinor) {
-      return { label: td.chargedToBalance, value: formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB'), helper: td.finalAmountHelper };
+      return { label: td.chargedLabel, value: formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB'), billed: true };
     }
     if (hasChargedUsd) {
-      return { label: td.chargedToBalance, value: formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates), helper: td.finalAmountHelper };
+      return { label: td.chargedLabel, value: formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates), billed: true };
     }
     if (hasEstimatedUsd) {
-      return { label: td.approximateCost, value: formatUsdAmountByPreference(estimatedCost, prefs.balanceDisplayCurrency, exchangeRates), helper: td.notChargedHelper };
+      return { label: td.approximateLabel, value: formatUsdAmountByPreference(estimatedCost, prefs.balanceDisplayCurrency, exchangeRates), billed: false };
     }
     return null;
-  }, [detail, exchangeRates, prefs.balanceDisplayCurrency, td.approximateCost, td.chargedToBalance, td.finalAmountHelper, td.notChargedHelper]);
+  }, [detail, exchangeRates, prefs.balanceDisplayCurrency, td.approximateLabel, td.chargedLabel]);
 
   return (
     <>
@@ -234,20 +234,12 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                 <span className="tag-soft tag-soft--gray">{detail.requestType}</span>
                 {detail.totalTokens > 0 && <span className="tag-soft tag-soft--gray">{detail.totalTokens} {td.tokens}</span>}
                 {formattedDuration != null && <span className="tag-soft tag-soft--gray">{formattedDuration}</span>}
+                {costMeta && (
+                  <span className={costMeta.billed ? 'ai-detail-price-chip ai-detail-price-chip--charged' : 'ai-detail-price-chip ai-detail-price-chip--approximate'}>
+                    {costMeta.label} {costMeta.value}
+                  </span>
+                )}
               </div>
-
-              {costMeta && (
-                <section className="ai-detail-cost-card">
-                  <div className="ai-detail-cost-card__header">
-                    <span className="micro-label">{td.cost}</span>
-                  </div>
-                  <div className="ai-detail-cost-card__amount">
-                    <span>{costMeta.label}</span>
-                    <strong>{costMeta.value}</strong>
-                  </div>
-                  <p className="ai-detail-cost-card__helper">{costMeta.helper}</p>
-                </section>
-              )}
 
               <div style={{ fontSize: '0.82rem', opacity: 0.65, marginBottom: '20px' }}>
                 {formatUtcDateTime(detail.occurredAt)}
