@@ -1,6 +1,7 @@
 'use client';
 
 import { SUPPORTED_DISPLAY_CURRENCIES } from '../../../lib/money';
+import { SUPPORTED_LOCALES } from '../../../lib/i18n/languages';
 import { usePreferences } from '../../../lib/preferences';
 
 export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean }) {
@@ -70,33 +71,22 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
 
       <div className="pref-group">
         <div className="pref-group__header">
-          <span className="pref-group__title">{s.languageSection}</span>
-          <span className="pref-group__desc">{s.languageDesc}</span>
+          <span className="pref-group__title">{s.languageTitle}</span>
+          <span className="pref-group__desc">{s.languageDescription}</span>
         </div>
-        <div className="pref-option-row">
-          <label className={`pref-option${prefs.language === 'en' ? ' pref-option--active' : ''}`}>
-            <input
-              type="radio"
-              name="language"
-              value="en"
-              checked={prefs.language === 'en'}
-              onChange={() => setLanguage('en')}
-            />
-            <span className="pref-option__flag" aria-hidden="true">🇬🇧</span>
-            <span className="pref-option__label">{s.langEn}</span>
-          </label>
-
-          <label className={`pref-option${prefs.language === 'ru' ? ' pref-option--active' : ''}`}>
-            <input
-              type="radio"
-              name="language"
-              value="ru"
-              checked={prefs.language === 'ru'}
-              onChange={() => setLanguage('ru')}
-            />
-            <span className="pref-option__flag" aria-hidden="true">🇷🇺</span>
-            <span className="pref-option__label">{s.langRu}</span>
-          </label>
+        <div className="currency-select-wrap">
+          <label className="currency-select-label" htmlFor="languageSelect">{s.languageLabel}</label>
+          <select
+            id="languageSelect"
+            name="language"
+            className="currency-select"
+            value={prefs.language}
+            onChange={(event) => setLanguage(event.currentTarget.value as (typeof SUPPORTED_LOCALES)[number])}
+          >
+            {SUPPORTED_LOCALES.map((code) => (
+              <option key={code} value={code}>{`${code.toUpperCase()} — ${s.languageNames[code] ?? code}`}</option>
+            ))}
+          </select>
         </div>
       </div>
 

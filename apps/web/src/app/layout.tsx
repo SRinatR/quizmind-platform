@@ -28,7 +28,7 @@ const antiFoucScript = `(function(){try{
   document.documentElement.setAttribute('data-theme',resolved);
   if(p.density)document.documentElement.setAttribute('data-density',p.density);
   if(p.reducedMotion)document.documentElement.setAttribute('data-motion','reduced');
-  if(p.language)document.documentElement.setAttribute('lang',p.language==='ru'?'ru':'en');
+  if(p.language)document.documentElement.setAttribute('lang',String(p.language).toLowerCase());
 }catch(e){}})();`;
 
 export default function RootLayout({
