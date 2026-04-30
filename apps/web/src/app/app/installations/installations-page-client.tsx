@@ -67,10 +67,8 @@ function ConnectionStatusBadge({ status, ti }: { status: ExtensionConnectionStat
   return <span className="tag-soft tag-soft--orange">{ti.statusReconnectRequired}</span>;
 }
 
-function isActiveInstallation(installation: ExtensionInstallationInventoryItem): boolean {
-  // Offline means stale heartbeat. User-facing Installations hides stale extensions
-  // so removed/uninstalled extensions disappear after the grace window.
-  return (installation.connectionStatus === 'connected' || installation.connectionStatus === 'expiring_soon') && installation.requiresReconnect !== true;
+function isVisibleInstallation(installation: ExtensionInstallationInventoryItem): boolean {
+  return installation.connectionStatus !== 'reconnect_required' && installation.requiresReconnect !== true;
 }
 
 function getBrowserDisplayName(installation: ExtensionInstallationInventoryItem): string {
@@ -132,9 +130,10 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
     setLiveSnapshot(snapshot);
   }, [snapshot]);
 
-  const activeItems = liveSnapshot.items.filter(isActiveInstallation);
-  const activeSessionCount = activeItems.reduce((sum, installation) => sum + installation.activeSessionCount, 0);
-  const compatibilityWarningCount = activeItems.filter((i) => i.compatibility.status !== 'supported').length;
+  const visibleItems = liveSnapshot.items.filter(isVisibleInstallation);
+  const connectedItems = visibleItems.filter((installation) => installation.connectionStatus === 'connected' || installation.connectionStatus === 'expiring_soon');
+  const activeSessionCount = connectedItems.reduce((sum, installation) => sum + installation.activeSessionCount, 0);
+  const compatibilityWarningCount = visibleItems.filter((i) => i.compatibility.status !== 'supported').length;
   const refreshStatus = useMemo(() => {
     if (error) return 'Refresh failed';
     if (!lastUpdatedAt) return null;
@@ -226,7 +225,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
           </div>
         </div>
       </section>
-      {activeItems.length === 0 ? (
+      {visibleItems.length === 0 ? (
         <section className="empty-state">
           <span className="micro-label">{ti.devicesLabel}</span>
           <h2>{ti.noInstallations}</h2>
@@ -238,7 +237,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
           <section className="metrics-grid">
             <article className="stat-card">
               <span className="micro-label">{ti.devicesLabel}</span>
-              <p className="stat-value">{activeItems.length}</p>
+              <p className="stat-value">{visibleItems.length}</p>
               <p className="metric-copy">{ti.managedInstallations}</p>
             </article>
             <article className="stat-card">
@@ -260,7 +259,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
             <p className="list-muted">{ti.hardwareModelUnavailableNote}</p>
 
             <div className="installation-list" style={{ marginTop: '16px' }}>
-              {activeItems.map((installation) => {
+              {visibleItems.map((installation) => {
                 const cardMessage = cardMessages[installation.installationId];
                 const isDisconnecting = pendingInstallationId === installation.installationId;
 
@@ -268,8 +267,8 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                   <div className="installation-row" key={installation.installationId}>
                     <div className="installation-row__header">
                       <div className="installation-row__device-info">
-                        <span className="installation-row__browser">{getInstallationTitle(installation)}</span>
-                        <span className="installation-row__version">{getInstallationSubtitle(installation)}</span>
+                        <span className="installation-row__device-title">{getInstallationTitle(installation)}</span>
+                        <span className="installation-row__device-subtitle">{getInstallationSubtitle(installation)}</span>
                       </div>
                       <div className="installation-row__badges">
                         <ConnectionStatusBadge status={installation.connectionStatus} ti={ti} />
@@ -286,7 +285,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                       </div>
                       <div className="kv-row">
                         <span className="kv-row__key">{ti.lastSeen}</span>
-                        <span className="kv-row__value">{installation.connectionStatus === 'connected' ? ti.onlineNow : `${ti.lastSeenPrefix} ${formatRelativeTime(installation.lastSeenAt)}`}</span>
+                        <span className="kv-row__value">{installation.connectionStatus === 'connected' || installation.connectionStatus === 'expiring_soon' ? ti.onlineNow : `${ti.lastSeenPrefix} ${formatRelativeTime(installation.lastSeenAt)}`}</span>
                       </div>
                       <div className="kv-row">
                         <span className="kv-row__key">{ti.sessionValidUntil}</span>
@@ -324,7 +323,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
         </>
       )}
 
-      {activeItems.length > 0 ? (
+      {visibleItems.length > 0 ? (
         <section className="panel">
           <span className="micro-label">{ti.sessionControls}</span>
           <h2>{ti.signOutEverywhere}</h2>

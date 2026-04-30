@@ -25,6 +25,7 @@ import {
   type ExtensionInstallationBindResult,
   type ExtensionInstallationInventoryItem,
   type ExtensionInstallationInventorySnapshot,
+  type ExtensionInstallationLabelUpdateResult,
   type ExtensionInstallationRotateSessionRequest,
   type ExtensionInstallationRotateSessionResult,
   type ExtensionInstallationSessionRefreshResult,
@@ -623,6 +624,41 @@ export class ExtensionControlService {
       permissions: session.permissions,
     };
   }
+
+  async updateInstallationLabelForCurrentSession(
+    session: CurrentSessionSnapshot,
+    installationId: string,
+    deviceLabel: string | null | undefined,
+  ): Promise<ExtensionInstallationLabelUpdateResult> {
+    const accessDecision = canReadExtensionInstallations(session.principal);
+
+    if (!accessDecision.allowed) {
+      throw new ForbiddenException(accessDecision.reasons.join('; '));
+    }
+
+    const normalizedInstallationId = readRequiredString(installationId, 'installationId');
+    const trimmed = typeof deviceLabel === 'string' ? deviceLabel.trim() : null;
+
+    if (trimmed && trimmed.length > 120) {
+      throw new BadRequestException('deviceLabel must be at most 120 characters.');
+    }
+
+    const updated = await this.extensionInstallationRepository.updateDeviceLabelForUser(
+      session.user.id,
+      normalizedInstallationId,
+      trimmed && trimmed.length > 0 ? trimmed : null,
+    );
+
+    if (!updated) {
+      throw new NotFoundException('Extension installation not found.');
+    }
+
+    return {
+      installationId: updated.installationId,
+      deviceLabel: updated.deviceLabel ?? null,
+    };
+  }
+
 
   async disconnectInstallationForCurrentSession(
     session: CurrentSessionSnapshot,
