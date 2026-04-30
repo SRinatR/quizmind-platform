@@ -10,15 +10,15 @@ fi
 
 read_env_value() {
   local key="$1"
-  node -e '
+  node - "${ENV_FILE}" "$key" <<'NODE'
     const fs = require("node:fs");
-    const path = process.argv[1];
-    const key = process.argv[2];
+    const path = process.argv[2];
+    const key = process.argv[3];
     const text = fs.readFileSync(path, "utf8");
 
     function unquote(value) {
       const trimmed = value.trim();
-      if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("\'") && trimmed.endsWith("\'"))) {
+      if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
         const inner = trimmed.slice(1, -1);
         if (trimmed.startsWith("\"")) {
           return inner
@@ -46,7 +46,7 @@ read_env_value() {
       process.exit(0);
     }
     process.exit(1);
-  ' "${ENV_FILE}" "$key"
+NODE
 }
 
 DB_USER="$(read_env_value POSTGRES_USER || true)"
@@ -57,21 +57,29 @@ if [[ -z "${DB_USER}" || -z "${DB_PASS}" ]]; then
   exit 1
 fi
 
+if [[ ! "${DB_USER}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+  echo "ERROR: POSTGRES_USER must match ^[A-Za-z_][A-Za-z0-9_]*$: ${DB_USER}" >&2
+  exit 1
+fi
+
 if ! docker ps --format '{{.Names}}' | grep -Fxq quizmind-postgres; then
   echo "ERROR: quizmind-postgres container is not running." >&2
+  exit 1
+fi
+
+ROLE_EXISTS="$(
+  docker exec -u postgres -i quizmind-postgres psql -d postgres -tAc \
+    "SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER';"
+)"
+
+if [[ "${ROLE_EXISTS//[[:space:]]/}" != "1" ]]; then
+  echo "ERROR: Postgres role does not exist: ${DB_USER}" >&2
   exit 1
 fi
 
 docker exec -u postgres -i quizmind-postgres psql -d postgres \
   -v "user=${DB_USER}" \
   -v "pass=${DB_PASS}" <<'SQL' >/dev/null
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'user') THEN
-    RAISE EXCEPTION 'Postgres role "%" does not exist', :'user';
-  END IF;
-END
-$$;
 ALTER ROLE :"user" WITH PASSWORD :'pass';
 SQL
 
