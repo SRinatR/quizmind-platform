@@ -61,3 +61,20 @@ test('sync script does not echo POSTGRES_PASSWORD variable name or raw password'
   assert.equal(syncScript.includes('echo "${DB_PASS}"'), false);
   assert.equal(syncScript.includes('POSTGRES_PASSWORD='), false);
 });
+
+test('sync script is bash syntax-valid', () => {
+  const result = spawnSync('bash', ['-n', 'scripts/sync-postgres-role-password.sh'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test('sync script avoids DO $$ and uses ALTER ROLE variable heredoc', () => {
+  assert.equal(syncScript.includes('DO $$'), false);
+  assert.ok(syncScript.includes("ALTER ROLE :\"user\" WITH PASSWORD :'pass';"));
+});
+
+test('prod compose escapes shell dollars in api/worker restart wrappers', () => {
+  assert.ok(prodCompose.includes('code=$$?'));
+  assert.ok(prodCompose.includes('$$code'));
+  assert.equal(/code=\$(?!\$)\?/.test(prodCompose), false);
+  assert.equal(/(^|[^$])\$code\b/.test(prodCompose), false);
+});

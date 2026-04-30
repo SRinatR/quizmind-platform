@@ -41,7 +41,7 @@ services:
       [
         "sh",
         "-lc",
-        'corepack pnpm --filter @quizmind/api start || { code=$?; echo "api exited with $code; sleeping before Docker restart"; sleep 30; exit $code; }'
+        'corepack pnpm --filter @quizmind/api start || { code=$$?; echo "api exited with $$code; sleeping before Docker restart"; sleep 30; exit $$code; }'
       ]
     environment:
       NODE_ENV: production
@@ -121,7 +121,7 @@ services:
       [
         "sh",
         "-lc",
-        'corepack pnpm --filter @quizmind/worker start || { code=$?; echo "worker exited with $code; sleeping before Docker restart"; sleep 30; exit $code; }'
+        'corepack pnpm --filter @quizmind/worker start || { code=$$?; echo "worker exited with $$code; sleeping before Docker restart"; sleep 30; exit $$code; }'
       ]
     environment:
       NODE_ENV: production
