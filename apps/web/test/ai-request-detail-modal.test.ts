@@ -3,12 +3,15 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { formatHistoryDuration } from '../src/app/app/history/history-duration';
 
-test('history detail modal renders charged/estimated cost badge with explicit conditions', async () => {
+test('history detail modal renders billing card and keeps charge out of header tag row', async () => {
   const source = await readFile(new URL('../src/app/app/history/ai-request-detail-modal.tsx', import.meta.url), 'utf8');
-  assert.match(source, /hasChargedMinor/);
-  assert.match(source, /hasChargedUsd/);
-  assert.match(source, /hasEstimatedUsd/);
-  assert.match(source, /td\.chargedLabel/);
+  assert.match(source, /ai-detail-billing-card/);
+  assert.match(source, /td\.billing/);
+  assert.match(source, /td\.providerCost/);
+  assert.match(source, /td\.platformFee/);
+  assert.match(source, /td\.finalCharge/);
+  assert.match(source, /td\.estimatedTotal/);
+  assert.doesNotMatch(source, /tag-soft tag-soft--gray\">\{td\.chargedLabel/);
 });
 
 test('formats durationMs as compact seconds for AI history', () => {

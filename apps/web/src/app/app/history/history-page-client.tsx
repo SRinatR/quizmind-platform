@@ -55,19 +55,19 @@ function toAttachmentViewUrl(itemId: string, attachmentId: string): string {
   return `/bff/history/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/view`;
 }
 
-function formatHistoryPriceLabel(item: AiHistoryListResponse['items'][number], language: 'en' | 'ru', displayCurrency: 'RUB' | 'USD' | 'EUR', exchangeRates: ExchangeRateSnapshot | null, chargedLabel: string, estimatedLabel: string): string | null {
+function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], language: 'en' | 'ru', displayCurrency: 'RUB' | 'USD' | 'EUR', exchangeRates: ExchangeRateSnapshot | null, chargedLabel: string, estimatedLabel: string): { label: string; value: string; billed: boolean } | null {
   const hasChargedMinor = item.chargedCurrency === 'RUB' && Number.isFinite(item.chargedAmountMinor) && (item.chargedAmountMinor ?? 0) > 0;
   const hasChargedUsd = Number.isFinite(item.chargedCostUsd) && (item.chargedCostUsd ?? 0) > 0;
   const estimated = item.estimatedCostUsd ?? item.providerCostUsd ?? 0;
   const hasEstimatedUsd = Number.isFinite(estimated) && estimated > 0;
   if (hasChargedMinor) {
-    return `${chargedLabel}: ${formatMinorCurrencyAmount(item.chargedAmountMinor!, 'RUB')}`;
+    return { label: chargedLabel, value: formatMinorCurrencyAmount(item.chargedAmountMinor!, 'RUB'), billed: true };
   }
   if (hasChargedUsd) {
-    return `${chargedLabel}: ${formatUsdAmountByPreference(item.chargedCostUsd!, displayCurrency, exchangeRates)}`;
+    return { label: chargedLabel, value: formatUsdAmountByPreference(item.chargedCostUsd!, displayCurrency, exchangeRates), billed: true };
   }
   if (hasEstimatedUsd) {
-    return `${estimatedLabel}: ${formatUsdAmountByPreference(estimated, displayCurrency, exchangeRates)}`;
+    return { label: estimatedLabel, value: formatUsdAmountByPreference(estimated, displayCurrency, exchangeRates), billed: false };
   }
   return null;
 }
@@ -260,7 +260,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
               });
               const imageAttachments = listImageAttachments(item);
               const hasUnavailableImage = hasUnavailablePromptImage(item);
-              const priceLabel = formatHistoryPriceLabel(item, prefs.language, prefs.balanceDisplayCurrency, exchangeRates, th.chargedLabel, th.estimatedLabel);
+              const priceMeta = getHistoryPriceMeta(item, prefs.language, prefs.balanceDisplayCurrency, exchangeRates, th.chargedLabel, th.estimatedLabel);
 
               return (
                 <div
@@ -274,8 +274,15 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
               >
                 <span className={requestTypeDot(item.requestType)} />
                 <div className="event-row__body">
-                  <span className="event-row__type">{getReadableModelName(item.model)}</span>
-                  {priceLabel ? <span className="tag-soft tag-soft--gray">{priceLabel}</span> : null}
+                  <div className="event-row__heading">
+                    <span className="event-row__type">{getReadableModelName(item.model)}</span>
+                    {priceMeta ? (
+                      <span className={priceMeta.billed ? 'history-price-pill history-price-pill--charged' : 'history-price-pill history-price-pill--estimated'}>
+                        <span className="history-price-pill__label">{priceMeta.label}</span>
+                        <span className="history-price-pill__value">{priceMeta.value}</span>
+                      </span>
+                    ) : null}
+                  </div>
                   {summaryText ? (
                     <p className="event-row__summary" style={{ fontSize: '0.9rem', opacity: 0.86 }}>
                       {summaryText}

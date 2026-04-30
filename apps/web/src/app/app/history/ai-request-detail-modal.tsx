@@ -184,6 +184,29 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
   const finalAnswer = detail ? extractFinalAnswer(detail.responseContentJson) : '';
   const displayResponse = finalAnswer || rawResponseText;
   const formattedDuration = formatHistoryDuration(detail?.durationMs);
+  const billingMeta = useMemo(() => {
+    if (!detail) return null;
+    const hasChargedMinor = detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0;
+    const hasChargedUsd = Number.isFinite(detail.chargedCostUsd) && (detail.chargedCostUsd ?? 0) > 0;
+    const estimatedCost = detail.estimatedCostUsd ?? detail.providerCostUsd ?? 0;
+    const hasEstimatedUsd = Number.isFinite(estimatedCost) && estimatedCost > 0;
+    const headerPill = hasChargedMinor
+      ? { label: td.chargedLabel, value: formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB'), billed: true }
+      : hasChargedUsd
+        ? { label: td.chargedLabel, value: formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates), billed: true }
+        : hasEstimatedUsd
+          ? { label: t.historyPage.estimatedLabel, value: formatUsdAmountByPreference(estimatedCost, prefs.balanceDisplayCurrency, exchangeRates), billed: false }
+          : null;
+    const hasBillingRows = Number.isFinite(detail.providerCostUsd) || Number.isFinite(detail.platformFeeUsd) || headerPill !== null;
+    if (!hasBillingRows) return null;
+    return {
+      headerPill,
+      providerCost: Number.isFinite(detail.providerCostUsd) ? formatUsdAmountByPreference(detail.providerCostUsd ?? 0, 'USD', exchangeRates) : null,
+      platformFee: Number.isFinite(detail.platformFeeUsd) ? formatUsdAmountByPreference(detail.platformFeeUsd ?? 0, 'USD', exchangeRates) : null,
+      totalLabel: headerPill?.billed ? td.finalCharge : td.estimatedTotal,
+      totalValue: headerPill?.value ?? null,
+    };
+  }, [detail, exchangeRates, prefs.balanceDisplayCurrency, t.historyPage.estimatedLabel, td.chargedLabel, td.estimatedTotal, td.finalCharge]);
 
   return (
     <>
@@ -216,33 +239,26 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                 <span className={statusBadgeClass(detail.status)}>{detail.status}</span>
                 <span className="tag-soft tag-soft--gray">{detail.requestType}</span>
                 {detail.totalTokens > 0 && <span className="tag-soft tag-soft--gray">{detail.totalTokens} {td.tokens}</span>}
-                {(() => {
-                  const hasChargedMinor = detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0;
-                  const hasChargedUsd = Number.isFinite(detail.chargedCostUsd) && (detail.chargedCostUsd ?? 0) > 0;
-                  const hasEstimatedUsd = Number.isFinite(detail.estimatedCostUsd) && (detail.estimatedCostUsd ?? 0) > 0;
-                  if (hasChargedMinor) {
-                    return <span className="tag-soft tag-soft--gray">{td.chargedLabel}: {formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB')}</span>;
-                  }
-                  if (hasChargedUsd) {
-                    return <span className="tag-soft tag-soft--gray">{td.chargedLabel}: {formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates)}</span>;
-                  }
-                  if (hasEstimatedUsd) {
-                    return <span className="tag-soft tag-soft--gray">{t.historyPage.estimatedLabel}: {formatUsdAmountByPreference(detail.estimatedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates)}</span>;
-                  }
-                  return null;
-                })()}
                 {formattedDuration != null && <span className="tag-soft tag-soft--gray">{formattedDuration}</span>}
               </div>
 
-
-              {(Number.isFinite(detail.providerCostUsd) || Number.isFinite(detail.platformFeeUsd) || (detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0)) && (
-                <div style={{ fontSize: '0.8rem', opacity: 0.75, marginBottom: '12px' }}>
-                  {Number.isFinite(detail.providerCostUsd) ? <div>{td.providerCost}: {formatUsdAmountByPreference(detail.providerCostUsd ?? 0, 'USD', exchangeRates)}</div> : null}
-                  {Number.isFinite(detail.platformFeeUsd) ? <div>{td.platformFee}: {formatUsdAmountByPreference(detail.platformFeeUsd ?? 0, 'USD', exchangeRates)}</div> : null}
-                  {(detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0)
-                    ? <div>{td.finalCharge}: {formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB')}</div>
-                    : null}
-                </div>
+              {billingMeta && (
+                <section className="ai-detail-billing-card">
+                  <div className="ai-detail-billing-card__header">
+                    <span className="micro-label">{td.billing}</span>
+                    {billingMeta.headerPill ? (
+                      <span className={billingMeta.headerPill.billed ? 'history-price-pill history-price-pill--charged' : 'history-price-pill history-price-pill--estimated'}>
+                        <span className="history-price-pill__label">{billingMeta.headerPill.label}</span>
+                        <span className="history-price-pill__value">{billingMeta.headerPill.value}</span>
+                      </span>
+                    ) : null}
+                  </div>
+                  <dl className="ai-detail-billing-grid">
+                    {billingMeta.providerCost ? <div><dt>{td.providerCost}</dt><dd>{billingMeta.providerCost}</dd></div> : null}
+                    {billingMeta.platformFee ? <div><dt>{td.platformFee}</dt><dd>{billingMeta.platformFee}</dd></div> : null}
+                    {billingMeta.totalValue ? <div className="ai-detail-billing-grid__total"><dt>{billingMeta.totalLabel}</dt><dd>{billingMeta.totalValue}</dd></div> : null}
+                  </dl>
+                </section>
               )}
 
               <div style={{ fontSize: '0.82rem', opacity: 0.65, marginBottom: '20px' }}>
