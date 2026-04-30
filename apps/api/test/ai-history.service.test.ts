@@ -1200,3 +1200,36 @@ test('AiHistoryService.listHistory falls back to estimatedCostUsd when chargedCo
   assert.equal(result.items[0]?.chargedCostUsd, null);
   assert.equal(result.items[0]?.estimatedCostUsd, 0.003);
 });
+
+
+test('AiHistoryService list/detail expose charged and pricing fields from events', async () => {
+  const eventRecord: any = {
+    id: 'evt_1', provider: 'routerai', model: 'openai/gpt-5.3-chat', keySource: 'platform', status: 'success', errorCode: null,
+    promptTokens: 1, completionTokens: 1, totalTokens: 2, durationMs: 10, requestType: 'text', estimatedCostUsd: 0.003,
+    providerCostUsd: 0.002336, platformFeeUsd: 0.000584, chargedCostUsd: 0.00292, chargedCurrency: 'RUB', chargedAmountMinor: 27,
+    pricingSource: 'policy', walletLedgerEntryId: 'ledger_1', promptExcerpt: null, responseExcerpt: null, occurredAt: new Date('2026-04-30T00:00:00.000Z'),
+    content: null, attachments: [], userId: 'user_1', installationId: null,
+  };
+  const { service } = createService({
+    repository: {
+      listEventsForUser: async () => [eventRecord],
+      countEventsForUser: async () => 1,
+      getEventDetailForUser: async () => eventRecord,
+    },
+  });
+  const list = await service.listHistory('user_1', { limit: 10, offset: 0 });
+  assert.equal(list.items[0]?.chargedCurrency, 'RUB');
+  assert.equal(list.items[0]?.chargedAmountMinor, 27);
+  assert.equal(list.items[0]?.providerCostUsd, 0.002336);
+  assert.equal(list.items[0]?.platformFeeUsd, 0.000584);
+  assert.equal(list.items[0]?.chargedCostUsd, 0.00292);
+  assert.equal(list.items[0]?.walletLedgerEntryId, 'ledger_1');
+  assert.equal(list.items[0]?.pricingSource, 'policy');
+
+  const detail = await service.getDetail('evt_1', 'user_1');
+  assert.equal(detail?.chargedCurrency, 'RUB');
+  assert.equal(detail?.chargedAmountMinor, 27);
+  assert.equal(detail?.providerCostUsd, 0.002336);
+  assert.equal(detail?.platformFeeUsd, 0.000584);
+  assert.equal(detail?.chargedCostUsd, 0.00292);
+});

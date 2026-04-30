@@ -1869,7 +1869,11 @@ export interface AiHistoryListItem {
   totalTokens: number;
   durationMs?: number | null;
   estimatedCostUsd: number;
+  providerCostUsd?: number | null;
+  platformFeeUsd?: number | null;
   chargedCostUsd?: number | null;
+  walletLedgerEntryId?: string | null;
+  pricingSource?: string | null;
   chargedCurrency?: string | null;
   chargedAmountMinor?: number | null;
   /** Full serialized prompt messages used for timeline preview (without inlined attachment bytes). */

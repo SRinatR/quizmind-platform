@@ -91,6 +91,18 @@ export function formatUsdAmountByPreference(
   return formatDisplayCurrencyAmount(converted, currency);
 }
 
+export function formatMinorCurrencyAmount(minorUnits: number, currency: SupportedCurrency = 'RUB'): string {
+  const major = minorUnits / 100;
+  if (!Number.isFinite(major)) return formatDisplayCurrencyAmount(0, currency);
+  const isWhole = Math.abs(minorUnits) % 100 === 0;
+  return new Intl.NumberFormat(currencyLocale(currency), {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: isWhole ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(major);
+}
+
 export function formatBalanceFromKopecks(
   kopecks: number,
   currency: SupportedCurrency = 'RUB',
@@ -103,12 +115,7 @@ export function formatBalanceFromKopecks(
   }
 
   if (currency === 'RUB') {
-    return new Intl.NumberFormat(currencyLocale('RUB'), {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(rub);
+    return formatMinorCurrencyAmount(kopecks, 'RUB');
   }
 
   if (!rates || !Number.isFinite(rates[currency]) || rates[currency] <= 0) {
