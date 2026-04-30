@@ -70,9 +70,10 @@ Management* below for the fix procedure.
 - `git fetch origin && git reset --hard origin/main` — deploys the exact commit
 - Builds images with `docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml build`
 - Starts postgres and redis; waits for each to be healthy
+- **Self-heal DB credentials**: runs `scripts/sync-postgres-role-password.sh .env.prod` to reconcile the persisted Postgres role password with `.env.prod` before any migration/runtime auth attempts
 - **DB auth preflight**: runs a `pg.Client` probe (Node.js `require('pg')`) inside the built `api` image using `DATABASE_URL` exactly as provided in `.env.prod` — no bash URL parsing. Exits non-zero immediately if authentication fails, before migrations or service startup
-- Runs Prisma migrations (exits non-zero if migrations fail)
-- Starts api, worker, and web
+- Runs Prisma migrations (exits non-zero if migrations fail). `deploy-server.sh` is the single migration owner in production
+- Starts api, worker, and web (runtime containers no longer run Prisma migrations on boot)
 - **Waits for api and web containers to report healthy** (up to 3 minutes each; exits non-zero on timeout)
 - **Post-deploy smoke checks**: HTTP GET on `api /health`, `api /ready`, and `web :3000` from localhost — exits non-zero and marks deploy failed if any check fails. No silent broken deploys.
 - Prunes dangling images with `docker image prune -f`
@@ -157,26 +158,17 @@ by Postgres during **initial volume initialisation**. If the data volume already
 changing this variable does **not** update the stored role password — the deploy will
 fail the auth preflight check.
 
-### If credentials have already drifted
+### Credential drift behavior and automatic repair
 
-The deploy script validates `.env.prod` for required vars, then runs a
-fail-fast auth preflight using `pg.Client` (Node.js) with the exact
-`DATABASE_URL` string from `.env.prod` — no bash URL parsing.
-If it fails with `ERROR: DB authentication preflight FAILED`, choose one:
+Root cause of recurring `28P01` storms: `POSTGRES_PASSWORD` is only consumed during first volume initialization. Updating `.env.prod` later does not rewrite the persisted Postgres role password. If `.env.prod` and stored role password drift, every service using `DATABASE_URL` will continuously fail authentication.
 
-**Option A — update the Postgres role to match `.env.prod`:**
+Deploy now auto-heals this drift before preflight/migrations/startup:
+
 ```bash
-# Connect using the password that the volume was originally initialised with:
-docker exec -it quizmind-postgres psql -U <current_user>
-ALTER USER <user> WITH PASSWORD '<new_password_from_env_prod>';
-\q
+bash scripts/sync-postgres-role-password.sh .env.prod
 ```
 
-**Option B — update `.env.prod` to match the stored password:**
-Edit `/opt/quizmind-platform/.env.prod` and set `POSTGRES_PASSWORD` and `DATABASE_URL`
-to reflect the password that was used when the volume was first created.
-
-After either fix, re-run the deploy script.
+The script connects as OS `postgres` user inside `quizmind-postgres`, verifies the role exists, and runs `ALTER ROLE` with the password from `.env.prod` without printing secrets. It is idempotent and safe on every deploy.
 
 ---
 
@@ -307,3 +299,20 @@ Then restart Docker: `systemctl restart docker`
 **Important:** daemon-level `registry-mirrors` only redirect Docker Hub pulls (`docker.io`).
 They do **not** affect `gcr.io` images such as cAdvisor.
 Explicit image variables (above) are the recommended approach as they are more predictable and don't require daemon changes.
+
+
+## Observability DSN requirements
+
+If you run `docker-compose.observability.yml`, set `POSTGRES_EXPORTER_DSN` so it matches `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` (and host `postgres`). `scripts/check-prod-env.mjs` validates this when the DSN is present, and warns (without failing app deploy) when it is missing.
+
+`postgres-exporter` now fails fast when DSN is absent:
+
+```yaml
+DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN:?POSTGRES_EXPORTER_DSN is required for postgres-exporter}"
+```
+
+After changing exporter DSN, recreate exporter:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.observability.yml up -d --force-recreate postgres-exporter
+```

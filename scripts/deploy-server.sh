@@ -88,6 +88,9 @@ echo "==> Resolving postgres container IP"
 PG_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' \
   "$($DC ps -q postgres)")"
 
+echo "==> Syncing Postgres role password from ${ENV_FILE}"
+bash scripts/sync-postgres-role-password.sh "${ENV_FILE}"
+
 echo "==> Preflight: verifying DB credentials against running Postgres"
 # Uses pg.Client (require('pg'), available via shamefully-hoist=true) inside the
 # built api image.  DATABASE_URL is passed as-is from .env.prod — no bash URL
