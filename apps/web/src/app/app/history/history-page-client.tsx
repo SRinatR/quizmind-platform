@@ -55,7 +55,7 @@ function toAttachmentViewUrl(itemId: string, attachmentId: string): string {
   return `/bff/history/${encodeURIComponent(itemId)}/attachments/${encodeURIComponent(attachmentId)}/view`;
 }
 
-function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], language: 'en' | 'ru', displayCurrency: 'RUB' | 'USD' | 'EUR', exchangeRates: ExchangeRateSnapshot | null, chargedLabel: string, estimatedLabel: string): { label: string; value: string; billed: boolean } | null {
+function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], language: 'en' | 'ru', displayCurrency: 'RUB' | 'USD' | 'EUR', exchangeRates: ExchangeRateSnapshot | null, chargedLabel: string, approximateLabel: string): { label: string; value: string; billed: boolean } | null {
   const hasChargedMinor = item.chargedCurrency === 'RUB' && Number.isFinite(item.chargedAmountMinor) && (item.chargedAmountMinor ?? 0) > 0;
   const hasChargedUsd = Number.isFinite(item.chargedCostUsd) && (item.chargedCostUsd ?? 0) > 0;
   const estimated = item.estimatedCostUsd ?? item.providerCostUsd ?? 0;
@@ -67,7 +67,7 @@ function getHistoryPriceMeta(item: AiHistoryListResponse['items'][number], langu
     return { label: chargedLabel, value: formatUsdAmountByPreference(item.chargedCostUsd!, displayCurrency, exchangeRates), billed: true };
   }
   if (hasEstimatedUsd) {
-    return { label: estimatedLabel, value: formatUsdAmountByPreference(estimated, displayCurrency, exchangeRates), billed: false };
+    return { label: approximateLabel, value: formatUsdAmountByPreference(estimated, displayCurrency, exchangeRates), billed: false };
   }
   return null;
 }
@@ -260,7 +260,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
               });
               const imageAttachments = listImageAttachments(item);
               const hasUnavailableImage = hasUnavailablePromptImage(item);
-              const priceMeta = getHistoryPriceMeta(item, prefs.language, prefs.balanceDisplayCurrency, exchangeRates, th.chargedLabel, th.estimatedLabel);
+              const priceMeta = getHistoryPriceMeta(item, prefs.language, prefs.balanceDisplayCurrency, exchangeRates, th.chargedLabel, th.approximateLabel);
 
               return (
                 <div
