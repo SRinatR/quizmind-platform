@@ -184,29 +184,23 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
   const finalAnswer = detail ? extractFinalAnswer(detail.responseContentJson) : '';
   const displayResponse = finalAnswer || rawResponseText;
   const formattedDuration = formatHistoryDuration(detail?.durationMs);
-  const billingMeta = useMemo(() => {
+  const costMeta = useMemo(() => {
     if (!detail) return null;
     const hasChargedMinor = detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0;
     const hasChargedUsd = Number.isFinite(detail.chargedCostUsd) && (detail.chargedCostUsd ?? 0) > 0;
     const estimatedCost = detail.estimatedCostUsd ?? detail.providerCostUsd ?? 0;
     const hasEstimatedUsd = Number.isFinite(estimatedCost) && estimatedCost > 0;
-    const headerPill = hasChargedMinor
-      ? { label: td.chargedLabel, value: formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB'), billed: true }
-      : hasChargedUsd
-        ? { label: td.chargedLabel, value: formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates), billed: true }
-        : hasEstimatedUsd
-          ? { label: t.historyPage.estimatedLabel, value: formatUsdAmountByPreference(estimatedCost, prefs.balanceDisplayCurrency, exchangeRates), billed: false }
-          : null;
-    const hasBillingRows = Number.isFinite(detail.providerCostUsd) || Number.isFinite(detail.platformFeeUsd) || headerPill !== null;
-    if (!hasBillingRows) return null;
-    return {
-      headerPill,
-      providerCost: Number.isFinite(detail.providerCostUsd) ? formatUsdAmountByPreference(detail.providerCostUsd ?? 0, 'USD', exchangeRates) : null,
-      platformFee: Number.isFinite(detail.platformFeeUsd) ? formatUsdAmountByPreference(detail.platformFeeUsd ?? 0, 'USD', exchangeRates) : null,
-      totalLabel: headerPill?.billed ? td.finalCharge : td.estimatedTotal,
-      totalValue: headerPill?.value ?? null,
-    };
-  }, [detail, exchangeRates, prefs.balanceDisplayCurrency, t.historyPage.estimatedLabel, td.chargedLabel, td.estimatedTotal, td.finalCharge]);
+    if (hasChargedMinor) {
+      return { label: td.chargedToBalance, value: formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB'), helper: td.finalAmountHelper };
+    }
+    if (hasChargedUsd) {
+      return { label: td.chargedToBalance, value: formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates), helper: td.finalAmountHelper };
+    }
+    if (hasEstimatedUsd) {
+      return { label: td.approximateCost, value: formatUsdAmountByPreference(estimatedCost, prefs.balanceDisplayCurrency, exchangeRates), helper: td.notChargedHelper };
+    }
+    return null;
+  }, [detail, exchangeRates, prefs.balanceDisplayCurrency, td.approximateCost, td.chargedToBalance, td.finalAmountHelper, td.notChargedHelper]);
 
   return (
     <>
@@ -242,22 +236,16 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                 {formattedDuration != null && <span className="tag-soft tag-soft--gray">{formattedDuration}</span>}
               </div>
 
-              {billingMeta && (
-                <section className="ai-detail-billing-card">
-                  <div className="ai-detail-billing-card__header">
-                    <span className="micro-label">{td.billing}</span>
-                    {billingMeta.headerPill ? (
-                      <span className={billingMeta.headerPill.billed ? 'history-price-pill history-price-pill--charged' : 'history-price-pill history-price-pill--estimated'}>
-                        <span className="history-price-pill__label">{billingMeta.headerPill.label}</span>
-                        <span className="history-price-pill__value">{billingMeta.headerPill.value}</span>
-                      </span>
-                    ) : null}
+              {costMeta && (
+                <section className="ai-detail-cost-card">
+                  <div className="ai-detail-cost-card__header">
+                    <span className="micro-label">{td.cost}</span>
                   </div>
-                  <dl className="ai-detail-billing-grid">
-                    {billingMeta.providerCost ? <div><dt>{td.providerCost}</dt><dd>{billingMeta.providerCost}</dd></div> : null}
-                    {billingMeta.platformFee ? <div><dt>{td.platformFee}</dt><dd>{billingMeta.platformFee}</dd></div> : null}
-                    {billingMeta.totalValue ? <div className="ai-detail-billing-grid__total"><dt>{billingMeta.totalLabel}</dt><dd>{billingMeta.totalValue}</dd></div> : null}
-                  </dl>
+                  <div className="ai-detail-cost-card__amount">
+                    <span>{costMeta.label}</span>
+                    <strong>{costMeta.value}</strong>
+                  </div>
+                  <p className="ai-detail-cost-card__helper">{costMeta.helper}</p>
                 </section>
               )}
 

@@ -3490,7 +3490,7 @@ code {
   color: var(--muted);
 }
 
-.ai-detail-billing-card {
+.ai-detail-cost-card {
   margin-bottom: 12px;
   padding: 12px;
   border: 1px solid rgba(31, 41, 51, 0.1);
@@ -3498,41 +3498,30 @@ code {
   background: rgba(255, 255, 255, 0.48);
 }
 
-.ai-detail-billing-card__header {
+.ai-detail-cost-card__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-.ai-detail-billing-grid {
-  margin: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.ai-detail-billing-grid div {
+.ai-detail-cost-card__amount {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.ai-detail-billing-grid dt,
-.ai-detail-billing-grid dd {
-  margin: 0;
-}
-
-.ai-detail-billing-grid dd {
-  font-weight: 700;
+  align-items: baseline;
+  font-size: 0.84rem;
   color: var(--ink);
 }
 
-.ai-detail-billing-grid__total {
-  padding-top: 4px;
-  border-top: 1px solid rgba(31, 41, 51, 0.1);
+.ai-detail-cost-card__amount strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.ai-detail-cost-card__helper {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 /* ── Plan badge ── */
