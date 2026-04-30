@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../src/app/app/installations/installations-page-client.tsx', import.meta.url), 'utf8');
 const ruSource = readFileSync(new URL('../src/lib/i18n/ru.ts', import.meta.url), 'utf8');
+const cssSource = readFileSync(new URL('../src/app/globals.css', import.meta.url), 'utf8');
 
 test('installations page keeps offline installations visible while hiding reconnect_required', () => {
   assert.match(source, /connectionStatus !== 'reconnect_required'/);
@@ -14,6 +15,20 @@ test('installations page renders title and subtitle on separate elements', () =>
   assert.match(source, /installation-row__device-title/);
   assert.match(source, /installation-row__device-subtitle/);
   assert.doesNotMatch(source, /installation-row__browser\}\<\/span>\s*<span className="installation-row__version"/);
+});
+
+
+test('installations layout uses stacked title/subtitle and keeps badge visible', () => {
+  assert.match(source, /installation-row__device-info/);
+  assert.match(source, /installation-row__device-title/);
+  assert.match(source, /installation-row__device-subtitle/);
+  assert.match(cssSource, /\.installation-row__device-info\s*\{[\s\S]*flex-direction:\s*column/);
+  assert.match(cssSource, /\.installation-row__device-info\s*\{[\s\S]*min-width:\s*0/);
+  assert.match(cssSource, /\.installation-row__badges\s*\{[\s\S]*flex-shrink:\s*0/);
+});
+
+test('installations title/subtitle are not concatenated into a single fallback string', () => {
+  assert.doesNotMatch(source, /installation-row__device-title[^\n]*Extension\s*\$\{/);
 });
 
 test('russian dictionary includes rename copy', () => {

@@ -2993,7 +2993,28 @@ code {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  flex-wrap: wrap;
+}
+
+.installation-row__device-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.installation-row__device-title {
+  display: block;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.installation-row__device-subtitle {
+  display: block;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .installation-row__id {
@@ -3008,6 +3029,7 @@ code {
   flex-wrap: wrap;
   gap: 5px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .installation-row__detail {
