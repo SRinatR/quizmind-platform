@@ -79,7 +79,9 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
 
 const maxEnvironmentLength = 64;
 const environmentTokenPattern = /^[A-Za-z0-9._-]+$/;
-const extensionOnlineGraceMs = 10 * 60 * 1000;
+// Presence heartbeat grace window: bootstrap/usage heartbeats are periodic and may be delayed by tab sleep/network jitter.
+// Use 30 minutes to reduce false "offline" while still surfacing truly stale installs after uninstall/inactivity.
+const extensionOnlineGraceMs = 30 * 60 * 1000;
 
 const supportedHandshakeBrowsers: CompatibilityHandshake['browser'][] = [
   'chrome',
