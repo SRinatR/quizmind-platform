@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 const css = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8');
 const usageTsx = readFileSync(join(process.cwd(), 'src/app/app/usage/usage-page-client.tsx'), 'utf8');
 const historyModalTsx = readFileSync(join(process.cwd(), 'src/app/app/history/ai-request-detail-modal.tsx'), 'utf8');
+const historyPageTsx = readFileSync(join(process.cwd(), 'src/app/app/history/history-page-client.tsx'), 'utf8');
 
 describe('dark theme style coverage', () => {
   it('defines dark mode and semantic tokens', () => {
@@ -42,5 +43,12 @@ describe('dark theme style coverage', () => {
     expect(historyModalTsx).toContain('var(--code-bg)');
     expect(historyModalTsx).toContain('var(--code-ink)');
     expect(historyModalTsx).not.toContain('#f4f4f5');
+    expect(historyPageTsx).not.toContain('#ddd');
+    expect(historyPageTsx).not.toContain('#f4f4f5');
+    expect(historyPageTsx).not.toContain('var(--color-border, #ddd)');
+    expect(historyPageTsx).not.toContain('var(--color-surface-alt, #f4f4f5)');
+    expect(historyPageTsx).toContain("border: '1px solid var(--line)'");
+    expect(historyPageTsx).toContain("background: 'var(--surface-muted)'");
+
   });
 });
