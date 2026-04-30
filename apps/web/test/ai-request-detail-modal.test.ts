@@ -56,3 +56,10 @@ test('history detail modal no longer renders raw ms duration badge', async () =>
   assert.doesNotMatch(source, /durationMs\}\s*ms/);
   assert.match(source, /formattedDuration != null/);
 });
+
+
+test('history detail modal charged chip uses display currency formatter', async () => {
+  const source = await readFile(new URL('../src/app/app/history/ai-request-detail-modal.tsx', import.meta.url), 'utf8');
+  assert.match(source, /formatDisplayMoneyFromRubMinor/);
+  assert.doesNotMatch(source, /formatMinorCurrencyAmount\(detail\.chargedAmountMinor!, 'RUB'\)/);
+});

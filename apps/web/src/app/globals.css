@@ -4412,6 +4412,34 @@ code {
   white-space: nowrap;
 }
 
+
+.currency-select-wrap {
+  display: grid;
+  gap: 8px;
+  max-width: 360px;
+}
+
+.currency-select-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.currency-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border, rgba(0,0,0,.12));
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.currency-select:focus {
+  outline: none;
+  border-color: var(--accent, #c8965a);
+  box-shadow: 0 0 0 3px rgba(200,150,90,.15);
+}
+
 /* Toggle (checkbox styled as pill switch) */
 .pref-toggle {
   display: flex;

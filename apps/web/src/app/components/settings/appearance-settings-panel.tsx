@@ -105,22 +105,19 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
           <span className="pref-group__title">{s.currencySection}</span>
           <span className="pref-group__desc">{s.currencyDesc}</span>
         </div>
-        <div className="pref-option-row" style={{ flexWrap: 'wrap' }}>
-          {SUPPORTED_DISPLAY_CURRENCIES.map((code) => (
-            <label
-              key={code}
-              className={`pref-option${prefs.balanceDisplayCurrency === code ? ' pref-option--active' : ''}`}
-            >
-              <input
-                type="radio"
-                name="balanceCurrency"
-                value={code}
-                checked={prefs.balanceDisplayCurrency === code}
-                onChange={() => setBalanceDisplayCurrency(code)}
-              />
-              <span className="pref-option__label">{s.currencyNames[code] ?? code}</span>
-            </label>
-          ))}
+        <div className="currency-select-wrap">
+          <label className="currency-select-label" htmlFor="balanceCurrencySelect">{s.currencySection}</label>
+          <select
+            id="balanceCurrencySelect"
+            name="balanceCurrency"
+            className="currency-select"
+            value={prefs.balanceDisplayCurrency}
+            onChange={(event) => setBalanceDisplayCurrency(event.currentTarget.value as (typeof SUPPORTED_DISPLAY_CURRENCIES)[number])}
+          >
+            {SUPPORTED_DISPLAY_CURRENCIES.map((code) => (
+              <option key={code} value={code}>{s.currencyNames[code] ?? code}</option>
+            ))}
+          </select>
         </div>
         <p className="pref-hint" style={{ marginTop: '8px' }}>{s.currencyApproximateNote}</p>
       </div>
