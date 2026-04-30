@@ -1473,3 +1473,16 @@ test('ExtensionControlService.rotateInstallationSessionForCurrentSession require
     },
   );
 });
+
+test('ExtensionControlController source imports Patch and keeps updateInstallationLabel route', async () => {
+  const { readFile } = await import('node:fs/promises');
+
+  const source = await readFile(
+    new URL('../src/extension/extension-control.controller.ts', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(source, /\bPatch\b/);
+  assert.match(source, /@Patch\('extension\/installations\/:installationId\/label'\)/);
+  assert.match(source, /async\s+updateInstallationLabel\s*\(/);
+});
