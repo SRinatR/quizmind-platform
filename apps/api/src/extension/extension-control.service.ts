@@ -18,6 +18,7 @@ import {
   type ExtensionBootstrapPayloadV2,
   type ExtensionBootstrapRequestV2,
   type ExtensionConnectionStatus,
+  type ExtensionDeviceMetadata,
   type ExtensionInstallationDisconnectRequest,
   type ExtensionInstallationDisconnectResult,
   type ExtensionInstallationBindRequest,
@@ -78,6 +79,8 @@ function readRequiredString(value: string | undefined, fieldName: string): strin
 
 const maxEnvironmentLength = 64;
 const environmentTokenPattern = /^[A-Za-z0-9._-]+$/;
+const extensionOnlineGraceMs = 10 * 60 * 1000;
+
 const supportedHandshakeBrowsers: CompatibilityHandshake['browser'][] = [
   'chrome',
   'edge',
@@ -213,6 +216,7 @@ export class ExtensionControlService {
       schemaVersion: normalizedRequest.handshake.schemaVersion,
       capabilities: normalizedRequest.handshake.capabilities,
       lastSeenAt: occurredAt,
+      metadata: this.normalizeDeviceMetadata(request?.metadata),
     });
     const revokedSessionCount = await this.extensionInstallationSessionRepository.revokeActiveByInstallationId(
       installation.id,
@@ -240,6 +244,7 @@ export class ExtensionControlService {
         capabilities: normalizeCapabilities(installation.capabilitiesJson),
         lastSeenAt: (installation.lastSeenAt ?? occurredAt).toISOString(),
         boundAt: installation.createdAt.toISOString(),
+      signedInAt: installation.createdAt.toISOString(),
         ...(normalizedRequest.handshake.buildId ? { buildId: normalizedRequest.handshake.buildId } : {}),
       },
       session: {
@@ -340,6 +345,7 @@ export class ExtensionControlService {
         schemaVersion: handshake.schemaVersion,
         capabilities: handshake.capabilities,
         lastSeenAt: now,
+        metadata: this.mergeInstallationMetadata(installationSession.installation, this.normalizeDeviceMetadata(request?.metadata)),
       });
     } catch (error) {
       console.error('Failed to refresh extension installation metadata during bootstrap. Serving degraded bootstrap payload.', error);
@@ -606,11 +612,7 @@ export class ExtensionControlService {
 
     const inventoryItems = installations
       .map((installation) => this.mapInstallationInventoryItem(installation, compatibilityPolicy, sessionStats))
-      .filter((installation) =>
-        installation.activeSessionCount > 0
-        && installation.connectionStatus !== 'reconnect_required'
-        && installation.requiresReconnect !== true,
-      );
+      .filter((installation) => installation.connectionStatus !== 'reconnect_required' && installation.requiresReconnect !== true);
 
     return {
       accessDecision,
@@ -903,7 +905,7 @@ export class ExtensionControlService {
     const installationSessionStats = sessionStats.get(installation.id);
     const activeSessionCount = installationSessionStats?.count ?? 0;
     const lastSessionExpiresAt = installationSessionStats?.lastSessionExpiresAt;
-    const connectionStatus = this.computeConnectionStatus(activeSessionCount, lastSessionExpiresAt);
+    const connectionStatus = this.computeConnectionStatus(activeSessionCount, installation.lastSeenAt, lastSessionExpiresAt);
     const compatibility = evaluateCompatibility(
       {
         extensionVersion: installation.extensionVersion,
@@ -921,6 +923,7 @@ export class ExtensionControlService {
       schemaVersion: installation.schemaVersion,
       capabilities: normalizeCapabilities(installation.capabilitiesJson),
       boundAt: installation.createdAt.toISOString(),
+      signedInAt: installation.createdAt.toISOString(),
       ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt.toISOString() } : {}),
       activeSessionCount,
       ...(installationSessionStats?.lastSessionIssuedAt
@@ -930,11 +933,21 @@ export class ExtensionControlService {
       compatibility,
       connectionStatus,
       requiresReconnect: connectionStatus === 'reconnect_required',
+      isOnline: connectionStatus === 'connected',
+      lastSeenStatus: installation.lastSeenAt ? (connectionStatus === 'connected' ? 'online' : 'offline') : 'unknown',
+      ...(installation.deviceLabel ? { deviceLabel: installation.deviceLabel } : {}),
+      ...(installation.platform ? { platform: installation.platform } : {}),
+      ...(installation.osName ? { osName: installation.osName } : {}),
+      ...(installation.osVersion ? { osVersion: installation.osVersion } : {}),
+      ...(installation.browserName ? { browserName: installation.browserName } : {}),
+      ...(installation.browserVersion ? { browserVersion: installation.browserVersion } : {}),
+      ...(installation.userAgent ? { userAgent: installation.userAgent } : {}),
     };
   }
 
   private computeConnectionStatus(
     activeSessionCount: number,
+    lastSeenAt: Date | null | undefined,
     lastSessionExpiresAt: string | undefined,
     now = new Date(),
   ): ExtensionConnectionStatus {
@@ -946,9 +959,16 @@ export class ExtensionControlService {
       const expiresAtMs = Date.parse(lastSessionExpiresAt);
       const EXPIRING_SOON_MS = 5 * 60 * 1000;
 
-      if (Number.isFinite(expiresAtMs) && expiresAtMs - now.getTime() <= EXPIRING_SOON_MS) {
+      if (!Number.isFinite(expiresAtMs) || expiresAtMs <= now.getTime()) {
+        return 'reconnect_required';
+      }
+      if (expiresAtMs - now.getTime() <= EXPIRING_SOON_MS) {
         return 'expiring_soon';
       }
+    }
+
+    if (!lastSeenAt || now.getTime() - lastSeenAt.getTime() > extensionOnlineGraceMs) {
+      return 'offline';
     }
 
     return 'connected';
@@ -1010,6 +1030,43 @@ export class ExtensionControlService {
         normalizeBrowser(installation.browser),
       ...(handshake?.buildId?.trim() ? { buildId: handshake.buildId.trim() } : {}),
     });
+  }
+
+
+  private normalizeDeviceMetadata(metadata?: Partial<ExtensionDeviceMetadata>): ExtensionDeviceMetadata | undefined {
+    if (!metadata) return undefined;
+    const normalize = (value: string | undefined, max: number): string | undefined => {
+      const trimmed = value?.trim();
+      if (!trimmed) return undefined;
+      return trimmed.slice(0, max);
+    };
+    const result: ExtensionDeviceMetadata = {
+      ...(normalize(metadata.deviceLabel, 120) ? { deviceLabel: normalize(metadata.deviceLabel, 120) } : {}),
+      ...(normalize(metadata.platform, 120) ? { platform: normalize(metadata.platform, 120) } : {}),
+      ...(normalize(metadata.osName, 120) ? { osName: normalize(metadata.osName, 120) } : {}),
+      ...(normalize(metadata.osVersion, 120) ? { osVersion: normalize(metadata.osVersion, 120) } : {}),
+      ...(normalize(metadata.browserName, 120) ? { browserName: normalize(metadata.browserName, 120) } : {}),
+      ...(normalize(metadata.browserVersion, 120) ? { browserVersion: normalize(metadata.browserVersion, 120) } : {}),
+      ...(normalize(metadata.userAgent, 500) ? { userAgent: normalize(metadata.userAgent, 500) } : {}),
+    };
+
+    return Object.keys(result).length > 0 ? result : undefined;
+  }
+
+  private mergeInstallationMetadata(
+    installation: ExtensionInstallationRecord,
+    metadata?: ExtensionDeviceMetadata,
+  ): ExtensionDeviceMetadata | undefined {
+    return {
+      ...(installation.deviceLabel ? { deviceLabel: installation.deviceLabel } : {}),
+      ...(installation.platform ? { platform: installation.platform } : {}),
+      ...(installation.osName ? { osName: installation.osName } : {}),
+      ...(installation.osVersion ? { osVersion: installation.osVersion } : {}),
+      ...(installation.browserName ? { browserName: installation.browserName } : {}),
+      ...(installation.browserVersion ? { browserVersion: installation.browserVersion } : {}),
+      ...(installation.userAgent ? { userAgent: installation.userAgent } : {}),
+      ...(metadata ?? {}),
+    };
   }
 
   async recordAiFailureSafely(input: {

@@ -542,6 +542,13 @@ export const ExtensionInstallationScalarFieldEnum = {
   extensionVersion: 'extensionVersion',
   schemaVersion: 'schemaVersion',
   capabilitiesJson: 'capabilitiesJson',
+  deviceLabel: 'deviceLabel',
+  platform: 'platform',
+  osName: 'osName',
+  osVersion: 'osVersion',
+  browserName: 'browserName',
+  browserVersion: 'browserVersion',
+  userAgent: 'userAgent',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   lastSeenAt: 'lastSeenAt'

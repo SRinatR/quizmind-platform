@@ -56,6 +56,10 @@ function ConnectionStatusBadge({ status }: { status: ExtensionConnectionStatus }
     return <span className="tag-soft tag-soft--green">Connected</span>;
   }
 
+  if (status === 'offline') {
+    return <span className="tag-soft">Offline</span>;
+  }
+
   if (status === 'expiring_soon') {
     return <span className="tag-soft tag-soft--orange">Session expiring soon</span>;
   }
@@ -64,11 +68,13 @@ function ConnectionStatusBadge({ status }: { status: ExtensionConnectionStatus }
 }
 
 function isActiveInstallation(installation: ExtensionInstallationInventoryItem): boolean {
-  return (
-    installation.activeSessionCount > 0
-    && installation.connectionStatus !== 'reconnect_required'
-    && installation.requiresReconnect !== true
-  );
+  return installation.connectionStatus !== 'reconnect_required' && installation.requiresReconnect !== true;
+}
+
+function getInstallationTitle(installation: ExtensionInstallationInventoryItem): string {
+  if (installation.deviceLabel) return installation.deviceLabel;
+  if (installation.browserName && installation.osName) return `${installation.browserName} extension on ${installation.osName}`;
+  return `${installation.browser} v${installation.extensionVersion}`;
 }
 
 export function InstallationsPageClient({ snapshot }: InstallationsPageClientProps) {
@@ -225,7 +231,7 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
           <section className="panel">
             <span className="micro-label">{ti.devicesLabel}</span>
             <h2>{ti.managedInstallations}</h2>
-            <p>{ti.devicesDesc}</p>
+            <p>{ti.devicesDesc} Sessions refresh automatically while the extension is active. Сессия продлевается автоматически, пока расширение активно.</p>
 
             <div className="installation-list" style={{ marginTop: '16px' }}>
               {activeItems.map((installation) => {
@@ -236,8 +242,8 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
                   <div className="installation-row" key={installation.installationId}>
                     <div className="installation-row__header">
                       <div className="installation-row__device-info">
-                        <span className="installation-row__browser">{installation.browser}</span>
-                        <span className="installation-row__version">v{installation.extensionVersion}</span>
+                        <span className="installation-row__browser">{getInstallationTitle(installation)}</span>
+                        <span className="installation-row__version">{(installation.browserName ?? installation.browser)} extension {installation.extensionVersion}{installation.osName ? `, ${installation.osName}${installation.osVersion ? ` ${installation.osVersion}` : ''}` : ''}</span>
                       </div>
                       <div className="installation-row__badges">
                         <ConnectionStatusBadge status={installation.connectionStatus} />
@@ -249,8 +255,12 @@ export function InstallationsPageClient({ snapshot }: InstallationsPageClientPro
 
                     <div className="kv-list" style={{ marginTop: '8px' }}>
                       <div className="kv-row">
+                        <span className="kv-row__key">Signed in</span>
+                        <span className="kv-row__value">{formatDateTime(installation.signedInAt ?? installation.boundAt)}</span>
+                      </div>
+                      <div className="kv-row">
                         <span className="kv-row__key">{ti.lastSeen}</span>
-                        <span className="kv-row__value">{formatRelativeTime(installation.lastSeenAt)}</span>
+                        <span className="kv-row__value">{installation.connectionStatus === 'connected' ? 'Online' : `Last seen ${formatRelativeTime(installation.lastSeenAt)}`}</span>
                       </div>
                       <div className="kv-row">
                         <span className="kv-row__key">Session valid until</span>

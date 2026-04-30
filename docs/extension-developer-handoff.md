@@ -758,3 +758,10 @@ If you need a compact version to paste to the extension developer:
 - `apps/web/src/lib/auth-session.ts`
 - `packages/contracts/src/index.ts`
 - `packages/extension/src/index.ts`
+
+## Presence + metadata handoff (2026-04-30)
+
+- Send optional `metadata` in bind/bootstrap payloads: `deviceLabel`, `platform`, `osName`, `osVersion`, `browserName`, `browserVersion`, `userAgent`.
+- Heartbeat/bootstrap calls should continue periodically so `lastSeenAt` stays fresh; stale `lastSeenAt` is shown as `offline`.
+- Browser uninstall cannot be detected reliably by server callbacks; server now marks stale installs offline after grace window.
+- On manual disconnect in extension UI, call self-disconnect endpoint.
