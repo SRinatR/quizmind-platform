@@ -556,6 +556,13 @@ model ExtensionInstallation {
   extensionVersion String
   schemaVersion    String
   capabilitiesJson Json
+  deviceLabel      String?
+  platform         String?
+  osName           String?
+  osVersion        String?
+  browserName      String?
+  browserVersion   String?
+  userAgent        String?
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   lastSeenAt       DateTime?

@@ -219,7 +219,7 @@ test('ExtensionControlService.bindInstallationForCurrentSession issues an instal
         capabilitiesJson: ['quiz-capture', 'history-sync'],
         createdAt: new Date('2026-03-24T12:00:00.000Z'),
         updatedAt: new Date('2026-03-24T12:00:00.000Z'),
-        lastSeenAt: new Date('2026-03-24T12:00:00.000Z'),
+        lastSeenAt: new Date(),
       },
     }) as any;
   extensionCompatibilityRepository.findLatest = async () => null;
@@ -1046,7 +1046,13 @@ test('ExtensionControlService.listInstallationsForCurrentSession returns only ac
         id: 'inst_session_1',
         extensionInstallationId: 'inst_record_1',
         createdAt: new Date('2026-03-24T12:05:00.000Z'),
-        expiresAt: new Date('2026-03-24T12:35:00.000Z'),
+        expiresAt: new Date('2099-03-24T12:35:00.000Z'),
+      },
+      {
+        id: 'inst_session_2',
+        extensionInstallationId: 'inst_record_2',
+        createdAt: new Date('2026-03-24T12:05:00.000Z'),
+        expiresAt: new Date('2099-03-24T12:35:00.000Z'),
       },
     ] as any;
   extensionCompatibilityRepository.findLatest = async () =>
@@ -1065,11 +1071,12 @@ test('ExtensionControlService.listInstallationsForCurrentSession returns only ac
 
   assert.equal(result.accessDecision.allowed, true);
   assert.equal(result.disconnectDecision.allowed, true);
-  assert.equal(result.items.length, 1);
+  assert.equal(result.items.length, 2);
   assert.equal(result.items[0]?.installationId, 'inst_primary');
   assert.equal(result.items[0]?.activeSessionCount, 1);
   assert.equal(result.items[0]?.requiresReconnect, false);
   assert.equal(result.items[0]?.compatibility.status, 'supported');
+  assert.equal(result.items[1]?.connectionStatus, 'offline');
 });
 
 test('ExtensionControlService.disconnectInstallationForCurrentSession revokes active installation sessions', async () => {
@@ -1202,7 +1209,7 @@ test('ExtensionControlService.listInstallationsForCurrentSession excludes self-d
             id: 'inst_session_1',
             extensionInstallationId: 'inst_record_1',
             createdAt: new Date('2026-03-24T12:05:00.000Z'),
-            expiresAt: new Date('2026-03-24T12:35:00.000Z'),
+            expiresAt: new Date('2099-03-24T12:35:00.000Z'),
           },
         ] as any);
   extensionCompatibilityRepository.findLatest = async () =>

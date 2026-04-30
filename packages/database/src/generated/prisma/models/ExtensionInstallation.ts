@@ -31,6 +31,13 @@ export type ExtensionInstallationMinAggregateOutputType = {
   browser: string | null
   extensionVersion: string | null
   schemaVersion: string | null
+  deviceLabel: string | null
+  platform: string | null
+  osName: string | null
+  osVersion: string | null
+  browserName: string | null
+  browserVersion: string | null
+  userAgent: string | null
   createdAt: Date | null
   updatedAt: Date | null
   lastSeenAt: Date | null
@@ -43,6 +50,13 @@ export type ExtensionInstallationMaxAggregateOutputType = {
   browser: string | null
   extensionVersion: string | null
   schemaVersion: string | null
+  deviceLabel: string | null
+  platform: string | null
+  osName: string | null
+  osVersion: string | null
+  browserName: string | null
+  browserVersion: string | null
+  userAgent: string | null
   createdAt: Date | null
   updatedAt: Date | null
   lastSeenAt: Date | null
@@ -56,6 +70,13 @@ export type ExtensionInstallationCountAggregateOutputType = {
   extensionVersion: number
   schemaVersion: number
   capabilitiesJson: number
+  deviceLabel: number
+  platform: number
+  osName: number
+  osVersion: number
+  browserName: number
+  browserVersion: number
+  userAgent: number
   createdAt: number
   updatedAt: number
   lastSeenAt: number
@@ -70,6 +91,13 @@ export type ExtensionInstallationMinAggregateInputType = {
   browser?: true
   extensionVersion?: true
   schemaVersion?: true
+  deviceLabel?: true
+  platform?: true
+  osName?: true
+  osVersion?: true
+  browserName?: true
+  browserVersion?: true
+  userAgent?: true
   createdAt?: true
   updatedAt?: true
   lastSeenAt?: true
@@ -82,6 +110,13 @@ export type ExtensionInstallationMaxAggregateInputType = {
   browser?: true
   extensionVersion?: true
   schemaVersion?: true
+  deviceLabel?: true
+  platform?: true
+  osName?: true
+  osVersion?: true
+  browserName?: true
+  browserVersion?: true
+  userAgent?: true
   createdAt?: true
   updatedAt?: true
   lastSeenAt?: true
@@ -95,6 +130,13 @@ export type ExtensionInstallationCountAggregateInputType = {
   extensionVersion?: true
   schemaVersion?: true
   capabilitiesJson?: true
+  deviceLabel?: true
+  platform?: true
+  osName?: true
+  osVersion?: true
+  browserName?: true
+  browserVersion?: true
+  userAgent?: true
   createdAt?: true
   updatedAt?: true
   lastSeenAt?: true
@@ -181,6 +223,13 @@ export type ExtensionInstallationGroupByOutputType = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: runtime.JsonValue
+  deviceLabel: string | null
+  platform: string | null
+  osName: string | null
+  osVersion: string | null
+  browserName: string | null
+  browserVersion: string | null
+  userAgent: string | null
   createdAt: Date
   updatedAt: Date
   lastSeenAt: Date | null
@@ -215,6 +264,13 @@ export type ExtensionInstallationWhereInput = {
   extensionVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   schemaVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   capabilitiesJson?: Prisma.JsonFilter<"ExtensionInstallation">
+  deviceLabel?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  platform?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  osName?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  osVersion?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  browserName?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  browserVersion?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  userAgent?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableFilter<"ExtensionInstallation"> | Date | string | null
@@ -231,6 +287,13 @@ export type ExtensionInstallationOrderByWithRelationInput = {
   extensionVersion?: Prisma.SortOrder
   schemaVersion?: Prisma.SortOrder
   capabilitiesJson?: Prisma.SortOrder
+  deviceLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  platform?: Prisma.SortOrderInput | Prisma.SortOrder
+  osName?: Prisma.SortOrderInput | Prisma.SortOrder
+  osVersion?: Prisma.SortOrderInput | Prisma.SortOrder
+  browserName?: Prisma.SortOrderInput | Prisma.SortOrder
+  browserVersion?: Prisma.SortOrderInput | Prisma.SortOrder
+  userAgent?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -250,6 +313,13 @@ export type ExtensionInstallationWhereUniqueInput = Prisma.AtLeast<{
   extensionVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   schemaVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   capabilitiesJson?: Prisma.JsonFilter<"ExtensionInstallation">
+  deviceLabel?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  platform?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  osName?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  osVersion?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  browserName?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  browserVersion?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  userAgent?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableFilter<"ExtensionInstallation"> | Date | string | null
@@ -266,6 +336,13 @@ export type ExtensionInstallationOrderByWithAggregationInput = {
   extensionVersion?: Prisma.SortOrder
   schemaVersion?: Prisma.SortOrder
   capabilitiesJson?: Prisma.SortOrder
+  deviceLabel?: Prisma.SortOrderInput | Prisma.SortOrder
+  platform?: Prisma.SortOrderInput | Prisma.SortOrder
+  osName?: Prisma.SortOrderInput | Prisma.SortOrder
+  osVersion?: Prisma.SortOrderInput | Prisma.SortOrder
+  browserName?: Prisma.SortOrderInput | Prisma.SortOrder
+  browserVersion?: Prisma.SortOrderInput | Prisma.SortOrder
+  userAgent?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -285,6 +362,13 @@ export type ExtensionInstallationScalarWhereWithAggregatesInput = {
   extensionVersion?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
   schemaVersion?: Prisma.StringWithAggregatesFilter<"ExtensionInstallation"> | string
   capabilitiesJson?: Prisma.JsonWithAggregatesFilter<"ExtensionInstallation">
+  deviceLabel?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
+  platform?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
+  osName?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
+  osVersion?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
+  browserName?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
+  browserVersion?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
+  userAgent?: Prisma.StringNullableWithAggregatesFilter<"ExtensionInstallation"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ExtensionInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ExtensionInstallation"> | Date | string | null
@@ -297,6 +381,13 @@ export type ExtensionInstallationCreateInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -313,6 +404,13 @@ export type ExtensionInstallationUncheckedCreateInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -327,6 +425,13 @@ export type ExtensionInstallationUpdateInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -343,6 +448,13 @@ export type ExtensionInstallationUncheckedUpdateInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -358,6 +470,13 @@ export type ExtensionInstallationCreateManyInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -370,6 +489,13 @@ export type ExtensionInstallationUpdateManyMutationInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -383,6 +509,13 @@ export type ExtensionInstallationUncheckedUpdateManyInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -406,6 +539,13 @@ export type ExtensionInstallationCountOrderByAggregateInput = {
   extensionVersion?: Prisma.SortOrder
   schemaVersion?: Prisma.SortOrder
   capabilitiesJson?: Prisma.SortOrder
+  deviceLabel?: Prisma.SortOrder
+  platform?: Prisma.SortOrder
+  osName?: Prisma.SortOrder
+  osVersion?: Prisma.SortOrder
+  browserName?: Prisma.SortOrder
+  browserVersion?: Prisma.SortOrder
+  userAgent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrder
@@ -418,6 +558,13 @@ export type ExtensionInstallationMaxOrderByAggregateInput = {
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
   schemaVersion?: Prisma.SortOrder
+  deviceLabel?: Prisma.SortOrder
+  platform?: Prisma.SortOrder
+  osName?: Prisma.SortOrder
+  osVersion?: Prisma.SortOrder
+  browserName?: Prisma.SortOrder
+  browserVersion?: Prisma.SortOrder
+  userAgent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrder
@@ -430,6 +577,13 @@ export type ExtensionInstallationMinOrderByAggregateInput = {
   browser?: Prisma.SortOrder
   extensionVersion?: Prisma.SortOrder
   schemaVersion?: Prisma.SortOrder
+  deviceLabel?: Prisma.SortOrder
+  platform?: Prisma.SortOrder
+  osName?: Prisma.SortOrder
+  osVersion?: Prisma.SortOrder
+  browserName?: Prisma.SortOrder
+  browserVersion?: Prisma.SortOrder
+  userAgent?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   lastSeenAt?: Prisma.SortOrder
@@ -517,6 +671,13 @@ export type ExtensionInstallationCreateWithoutUserInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -531,6 +692,13 @@ export type ExtensionInstallationUncheckedCreateWithoutUserInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -575,6 +743,13 @@ export type ExtensionInstallationScalarWhereInput = {
   extensionVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   schemaVersion?: Prisma.StringFilter<"ExtensionInstallation"> | string
   capabilitiesJson?: Prisma.JsonFilter<"ExtensionInstallation">
+  deviceLabel?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  platform?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  osName?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  osVersion?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  browserName?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  browserVersion?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
+  userAgent?: Prisma.StringNullableFilter<"ExtensionInstallation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ExtensionInstallation"> | Date | string
   lastSeenAt?: Prisma.DateTimeNullableFilter<"ExtensionInstallation"> | Date | string | null
@@ -587,6 +762,13 @@ export type ExtensionInstallationCreateWithoutSessionsInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -602,6 +784,13 @@ export type ExtensionInstallationUncheckedCreateWithoutSessionsInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -631,6 +820,13 @@ export type ExtensionInstallationUpdateWithoutSessionsInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -646,6 +842,13 @@ export type ExtensionInstallationUncheckedUpdateWithoutSessionsInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -659,6 +862,13 @@ export type ExtensionInstallationCreateWithoutTelemetryInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -674,6 +884,13 @@ export type ExtensionInstallationUncheckedCreateWithoutTelemetryInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -703,6 +920,13 @@ export type ExtensionInstallationUpdateWithoutTelemetryInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -718,6 +942,13 @@ export type ExtensionInstallationUncheckedUpdateWithoutTelemetryInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -731,6 +962,13 @@ export type ExtensionInstallationCreateManyUserInput = {
   extensionVersion: string
   schemaVersion: string
   capabilitiesJson: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: string | null
+  platform?: string | null
+  osName?: string | null
+  osVersion?: string | null
+  browserName?: string | null
+  browserVersion?: string | null
+  userAgent?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   lastSeenAt?: Date | string | null
@@ -743,6 +981,13 @@ export type ExtensionInstallationUpdateWithoutUserInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -757,6 +1002,13 @@ export type ExtensionInstallationUncheckedUpdateWithoutUserInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -771,6 +1023,13 @@ export type ExtensionInstallationUncheckedUpdateManyWithoutUserInput = {
   extensionVersion?: Prisma.StringFieldUpdateOperationsInput | string
   schemaVersion?: Prisma.StringFieldUpdateOperationsInput | string
   capabilitiesJson?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  deviceLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  platform?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  osVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserVersion?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  userAgent?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   lastSeenAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -824,6 +1083,13 @@ export type ExtensionInstallationSelect<ExtArgs extends runtime.Types.Extensions
   extensionVersion?: boolean
   schemaVersion?: boolean
   capabilitiesJson?: boolean
+  deviceLabel?: boolean
+  platform?: boolean
+  osName?: boolean
+  osVersion?: boolean
+  browserName?: boolean
+  browserVersion?: boolean
+  userAgent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   lastSeenAt?: boolean
@@ -841,6 +1107,13 @@ export type ExtensionInstallationSelectCreateManyAndReturn<ExtArgs extends runti
   extensionVersion?: boolean
   schemaVersion?: boolean
   capabilitiesJson?: boolean
+  deviceLabel?: boolean
+  platform?: boolean
+  osName?: boolean
+  osVersion?: boolean
+  browserName?: boolean
+  browserVersion?: boolean
+  userAgent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   lastSeenAt?: boolean
@@ -855,6 +1128,13 @@ export type ExtensionInstallationSelectUpdateManyAndReturn<ExtArgs extends runti
   extensionVersion?: boolean
   schemaVersion?: boolean
   capabilitiesJson?: boolean
+  deviceLabel?: boolean
+  platform?: boolean
+  osName?: boolean
+  osVersion?: boolean
+  browserName?: boolean
+  browserVersion?: boolean
+  userAgent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   lastSeenAt?: boolean
@@ -869,12 +1149,19 @@ export type ExtensionInstallationSelectScalar = {
   extensionVersion?: boolean
   schemaVersion?: boolean
   capabilitiesJson?: boolean
+  deviceLabel?: boolean
+  platform?: boolean
+  osName?: boolean
+  osVersion?: boolean
+  browserName?: boolean
+  browserVersion?: boolean
+  userAgent?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   lastSeenAt?: boolean
 }
 
-export type ExtensionInstallationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "installationId" | "browser" | "extensionVersion" | "schemaVersion" | "capabilitiesJson" | "createdAt" | "updatedAt" | "lastSeenAt", ExtArgs["result"]["extensionInstallation"]>
+export type ExtensionInstallationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "installationId" | "browser" | "extensionVersion" | "schemaVersion" | "capabilitiesJson" | "deviceLabel" | "platform" | "osName" | "osVersion" | "browserName" | "browserVersion" | "userAgent" | "createdAt" | "updatedAt" | "lastSeenAt", ExtArgs["result"]["extensionInstallation"]>
 export type ExtensionInstallationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   telemetry?: boolean | Prisma.ExtensionInstallation$telemetryArgs<ExtArgs>
@@ -903,6 +1190,13 @@ export type $ExtensionInstallationPayload<ExtArgs extends runtime.Types.Extensio
     extensionVersion: string
     schemaVersion: string
     capabilitiesJson: runtime.JsonValue
+    deviceLabel: string | null
+    platform: string | null
+    osName: string | null
+    osVersion: string | null
+    browserName: string | null
+    browserVersion: string | null
+    userAgent: string | null
     createdAt: Date
     updatedAt: Date
     lastSeenAt: Date | null
@@ -1339,6 +1633,13 @@ export interface ExtensionInstallationFieldRefs {
   readonly extensionVersion: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly schemaVersion: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly capabilitiesJson: Prisma.FieldRef<"ExtensionInstallation", 'Json'>
+  readonly deviceLabel: Prisma.FieldRef<"ExtensionInstallation", 'String'>
+  readonly platform: Prisma.FieldRef<"ExtensionInstallation", 'String'>
+  readonly osName: Prisma.FieldRef<"ExtensionInstallation", 'String'>
+  readonly osVersion: Prisma.FieldRef<"ExtensionInstallation", 'String'>
+  readonly browserName: Prisma.FieldRef<"ExtensionInstallation", 'String'>
+  readonly browserVersion: Prisma.FieldRef<"ExtensionInstallation", 'String'>
+  readonly userAgent: Prisma.FieldRef<"ExtensionInstallation", 'String'>
   readonly createdAt: Prisma.FieldRef<"ExtensionInstallation", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"ExtensionInstallation", 'DateTime'>
   readonly lastSeenAt: Prisma.FieldRef<"ExtensionInstallation", 'DateTime'>

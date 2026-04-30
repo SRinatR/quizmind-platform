@@ -809,6 +809,7 @@ export interface ExtensionBootstrapRequestV2 {
   installationId: string;
   environment: string;
   handshake: CompatibilityHandshake;
+  metadata?: ExtensionDeviceMetadata;
 }
 
 export interface UsageQuotaHint {
@@ -894,7 +895,7 @@ export interface ExtensionInstallationTokenSession {
   refreshAfterSeconds: number;
 }
 
-export type ExtensionConnectionStatus = 'connected' | 'expiring_soon' | 'reconnect_required';
+export type ExtensionConnectionStatus = 'connected' | 'offline' | 'expiring_soon' | 'reconnect_required';
 
 export interface ExtensionInstallationSessionRefreshResult {
   installationId: string;
@@ -918,10 +919,21 @@ export interface ExtensionBootstrapPayloadV2 {
   issuedAt: string;
 }
 
+export interface ExtensionDeviceMetadata {
+  deviceLabel?: string;
+  platform?: string;
+  osName?: string;
+  osVersion?: string;
+  browserName?: string;
+  browserVersion?: string;
+  userAgent?: string;
+}
+
 export interface ExtensionInstallationBindRequest {
   installationId: string;
   environment: string;
   handshake: CompatibilityHandshake;
+  metadata?: ExtensionDeviceMetadata;
 }
 
 export interface ExtensionInstallationBindResult {
@@ -937,6 +949,7 @@ export interface ExtensionInstallationInventoryItem {
   schemaVersion: string;
   capabilities: string[];
   boundAt: string;
+  signedInAt?: string;
   lastSeenAt?: string;
   activeSessionCount: number;
   lastSessionIssuedAt?: string;
@@ -944,6 +957,15 @@ export interface ExtensionInstallationInventoryItem {
   compatibility: CompatibilityResult;
   requiresReconnect: boolean;
   connectionStatus: ExtensionConnectionStatus;
+  isOnline?: boolean;
+  lastSeenStatus?: 'online' | 'offline' | 'unknown';
+  deviceLabel?: string;
+  platform?: string;
+  osName?: string;
+  osVersion?: string;
+  browserName?: string;
+  browserVersion?: string;
+  userAgent?: string;
 }
 
 export interface ExtensionInstallationInventorySnapshot {
