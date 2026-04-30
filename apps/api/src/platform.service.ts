@@ -615,7 +615,7 @@ export class PlatformService {
     if (request.currency !== 'RUB') throw new BadRequestException('currency must be RUB.');
     if (!request.idempotencyKey?.trim()) throw new BadRequestException('idempotencyKey is required.');
     if (!Number.isInteger(request.amountKopecks) || request.amountKopecks <= 0) throw new BadRequestException('amountKopecks must be positive integer.');
-    if (!request.reason || request.reason.trim().length < 5 || request.reason.trim().length > 500) throw new BadRequestException('reason length must be 5..500.');
+    if (typeof request.reason === 'string' && request.reason.trim().length > 500) throw new BadRequestException('reason length must be at most 500.');
     let userIds: string[] = [];
     if (request.target?.type === 'selected_users') {
       userIds = request.target.userIds ?? [];
@@ -1901,7 +1901,7 @@ export class PlatformService {
   ): Promise<UserBillingOverrideSnapshot> {
     this.requireSystemAdmin(session);
     if (!userId?.trim()) throw new BadRequestException('userId is required.');
-    if (!request?.reason) throw new BadRequestException('reason is required.');
+    if (typeof request?.reason === 'string' && request.reason.trim().length > 500) throw new BadRequestException('reason length must be at most 500.');
     const row = await this.userBillingOverrideRepository.updateOverride(userId, request as UserBillingOverrideRequest, session.user.id);
     this.logAdminUserMutation('admin.user_billing_override_updated', { actorUserId: session.user.id, targetUserId: userId });
     return { userId: row.userId, aiPlatformFeeExempt: row.aiPlatformFeeExempt, aiMarkupPercentOverride: row.aiMarkupPercentOverride, reason: row.reason ?? null, updatedAt: row.updatedAt.toISOString() };

@@ -22,6 +22,10 @@ export function UserBillingAdminClient() {
   const [confirmationText, setConfirmationText] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [statusTone, setStatusTone] = useState<'success' | 'error' | 'warning'>('success');
+  const [adjustmentStatus, setAdjustmentStatus] = useState<string | null>(null);
+  const [adjustmentStatusTone, setAdjustmentStatusTone] = useState<'success' | 'error' | 'warning'>('success');
+  const [overrideStatus, setOverrideStatus] = useState<string | null>(null);
+  const [overrideStatusTone, setOverrideStatusTone] = useState<'success' | 'error' | 'warning'>('success');
   const [saving, setSaving] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [overrideFeeExempt, setOverrideFeeExempt] = useState(false);
@@ -60,10 +64,9 @@ export function UserBillingAdminClient() {
   }, []);
 
   const amount = Number(amountRub);
-  const reasonValid = reason.trim().length >= 5;
   const selectionValid = targetMode === 'all_users' ? confirmationText === ALL_USERS_CONFIRMATION : selected.size > 0;
   const amountValid = Number.isFinite(amount) && amount > 0;
-  const canSubmit = amountValid && reasonValid && selectionValid && !saving;
+  const canSubmit = amountValid && selectionValid && !saving;
   const rows = useMemo(() => items, [items]);
   const selectedRows = useMemo(() => rows.filter((row) => selected.has(row.userId)), [rows, selected]);
   const singleSelectedRow = selectedRows.length === 1 ? selectedRows[0] : null;
@@ -101,13 +104,12 @@ export function UserBillingAdminClient() {
   async function submitAdjustment() {
     if (!canSubmit) {
       if (!amountValid) setStatusMessage(ub.amountRequired, 'warning');
-      else if (!reasonValid) setStatusMessage(ub.reasonRequired, 'warning');
       else if (targetMode === 'selected_users') setStatusMessage(ub.selectUsersFirst, 'warning');
       else setStatusMessage(ub.confirmationRequired, 'warning');
       return;
     }
+    setAdjustmentStatus(null);
     setSaving(true);
-    setStatus(null);
     try {
       const payload = {
         target: targetMode === 'selected_users' ? { type: 'selected_users' as const, userIds: Array.from(selected) } : { type: 'all_users' as const, confirmationText },
@@ -120,16 +122,20 @@ export function UserBillingAdminClient() {
       const res = await fetch('/bff/admin/billing/wallet-adjustments', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
       const body = (await res.json().catch(() => null)) as any;
       if (!res.ok || !body?.ok) {
-        setStatusMessage(ub.failedToApplyAdjustment, 'error');
+        const message = body?.error?.message || ub.failedToApplyAdjustment;
+        setAdjustmentStatus(message);
+        setAdjustmentStatusTone('error');
         return;
       }
-      setStatusMessage(ub.adjustmentApplied.replace('{count}', String(body.data?.affectedCount ?? 0)), 'success');
+      setAdjustmentStatus(ub.adjustmentApplied.replace('{count}', String(body.data?.affectedCount ?? 0)));
+      setAdjustmentStatusTone('success');
       setAmountRub('');
       setReason('');
       setConfirmationText('');
       await loadUsers();
     } catch {
-      setStatusMessage(ub.networkError, 'error');
+      setAdjustmentStatus(ub.networkError);
+      setAdjustmentStatusTone('error');
     } finally {
       setSaving(false);
     }
@@ -137,24 +143,25 @@ export function UserBillingAdminClient() {
 
   async function clearOverride(userId: string) {
     if (!confirm(ub.resetRuleConfirm)) return;
+    setOverrideStatus(null);
     try {
       const res = await fetch(`/bff/admin/billing/users/${encodeURIComponent(userId)}/override`, { method: 'DELETE' });
-      setStatusMessage(res.ok ? ub.overrideCleared : ub.failedToClearOverride, res.ok ? 'success' : 'error');
+      setOverrideStatus(res.ok ? ub.overrideCleared : ub.failedToClearOverride);
+      setOverrideStatusTone(res.ok ? 'success' : 'error');
       if (res.ok) await loadUsers();
     } catch {
-      setStatusMessage(ub.networkError, 'error');
+      setOverrideStatus(ub.networkError);
+      setOverrideStatusTone('error');
     }
   }
 
   async function saveOverride() {
     if (!editingUserId) return;
-    if (overrideReason.trim().length < 5) {
-      setStatusMessage(ub.reasonRequired, 'warning');
-      return;
-    }
+    setOverrideStatus(null);
     const parsed = overrideMarkup.trim() === '' ? null : Number(overrideMarkup);
     if (parsed !== null && (!Number.isFinite(parsed) || parsed < 0 || parsed > 500)) {
-      setStatusMessage(ub.failedToSaveOverride, 'error');
+      setOverrideStatus(ub.failedToSaveOverride);
+      setOverrideStatusTone('error');
       return;
     }
     setSaving(true);
@@ -164,10 +171,13 @@ export function UserBillingAdminClient() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ aiPlatformFeeExempt: overrideFeeExempt, aiMarkupPercentOverride: parsed, reason: overrideReason.trim() }),
       });
-      setStatusMessage(res.ok ? ub.overrideSaved : ub.failedToSaveOverride, res.ok ? 'success' : 'error');
+      const body = (await res.json().catch(() => null)) as any;
+      setOverrideStatus(res.ok ? ub.overrideSaved : body?.error?.message || ub.failedToSaveOverride);
+      setOverrideStatusTone(res.ok ? 'success' : 'error');
       if (res.ok) await loadUsers();
     } catch {
-      setStatusMessage(ub.networkError, 'error');
+      setOverrideStatus(ub.networkError);
+      setOverrideStatusTone('error');
     } finally {
       setSaving(false);
     }
@@ -262,8 +272,8 @@ export function UserBillingAdminClient() {
                 </div>
 
                 <div className="user-billing-side-actions">
-                  <button className="btn-ghost" onClick={() => openAdjustment('credit')}>{ub.credit}</button>
-                  <button className="btn-ghost" onClick={() => openAdjustment('debit')}>{ub.debit}</button>
+                  <button className={`btn-ghost ${direction === 'credit' ? 'btn-primary' : ''}`} onClick={() => openAdjustment('credit')}>{ub.credit}</button>
+                  <button className={`btn-ghost ${direction === 'debit' ? 'ub-danger' : ''}`} onClick={() => openAdjustment('debit')}>{ub.debit}</button>
                   <button className="btn-ghost" disabled={!singleSelectedRow} onClick={() => { if (singleSelectedRow) openCommissionRule(singleSelectedRow); }}>{ub.editCommission}</button>
                   {canResetSelectedRule && singleSelectedRow ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverride}</button> : null}
                 </div>
@@ -281,7 +291,7 @@ export function UserBillingAdminClient() {
                   <label className="user-billing-field">{ub.targetMode}<select className="user-billing-control" value={targetMode} onChange={(e) => setTargetMode(e.target.value as 'selected_users' | 'all_users')}><option value="selected_users">{ub.selectedUsers}</option><option value="all_users">{ub.allUsers}</option></select></label>
                   <label className="user-billing-field">{ub.direction}<select className="user-billing-control" value={direction} onChange={(e) => setDirection(e.target.value as 'credit' | 'debit')}><option value="credit">{ub.credit}</option><option value="debit">{ub.debit}</option></select></label>
                   <label className="user-billing-field">{ub.amountRub}<input className="user-billing-control" value={amountRub} onChange={(e) => setAmountRub(e.target.value)} /></label>
-                  <label className="user-billing-field">{ub.reason}<textarea className="user-billing-control" value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+                  <label className="user-billing-field">{ub.reasonOptional}<textarea className="user-billing-control" value={reason} onChange={(e) => setReason(e.target.value)} /></label>
                   {targetMode === 'all_users' ? <label className="user-billing-field">{ub.confirmation}<input className="user-billing-control" value={confirmationText} onChange={(e) => setConfirmationText(e.target.value)} /><small>{ub.confirmationHint}</small></label> : null}
                 </div>
 
@@ -295,17 +305,24 @@ export function UserBillingAdminClient() {
                 </div>
                 {direction === 'debit' ? <div className="ub-callout ub-callout-warning">{ub.debitWarning}</div> : null}
                 {targetMode === 'all_users' ? <div className="ub-callout ub-callout-error user-billing-danger">{ub.allUsersWarning}</div> : null}
+                {adjustmentStatus ? <div className={`ub-callout ${adjustmentStatusTone === 'success' ? 'ub-callout-success' : adjustmentStatusTone === 'warning' ? 'ub-callout-warning' : 'ub-callout-error'}`}><strong>{ub.adjustmentStatusTitle}:</strong> {adjustmentStatus}</div> : null}
                 <button className="btn-primary" disabled={!canSubmit} onClick={() => void submitAdjustment()}>{saving ? ub.applyingAdjustment : ub.applyAdjustment}</button>
               </div>
             ) : null}
 
             {panelMode === 'commission' && singleSelectedRow ? (
               <div className="user-billing-form-grid">
-                <div className="ub-callout">{ub.providerCostStillCharged}</div>
-                <label className="user-billing-field"><input type="checkbox" checked={overrideFeeExempt} onChange={(e) => setOverrideFeeExempt(e.target.checked)} /> {ub.platformFeeExempt}</label>
+                <label className="user-billing-toggle-row">
+                  <input type="checkbox" checked={overrideFeeExempt} onChange={(e) => setOverrideFeeExempt(e.target.checked)} />
+                  <span className="user-billing-toggle-copy">
+                    <span className="user-billing-toggle-title">{ub.platformFeeExempt}</span>
+                    <span className="user-billing-toggle-description">{ub.providerCostStillCharged}</span>
+                  </span>
+                </label>
                 <label className="user-billing-field">{ub.customMarkupPercent}<input className="user-billing-control" value={overrideMarkup} onChange={(e) => setOverrideMarkup(e.target.value)} /></label>
-                <label className="user-billing-field">{ub.overrideReason}<textarea className="user-billing-control" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} /></label>
-                <button className="btn-primary" disabled={saving || !editingUserId || overrideReason.trim().length < 5} onClick={() => void saveOverride()}>{saving ? ub.savingOverride : ub.saveOverride}</button>
+                <label className="user-billing-field">{ub.overrideReasonOptional}<textarea className="user-billing-control" value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} /></label>
+                {overrideStatus ? <div className={`ub-callout ${overrideStatusTone === 'success' ? 'ub-callout-success' : overrideStatusTone === 'warning' ? 'ub-callout-warning' : 'ub-callout-error'}`}><strong>{ub.overrideStatusTitle}:</strong> {overrideStatus}</div> : null}
+                <button className="btn-primary" disabled={saving || !editingUserId} onClick={() => void saveOverride()}>{saving ? ub.savingOverride : ub.saveOverride}</button>
                 {(singleSelectedRow.aiPlatformFeeExempt || singleSelectedRow.aiMarkupPercentOverride != null) ? <button className="btn-ghost ub-danger" onClick={() => void clearOverride(singleSelectedRow.userId)}>{ub.clearOverrideToGlobal}</button> : null}
               </div>
             ) : null}

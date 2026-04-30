@@ -24,7 +24,13 @@ test('client uses workspace layout and preserves billing payload invariants', as
   assert.doesNotMatch(source, /onClick=\{\(\) => setPanelMode\('commission'\)\}/);
   assert.match(source, /Math\.round\(amount \* 100\)/);
   assert.match(source, /crypto\.randomUUID\(\)/);
-  assert.match(source, /disabled=\{saving \|\| !editingUserId \|\| overrideReason\.trim\(\)\.length < 5\}/);
+  assert.match(source, /disabled=\{saving \|\| !editingUserId\}/);
+  assert.match(source, /user-billing-toggle-row/);
+  assert.match(source, /ub\.reasonOptional/);
+  assert.match(source, /ub\.overrideReasonOptional/);
+  assert.match(source, /<option value=\"credit\">{ub\.credit}<\/option>/);
+  assert.match(source, /<option value=\"debit\">{ub\.debit}<\/option>/);
+  assert.doesNotMatch(source, /Add funds|Deduct funds/);
 });
 
 test('ru dictionary contains required billing labels', async () => {
