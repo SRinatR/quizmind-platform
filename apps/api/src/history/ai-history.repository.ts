@@ -21,6 +21,8 @@ const aiHistoryEventListSelect = {
   chargedCostUsd: true,
   chargedCurrency: true,
   chargedAmountMinor: true,
+  pricingSource: true,
+  walletLedgerEntryId: true,
   promptExcerpt: true,
   responseExcerpt: true,
   occurredAt: true,

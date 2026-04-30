@@ -3,10 +3,12 @@ import test from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { formatHistoryDuration } from '../src/app/app/history/history-duration';
 
-test('history detail modal renders charged/estimated cost badge', async () => {
+test('history detail modal renders charged/estimated cost badge with explicit conditions', async () => {
   const source = await readFile(new URL('../src/app/app/history/ai-request-detail-modal.tsx', import.meta.url), 'utf8');
-  assert.match(source, /\(detail\.chargedCostUsd \?\? detail\.estimatedCostUsd\) > 0/);
-  assert.match(source, /detail\.chargedCostUsd && detail\.chargedCostUsd > 0 \? 'Charged: ' : ''/);
+  assert.match(source, /hasChargedMinor/);
+  assert.match(source, /hasChargedUsd/);
+  assert.match(source, /hasEstimatedUsd/);
+  assert.match(source, /td\.chargedLabel/);
 });
 
 test('formats durationMs as compact seconds for AI history', () => {

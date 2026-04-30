@@ -7,7 +7,7 @@ import { getReadableModelName } from './history-model-display';
 import { formatHistoryDuration } from './history-duration';
 import { formatUtcDateTime } from '../../../lib/datetime';
 import type { ExchangeRateSnapshot } from '../../../lib/exchange-rates';
-import { formatUsdAmountByPreference } from '../../../lib/money';
+import { formatMinorCurrencyAmount, formatUsdAmountByPreference } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
 
 interface Props {
@@ -216,19 +216,34 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                 <span className={statusBadgeClass(detail.status)}>{detail.status}</span>
                 <span className="tag-soft tag-soft--gray">{detail.requestType}</span>
                 {detail.totalTokens > 0 && <span className="tag-soft tag-soft--gray">{detail.totalTokens} {td.tokens}</span>}
-                {(detail.chargedCostUsd ?? detail.estimatedCostUsd) > 0 && (
-                  <span className="tag-soft tag-soft--gray">
-                    {/* Legacy test anchor: detail.chargedCostUsd && detail.chargedCostUsd > 0 ? 'Charged: ' : '' */}
-                    {detail.chargedCostUsd && detail.chargedCostUsd > 0 ? (prefs.language === 'ru' ? 'Списано: ' : 'Charged: ') : ''}
-                    {formatUsdAmountByPreference(
-                      detail.chargedCostUsd && detail.chargedCostUsd > 0 ? detail.chargedCostUsd : detail.estimatedCostUsd,
-                      prefs.balanceDisplayCurrency,
-                      exchangeRates,
-                    )}
-                  </span>
-                )}
+                {(() => {
+                  const hasChargedMinor = detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0;
+                  const hasChargedUsd = Number.isFinite(detail.chargedCostUsd) && (detail.chargedCostUsd ?? 0) > 0;
+                  const hasEstimatedUsd = Number.isFinite(detail.estimatedCostUsd) && (detail.estimatedCostUsd ?? 0) > 0;
+                  if (hasChargedMinor) {
+                    return <span className="tag-soft tag-soft--gray">{td.chargedLabel}: {formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB')}</span>;
+                  }
+                  if (hasChargedUsd) {
+                    return <span className="tag-soft tag-soft--gray">{td.chargedLabel}: {formatUsdAmountByPreference(detail.chargedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates)}</span>;
+                  }
+                  if (hasEstimatedUsd) {
+                    return <span className="tag-soft tag-soft--gray">{t.historyPage.estimatedLabel}: {formatUsdAmountByPreference(detail.estimatedCostUsd!, prefs.balanceDisplayCurrency, exchangeRates)}</span>;
+                  }
+                  return null;
+                })()}
                 {formattedDuration != null && <span className="tag-soft tag-soft--gray">{formattedDuration}</span>}
               </div>
+
+
+              {(Number.isFinite(detail.providerCostUsd) || Number.isFinite(detail.platformFeeUsd) || (detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0)) && (
+                <div style={{ fontSize: '0.8rem', opacity: 0.75, marginBottom: '12px' }}>
+                  {Number.isFinite(detail.providerCostUsd) ? <div>{td.providerCost}: {formatUsdAmountByPreference(detail.providerCostUsd ?? 0, 'USD', exchangeRates)}</div> : null}
+                  {Number.isFinite(detail.platformFeeUsd) ? <div>{td.platformFee}: {formatUsdAmountByPreference(detail.platformFeeUsd ?? 0, 'USD', exchangeRates)}</div> : null}
+                  {(detail.chargedCurrency === 'RUB' && Number.isFinite(detail.chargedAmountMinor) && (detail.chargedAmountMinor ?? 0) > 0)
+                    ? <div>{td.finalCharge}: {formatMinorCurrencyAmount(detail.chargedAmountMinor!, 'RUB')}</div>
+                    : null}
+                </div>
+              )}
 
               <div style={{ fontSize: '0.82rem', opacity: 0.65, marginBottom: '20px' }}>
                 {formatUtcDateTime(detail.occurredAt)}
