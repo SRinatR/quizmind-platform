@@ -292,7 +292,7 @@ export function HistoryPageClient(props: HistoryPageClientProps) {
                     <img
                       alt={imageAttachments[0]?.originalName ?? th.promptImageAlt}
                       src={toAttachmentViewUrl(item.id, imageAttachments[0]!.id)}
-                      style={{ marginTop: 8, width: 'min(100%, 720px)', maxHeight: 340, borderRadius: 6, objectFit: 'contain', border: '1px solid var(--color-border, #ddd)', display: 'block', background: 'var(--color-surface-alt, #f4f4f5)' }}
+                      style={{ marginTop: 8, width: 'min(100%, 720px)', maxHeight: 340, borderRadius: 6, objectFit: 'contain', border: '1px solid var(--line)', display: 'block', background: 'var(--surface-muted)' }}
                     />
                   ) : null}
                   {imageAttachments.length === 0 && hasUnavailableImage ? (
