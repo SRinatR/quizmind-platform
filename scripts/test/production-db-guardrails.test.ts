@@ -67,9 +67,27 @@ test('sync script is bash syntax-valid', () => {
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
+test('sync script has no host node runtime dependency or dynamic require', () => {
+  assert.equal(syncScript.includes('node -'), false);
+  assert.equal(syncScript.includes('node:'), false);
+  assert.equal(syncScript.includes('require('), false);
+});
+
+test('sync script does not source env files', () => {
+  assert.equal(/\bsource\b/.test(syncScript), false);
+  assert.equal(syncScript.includes('. .env.prod'), false);
+});
+
 test('sync script avoids DO $$ and uses ALTER ROLE variable heredoc', () => {
   assert.equal(syncScript.includes('DO $$'), false);
   assert.ok(syncScript.includes("ALTER ROLE :\"user\" WITH PASSWORD :'pass';"));
+});
+
+test('sync script validates POSTGRES_USER identifier and parses env with awk', () => {
+  assert.match(syncScript, /\^\[A-Za-z_\]\[A-Za-z0-9_\]\*\$/);
+  assert.ok(syncScript.includes('awk -v key="$key"'));
+  assert.ok(syncScript.includes("if (v ~ /^'\\''.*'\\''$/)"));
+  assert.ok(syncScript.includes('sub(/[[:space:]]+#.*$/, "", v)'));
 });
 
 test('prod compose escapes shell dollars in api/worker restart wrappers', () => {

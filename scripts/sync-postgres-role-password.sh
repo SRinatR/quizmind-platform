@@ -10,43 +10,45 @@ fi
 
 read_env_value() {
   local key="$1"
-  node - "${ENV_FILE}" "$key" <<'NODE'
-    const fs = require("node:fs");
-    const path = process.argv[2];
-    const key = process.argv[3];
-    const text = fs.readFileSync(path, "utf8");
-
-    function unquote(value) {
-      const trimmed = value.trim();
-      if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-        const inner = trimmed.slice(1, -1);
-        if (trimmed.startsWith("\"")) {
-          return inner
-            .replace(/\\n/g, "\n")
-            .replace(/\\r/g, "\r")
-            .replace(/\\t/g, "\t")
-            .replace(/\\\"/g, "\"");
-        }
-        return inner;
+  awk -v key="$key" '
+    function trim(s) {
+      sub(/^[[:space:]]+/, "", s)
+      sub(/[[:space:]]+$/, "", s)
+      return s
+    }
+    BEGIN { found = 0 }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      line = trim(line)
+      if (line == "" || line ~ /^#/) next
+      if (line ~ /^export[[:space:]]+/) {
+        sub(/^export[[:space:]]+/, "", line)
+        line = trim(line)
       }
-      const commentIndex = trimmed.search(/\s+#/);
-      return (commentIndex >= 0 ? trimmed.slice(0, commentIndex) : trimmed).trim();
+      eq = index(line, "=")
+      if (eq <= 1) next
+      k = trim(substr(line, 1, eq - 1))
+      if (k != key) next
+      v = trim(substr(line, eq + 1))
+      if (v ~ /^'\''.*'\''$/) {
+        v = substr(v, 2, length(v) - 2)
+      } else if (v ~ /^".*"$/) {
+        v = substr(v, 2, length(v) - 2)
+        gsub(/\\n/, "\n", v)
+        gsub(/\\r/, "\r", v)
+        gsub(/\\t/, "\t", v)
+        gsub(/\\"/, "\"", v)
+      } else {
+        sub(/[[:space:]]+#.*$/, "", v)
+        v = trim(v)
+      }
+      print v
+      found = 1
+      exit
     }
-
-    for (const rawLine of text.split(/\r?\n/)) {
-      let line = rawLine.trim();
-      if (!line || line.startsWith("#")) continue;
-      if (line.startsWith("export ")) line = line.slice("export ".length).trim();
-      const sep = line.indexOf("=");
-      if (sep <= 0) continue;
-      const k = line.slice(0, sep).trim();
-      if (k !== key) continue;
-      const v = unquote(line.slice(sep + 1));
-      process.stdout.write(v);
-      process.exit(0);
-    }
-    process.exit(1);
-NODE
+    END { if (!found) exit 1 }
+  ' "$ENV_FILE"
 }
 
 DB_USER="$(read_env_value POSTGRES_USER || true)"
@@ -69,7 +71,7 @@ fi
 
 ROLE_EXISTS="$(
   docker exec -u postgres -i quizmind-postgres psql -d postgres -tAc \
-    "SELECT 1 FROM pg_roles WHERE rolname = '$DB_USER';"
+    "SELECT 1 FROM pg_roles WHERE rolname = '${DB_USER}';"
 )"
 
 if [[ "${ROLE_EXISTS//[[:space:]]/}" != "1" ]]; then
