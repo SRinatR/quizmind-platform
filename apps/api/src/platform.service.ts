@@ -466,7 +466,7 @@ function normalizeAvatarUrl(value: string | null | undefined): string | null | u
 }
 
 const validThemes = new Set(['light', 'dark', 'system']);
-const validLanguages = new Set(['en', 'ru']);
+const validLanguages = new Set(['en', 'ru', 'uz', 'kk', 'tr', 'es', 'pt-BR']);
 const validDensities = new Set(['comfortable', 'compact']);
 
 function normalizeUiPreferences(value: UiPreferences | null | undefined): Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue {
@@ -485,7 +485,7 @@ function normalizeUiPreferences(value: UiPreferences | null | undefined): Prisma
   }
   if ('language' in value) {
     if (value.language !== undefined && !validLanguages.has(value.language)) {
-      throw new BadRequestException('uiPreferences.language must be en or ru.');
+      throw new BadRequestException('uiPreferences.language must be one of en, ru, uz, kk, tr, es, pt-BR.');
     }
     result.language = value.language;
   }
