@@ -1,22 +1,7 @@
 'use client';
 
-import { SUPPORTED_DISPLAY_CURRENCIES, type SupportedCurrency } from '../../../lib/money';
+import { SUPPORTED_DISPLAY_CURRENCIES } from '../../../lib/money';
 import { usePreferences } from '../../../lib/preferences';
-
-const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
-  RUB: 'RUB — Russian ruble',
-  USD: 'USD — US dollar',
-  EUR: 'EUR — Euro',
-  UZS: 'UZS — Uzbek soʻm',
-  KZT: 'KZT — Kazakhstani tenge',
-  TRY: 'TRY — Turkish lira',
-  AED: 'AED — UAE dirham',
-  GEL: 'GEL — Georgian lari',
-  AMD: 'AMD — Armenian dram',
-  KGS: 'KGS — Kyrgyzstani som',
-  CNY: 'CNY — Chinese yuan',
-  GBP: 'GBP — British pound',
-};
 
 export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean }) {
   const { prefs, t, setTheme, setLanguage, setBalanceDisplayCurrency, isSaving } =
@@ -133,7 +118,7 @@ export function AppearanceSettingsPanel({ isSignedIn }: { isSignedIn: boolean })
                 checked={prefs.balanceDisplayCurrency === code}
                 onChange={() => setBalanceDisplayCurrency(code)}
               />
-              <span className="pref-option__label">{CURRENCY_LABELS[code]}</span>
+              <span className="pref-option__label">{s.currencyNames[code] ?? code}</span>
             </label>
           ))}
         </div>
