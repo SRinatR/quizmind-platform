@@ -149,7 +149,7 @@ services:
     container_name: quizmind-postgres-exporter
     restart: unless-stopped
     environment:
-      DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN}"
+      DATA_SOURCE_NAME: "${POSTGRES_EXPORTER_DSN:?POSTGRES_EXPORTER_DSN is required for postgres-exporter}"
     networks: [app_net, obs_net]
 
   redis-exporter:

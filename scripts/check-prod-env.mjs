@@ -118,6 +118,46 @@ if (databaseUrl) {
   }
 }
 
+
+const warnings = [];
+
+let exporterUrl;
+if (env.POSTGRES_EXPORTER_DSN && env.POSTGRES_EXPORTER_DSN.trim().length > 0) {
+  try {
+    exporterUrl = new URL(env.POSTGRES_EXPORTER_DSN);
+  } catch {
+    issues.push('POSTGRES_EXPORTER_DSN must be a valid absolute Postgres URL when provided.');
+  }
+
+  if (exporterUrl) {
+    if (!['postgres:', 'postgresql:'].includes(exporterUrl.protocol)) {
+      issues.push('POSTGRES_EXPORTER_DSN must use the postgres:// or postgresql:// protocol.');
+    }
+
+    const exporterUser = decodeURIComponent(exporterUrl.username);
+    const exporterPassword = decodeURIComponent(exporterUrl.password);
+    const exporterDb = decodeURIComponent(exporterUrl.pathname.replace(/^\/+/, ''));
+
+    if (exporterUser !== env.POSTGRES_USER) {
+      issues.push('POSTGRES_EXPORTER_DSN username must match POSTGRES_USER.');
+    }
+
+    if (exporterPassword !== env.POSTGRES_PASSWORD) {
+      issues.push('POSTGRES_EXPORTER_DSN password must match POSTGRES_PASSWORD.');
+    }
+
+    if (exporterDb !== env.POSTGRES_DB) {
+      issues.push('POSTGRES_EXPORTER_DSN database name must match POSTGRES_DB.');
+    }
+
+    if (exporterUrl.hostname !== expectedPostgresHost) {
+      issues.push(`POSTGRES_EXPORTER_DSN host should be "${expectedPostgresHost}" for Docker production networking.`);
+    }
+  }
+} else {
+  warnings.push('POSTGRES_EXPORTER_DSN is not set. This is allowed for app deploys, but required when running postgres-exporter in observability stack.');
+}
+
 if (env.REDIS_URL) {
   try {
     const redisUrl = new URL(env.REDIS_URL);
@@ -134,3 +174,6 @@ if (issues.length > 0) {
 }
 
 console.log(`Production environment preflight OK: ${envFile}`);
+for (const warning of warnings) {
+  console.warn(`Production environment preflight warning: ${warning}`);
+}
