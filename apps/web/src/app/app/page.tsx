@@ -32,12 +32,12 @@ export default async function AppDashboardPage({ searchParams }: AppPageProps) {
       apiState={session ? `Connected \u2014 ${sessionLabel}` : 'Not signed in'}
       currentPersona={persona}
       description=""
-      eyebrow="Profile"
+      eyebrow=""
       isAdmin={isAdmin}
       isSignedIn={Boolean(session)}
       pathname="/app"
       showPersonaSwitcher={false}
-      title="Your Profile"
+      title=""
       userDisplayName={session?.user.displayName ?? undefined}
       userAvatarUrl={userProfile?.avatarUrl ?? undefined}
     >
