@@ -66,6 +66,12 @@ export type WorkspaceAiRequestRecord = Prisma.AiRequestGetPayload<{
   select: typeof aiRequestSelect;
 }>;
 
+const quotaCounterSelect = { key: true, consumed: true, periodStart: true, periodEnd: true } satisfies Prisma.QuotaCounterSelect;
+
+export type WorkspaceQuotaCounterRecord = Prisma.QuotaCounterGetPayload<{
+  select: typeof quotaCounterSelect;
+}>;
+
 @Injectable()
 export class UsageRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}

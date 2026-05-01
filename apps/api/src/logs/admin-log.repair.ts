@@ -1,7 +1,16 @@
-import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
+import { buildAdminLogEventCreateInput, Prisma, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
 import { buildAdminAiLogPatchFromAiRequestEvent, normalizeAdminAiStatus } from './admin-log-ai-sync';
+
+
+const adminLogRepairSelect = {
+  id: true, stream: true, sourceRecordId: true, eventType: true, occurredAt: true, severity: true, status: true, actorId: true,
+  targetType: true, targetId: true, actorEmail: true, actorDisplayName: true, summary: true, source: true, category: true, searchText: true,
+  provider: true, model: true, durationMs: true, costUsd: true, promptTokens: true, completionTokens: true, totalTokens: true, metadataJson: true, payloadJson: true,
+} satisfies Prisma.AdminLogEventSelect;
+type AdminLogRepairRow = Prisma.AdminLogEventGetPayload<{ select: typeof adminLogRepairSelect }>;
+function isNonEmptyString(value: unknown): value is string { return typeof value === 'string' && value.length > 0; }
 
 interface RepairCursor {
   occurredAt: Date;
@@ -37,7 +46,7 @@ export class AdminLogRepairService {
     const totals: AdminLogRepairResult = { inspected: 0, updated: 0, enrichedAi: 0, duplicateAiDomainDeleted: 0 };
 
     while (true) {
-      const rows = await this.prisma.adminLogEvent.findMany({
+      const rows: AdminLogRepairRow[] = await this.prisma.adminLogEvent.findMany({
         where: cursor
           ? {
               OR: [
@@ -48,39 +57,13 @@ export class AdminLogRepairService {
           : undefined,
         orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
-        select: {
-          id: true,
-          stream: true,
-          sourceRecordId: true,
-          eventType: true,
-          occurredAt: true,
-          severity: true,
-          status: true,
-          actorId: true,
-          targetType: true,
-          targetId: true,
-          actorEmail: true,
-          actorDisplayName: true,
-          summary: true,
-          source: true,
-          category: true,
-          searchText: true,
-          provider: true,
-          model: true,
-          durationMs: true,
-          costUsd: true,
-          promptTokens: true,
-          completionTokens: true,
-          totalTokens: true,
-          metadataJson: true,
-          payloadJson: true,
-        },
+        select: adminLogRepairSelect,
       });
 
       if (rows.length === 0) break;
       totals.inspected += rows.length;
 
-      const actorDirectory = await resolveActorIdentities(this.prisma, rows.map((row) => row.actorId ?? '').filter(Boolean));
+      const actorDirectory = await resolveActorIdentities(this.prisma, rows.map((row) => row.actorId ?? '').filter(isNonEmptyString));
       const aiRequestIds = Array.from(new Set(rows.flatMap((row) => {
         const metadata = this.toObject(row.metadataJson);
         const payload = this.toObject(row.payloadJson);
@@ -145,7 +128,7 @@ export class AdminLogRepairService {
         const nextSource = rebuilt.source ?? null;
         const nextCategory = rebuilt.category ?? null;
         const nextSearchText = enrichSearchTextWithActorIdentity(
-          [rebuilt.searchText, aiRequest?.promptExcerpt].filter(Boolean).join(' ').toLowerCase() || null,
+          [rebuilt.searchText, aiRequest?.promptExcerpt].filter(isNonEmptyString).join(' ').toLowerCase() || null,
           identity,
         ) ?? null;
         const aiPatch = aiRequest ? buildAdminAiLogPatchFromAiRequestEvent(aiRequest) : undefined;
@@ -221,7 +204,7 @@ export class AdminLogRepairService {
           },
           select: { id: true, targetId: true },
         });
-        const activityTargetIds = new Set(activityRows.map((activityRow) => activityRow.targetId).filter(Boolean));
+        const activityTargetIds = new Set(activityRows.map((activityRow) => activityRow.targetId).filter(isNonEmptyString));
         for (const [rowId, requestId] of domainRequestIdByRowId.entries()) {
           if (activityTargetIds.has(requestId)) {
             duplicateDomainRowIds.push(rowId);
