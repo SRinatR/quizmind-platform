@@ -16,6 +16,13 @@ const extensionInstallationSessionInclude = {
       createdAt: true,
       updatedAt: true,
       lastSeenAt: true,
+      deviceLabel: true,
+      platform: true,
+      osName: true,
+      osVersion: true,
+      browserName: true,
+      browserVersion: true,
+      userAgent: true,
     },
   },
 } satisfies Prisma.ExtensionInstallationSessionInclude;

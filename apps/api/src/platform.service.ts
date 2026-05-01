@@ -614,7 +614,8 @@ export class PlatformService {
     if (!request || (request.direction !== 'credit' && request.direction !== 'debit')) throw new BadRequestException('direction must be credit or debit.');
     if (request.currency !== 'RUB') throw new BadRequestException('currency must be RUB.');
     if (!request.idempotencyKey?.trim()) throw new BadRequestException('idempotencyKey is required.');
-    if (!Number.isInteger(request.amountKopecks) || request.amountKopecks <= 0) throw new BadRequestException('amountKopecks must be positive integer.');
+    const amountKopecks = request.amountKopecks;
+    if (typeof amountKopecks !== 'number' || !Number.isInteger(amountKopecks) || amountKopecks <= 0) throw new BadRequestException('amountKopecks must be positive integer.');
     if (typeof request.reason === 'string' && request.reason.trim().length > 500) throw new BadRequestException('reason length must be at most 500.');
     let userIds: string[] = [];
     if (request.target?.type === 'selected_users') {
@@ -625,7 +626,7 @@ export class PlatformService {
       const users = await this.prisma.user.findMany({ select: { id: true } });
       userIds = users.map((u) => u.id);
     } else throw new BadRequestException('target is required.');
-    const result = await this.walletRepository.manualAdjustWallets({ actorId: session.user.id, targetType: request.target.type, userIds, direction: request.direction, amountKopecks: request.amountKopecks, currency: 'RUB', reason: request.reason, idempotencyKey: request.idempotencyKey, allowNegative: request.allowNegative });
+    const result = await this.walletRepository.manualAdjustWallets({ actorId: session.user.id, targetType: request.target.type, userIds, direction: request.direction, amountKopecks, currency: 'RUB', reason: request.reason, idempotencyKey: request.idempotencyKey, allowNegative: request.allowNegative });
     this.logAdminUserMutation('admin.wallet_adjustment_created', { actorUserId: session.user.id, targetType: request.target.type, affectedCount: result.affectedCount, batchId: result.batchId });
     return result;
   }
@@ -806,7 +807,7 @@ export class PlatformService {
   private buildFoundationRemoteConfigVersions(
     activeLayers: RemoteConfigSnapshot['activeLayers'],
   ): RemoteConfigSnapshot['versions'] {
-    const actor = getPersona('platform-admin');
+    const actor = getPersona('admin');
 
     return [
       {
@@ -940,8 +941,7 @@ export class PlatformService {
           consumed: 312,
           periodStart: new Date(Date.now() - 10 * 60 * 60 * 1000),
           periodEnd: new Date(Date.now() + 14 * 60 * 60 * 1000),
-          updatedAt: new Date(),
-        },
+                  },
       ],
     });
     const installations = mapUsageInstallations([
@@ -1624,6 +1624,7 @@ export class PlatformService {
       accessDecision,
       writeDecision,
       items: accessDecision.allowed ? listFoundationUsers() : [],
+      limit: accessDecision.allowed ? listFoundationUsers().length : 0,
       permissions: listPrincipalPermissions(persona.principal),
     };
   }
@@ -2152,7 +2153,7 @@ export class PlatformService {
   }
 
   publishRemoteConfig(request?: Partial<RemoteConfigPublishRequest>) {
-    const fallbackActor = getPersona('platform-admin');
+    const fallbackActor = getPersona('admin');
     const publishRequest: RemoteConfigPublishRequest = {
       versionLabel: request?.versionLabel ?? `local-${Date.now()}`,
       layers: request?.layers ?? getFoundationOverview().remoteConfigLayers,
@@ -2271,7 +2272,7 @@ export class PlatformService {
   }
 
   async bootstrapExtension(request?: Partial<ExtensionBootstrapRequest>) {
-    const fallbackPersona = getPersona('platform-admin');
+    const fallbackPersona = getPersona('admin');
     const bootstrapRequest: ExtensionBootstrapRequest = {
       installationId: request?.installationId ?? 'inst_local_browser',
       userId: request?.userId ?? fallbackPersona.user.id,
@@ -3002,9 +3003,9 @@ export class PlatformService {
   }
 
   private buildFoundationAdminLogEntries(): AdminLogEntry[] {
-    const platformAdmin = getPersona('platform-admin');
-    const supportAdmin = getPersona('support-admin');
-    const workspaceViewer = getPersona('workspace-viewer');
+    const platformAdmin = getPersona('admin');
+    const supportAdmin = getPersona('admin');
+    const workspaceViewer = getPersona('user');
 
     return [
       {
@@ -3812,8 +3813,8 @@ export class PlatformService {
   listSupportImpersonationSessions(personaKey?: string): SupportImpersonationHistorySnapshot {
     const persona = getPersona(personaKey);
     const accessDecision = canReadSupportImpersonationSessions(persona.principal);
-    const supportPersona = getPersona('support-admin');
-    const targetPersona = getPersona('workspace-viewer');
+    const supportPersona = getPersona('admin');
+    const targetPersona = getPersona('user');
     const items: SupportImpersonationSessionSnapshot[] = accessDecision.allowed
       ? [
           {
@@ -3870,7 +3871,7 @@ export class PlatformService {
     const accessDecision = canReadSupportTickets(persona.principal);
     const filters = normalizeSupportTicketQueueFilters(filtersInput);
     const favoritePresets: SupportTicketQueuePreset[] =
-      persona.key === 'support-admin' ? ['active_queue', 'shared_queue'] : [];
+      persona.key === 'admin' ? ['active_queue', 'shared_queue'] : [];
 
     return buildSupportTicketQueueSnapshot({
       personaKey: persona.key,
@@ -3935,7 +3936,7 @@ export class PlatformService {
 
     const favorite = request?.favorite ?? true;
     const foundationFavorites: SupportTicketQueuePreset[] =
-      persona.key === 'support-admin' ? ['active_queue', 'shared_queue'] : [];
+      persona.key === 'admin' ? ['active_queue', 'shared_queue'] : [];
     const favorites = favorite
       ? Array.from(new Set([...foundationFavorites, preset as SupportTicketQueuePreset]))
       : foundationFavorites.filter((item) => item !== preset);
@@ -3986,7 +3987,7 @@ export class PlatformService {
       throw new NotFoundException('Support ticket not found.');
     }
 
-    const supportPersona = getPersona('support-admin');
+    const supportPersona = getPersona('admin');
     const normalizedStatus = request?.status ?? fallbackTicket.status;
     const normalizedAssignedToUserId =
       request?.assignedToUserId === undefined
@@ -4249,8 +4250,8 @@ export class PlatformService {
 
   startSupportImpersonation(request?: Partial<SupportImpersonationRequest>) {
     return startSupportImpersonation({
-      supportActorId: request?.supportActorId ?? getPersona('support-admin').user.id,
-      targetUserId: request?.targetUserId ?? getPersona('workspace-viewer').user.id,
+      supportActorId: request?.supportActorId ?? getPersona('admin').user.id,
+      targetUserId: request?.targetUserId ?? getPersona('user').user.id,
       reason: request?.reason ?? 'Investigating a user access issue in local foundation mode.',
       supportTicketId: request?.supportTicketId?.trim() || undefined,
       operatorNote: request?.operatorNote?.trim() || undefined,
@@ -4305,8 +4306,8 @@ export class PlatformService {
   }
 
   endSupportImpersonation(request?: Partial<SupportImpersonationEndRequest>): SupportImpersonationEndResult {
-    const supportPersona = getPersona('support-admin');
-    const targetPersona = getPersona('workspace-viewer');
+    const supportPersona = getPersona('admin');
+    const targetPersona = getPersona('user');
     const impersonationSessionId = request?.impersonationSessionId?.trim() || 'support-demo-session-1';
     const closeReason = request?.closeReason?.trim() || undefined;
     const createdAt = new Date(Date.now() - 15 * 60 * 1000).toISOString();

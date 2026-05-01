@@ -247,7 +247,6 @@ export class ExtensionControlService {
         capabilities: normalizeCapabilities(installation.capabilitiesJson),
         lastSeenAt: (installation.lastSeenAt ?? occurredAt).toISOString(),
         boundAt: installation.createdAt.toISOString(),
-      signedInAt: installation.createdAt.toISOString(),
         ...(normalizedRequest.handshake.buildId ? { buildId: normalizedRequest.handshake.buildId } : {}),
       },
       session: {
@@ -961,7 +960,6 @@ export class ExtensionControlService {
       schemaVersion: installation.schemaVersion,
       capabilities: normalizeCapabilities(installation.capabilitiesJson),
       boundAt: installation.createdAt.toISOString(),
-      signedInAt: installation.createdAt.toISOString(),
       ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt.toISOString() } : {}),
       activeSessionCount,
       ...(installationSessionStats?.lastSessionIssuedAt

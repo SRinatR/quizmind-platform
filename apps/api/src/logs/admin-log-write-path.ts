@@ -31,6 +31,12 @@ function enrichReadModelActorFields(
   };
 }
 
+
+function toAdminLogEventUpdateInput(data: Prisma.AdminLogEventCreateInput): Prisma.AdminLogEventUpdateInput {
+  const { stream: _stream, sourceRecordId: _sourceRecordId, ...mutable } = data;
+  return mutable;
+}
+
 export type ReadModelUpsert = {
   stream: 'audit' | 'activity' | 'security' | 'domain';
   sourceRecordId: string;
@@ -59,7 +65,7 @@ export type CreatedSecurityEventRow = {
   id: string;
   eventType: string;
   actorId: string | null;
-  severity: Prisma.EventSeverity;
+  severity: 'debug' | 'info' | 'warn' | 'error';
   metadataJson: unknown;
   createdAt: Date;
 };
@@ -176,26 +182,25 @@ export async function upsertAdminLogEventsBestEffort(
         .map((candidate) => aiRequestById.get(candidate))
         .find(Boolean);
 
-      const baseData = aiRequest
-        ? {
-            ...event.data,
-            ...buildAdminAiLogPatchFromAiRequestEvent(aiRequest),
-            provider: event.data.provider ?? aiRequest.provider ?? undefined,
-            model: event.data.model ?? aiRequest.model ?? undefined,
-            status: event.data.status ?? normalizeAdminAiStatus(aiRequest.status),
-            durationMs: event.data.durationMs ?? aiRequest.durationMs ?? undefined,
-            costUsd: event.data.costUsd ?? aiRequest.estimatedCostUsd ?? undefined,
-            promptTokens: event.data.promptTokens ?? aiRequest.promptTokens ?? undefined,
-            completionTokens: event.data.completionTokens ?? aiRequest.completionTokens ?? undefined,
-            totalTokens: event.data.totalTokens ?? aiRequest.totalTokens ?? undefined,
-            searchText: [event.data.searchText, aiRequest.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
-          }
-        : event.data;
-      const data = enrichReadModelActorFields(baseData, event.data.actorId ? actorDirectory.get(event.data.actorId) : undefined);
+      const baseData: Prisma.AdminLogEventCreateInput = {
+        ...event.data,
+        ...(aiRequest ? { targetType: event.data.targetType ?? 'ai_request', targetId: event.data.targetId ?? aiRequest.id } : {}),
+        provider: event.data.provider ?? aiRequest?.provider ?? undefined,
+        model: event.data.model ?? aiRequest?.model ?? undefined,
+        status: event.data.status ?? normalizeAdminAiStatus(aiRequest?.status),
+        durationMs: event.data.durationMs ?? aiRequest?.durationMs ?? undefined,
+        costUsd: event.data.costUsd ?? aiRequest?.estimatedCostUsd ?? undefined,
+        promptTokens: event.data.promptTokens ?? aiRequest?.promptTokens ?? undefined,
+        completionTokens: event.data.completionTokens ?? aiRequest?.completionTokens ?? undefined,
+        totalTokens: event.data.totalTokens ?? aiRequest?.totalTokens ?? undefined,
+        searchText: [event.data.searchText, aiRequest?.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
+      };
+      const createData = enrichReadModelActorFields(baseData, event.data.actorId ? actorDirectory.get(event.data.actorId) : undefined);
+      const updateData = toAdminLogEventUpdateInput(createData);
       await prisma.adminLogEvent.upsert({
         where: { stream_sourceRecordId: { stream: event.stream, sourceRecordId: event.sourceRecordId } },
-        create: data,
-        update: data,
+        create: createData,
+        update: updateData,
       });
     } catch (error) {
       console.warn('[admin-log-events] explicit dual-write failed', {
