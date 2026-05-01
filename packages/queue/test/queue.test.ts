@@ -12,6 +12,7 @@ import {
   buildQueueDedupeKey,
   buildQueueJob,
   createQueueDispatchRequest,
+  createThrottledErrorLogger,
   getQueueRuntimeOptions,
   resolveRedisConnectionOptions,
 } from '../src/index';
@@ -130,4 +131,18 @@ test('buildQueueDefinitions applies queue history policy overrides', () => {
   assert.equal(definitions['usage-events'].removeOnComplete, 333);
   assert.equal(definitions['usage-events'].removeOnFail, 444);
   assert.equal(definitions['billing-webhooks'].attempts, QUEUE_HISTORY_DEFAULTS['billing-webhooks'].attempts);
+});
+
+
+test('createThrottledErrorLogger suppresses repeated errors within interval', async () => {
+  const seen: string[] = [];
+  const log = createThrottledErrorLogger({ context: 'redis-test', intervalMs: 1000, sink: (m) => seen.push(m) });
+
+  log(new Error('ECONNREFUSED'));
+  log(new Error('ECONNREFUSED'));
+  assert.equal(seen.length, 1);
+
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  log(new Error('ETIMEDOUT'));
+  assert.equal(seen.length, 2);
 });

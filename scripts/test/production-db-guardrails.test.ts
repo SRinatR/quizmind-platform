@@ -8,6 +8,7 @@ const prodCompose = readFileSync('docker-compose.prod.yml', 'utf8');
 const obsCompose = readFileSync('docker-compose.observability.yml', 'utf8');
 const syncScript = readFileSync('scripts/sync-postgres-role-password.sh', 'utf8');
 const dbAuthScript = readFileSync('scripts/check-prod-db-auth.sh', 'utf8');
+const resourceScript = readFileSync('scripts/check-prod-resource-health.sh', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 
 const startIx = deployScript.indexOf('$DC up -d api worker web');
@@ -38,6 +39,14 @@ test('deploy aborts immediately when db auth preflight fails', () => {
   assert.ok(preflightIx >= 0, 'missing guarded preflight block');
   assert.ok(exitIx > preflightIx, 'missing exit on failed preflight');
   assert.ok(exitIx < appIx, 'exit must happen before app startup');
+});
+
+
+test('deploy stops optional observability during normal app deploy', () => {
+  const stopIx = deployScript.indexOf('bash scripts/observability-stop.sh || true');
+  const startIx = deployScript.indexOf('$DC up -d api worker web');
+  assert.ok(stopIx >= 0, 'observability stop call missing');
+  assert.ok(startIx > stopIx, 'observability stop should happen before app startup');
 });
 
 test('postgres-exporter is not part of default app startup', () => {
@@ -97,4 +106,26 @@ test('deploy workflow does not reference observability compose in normal deploy'
   const smokeStepIx = deployWorkflow.indexOf('name: Smoke check — API health');
   const deploySection = deployWorkflow.slice(deploySshStepIx, smokeStepIx);
   assert.equal(deploySection.includes('docker-compose.observability.yml'), false);
+});
+
+
+test('prod compose sets conservative memory limits for core services', () => {
+  for (const [service, limit] of [['postgres','768m'],['redis','256m'],['api','768m'],['worker','768m'],['web','512m']] as const) {
+    assert.ok(prodCompose.includes(`${service}:`), `missing service ${service}`);
+    assert.ok(prodCompose.includes(`mem_limit: ${limit}`), `missing mem_limit for ${service}`);
+  }
+  for (const reservation of ['mem_reservation: 256m', 'mem_reservation: 64m', 'mem_reservation: 192m']) {
+    assert.ok(prodCompose.includes(reservation));
+  }
+});
+
+
+test('resource diagnostic script exists, is bash-valid, and avoids obvious secret printing', () => {
+  const syntax = spawnSync('bash', ['-n', 'scripts/check-prod-resource-health.sh'], { encoding: 'utf8' });
+  assert.equal(syntax.status, 0, syntax.stderr || syntax.stdout);
+
+  for (const marker of ['echo "$DATABASE_URL"', 'printenv', 'cat .env.prod']) {
+    assert.equal(resourceScript.includes(marker), false, `unexpected marker: ${marker}`);
+  }
+  assert.equal(/(^|\n)\s*env(\s|$)/.test(resourceScript), false, 'unexpected raw env command');
 });

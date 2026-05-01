@@ -113,6 +113,9 @@ $DC run --rm \
 
 echo "==> Migrations complete"
 
+echo "==> Stopping optional observability containers for app-only production deploy"
+bash scripts/observability-stop.sh || true
+
 echo "==> Starting api, worker, and web"
 $DC up -d api worker web
 

@@ -1,6 +1,7 @@
 import { Inject, Injectable, OnModuleDestroy } from '@nestjs/common';
 import { loadApiEnv } from '@quizmind/config';
 import IORedis from 'ioredis';
+import { createThrottledErrorLogger } from '@quizmind/queue';
 
 interface RateLimitBucket {
   count: number;
@@ -115,6 +116,7 @@ export class DistributedRateLimitService implements RateLimitStore, OnModuleDest
   private readonly env = loadApiEnv();
   private readonly redisKeyPrefix = 'quizmind:rate-limit';
   private readonly redisClient: IORedis | null;
+  private readonly logRedisError = createThrottledErrorLogger({ context: 'api-rate-limit-redis', intervalMs: 30_000 });
 
   constructor(
     @Inject(InMemoryRateLimitService)
@@ -128,6 +130,10 @@ export class DistributedRateLimitService implements RateLimitStore, OnModuleDest
             maxRetriesPerRequest: null,
           })
         : null;
+
+    this.redisClient?.on('error', (error) => {
+      this.logRedisError(error);
+    });
   }
 
   async consume(key: string, limit: number, windowMs: number, now = Date.now()): Promise<RateLimitDecision> {
