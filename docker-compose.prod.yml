@@ -26,10 +26,14 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:?POSTGRES_DB is required in .env.prod}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required in .env.prod}"
       POSTGRES_USER: "${POSTGRES_USER:?POSTGRES_USER is required in .env.prod}"
+    mem_limit: 768m
+    mem_reservation: 256m
 
   redis:
     image: public.ecr.aws/docker/library/redis:7-alpine
     pull_policy: missing
+    mem_limit: 256m
+    mem_reservation: 64m
 
   api:
     build:
@@ -77,6 +81,8 @@ services:
       AUTH_RATE_LIMIT_MAX_REQUESTS: "${AUTH_RATE_LIMIT_MAX_REQUESTS:-10}"
     volumes:
       - quizmind_history_data:/app/data/history
+    mem_limit: 768m
+    mem_reservation: 256m
 
   web:
     build:
@@ -110,6 +116,8 @@ services:
       REDIS_URL: "${REDIS_URL:?REDIS_URL is required in .env.prod}"
       DEFAULT_PERSONA: "${DEFAULT_PERSONA:-platform-admin}"
       QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE: "${QUIZMIND_EXTENSION_BIND_CODE_STORE_MODE:-optional}"
+    mem_limit: 512m
+    mem_reservation: 192m
 
   worker:
     build:
@@ -136,6 +144,8 @@ services:
       HISTORY_BLOB_DIR: "${HISTORY_BLOB_DIR:-/app/data/history}"
     volumes:
       - quizmind_history_data:/app/data/history
+    mem_limit: 768m
+    mem_reservation: 256m
 
 volumes:
   quizmind_history_data:

@@ -316,3 +316,42 @@ After changing exporter DSN, recreate exporter:
 ```bash
 docker compose --env-file .env.prod -f docker-compose.observability.yml up -d --force-recreate postgres-exporter
 ```
+
+---
+
+## Small VPS memory hardening
+
+Default production deploy is **app-only** and starts only:
+- `postgres`
+- `redis`
+- `api`
+- `worker`
+- `web`
+
+Observability is optional and RAM-heavy on a 4GB VPS. Start it manually only when needed:
+
+```bash
+bash scripts/observability-start.sh .env.prod
+bash scripts/observability-status.sh
+bash scripts/observability-stop.sh
+```
+
+Recommended swap setup for a 4GB VPS: **2GB swap**.
+
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-quizmind-swap.conf
+sudo sysctl --system
+free -h
+```
+
+Swap is not a replacement for fixing memory leaks, but helps prevent total SSH lockout during memory spikes.
+
+### TODO: production runtime hardening follow-up
+
+Production API/worker currently run through `tsx` (`pnpm --filter @quizmind/api start`, `pnpm --filter @quizmind/worker start`).
+Migrate production runtime to compiled JS in a separate PR after validating the build/release pipeline end-to-end.

@@ -14,7 +14,7 @@ import {
   type RemoteConfigPublishResult,
 } from '@quizmind/contracts';
 import { createNoopEmailAdapter } from '@quizmind/email';
-import { QUEUE_HISTORY_DEFAULTS, getQueueRuntimeOptions, queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
+import { QUEUE_HISTORY_DEFAULTS, createThrottledErrorLogger, getQueueRuntimeOptions, queueNames, resolveRedisConnectionOptions } from '@quizmind/queue';
 import { createLogEvent, type StructuredLogEvent } from '@quizmind/logger';
 import { type Job, Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
@@ -214,6 +214,9 @@ async function processQueueJobWithDomainLogging<T extends QueueJobProcessingResu
   }
 }
 
+
+const logWorkerRedisError = createThrottledErrorLogger({ context: 'worker-redis', intervalMs: 30_000 });
+
 async function bootstrap() {
   const env = loadWorkerEnv();
   const envIssues = validateWorkerEnv(env);
@@ -265,6 +268,9 @@ async function bootstrap() {
         enableReadyCheck: false,
         lazyConnect: true,
         maxRetriesPerRequest: null,
+      });
+      redisConnection.on('error', (error) => {
+        logWorkerRedisError(error);
       });
       await redisConnection.connect();
 

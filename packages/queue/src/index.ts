@@ -146,6 +146,30 @@ export function resolveRedisConnectionOptions(redisUrl: string): RedisConnection
   };
 }
 
+
+export interface ThrottledErrorLoggerOptions {
+  context: string;
+  intervalMs?: number;
+  sink?: (message: string) => void;
+}
+
+export function createThrottledErrorLogger(options: ThrottledErrorLoggerOptions): (error: unknown) => void {
+  const intervalMs = options.intervalMs ?? 60_000;
+  const sink = options.sink ?? ((message: string) => console.error(message));
+  const lastLoggedByKey = new Map<string, number>();
+
+  return (error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error ?? 'unknown error');
+    const key = `${options.context}:${message}`;
+    const now = Date.now();
+    const prev = lastLoggedByKey.get(key) ?? 0;
+    if (now - prev < intervalMs) {
+      return;
+    }
+    lastLoggedByKey.set(key, now);
+    sink(`[${options.context}] ${message}`);
+  };
+}
 export function buildQueueDedupeKey<TQueue extends PlatformQueue>(
   queue: TQueue,
   payload: QueuePayloadFor<TQueue>,
