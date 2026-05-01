@@ -37,6 +37,38 @@ function toAdminLogEventUpdateInput(data: Prisma.AdminLogEventCreateInput): Pris
   return mutable;
 }
 
+
+function toAdminLogEventCreateAiPatch(
+  patch: Prisma.AdminLogEventUpdateManyMutationInput,
+): Pick<
+  Prisma.AdminLogEventCreateInput,
+  'targetType' | 'targetId' | 'provider' | 'model' | 'status' | 'durationMs' | 'costUsd' | 'promptTokens' | 'completionTokens' | 'totalTokens'
+> {
+  const readString = (value: unknown): string | null | undefined => {
+    if (typeof value === 'string') return value;
+    if (value === null || typeof value === 'undefined') return value;
+    return undefined;
+  };
+  const readNumber = (value: unknown): number | null | undefined => {
+    if (typeof value === 'number') return value;
+    if (value === null || typeof value === 'undefined') return value;
+    return undefined;
+  };
+
+  return {
+    targetType: readString(patch.targetType),
+    targetId: readString(patch.targetId),
+    provider: readString(patch.provider),
+    model: readString(patch.model),
+    status: readString(patch.status) as 'success' | 'failure' | null | undefined,
+    durationMs: readNumber(patch.durationMs),
+    costUsd: readNumber(patch.costUsd),
+    promptTokens: readNumber(patch.promptTokens),
+    completionTokens: readNumber(patch.completionTokens),
+    totalTokens: readNumber(patch.totalTokens),
+  };
+}
+
 export type ReadModelUpsert = {
   stream: 'audit' | 'activity' | 'security' | 'domain';
   sourceRecordId: string;
@@ -182,17 +214,21 @@ export async function upsertAdminLogEventsBestEffort(
         .map((candidate) => aiRequestById.get(candidate))
         .find(Boolean);
 
+      const aiPatch = aiRequest ? toAdminLogEventCreateAiPatch(buildAdminAiLogPatchFromAiRequestEvent(aiRequest)) : undefined;
       const baseData: Prisma.AdminLogEventCreateInput = {
         ...event.data,
-        ...(aiRequest ? { targetType: event.data.targetType ?? 'ai_request', targetId: event.data.targetId ?? aiRequest.id } : {}),
-        provider: event.data.provider ?? aiRequest?.provider ?? undefined,
-        model: event.data.model ?? aiRequest?.model ?? undefined,
-        status: event.data.status ?? normalizeAdminAiStatus(aiRequest?.status),
-        durationMs: event.data.durationMs ?? aiRequest?.durationMs ?? undefined,
-        costUsd: event.data.costUsd ?? aiRequest?.estimatedCostUsd ?? undefined,
-        promptTokens: event.data.promptTokens ?? aiRequest?.promptTokens ?? undefined,
-        completionTokens: event.data.completionTokens ?? aiRequest?.completionTokens ?? undefined,
-        totalTokens: event.data.totalTokens ?? aiRequest?.totalTokens ?? undefined,
+        ...(aiPatch ? {
+          targetType: event.data.targetType ?? aiPatch.targetType ?? undefined,
+          targetId: event.data.targetId ?? aiPatch.targetId ?? undefined,
+          provider: event.data.provider ?? aiPatch.provider ?? undefined,
+          model: event.data.model ?? aiPatch.model ?? undefined,
+          status: event.data.status ?? (aiPatch.status ?? undefined),
+          durationMs: event.data.durationMs ?? aiPatch.durationMs ?? undefined,
+          costUsd: event.data.costUsd ?? aiPatch.costUsd ?? undefined,
+          promptTokens: event.data.promptTokens ?? aiPatch.promptTokens ?? undefined,
+          completionTokens: event.data.completionTokens ?? aiPatch.completionTokens ?? undefined,
+          totalTokens: event.data.totalTokens ?? aiPatch.totalTokens ?? undefined,
+        } : {}),
         searchText: [event.data.searchText, aiRequest?.promptExcerpt].filter(Boolean).join(' ').toLowerCase(),
       };
       const createData = enrichReadModelActorFields(baseData, event.data.actorId ? actorDirectory.get(event.data.actorId) : undefined);

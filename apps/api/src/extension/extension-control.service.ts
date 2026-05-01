@@ -960,6 +960,7 @@ export class ExtensionControlService {
       schemaVersion: installation.schemaVersion,
       capabilities: normalizeCapabilities(installation.capabilitiesJson),
       boundAt: installation.createdAt.toISOString(),
+      signedInAt: installation.createdAt.toISOString(),
       ...(installation.lastSeenAt ? { lastSeenAt: installation.lastSeenAt.toISOString() } : {}),
       activeSessionCount,
       ...(installationSessionStats?.lastSessionIssuedAt
