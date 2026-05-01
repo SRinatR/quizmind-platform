@@ -8,6 +8,7 @@ const prodCompose = readFileSync('docker-compose.prod.yml', 'utf8');
 const obsCompose = readFileSync('docker-compose.observability.yml', 'utf8');
 const syncScript = readFileSync('scripts/sync-postgres-role-password.sh', 'utf8');
 const dbAuthScript = readFileSync('scripts/check-prod-db-auth.sh', 'utf8');
+const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 
 const startIx = deployScript.indexOf('$DC up -d api worker web');
 
@@ -72,4 +73,28 @@ test('db auth and observability scripts are bash syntax-valid', () => {
     const result = spawnSync('bash', ['-n', file], { encoding: 'utf8' });
     assert.equal(result.status, 0, `${file}: ${result.stderr || result.stdout}`);
   }
+});
+
+
+test('deploy workflow updates repo before running deploy script', () => {
+  const cdIx = deployWorkflow.indexOf('cd "$DEPLOY_DIR"');
+  const fetchIx = deployWorkflow.indexOf('git fetch origin');
+  const resetIx = deployWorkflow.indexOf('git reset --hard origin/main');
+  const runIx = deployWorkflow.indexOf('bash scripts/deploy-server.sh');
+
+  assert.ok(cdIx >= 0, 'deploy workflow must cd into deploy dir');
+  assert.ok(fetchIx > cdIx, 'git fetch must run after cd');
+  assert.ok(resetIx > fetchIx, 'git reset must run after fetch');
+  assert.ok(runIx > resetIx, 'deploy script must run after fetch/reset');
+});
+
+test('deploy workflow does not call absolute deploy script path as entrypoint', () => {
+  assert.equal(deployWorkflow.includes("bash ${{ vars.DEPLOY_DIR || '/opt/quizmind-platform' }}/scripts/deploy-server.sh"), false);
+});
+
+test('deploy workflow does not reference observability compose in normal deploy', () => {
+  const deploySshStepIx = deployWorkflow.indexOf('name: Deploy via SSH');
+  const smokeStepIx = deployWorkflow.indexOf('name: Smoke check — API health');
+  const deploySection = deployWorkflow.slice(deploySshStepIx, smokeStepIx);
+  assert.equal(deploySection.includes('docker-compose.observability.yml'), false);
 });
