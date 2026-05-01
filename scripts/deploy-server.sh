@@ -40,15 +40,15 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
+echo "==> Validating ${ENV_FILE}"
+run_prod_env_preflight
+
 echo "==> Updating code from origin/main"
 git fetch origin
 git reset --hard origin/main
 
 CURRENT_SHA="$(git rev-parse HEAD)"
 echo "==> Commit: ${CURRENT_SHA}"
-
-echo "==> Validating ${ENV_FILE}"
-run_prod_env_preflight
 
 echo "==> Building images"
 $DC build
@@ -92,39 +92,12 @@ echo "==> Syncing Postgres role password from ${ENV_FILE}"
 bash scripts/sync-postgres-role-password.sh "${ENV_FILE}"
 
 echo "==> Preflight: verifying DB credentials against running Postgres"
-# Uses pg.Client (require('pg'), available via shamefully-hoist=true) inside the
-# built api image.  DATABASE_URL is passed as-is from .env.prod — no bash URL
-# parsing.  Same hostname-to-IP rewrite used by migration and runtime containers.
-if ! $DC run --rm \
-    -e HOME=/tmp \
-    -e XDG_CONFIG_HOME=/tmp/.config \
-    -e DB_HOST_IP="${PG_IP}" \
-    api node -e '
-      const { Client } = require("pg");
-      const u = new URL(process.env.DATABASE_URL);
-      u.hostname = process.env.DB_HOST_IP;
-      const client = new Client({ connectionString: u.toString() });
-      client.connect()
-        .then(() => client.end())
-        .then(() => process.exit(0))
-        .catch((err) => { process.stderr.write(err.message + "\n"); process.exit(1); });
-    ' 2>&1; then
+if ! bash scripts/check-prod-db-auth.sh "${ENV_FILE}"; then
   echo ""
   echo "ERROR: DB authentication preflight FAILED."
-  echo "  DATABASE_URL in ${ENV_FILE} cannot authenticate to the running Postgres."
-  echo "  The persisted Postgres role password does not match ${ENV_FILE} credentials."
-  echo ""
-  echo "  To fix — choose one option:"
-  echo "    A) Update the Postgres role password to match DATABASE_URL in ${ENV_FILE}:"
-  echo "         docker exec -it quizmind-postgres psql -U <current_user> \\"
-  echo "           -c \"ALTER USER <user> WITH PASSWORD '<password_from_env_docker>';\""
-  echo "    B) Update DATABASE_URL (and POSTGRES_PASSWORD) in ${ENV_FILE} to match"
-  echo "       the actual password stored in the persisted Postgres volume."
-  echo ""
-  echo "  See docs/deployment.md — 'Database Credential Management' for details."
+  echo "  Aborting deploy before starting api/worker/web."
   exit 1
 fi
-echo "  DB authentication OK"
 
 echo "==> Running Prisma migrations"
 # PG_IP already resolved above.
