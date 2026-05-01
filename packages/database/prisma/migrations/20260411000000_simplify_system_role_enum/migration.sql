@@ -3,30 +3,20 @@
 -- makes the stored model match the product model.
 --
 -- Safe path:
---   1. Drop the unique constraint first so that collapsing multiple legacy
---      role rows per user to 'admin' cannot hit a duplicate key violation.
---   2. Add 'admin' to the existing enum (idempotent in fresh envs).
---   3. Update all rows to 'admin'.
---   4. Delete duplicate rows, keeping one per userId.
---   5. Rebuild the enum as a single-value type via text round-trip.
---   6. Restore the unique constraint.
+--   1. Drop the unique index so collapsing values cannot violate uniqueness.
+--   2. Convert role column to text.
+--   3. Collapse all role values to text 'admin'.
+--   4. Deduplicate rows per userId (keep oldest by createdAt/id).
+--   5. Recreate SystemRole enum as a single-value enum.
+--   6. Convert role back to SystemRole.
+--   7. Restore the unique index.
 
--- 1. Remove the unique index so duplicate-role rows per user are safe to update
+-- 1. Remove unique index so duplicate-role rows per user are safe to collapse
 DROP INDEX IF EXISTS "UserSystemRole_userId_role_key";
 
--- 2. Add the new 'admin' value (safe; ADD VALUE is idempotent on re-run in PG 12+,
---    but to be explicit we guard with a DO block)
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum
-    WHERE enumlabel = 'admin'
-      AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'SystemRole')
-  ) THEN
-    ALTER TYPE "SystemRole" ADD VALUE 'admin';
-  END IF;
-END
-$$;
+-- 2. Convert enum column to text before assigning the new role value
+ALTER TABLE "UserSystemRole"
+  ALTER COLUMN role TYPE text USING role::text;
 
 -- 3. Collapse every legacy role value to 'admin'
 UPDATE "UserSystemRole" SET role = 'admin';
@@ -43,11 +33,13 @@ WHERE id IN (
   WHERE rn > 1
 );
 
--- 5. Rebuild enum with only 'admin' (PostgreSQL cannot DROP VALUE, so use text round-trip)
-ALTER TABLE "UserSystemRole" ALTER COLUMN role TYPE text;
+-- 5. Rebuild enum with only 'admin' (PostgreSQL cannot DROP VALUE)
 DROP TYPE "SystemRole";
 CREATE TYPE "SystemRole" AS ENUM ('admin');
-ALTER TABLE "UserSystemRole" ALTER COLUMN role TYPE "SystemRole" USING role::"SystemRole";
 
--- 6. Restore the unique constraint
+-- 6. Convert role back to enum
+ALTER TABLE "UserSystemRole"
+  ALTER COLUMN role TYPE "SystemRole" USING role::"SystemRole";
+
+-- 7. Restore unique index
 CREATE UNIQUE INDEX "UserSystemRole_userId_role_key" ON "UserSystemRole"("userId", "role");
