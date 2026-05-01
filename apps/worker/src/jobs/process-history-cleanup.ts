@@ -5,6 +5,10 @@ import { createLogEvent, type StructuredLogEvent } from '@quizmind/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+type LegacyAiRequestRow = Prisma.AiRequestGetPayload<{
+  select: { id: true };
+}>;
+
 export interface HistoryCleanupResult {
   logEvent: StructuredLogEvent;
   deletedRows: number;
@@ -90,7 +94,7 @@ export async function processHistoryCleanupJob(
   // Legacy cleanup path remains only for old ai_requests rows.
   let legacyCursorId: string | null = null;
   while (true) {
-    const legacy = await prisma.aiRequest.findMany({
+    const legacy: LegacyAiRequestRow[] = await prisma.aiRequest.findMany({
       ...(legacyCursorId ? { cursor: { id: legacyCursorId }, skip: 1 } : {}),
       where: { expiresAt: { lt: new Date() } },
       select: { id: true },
@@ -99,13 +103,13 @@ export async function processHistoryCleanupJob(
     });
     if (legacy.length === 0) break;
     legacyCursorId = legacy[legacy.length - 1]?.id ?? null;
-    const legacyIds = legacy.map((row) => row.id);
+    const legacyIds = legacy.map((row: LegacyAiRequestRow) => row.id);
     const matchingEventRows = await prisma.aiRequestEvent.findMany({
       where: { id: { in: legacyIds } },
       select: { id: true },
     });
     const matchingEventIds = new Set(matchingEventRows.map((row) => row.id));
-    const legacyOnlyIds = legacyIds.filter((id) => !matchingEventIds.has(id));
+    const legacyOnlyIds = legacyIds.filter((id: string) => !matchingEventIds.has(id));
     if (legacyOnlyIds.length > 0) {
       await Promise.all(legacyOnlyIds.flatMap((id) => [
         resolveSafeBlobPath(blobDir, `requests/${id}/prompt.json`),

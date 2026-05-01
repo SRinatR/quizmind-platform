@@ -1,4 +1,4 @@
-import { buildAdminLogEventCreateInput, type PrismaClient } from '@quizmind/database';
+import { buildAdminLogEventCreateInput, Prisma, type PrismaClient } from '@quizmind/database';
 import { enrichSearchTextWithActorIdentity, resolveActorIdentities } from './admin-log-actor-enrichment';
 import { collectAdminAiRequestCandidateIds } from './admin-log-ai-request-candidates';
 import { buildAdminAiLogPatchFromAiRequestEvent, normalizeAdminAiStatus } from './admin-log-ai-sync';
@@ -10,6 +10,16 @@ const skippedAiProxyDomainEventTypes = new Set([
   'ai.proxy.quota_exceeded',
   'ai.proxy.timeout',
 ]);
+
+
+const auditBackfillSelect = { id: true, actorId: true, action: true, targetType: true, targetId: true, metadataJson: true, createdAt: true } satisfies Prisma.AuditLogSelect;
+const activityBackfillSelect = { id: true, actorId: true, eventType: true, metadataJson: true, createdAt: true } satisfies Prisma.ActivityLogSelect;
+const securityBackfillSelect = { id: true, actorId: true, eventType: true, severity: true, metadataJson: true, createdAt: true } satisfies Prisma.SecurityEventSelect;
+const domainBackfillSelect = { id: true, eventType: true, payloadJson: true, createdAt: true } satisfies Prisma.DomainEventSelect;
+type AuditBackfillRow = Prisma.AuditLogGetPayload<{ select: typeof auditBackfillSelect }>;
+type ActivityBackfillRow = Prisma.ActivityLogGetPayload<{ select: typeof activityBackfillSelect }>;
+type SecurityBackfillRow = Prisma.SecurityEventGetPayload<{ select: typeof securityBackfillSelect }>;
+type DomainBackfillRow = Prisma.DomainEventGetPayload<{ select: typeof domainBackfillSelect }>;
 
 export interface AdminLogBackfillScope {
   stream?: Stream | 'all';
@@ -161,11 +171,11 @@ export class AdminLogBackfillService {
   private async backfillAudit(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
-      const rows = await this.prisma.auditLog.findMany({
+      const rows: AuditBackfillRow[] = await this.prisma.auditLog.findMany({
         where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
-        select: { id: true, actorId: true, action: true, targetType: true, targetId: true, metadataJson: true, createdAt: true },
+        select: auditBackfillSelect,
       });
       if (rows.length === 0) break;
       await this.upsertBatch(rows.map((row) => ({
@@ -190,11 +200,11 @@ export class AdminLogBackfillService {
   private async backfillActivity(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
-      const rows = await this.prisma.activityLog.findMany({
+      const rows: ActivityBackfillRow[] = await this.prisma.activityLog.findMany({
         where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
-        select: { id: true, actorId: true, eventType: true, metadataJson: true, createdAt: true },
+        select: activityBackfillSelect,
       });
       if (rows.length === 0) break;
       await this.upsertBatch(rows.map((row) => ({
@@ -217,11 +227,11 @@ export class AdminLogBackfillService {
   private async backfillSecurity(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
-      const rows = await this.prisma.securityEvent.findMany({
+      const rows: SecurityBackfillRow[] = await this.prisma.securityEvent.findMany({
         where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
-        select: { id: true, actorId: true, eventType: true, severity: true, metadataJson: true, createdAt: true },
+        select: securityBackfillSelect,
       });
       if (rows.length === 0) break;
       await this.upsertBatch(rows.map((row) => ({
@@ -245,11 +255,11 @@ export class AdminLogBackfillService {
   private async backfillDomain(scope: AdminLogBackfillScope) {
     let cursor: { createdAt: Date; id: string } | null = null;
     while (true) {
-      const rows = await this.prisma.domainEvent.findMany({
+      const rows: DomainBackfillRow[] = await this.prisma.domainEvent.findMany({
         where: this.timeWhere(cursor, scope),
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
         take: this.batchSize,
-        select: { id: true, eventType: true, payloadJson: true, createdAt: true },
+        select: domainBackfillSelect,
       });
       if (rows.length === 0) break;
       await this.upsertBatch(rows

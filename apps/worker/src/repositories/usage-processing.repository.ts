@@ -75,6 +75,32 @@ export class WorkerUsageProcessingRepository implements UsageProcessingRepositor
     });
   }
 
+
+  async saveQuotaCounter(input: {
+    key: string;
+    consumed: number;
+    periodStart: Date;
+    periodEnd: Date;
+  }): Promise<void> {
+    await this.prisma.quotaCounter.upsert({
+      where: {
+        key_periodStart_periodEnd: {
+          key: input.key,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+        },
+      },
+      create: {
+        key: input.key,
+        consumed: input.consumed,
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+      },
+      update: {
+        consumed: input.consumed,
+      },
+    });
+  }
   createTelemetry(input: {
     extensionInstallationId: string;
     eventType: string;

@@ -154,6 +154,7 @@ export function listFoundationUsers(): AdminUserDirectoryEntry[] {
     email: persona.user.email,
     displayName: persona.user.displayName,
     emailVerifiedAt: '2026-03-23T08:00:00.000Z',
+    createdAt: new Date(Date.UTC(2026, 2, 23, 8, index, 0)).toISOString(),
     suspendedAt: null,
     lastLoginAt: new Date(Date.UTC(2026, 2, 23, 10 + index, 0, 0)).toISOString(),
     systemRoles: persona.principal.systemRoles,
