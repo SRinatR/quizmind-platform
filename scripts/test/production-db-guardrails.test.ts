@@ -146,3 +146,31 @@ test('observability start validates DSN connectivity and avoids printing DSN', (
   assert.ok(observabilityStartScript.includes('psql'));
   assert.equal(observabilityStartScript.includes('echo "$DSN"'), false);
 });
+
+
+test('prod compose runtime commands for api/worker do not invoke tsx/ts-node/src main', () => {
+  const lowered = prodCompose.toLowerCase();
+  assert.ok(lowered.includes('@quizmind/api start:prod'));
+  assert.ok(lowered.includes('@quizmind/worker start:prod'));
+  for (const forbidden of ['tsx', 'ts-node', 'src/main.ts']) {
+    assert.equal(lowered.includes(forbidden), false, `prod compose contains forbidden runtime token: ${forbidden}`);
+  }
+});
+
+test('dockerfile builds api and worker before runtime', () => {
+  const dockerfile = readFileSync('Dockerfile', 'utf8');
+  assert.ok(dockerfile.includes('corepack pnpm --filter @quizmind/api build'));
+  assert.ok(dockerfile.includes('corepack pnpm --filter @quizmind/worker build'));
+});
+
+test('api and worker package scripts keep dev tsx but provide compiled production start', () => {
+  const apiPkg = readFileSync('apps/api/package.json', 'utf8');
+  const workerPkg = readFileSync('apps/worker/package.json', 'utf8');
+
+  for (const pkg of [apiPkg, workerPkg]) {
+    assert.ok(pkg.includes('"dev": "tsx watch src/main.ts"'));
+    assert.ok(pkg.includes('"start": "tsx src/main.ts"'));
+    assert.ok(pkg.includes('"start:prod": "node dist/main.js"'));
+    assert.ok(pkg.includes('"build": "tsc -p tsconfig.build.json"'));
+  }
+});
