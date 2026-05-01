@@ -9,6 +9,7 @@ const obsCompose = readFileSync('docker-compose.observability.yml', 'utf8');
 const syncScript = readFileSync('scripts/sync-postgres-role-password.sh', 'utf8');
 const dbAuthScript = readFileSync('scripts/check-prod-db-auth.sh', 'utf8');
 const resourceScript = readFileSync('scripts/check-prod-resource-health.sh', 'utf8');
+const observabilityStartScript = readFileSync('scripts/observability-start.sh', 'utf8');
 const deployWorkflow = readFileSync('.github/workflows/deploy.yml', 'utf8');
 
 const startIx = deployScript.indexOf('$DC up -d api worker web');
@@ -42,11 +43,11 @@ test('deploy aborts immediately when db auth preflight fails', () => {
 });
 
 
-test('deploy stops optional observability during normal app deploy', () => {
+test('deploy stops optional observability before docker build', () => {
   const stopIx = deployScript.indexOf('bash scripts/observability-stop.sh || true');
-  const startIx = deployScript.indexOf('$DC up -d api worker web');
+  const buildIx = deployScript.indexOf('$DC build');
   assert.ok(stopIx >= 0, 'observability stop call missing');
-  assert.ok(startIx > stopIx, 'observability stop should happen before app startup');
+  assert.ok(buildIx > stopIx, 'observability stop should happen before docker build');
 });
 
 test('postgres-exporter is not part of default app startup', () => {
@@ -128,4 +129,20 @@ test('resource diagnostic script exists, is bash-valid, and avoids obvious secre
     assert.equal(resourceScript.includes(marker), false, `unexpected marker: ${marker}`);
   }
   assert.equal(/(^|\n)\s*env(\s|$)/.test(resourceScript), false, 'unexpected raw env command');
+});
+
+
+test('resource diagnostic script resolves API_HOST_PORT from env or env file with fallback', () => {
+  assert.ok(resourceScript.includes('ENV_FILE="${1:-.env.prod}"'));
+  assert.ok(resourceScript.includes('resolve_api_host_port'));
+  assert.ok(resourceScript.includes('API_HOST_PORT'));
+  assert.ok(resourceScript.includes('awk -F='));
+  assert.ok(resourceScript.includes("printf '4000"));
+});
+
+test('observability start validates DSN connectivity and avoids printing DSN', () => {
+  assert.ok(observabilityStartScript.includes('quizmind-postgres is not running'));
+  assert.ok(observabilityStartScript.includes('docker run --rm --network container:quizmind-postgres'));
+  assert.ok(observabilityStartScript.includes('psql'));
+  assert.equal(observabilityStartScript.includes('echo "$DSN"'), false);
 });

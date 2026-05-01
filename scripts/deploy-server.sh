@@ -43,6 +43,9 @@ fi
 echo "==> Validating ${ENV_FILE}"
 run_prod_env_preflight
 
+echo "==> Stopping optional observability containers for app-only production deploy"
+bash scripts/observability-stop.sh || true
+
 echo "==> Updating code from origin/main"
 git fetch origin
 git reset --hard origin/main
@@ -112,9 +115,6 @@ $DC run --rm \
   '
 
 echo "==> Migrations complete"
-
-echo "==> Stopping optional observability containers for app-only production deploy"
-bash scripts/observability-stop.sh || true
 
 echo "==> Starting api, worker, and web"
 $DC up -d api worker web

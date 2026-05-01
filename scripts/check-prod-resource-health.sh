@@ -1,6 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ENV_FILE="${1:-.env.prod}"
+
+resolve_api_host_port() {
+  if [[ -n "${API_HOST_PORT:-}" ]]; then
+    printf '%s\n' "$API_HOST_PORT"
+    return
+  fi
+
+  if [[ -f "$ENV_FILE" ]]; then
+    local value
+    value="$(awk -F= '/^[[:space:]]*API_HOST_PORT[[:space:]]*=/{v=$2; sub(/^[[:space:]]+/,"",v); sub(/[[:space:]]+$/,"",v); gsub(/\"/,"",v); print v; exit}' "$ENV_FILE" || true)"
+    if [[ -n "$value" ]]; then
+      printf '%s\n' "$value"
+      return
+    fi
+  fi
+
+  printf '4000\n'
+}
+
 echo "== UTC time =="
 date -u
 
@@ -38,9 +58,9 @@ if docker ps --format '{{.Names}}' | grep -Fxq quizmind-redis; then
   docker exec quizmind-redis redis-cli INFO keyspace || true
 fi
 
-API_HOST_PORT="${API_HOST_PORT:-4000}"
+API_PORT="$(resolve_api_host_port)"
 echo "\n== API /health =="
-curl -s "http://127.0.0.1:${API_HOST_PORT}/health" || true
+curl -s "http://127.0.0.1:${API_PORT}/health" || true
 echo "\n== API /ready =="
-curl -s "http://127.0.0.1:${API_HOST_PORT}/ready" || true
+curl -s "http://127.0.0.1:${API_PORT}/ready" || true
 echo ""
