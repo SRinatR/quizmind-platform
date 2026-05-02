@@ -34,6 +34,9 @@
   --ai-detail-code-bg: rgba(255, 255, 255, 0.74);
   --ai-detail-code-ink: var(--ink);
   --ai-detail-code-border: var(--line);
+  --ai-detail-price-charged-bg: rgba(34, 120, 74, 0.12);
+  --ai-detail-price-charged-ink: #216b44;
+  --ai-detail-price-charged-border: rgba(34, 120, 74, 0.22);
   --shadow: 0 18px 48px rgba(71, 56, 44, 0.12);
   --radius: 24px;
   color-scheme: light;
@@ -73,6 +76,9 @@
   --ai-detail-code-bg: var(--code-bg);
   --ai-detail-code-ink: var(--code-ink);
   --ai-detail-code-border: var(--line);
+  --ai-detail-price-charged-bg: rgba(74, 222, 128, 0.16);
+  --ai-detail-price-charged-ink: #86efac;
+  --ai-detail-price-charged-border: rgba(134, 239, 172, 0.34);
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
   --radius: 24px;
   color-scheme: dark;
@@ -3572,9 +3578,9 @@ code {
 }
 
 .ai-detail-price-chip--charged {
-  background: rgba(34, 120, 74, 0.09);
-  color: #1a5c38;
-  border-color: rgba(34, 120, 74, 0.14);
+  background: var(--ai-detail-price-charged-bg);
+  color: var(--ai-detail-price-charged-ink);
+  border-color: var(--ai-detail-price-charged-border);
 }
 
 .ai-detail-price-chip--approximate {
