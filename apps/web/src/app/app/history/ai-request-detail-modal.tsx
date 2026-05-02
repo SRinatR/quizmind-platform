@@ -52,22 +52,6 @@ function copyText(text: string) {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
-const codeBlockStyle: React.CSSProperties = {
-  background: 'var(--code-bg)',
-  borderRadius: '6px',
-  padding: '12px',
-  fontSize: '0.8rem',
-  overflowX: 'auto',
-  whiteSpace: 'pre-wrap',
-  wordBreak: 'break-word',
-  maxHeight: '320px',
-  overflowY: 'auto',
-  margin: 0,
-  fontFamily: 'monospace',
-  color: 'var(--code-ink)',
-  border: '1px solid var(--line)',
-};
-
 function ExpandableSection({ label, content }: { label: string; content: string }) {
   const [open, setOpen] = useState(false);
   return (
@@ -90,7 +74,7 @@ function ExpandableSection({ label, content }: { label: string; content: string 
         <span style={{ fontFamily: 'monospace' }}>{open ? '▾' : '▸'}</span>
         {label}
       </button>
-      {open && <pre style={{ ...codeBlockStyle, marginTop: '6px' }}>{content}</pre>}
+      {open && <pre className="ai-detail-code-block" style={{ marginTop: '6px' }}>{content}</pre>}
     </div>
   );
 }
@@ -262,7 +246,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                     <button className="btn-ghost" onClick={() => copyText(displayPrompt)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">{td.copy}</button>
                   )}
                 </div>
-                {hasPromptText ? <pre style={codeBlockStyle}>{displayPrompt}</pre> : null}
+                {hasPromptText ? <pre className="ai-detail-code-block">{displayPrompt}</pre> : null}
                 {hasPromptImages && (
                   <div style={{ marginTop: 12 }}>
                     {promptDisplay.imageAttachments.map((attachment) => (
@@ -283,7 +267,7 @@ export function AiRequestDetailModal({ id, onClose, exchangeRates }: Props) {
                   <span className="micro-label">{td.response}</span>
                   {displayResponse && <button className="btn-ghost" onClick={() => copyText(displayResponse)} style={{ fontSize: '0.75rem', padding: '2px 8px' }} type="button">{td.copy}</button>}
                 </div>
-                {displayResponse ? <pre style={codeBlockStyle}>{displayResponse}</pre> : <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>{td.noResponse}</p>}
+                {displayResponse ? <pre className="ai-detail-code-block">{displayResponse}</pre> : <p style={{ opacity: 0.45, fontSize: '0.82rem', margin: 0 }}>{td.noResponse}</p>}
                 {rawResponseText && <ExpandableSection label={td.rawResponse} content={rawResponseText} />}
               </section>
             </>
