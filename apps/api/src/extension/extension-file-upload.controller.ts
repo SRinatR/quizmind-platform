@@ -75,6 +75,7 @@ const EXTENSION_MIME_MAP: Record<string, string> = {
 };
 
 const KNOWN_AI_PROVIDERS = new Set<AiProvider>(['openai', 'anthropic', 'openrouter', 'polza', 'internal']);
+const ALLOWED_TYPES_ERROR_SUFFIX = 'Allowed types: txt, md, json, csv, pdf, docx, png, jpg, jpeg, webp. Maximum size: 10 MB.';
 
 function ok<T>(data: T): ApiSuccess<T> {
   return { ok: true, data };
@@ -242,7 +243,7 @@ export class ExtensionFileUploadController {
         } else {
           cb(
             new BadRequestException(
-              `Unsupported file type "${file.originalname}". Allowed types: txt, md, json, csv, pdf, docx, png, jpg, jpeg, webp. Maximum size: 10 MB.`,
+              `Unsupported file type "${file.originalname}". ${ALLOWED_TYPES_ERROR_SUFFIX}`,
             ),
             false,
           );
@@ -271,7 +272,7 @@ export class ExtensionFileUploadController {
 
     if (!ALLOWED_MIME_TYPES.has(mime)) {
       throw new BadRequestException(
-        `Unsupported file type "${file.originalname}". Allowed types: txt, md, json, csv, pdf, docx, png, jpg, jpeg, webp.`,
+        `Unsupported file type "${file.originalname}". ${ALLOWED_TYPES_ERROR_SUFFIX}`,
       );
     }
 
@@ -323,7 +324,7 @@ export class ExtensionFileUploadController {
     } catch (error) {
       if (error instanceof HttpException) throw error;
       throw new BadRequestException(
-        `Failed to process file "${file.originalname}": ${error instanceof Error ? error.message : 'unknown error'}`,
+        `Failed to process file "${file.originalname}". Ensure the file is valid and under 10 MB.`,
       );
     }
 
@@ -338,7 +339,19 @@ export class ExtensionFileUploadController {
       proxyResult.response && typeof proxyResult.response === 'object'
         ? (proxyResult.response as Record<string, unknown>)
         : {};
-    const choices = Array.isArray(upstreamResponse.choices) ? upstreamResponse.choices : [];
+    const fallbackContent =
+      typeof upstreamResponse.answer === 'string'
+        ? upstreamResponse.answer
+        : typeof upstreamResponse.output_text === 'string'
+          ? upstreamResponse.output_text
+          : typeof upstreamResponse.text === 'string'
+            ? upstreamResponse.text
+            : null;
+    const choices = Array.isArray(upstreamResponse.choices)
+      ? upstreamResponse.choices
+      : fallbackContent
+        ? [{ index: 0, message: { role: 'assistant', content: fallbackContent }, finish_reason: 'stop' }]
+        : [];
     const usage =
       upstreamResponse.usage && typeof upstreamResponse.usage === 'object'
         ? upstreamResponse.usage
@@ -397,6 +410,7 @@ export class ExtensionFileUploadController {
       },
     });
   }
+
 
   private logUploadRequest(input: {
     installationId: string;
