@@ -11,7 +11,7 @@ services:
       [
         "sh",
         "-lc",
-        "export DATABASE_URL=$$(node -e \"const dns=require('node:dns').promises;(async()=>{const {address}=await dns.lookup('postgres',{family:4});const u=new URL(process.env.DATABASE_URL);u.hostname=address;process.stdout.write(u.toString())})().catch(e=>{console.error(e);process.exit(1)})\") && exec corepack pnpm --filter @quizmind/api start"
+        "export DATABASE_URL=$$(node -e \"const dns=require('node:dns').promises;(async()=>{const {address}=await dns.lookup('postgres',{family:4});const u=new URL(process.env.DATABASE_URL);u.hostname=address;process.stdout.write(u.toString())})().catch(e=>{console.error(e);process.exit(1)})\") && exec corepack pnpm --filter @quizmind/api start:prod"
       ]
     environment:
       NODE_ENV: production
@@ -44,7 +44,7 @@ services:
       [
         "sh",
         "-lc",
-        "export DATABASE_URL=$$(node -e \"const dns=require('node:dns').promises;(async()=>{const {address}=await dns.lookup('postgres',{family:4});const u=new URL(process.env.DATABASE_URL);u.hostname=address;process.stdout.write(u.toString())})().catch(e=>{console.error(e);process.exit(1)})\") && exec corepack pnpm --filter @quizmind/worker start"
+        "export DATABASE_URL=$$(node -e \"const dns=require('node:dns').promises;(async()=>{const {address}=await dns.lookup('postgres',{family:4});const u=new URL(process.env.DATABASE_URL);u.hostname=address;process.stdout.write(u.toString())})().catch(e=>{console.error(e);process.exit(1)})\") && exec corepack pnpm --filter @quizmind/worker start:prod"
       ]
     environment:
       NODE_ENV: production

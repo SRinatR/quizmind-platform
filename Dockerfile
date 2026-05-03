@@ -51,4 +51,7 @@ RUN NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
     corepack pnpm --filter @quizmind/web build
 
+RUN corepack pnpm --filter @quizmind/api build \
+    && corepack pnpm --filter @quizmind/worker build
+
 CMD ["corepack", "pnpm", "dev"]
